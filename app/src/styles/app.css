@@ -352,3 +352,4 @@ kbd {
 .result-list .tex { font-size: 14px; white-space: nowrap; pointer-events: none; }
 .result-list .name { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .result-list .where { color: var(--text-3); font-size: 11px; white-space: nowrap; }
+.mathfield { --placeholder-color: var(--text-3); --placeholder-opacity: 0.7; }

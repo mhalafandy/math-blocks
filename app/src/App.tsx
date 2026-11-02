@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { BottomPanel } from "./components/BottomPanel";
 import { CommandPalette } from "./components/CommandPalette";
-import { MathEditor } from "./components/MathEditor";
+import { focusVisualEditor, MathEditor } from "./components/MathEditor";
 import { Sidebar } from "./components/Sidebar";
 import { HSplitter, Splitter } from "./components/Splitter";
 import { PaletteTop, SymbolPanel } from "./components/SymbolPalette";
@@ -146,7 +146,16 @@ export function App() {
         <main className="workspace" style={{ gridTemplateRows: s.bottomOpen ? `auto minmax(140px, 1fr) 4px ${s.bottomHeight}px` : "auto minmax(140px, 1fr) 0 auto" }}>
           <div>{s.paletteLocation === "top" && <PaletteTop />}</div>
           <section className="canvas" aria-label="Equation editor">
-            <div className="canvas-scroll">
+            <div
+              className="canvas-scroll"
+              onMouseDown={(e) => {
+                // Clicking empty canvas space edits the equation (MathLive handles clicks on the equation itself).
+                if (!(e.target as HTMLElement).closest("math-field")) {
+                  e.preventDefault();
+                  focusVisualEditor();
+                }
+              }}
+            >
               <div className="canvas-inner" style={{ fontSize: `${34 * s.zoom}px` }}>
                 <MathEditor />
               </div>

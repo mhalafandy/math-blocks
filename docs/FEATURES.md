@@ -48,6 +48,10 @@ by meaning, numbering/references, MathType migration, precision mode, dependency
 | Bug | Status |
 |---|---|
 | 🐞 Installer error "Error opening file for writing …\MathBlocks\connector\MathBlocks.WordConnector.dll": the add-in was installed into the app's own folder (Windows paths ignore case), so Word locked a file the installer must replace | Fixed in 0.1.14 (separate add-in folder) and 0.1.17 (DLL embedded in the app, no loose file for the installer to overwrite) |
+| 🐞 Empty boxes inside bold templates (vectrix, bold vectors, unit vectors, dyadics…) could not be filled by clicking, and lost their bold | Fixed: click selects the box under the pointer; bold slots insert a selected bold sample letter whose first keystroke keeps the style. Verified on all 172 templates (Tab and click) |
+| 🐞 Letters typed after an upright `d` became upright (`\mathrm{dx}`) | Fixed: the editor uses a dedicated differential-d atom |
+| 🐞 Clicking empty canvas space did not focus the equation | Fixed |
+| 🐞 Empty boxes drawn too heavy | Fixed: thin outline box |
 | 🐞 Equation wrapper box drawn around Word's equation frame | Fixed: wrapper hidden (D-013) |
 | 🐞 Vector / dot / hat buttons inserted an empty slot that could not be typed into | Fixed |
 | 🐞 Toolbar buttons did not wrap the selected expression (focus lost on click) | Fixed |
