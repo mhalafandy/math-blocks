@@ -220,7 +220,7 @@ secret still work but publish no update files.
 
 ---
 
-## D-015 — Precision rendering as a first-class output (PROPOSED, awaiting user decision)
+## D-015 — Precision rendering as a first-class output — DECIDED: native stays default
 
 **Context.** A6: none of the native Word styles looks professional enough; Latin Modern Math is the
 closest. The quality ceiling of native equations is Word's own math layout engine, which we cannot
@@ -232,6 +232,12 @@ insert them as SVG pictures (PNG fallback), baseline-aligned for inline use, eac
 MathBlocks content control and carrying its AST/LaTeX so the app re-edits it (double-click),
 exactly like MathType does. Native OMML stays available per document or per equation, with
 one-click conversion both ways. Comparison document: `fixtures/spike/m1-P-precision-vs-native.docx`.
+
+**Decision (user, after comparing `m1-P`).** Native and precision "look almost the same" except
+matrix brackets, which in native Word are only as tall as the entries. → **Native Word equations
+remain the default** (editability, searchability). Matrix brackets get a Style Profile option
+`matrix.bracketPadding` (invisible zero-width strut), variants in `m2-matrix-brackets.docx` for the
+user to choose. Precision mode stays on the roadmap (M10) as an option.
 
 **Trade-offs.** Pictures cannot be edited with Word's own equation tools (only through MathBlocks),
 are not searchable as text, and collaborators without MathBlocks see but cannot edit them. Linked

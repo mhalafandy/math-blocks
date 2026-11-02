@@ -20,6 +20,16 @@ export interface StyleProfile {
     /** OMML m:cGpRule: 0 single em, 1 1.5em, 2 2em, 3 exactly (twips), 4 multiple. */
     columnGapRule?: 0 | 1 | 2 | 3 | 4;
     columnGap?: number;
+    /**
+     * Make matrix brackets taller than the entries (Word draws them exactly as tall as the
+     * content). Implemented with an invisible zero-width "phantom" copy of the matrix that is
+     * a little taller; Word stretches the brackets around it. [M2: chosen by the user in Word]
+     *  - "none":    Word's default
+     *  - "match":   m:shp="match" (bracket matches content height; no padding)
+     *  - "scripts": phantom with tiny scripts above/below ( ~ +0.3 em each side )
+     *  - "limits":  phantom with stacked limits above/below ( ~ +0.6 em each side )
+     */
+    bracketPadding?: "none" | "match" | "scripts" | "limits";
   };
   /** Equation arrays (aligned derivations, cases). */
   equationArray: {

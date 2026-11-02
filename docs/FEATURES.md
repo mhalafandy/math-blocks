@@ -18,6 +18,8 @@ Legend: ✅ done · 🚧 in progress · 📋 planned · 🐞 known bug
 | ✅ Word connector (COM add-in) | M1 | Ribbon tab, self-test insertion, named-pipe connection with auto-reconnect, insert equation in one undo step, read equation, document info, double-click detection |
 | ✅ Connector protocol v1 | M1 | JSON-RPC over a named pipe, typed in `packages/connector-protocol` |
 | ✅ Windows CI | M1 | Installer + connector DLL as downloadable artifacts |
+| ✅ Spacecraft-dynamics notation | M2 | Palette tab with vectrix notation (bold arrow vectors, vectrix transpose, bold column matrices, unit vectors, body integrals, dm/dA/dV, iterated integrals with limits, ranges, cross matrices, bold Greek, dyadics); thesis Appendix A equations added to the reference set |
+| 🚧 Matrix bracket padding | M2 | Style Profile option; variant chosen by the user in `m2-matrix-brackets.docx` |
 | ✅ Auto-update | M2 | App checks the latest build, downloads in the background, one-click restart; app installs and updates the Word add-in itself (D-014) |
 | ✅ Symbol palette (MathType-style) | M2 | ~300 symbols and templates: 9 symbol groups (relations, spaces/dots, operators, arrows, logic, sets, calculus symbols, Greek, Greek capitals), 8 template groups (brackets, fractions/roots, scripts, sums/products, integrals, accents/bars, labeled arrows, matrices/cases), topic tabs (Algebra, Derivatives, Vectors & mechanics, Matrices, Orbital & control, Trig, Statistics), Recent tab, quick-access bar (right-click to pin/unpin), search by name/meaning/LaTeX, rendered previews, top or side layout (switchable), works in visual and LaTeX-only modes; every item is also a Ctrl+K command |
 

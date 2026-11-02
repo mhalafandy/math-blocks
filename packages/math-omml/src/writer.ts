@@ -325,7 +325,26 @@ class OmmlWriter {
     const mat = el("m:m", null, this.pr("m:mPr", ...props), ...rows);
     const d = MATRIX_DELIMS[n.matrixKind];
     if (!d) return mat;
-    return el("m:d", null, this.pr("m:dPr", val("m:begChr", d[0]), val("m:endChr", d[1])), el("m:e", null, mat));
+    const pad = m.bracketPadding ?? "none";
+    const dProps = [val("m:begChr", d[0]), val("m:endChr", d[1])];
+    if (pad === "match") dProps.push(val("m:shp", "match"));
+    let inner = mat;
+    if (pad === "scripts" || pad === "limits") inner = this.paddingStrut(mat, pad) + mat;
+    return el("m:d", null, this.pr("m:dPr", ...dProps), el("m:e", null, inner));
+  }
+
+  /** Invisible, zero-width copy of `content` made taller above and below, so delimiters around it grow. */
+  private paddingStrut(content: string, kind: "scripts" | "limits"): string {
+    const bar = this.run("|");
+    const tall =
+      kind === "scripts"
+        ? el("m:sSubSup", null, this.pr("m:sSubSupPr"), el("m:e", null, content), el("m:sub", null, bar), el("m:sup", null, bar))
+        : el(
+            "m:limUpp", null, this.pr("m:limUppPr"),
+            el("m:e", null, el("m:limLow", null, this.pr("m:limLowPr"), el("m:e", null, content), el("m:lim", null, bar))),
+            el("m:lim", null, bar),
+          );
+    return el("m:phant", null, this.pr("m:phantPr", val("m:show", 0), val("m:zeroWid", 1)), el("m:e", null, tall));
   }
 }
 

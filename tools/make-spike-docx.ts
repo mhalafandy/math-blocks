@@ -136,6 +136,32 @@ function build(v: Variant): Uint8Array {
 
 mkdirSync(OUT, { recursive: true });
 
+// M2: matrix bracket height variants (Word draws brackets exactly as tall as the entries).
+{
+  const samples = [
+    "\\mathbf{r} = \\begin{bmatrix} 0 & y & z \\end{bmatrix}^{\\mathbf{T}}",
+    "\\mathbf{c}_b = \\begin{bmatrix} \\dfrac{m_b l_b}{2} & 0 & 0 \\end{bmatrix}^{\\mathbf{T}}",
+    "R_z(\\theta)=\\begin{bmatrix}\\cos\\theta & -\\sin\\theta & 0\\\\ \\sin\\theta & \\cos\\theta & 0\\\\ 0 & 0 & 1\\end{bmatrix}",
+    "\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}\\begin{pmatrix} x \\\\ y \\end{pmatrix}",
+    "\\det A=\\begin{vmatrix} a & b \\\\ c & d \\end{vmatrix}",
+  ];
+  const variants = [
+    ["1", "none", "Word default: brackets exactly as tall as the entries"],
+    ["2", "match", "Bracket shape 'match'"],
+    ["3", "scripts", "Small padding (invisible strut, about +0.3 em above and below)"],
+    ["4", "limits", "Large padding (invisible strut, about +0.6 em above and below)"],
+  ] as const;
+  const ps: string[] = [paragraph(textRun("MathBlocks: matrix bracket height variants", { bold: true, size: 36 }))];
+  ps.push(paragraph(textRun("Latin Modern Math, tuned spacing. Which variant looks best? Zoom in to compare.", { italic: true })));
+  for (const [no, pad, label] of variants) {
+    const profile = { ...withFont(TUNED_PROFILE, "Latin Modern Math"), matrix: { ...TUNED_PROFILE.matrix, bracketPadding: pad } };
+    ps.push(heading(`Variant ${no}: ${label}`, 2));
+    for (const s of samples) ps.push(paragraph(toOmml(parseLatex(s).root, { display: true, profile })));
+  }
+  writeFileSync(join(OUT, "m2-matrix-brackets.docx"), buildDocx({ paragraphs: ps, mathFont: "Latin Modern Math" }));
+  console.log("wrote fixtures/spike/m2-matrix-brackets.docx");
+}
+
 // Sample equation embedded in the Word connector ("Insert test equation" ribbon button),
 // so the connector can be tested without the desktop app.
 const sample = parseLatex("x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}").root;

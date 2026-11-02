@@ -26,6 +26,8 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
 ### Added (M2, in progress)
+- "Spacecraft dynamics" palette tab in vectrix notation; thesis Appendix A equations in the reference set.
+- Style Profile option for taller matrix brackets (4 variants to compare in `m2-matrix-brackets.docx`).
 - Auto-update of the app (signed updates from the "Latest test build" release) and automatic
   installation/update of the Word add-in by the app (D-014). Builds are versioned 0.1.<build>.
 - Symbol palette with top (MathType-style) and side layouts, quick access, recents, topic tabs and

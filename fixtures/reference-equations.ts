@@ -43,5 +43,15 @@ export const REFERENCE_EQUATIONS: ReferenceEquation[] = [
   { id: "binomial", title: "Binomial theorem", category: "General Mathematics", latex: "(x+y)^n = \\sum_{k=0}^{n} \\binom{n}{k} x^{n-k} y^k", display: true },
   { id: "underbrace", title: "Underbrace annotation", category: "General Mathematics", latex: "\\underbrace{1 + 1 + \\cdots + 1}_{n \\text{ times}} = n", display: true },
   { id: "norm", title: "Norm and inner product", category: "Linear Algebra", latex: "\\left\\| \\mathbf{x} \\right\\| = \\sqrt{\\left\\langle \\mathbf{x}, \\mathbf{x} \\right\\rangle}", display: true },
+  // From the user's thesis (Appendix A, mass properties): vectrix notation.
+  { id: "thesis-a1", title: "First moment of mass (A.1)", category: "Spacecraft Dynamics", latex: "\\vec{\\mathbf{c}}_i = \\int_{\\mathbf{B}_i} \\vec{\\mathbf{r}}\\,\\mathrm{d}m", display: true },
+  { id: "thesis-a2", title: "Vectrix form (A.2)", category: "Spacecraft Dynamics", latex: "\\vec{\\mathbf{c}}_1 = \\vec{\\mathbf{S}}^{\\mathbf{T}}\\mathbf{c}_1 = \\vec{\\mathbf{S}}^{\\mathbf{T}}\\int_{\\mathbf{B}_1}\\mathbf{r}\\,\\mathrm{d}m", display: true },
+  { id: "thesis-a5", title: "Area element and position (A.5)", category: "Spacecraft Dynamics", latex: "\\mathrm{d}A = \\mathrm{d}z\\,\\mathrm{d}y, \\qquad \\mathbf{r} = \\begin{bmatrix} 0 & y & z \\end{bmatrix}^{\\mathbf{T}}", display: true },
+  { id: "thesis-a6", title: "Split double integral (A.6)", category: "Spacecraft Dynamics", latex: "\\mathbf{c}_{sf} = \\int_{-d_s}^{0}\\int_{-y-d_s}^{y+d_s}\\sigma_{sf}\\,\\mathbf{r}\\,\\mathrm{d}z\\,\\mathrm{d}y + \\int_{0}^{d_s}\\int_{y-d_s}^{-y+d_s}\\sigma_{sf}\\,\\mathbf{r}\\,\\mathrm{d}z\\,\\mathrm{d}y", display: true },
+  { id: "thesis-a8", title: "Aligned definitions (A.8)", category: "Spacecraft Dynamics", latex: "\\begin{aligned} \\mathrm{d}m &= \\sigma_{sb}\\,\\mathrm{d}A, \\\\ \\mathrm{d}A &= r_{sb}\\,\\mathrm{d}\\phi\\,\\mathrm{d}y \\quad \\text{(tube along } \\hat{s}_2\\text{)} \\end{aligned}", display: true },
+  { id: "thesis-a19", title: "Column with fraction (A.19)", category: "Spacecraft Dynamics", latex: "\\mathbf{c}_b = \\begin{bmatrix} \\dfrac{m_b l_b}{2} & 0 & 0 \\end{bmatrix}^{\\mathbf{T}}", display: true },
+  { id: "thesis-a21", title: "Ranges (A.21)", category: "Spacecraft Dynamics", latex: "l_b \\leq x \\leq l_b + l_p, \\qquad -\\frac{w_p}{2} \\leq y \\leq \\frac{w_p}{2}", display: true },
+  { id: "thesis-a29", title: "Triple integral, cylindrical (A.29)", category: "Spacecraft Dynamics", latex: "\\mathbf{c}_3 = \\int_{-h_w/2}^{h_w/2}\\int_{0}^{2\\pi}\\int_{0}^{r_w}\\rho_w\\, r\\,\\mathbf{r}\\,\\mathrm{d}r\\,\\mathrm{d}\\phi\\,\\mathrm{d}x", display: true },
+  { id: "thesis-a31", title: "Sum of first moments (A.31)", category: "Spacecraft Dynamics", latex: "\\vec{\\mathbf{c}} = \\vec{\\mathbf{c}}_1 + \\vec{\\mathbf{c}}_2 + \\vec{\\mathbf{c}}_3 = \\vec{\\mathbf{c}}_2 = \\vec{\\mathbf{B}}^{\\mathbf{T}}\\mathbf{c}", display: true },
   { id: "inline-energy", title: "Kinetic energy (inline)", category: "Classical Mechanics", latex: "E_k = \\tfrac{1}{2} m v^2", display: false },
 ];
