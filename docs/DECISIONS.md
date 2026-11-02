@@ -260,3 +260,13 @@ centres the equation, scrolls horizontally for long equations and zooms (Ctrl +/
 The MathType-style top palette stays available as an option ("⇡ Top"). Template previews show a
 sample letter in the main slot (bold **x**, x⃗, xᵀ) so similar templates are distinguishable.
 Layout preferences moved to a new storage key, so everyone starts from the new defaults once.
+
+---
+
+## D-017 — Default matrix bracket padding: small ("scripts")
+
+**Status:** Accepted (user's choice: variant 3 in `m2-matrix-brackets.docx`)
+
+The tuned Style Profile pads matrix brackets with an invisible zero-width strut that adds about
+0.3 em above and below the entries. Applies to every bracketed matrix kind (pmatrix, bmatrix,
+Bmatrix, vmatrix, Vmatrix), including row and column vectors such as `[0 y z]ᵀ`.

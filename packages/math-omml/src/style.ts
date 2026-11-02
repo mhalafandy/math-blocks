@@ -54,7 +54,8 @@ export const TUNED_PROFILE: StyleProfile = {
   name: "MathBlocks tuned",
   mathFont: "Cambria Math",
   vectorStyle: "arrow",
-  matrix: { rowSpacingRule: 1, columnGapRule: 1 },
+  // bracketPadding "scripts" = variant 3 in m2-matrix-brackets.docx, chosen by the user (D-017).
+  matrix: { rowSpacingRule: 1, columnGapRule: 1, bracketPadding: "scripts" },
   equationArray: { rowSpacingRule: 1 },
 };
 
