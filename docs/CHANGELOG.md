@@ -25,6 +25,10 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added (M2, in progress)
+- Symbol palette with top (MathType-style) and side layouts, quick access, recents, topic tabs and
+  meaning search; all items available in the command palette.
+
 ### Fixed
 - Equation wrapper no longer draws a second box around Word's equation (D-013).
 - Structure buttons (vector, dot, hat…) now insert a typeable slot, and wrap the selection when there is one.

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { DEFAULT_FAVORITES } from "./palette";
 
 export type Theme = "system" | "light" | "dark";
 export type EditMode = "split" | "visual" | "latex";
@@ -25,6 +26,14 @@ interface Prefs {
   profileBase: ProfileBase;
   mathFont: string;
   vectorStyle: VectorStyle;
+  /** Where the symbol palette lives (user can switch). */
+  paletteLocation: "top" | "side";
+  /** Pinned palette items (keys from palette.ts). */
+  favorites: string[];
+  /** Recently inserted palette items, newest first. */
+  recents: string[];
+  /** Topic tab shown under the top palette; null = collapsed. */
+  paletteTab: string | null;
 }
 
 interface AppState extends Prefs {
@@ -54,6 +63,10 @@ const DEFAULT_PREFS: Prefs = {
   profileBase: "tuned",
   mathFont: "Latin Modern Math",
   vectorStyle: "arrow",
+  paletteLocation: "top",
+  favorites: DEFAULT_FAVORITES,
+  recents: [],
+  paletteTab: "tab-derivs",
 };
 
 function loadPrefs(): Prefs {
@@ -70,6 +83,7 @@ function savePrefs(s: Prefs) {
     const p: Prefs = {
       theme: s.theme, mode: s.mode, leftWidth: s.leftWidth, rightWidth: s.rightWidth,
       inspectorTab: s.inspectorTab, profileBase: s.profileBase, mathFont: s.mathFont, vectorStyle: s.vectorStyle,
+      paletteLocation: s.paletteLocation, favorites: s.favorites, recents: s.recents, paletteTab: s.paletteTab,
     };
     localStorage.setItem(PREFS_KEY, JSON.stringify(p));
   } catch {

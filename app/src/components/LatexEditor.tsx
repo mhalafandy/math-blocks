@@ -2,6 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import type { Diagnostic } from "@mathblocks/math-latex";
 import { useApp } from "../lib/store";
 
+let inserter: ((text: string) => void) | null = null;
+
+/** Inserts text at the LaTeX editor's cursor (used by the palette in LaTeX-only layout). */
+export function insertIntoLatex(text: string): boolean {
+  if (!inserter) return false;
+  inserter(text);
+  return true;
+}
+
 /**
  * LaTeX source editor. M1: plain text area with diagnostics underneath.
  * M2 replaces it with CodeMirror 6 (highlighting, completion, bracket matching, squiggles).
@@ -17,6 +26,29 @@ export function LatexEditor({ diagnostics }: { diagnostics: Diagnostic[] }) {
   useEffect(() => {
     if (source !== "latex") setText(latex);
   }, [latex, source]);
+
+  useEffect(() => {
+    inserter = (snippet) => {
+      const el = area.current;
+      if (!el) return;
+      const start = el.selectionStart ?? el.value.length;
+      const end = el.selectionEnd ?? start;
+      const before = el.value.slice(0, start);
+      // Keep commands separate from following letters: "\\alpha x", not "\\alphax".
+      const pad = /\\[A-Za-z]+$/.test(before) && /^[A-Za-z]/.test(snippet) ? " " : "";
+      const next = before + pad + snippet + el.value.slice(end);
+      setText(next);
+      setLatex(next, "latex");
+      const caret = start + pad.length + snippet.length;
+      requestAnimationFrame(() => {
+        el.focus();
+        el.setSelectionRange(caret, caret);
+      });
+    };
+    return () => {
+      inserter = null;
+    };
+  }, [setLatex]);
 
   const jumpTo = (d: Diagnostic) => {
     const el = area.current;
