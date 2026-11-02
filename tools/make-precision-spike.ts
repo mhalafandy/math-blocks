@@ -22,7 +22,16 @@ const FONT_PT = 11; // body text size: equations match the surrounding text
 const PNG_SCALE = 4; // PNG fallback resolution multiplier
 
 const require = createRequire(import.meta.url);
-const { chromium } = require(join(execSync("npm root -g").toString().trim(), "playwright")) as typeof import("playwright");
+// Playwright is pre-installed globally in the dev container (not a project dependency).
+interface Page {
+  setContent(html: string): Promise<void>;
+  locator(selector: string): { first(): { screenshot(o: { omitBackground: boolean }): Promise<Uint8Array> } };
+}
+interface Browser {
+  newPage(o: { deviceScaleFactor: number }): Promise<Page>;
+  close(): Promise<void>;
+}
+const { chromium } = require(join(execSync("npm root -g").toString().trim(), "playwright")) as { chromium: { launch(): Promise<Browser> } };
 
 interface Rendered {
   svg: string;
