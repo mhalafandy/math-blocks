@@ -135,3 +135,40 @@ protocol, exporters and the future MathType migration / closed-document processo
 pnpm workspaces; TypeScript strict (`noUncheckedIndexedAccess`); packages are consumed as source
 (`exports` → `src/index.ts`), so no build step is needed between packages; Vitest for tests;
 `fast-xml-parser` (dev only) validates generated XML; `fflate` zips `.docx` files.
+
+---
+
+## D-011 — Word connector as a plain COM add-in instead of a VSTO project (refines D-002)
+
+**Status:** Accepted (M1)
+
+**Context.** D-002 chose a native Word add-in using Word's COM object model, planned as a VSTO
+project. VSTO projects can only be created and built in Visual Studio with the Office workload,
+need the VSTO runtime and ClickOnce certificates, and cannot be compiled in CI or on Linux.
+
+**Decision.** The connector is an SDK-style .NET Framework 4.8 class library implementing
+`IDTExtensibility2` and `IRibbonExtensibility` (a "shared" COM add-in). Word interop types are
+embedded (NoPIA), so the only file shipped is `MathBlocks.WordConnector.dll`. Registration is
+per user (no admin) by `connector-word/install/install.ps1`, in both registry views (32/64-bit Office).
+
+**Consequences.**
+- Same capabilities as VSTO: full object model, events, ribbon, `UndoRecord`, `InsertXML`.
+- Builds with `dotnet build` anywhere; CI produces ready-to-install artifacts.
+- No VSTO safety net (AppDomain isolation): every callback is wrapped in try/catch and logged to
+  `%LOCALAPPDATA%\MathBlocks\connector.log`.
+- The user does not need Visual Studio's Office workload.
+
+---
+
+## D-012 — The app hosts the named pipe; JSON lines; one connection at a time
+
+**Status:** Accepted (M1)
+
+**Decision.** The Tauri shell creates `\\.\pipe\mathblocks-v1-<user>` (`first_pipe_instance`, so
+a second app instance cannot hijack it). The connector connects as a client and retries every 2 s,
+so start order does not matter. Messages are JSON-RPC 2.0, one per line, in both directions. The
+Rust side only forwards lines; all protocol logic is in TypeScript (`app/src/lib/connector.ts`) and
+C# (`connector-word/src/Connect.cs`), typed by `packages/connector-protocol`.
+
+**Consequences.** One Word process connected at a time (sufficient for now). Pipe access is limited
+to the current user by the default pipe security.

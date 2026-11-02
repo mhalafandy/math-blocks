@@ -22,7 +22,7 @@ editable Word equations.
 ```
 Tauri desktop app (React UI + TypeScript core + thin Rust shell with SQLite)
         │  JSON-RPC over a Windows named pipe
-Word Connector (VSTO add-in, C#): ribbon, events, native Word operations
+Word Connector (COM add-in, C#): ribbon, events, native Word operations
 ```
 
 Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Decisions: [docs/DECISIONS.md](docs/DECISIONS.md)
@@ -35,8 +35,9 @@ Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Decisions: [docs/DECISI
 | `packages/math-latex` | LaTeX parser (with diagnostics) and serializer |
 | `packages/math-omml` | AST → OMML (Word's native equation XML), Style Profiles |
 | `packages/ooxml` | Word packaging: content controls, Flat OPC for `InsertXML`, `.docx` builder, IDs |
+| `packages/connector-protocol` | Typed JSON-RPC protocol between the app and the Word connector |
 | `app/` | Tauri desktop application (React + TypeScript) |
-| `connector-word/` | Word add-in (VSTO, C#) |
+| `connector-word/` | Word connector (COM add-in, C#) |
 | `fixtures/` | Reference equations, spike documents |
 | `tools/` | Developer scripts |
 | `docs/` | Project documentation |

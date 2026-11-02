@@ -28,4 +28,19 @@ Files: `fixtures/spike/m1-A … m1-E *.docx` (download from GitHub: open the fil
 
 ## Part B — Desktop app and Word connector
 
-Added later in M1 (instructions will appear here when the connector skeleton lands).
+Setup: download the CI artifact and install both parts, see [DEVELOPMENT.md §0](DEVELOPMENT.md).
+
+| # | Test | How | Result |
+|---|---|---|---|
+| B1 | Connector loads | Start Word: a **MathBlocks** ribbon tab appears | |
+| B2 | Self-test without the app | MathBlocks tab → **Insert test equation**: the quadratic formula appears as a native equation | |
+| B3 | Display/inline behaviour | Run B2 once in an empty paragraph and once in the middle of a sentence. Describe what happens (extra empty paragraph? equation inline?) | |
+| B4 | Undo | After B2, press Ctrl+Z once: the whole insertion disappears in **one** step; the Undo list shows "Insert test equation" | |
+| B5 | App starts | Install and start MathBlocks: the window opens, the status bar shows "Word not connected" or "Word connected" | |
+| B6 | Connection | With Word open, within ~2 s the app's status bar shows **Word connected (Word 16.0.xxxx)** | |
+| B7 | Send to Word | Pick "Rotation matrix" in the app, press **Send to Word** (or Ctrl+Enter): it appears at Word's cursor | |
+| B8 | Start order | Close the app, keep Word open, restart the app: it reconnects by itself | |
+| B9 | Double-click | Double-click an equation inserted by the app: the app shows a notice "An equation was activated in Word" | |
+| B10 | Edits in the app | Try Visual / Both / LaTeX layouts, Ctrl+K palette, structure buttons, dark/light theme, panel resizing. Anything confusing or broken? | |
+
+If something fails, attach `%LOCALAPPDATA%\MathBlocks\connector.log`.

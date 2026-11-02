@@ -1,13 +1,28 @@
 # Development guide
 
-## 1. Install (Windows 10/11)
+## 0. Just testing? You do not need to build anything
+
+Every push to `main` is built by GitHub Actions. Open the repository → **Actions** → latest
+**CI** run → **Artifacts** → download `MathBlocks-windows-…`. It contains:
+
+- `MathBlocks_0.1.0_x64-setup.exe`: desktop app installer (per user, no admin)
+- `connector/`: `MathBlocks.WordConnector.dll` + `install.ps1` / `uninstall.ps1`
+
+Install the connector (close Word first), from the extracted `connector` folder:
+
+```bash
+powershell -ExecutionPolicy Bypass -File install.ps1
+```
+
+## 1. Install the development tools (Windows 10/11), only needed to build yourself
 
 | Tool | Why | How |
 |---|---|---|
 | Git for Windows | source control | https://git-scm.com |
 | Node.js 22 LTS | TypeScript core and UI | https://nodejs.org, then run `corepack enable` once (activates pnpm) |
 | Rust (rustup, MSVC toolchain) | Tauri desktop shell | https://rustup.rs, accept defaults |
-| Visual Studio 2022 Community | C++ build tools for Rust; builds the Word add-in | Workloads: **Desktop development with C++** and **Office/SharePoint development** |
+| Visual Studio 2022 Community (or Build Tools) | C++ linker for Rust | Workload: **Desktop development with C++** |
+| .NET 8 SDK | builds the Word connector | https://dotnet.microsoft.com/download (the Office workload is *not* needed, see D-011) |
 | WebView2 Runtime | app display engine | built into Windows 11; Windows 10: download "Evergreen Bootstrapper" from Microsoft |
 | Word 2016 or newer | testing | — |
 | Optional: VS Code | editing | https://code.visualstudio.com |
@@ -38,6 +53,7 @@ pnpm install
 | `pnpm dev` | UI in the browser at http://localhost:1420 (fast iteration, no desktop shell) |
 | `pnpm app:dev` | desktop app with hot reload (Windows, needs Rust) |
 | `pnpm app:build` | installer in `app/src-tauri/target/release/bundle/` |
+| `dotnet build -c Release connector-word/src` | Word connector DLL |
 
 ## 4. Conventions
 

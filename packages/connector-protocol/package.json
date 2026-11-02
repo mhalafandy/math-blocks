@@ -1,0 +1,8 @@
+{
+  "name": "@mathblocks/connector-protocol",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Versioned JSON-RPC protocol between the MathBlocks app and document connectors (Word).",
+  "exports": { ".": "./src/index.ts" }
+}

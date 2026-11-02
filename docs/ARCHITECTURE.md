@@ -13,7 +13,7 @@
 └──────────────────────────────┬─────────────────────────────────────┘
                JSON-RPC over a Windows named pipe (versioned)
 ┌──────────────────────────────┴─────────────────────────────────────┐
-│ Word Connector (VSTO, C#): ribbon · Word events · COM document ops │
+│ Word Connector (COM add-in, C#): ribbon · events · document ops    │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -39,10 +39,10 @@ Why this shape: [DECISIONS.md](DECISIONS.md) D-002, D-003.
 | 4 | Equation library | `library` + Rust DB layer | M4 |
 | 5 | Reusable component manager | `components` | M7 |
 | 6 | Linked block synchronisation | `sync` | M6 |
-| 7 | Word integration | `connector-word` (C#) + `connector-protocol` | **M1 skeleton** |
+| 7 | Word integration | `connector-word` (C# COM add-in, D-011) + `connector-protocol` | **M1 skeleton ✔** |
 | 8 | Document management | `documents` (registry, journal) + `ooxml` | **M1 ✔ (packaging)** |
 | 9 | Symbol search | `symbols` | M7 |
-| 10 | UI/UX | `app`, `ui` | **M1 shell** |
+| 10 | UI/UX | `app`, `ui` | **M1 shell ✔** |
 | 11 | Local database | `app/src-tauri` (SQLite, migrations) | M4 |
 | 12 | Export & conversion | `math-omml` (✔), `export` | M1 / M10 |
 

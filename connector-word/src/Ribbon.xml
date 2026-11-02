@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<customUI xmlns="http://schemas.microsoft.com/office/2006/01/customui">
+  <ribbon>
+    <tabs>
+      <tab id="MathBlocksTab" label="MathBlocks">
+        <group id="MathBlocksMain" label="Equations">
+          <button id="mbOpenApp" label="Open MathBlocks" size="large" imageMso="EquationInsertGallery"
+                  screentip="Open the MathBlocks editor" onAction="OnOpenApp" />
+          <button id="mbSample" label="Insert test equation" imageMso="EquationProfessional"
+                  screentip="Insert a sample equation without the app (connector self-test)" onAction="OnInsertSample" />
+          <button id="mbStatus" label="Connection status" imageMso="Info"
+                  screentip="Show whether Word is connected to the MathBlocks app" onAction="OnStatus" />
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>

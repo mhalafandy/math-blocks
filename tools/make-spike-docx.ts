@@ -6,6 +6,8 @@
  *  2. how each Style Profile / math font looks (visual comparison);
  *  3. content-control tags survive save, close and reopen, and what copy-paste does to them.
  *
+ * Also writes connector-word/src/SampleEquation.xml (the connector's self-test equation).
+ *
  * Run: pnpm spike:docx
  */
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -16,6 +18,7 @@ import { toOmml, TUNED_PROFILE, WORD_DEFAULT_PROFILE, withFont, escapeXml, type 
 import {
   buildDocx,
   contentControl,
+  flatOpc,
   formatTag,
   heading,
   newBlockId,
@@ -132,6 +135,16 @@ function build(v: Variant): Uint8Array {
 }
 
 mkdirSync(OUT, { recursive: true });
+
+// Sample equation embedded in the Word connector ("Insert test equation" ribbon button),
+// so the connector can be tested without the desktop app.
+const sample = parseLatex("x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}").root;
+const sampleXml = flatOpc([
+  paragraph(contentControl(toOmml(sample, { display: true, profile: TUNED_PROFILE }), { tag: "mb1|-|SampleTest01", title: "MathBlocks test equation" })),
+]);
+writeFileSync(join(OUT, "..", "..", "connector-word", "src", "SampleEquation.xml"), sampleXml);
+console.log("wrote connector-word/src/SampleEquation.xml");
+
 for (const v of VARIANTS) {
   writeFileSync(join(OUT, v.file), build(v));
   console.log(`wrote fixtures/spike/${v.file}`);
