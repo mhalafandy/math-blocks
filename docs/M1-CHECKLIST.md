@@ -6,7 +6,9 @@ These tests answer the open `[M1]` questions from the feasibility report. Please
 Word version used: `File → Account → About Word` → ____________
 
 **Results so far (user's PC):** Windows 11 (22621), Office 2021 Volume (Click-to-Run, 64-bit), Word 16.0.16501.20196.
-B1 ✅ (after fixing the CodeBase bug for user names with spaces) · B2 ✅ · B3–B10 ✅ · A6: **Latin Modern Math** preferred (D-013)
+B1 ✅ (after fixing the CodeBase bug for user names with spaces) · B2 ✅ · B3–B10 ✅ · A6: **Latin Modern Math** preferred (D-013), but **no native style looks professional enough** → precision-mode comparison `m1-P-precision-vs-native.docx` (D-015, proposed)
+· A9 ❌ Word does not enforce the content-control lock around equations → linked blocks must rely on hash-based change detection (already the design), never on locks
+· A14 ✅ as expected: `.doc` drops wrappers and turns equations into pictures → connector must warn before saving as `.doc` (M5)
 
 ## Part A — Spike documents (no add-in needed)
 

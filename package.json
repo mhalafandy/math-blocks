@@ -15,13 +15,16 @@
     "spike:docx": "tsx tools/make-spike-docx.ts",
     "dev": "pnpm --filter @mathblocks/app dev",
     "app:dev": "pnpm --filter @mathblocks/app tauri dev",
-    "app:build": "pnpm --filter @mathblocks/app tauri build"
+    "app:build": "pnpm --filter @mathblocks/app tauri build",
+    "spike:precision": "tsx tools/make-precision-spike.ts"
   },
   "devDependencies": {
     "@mathblocks/math-core": "workspace:*",
     "@mathblocks/math-latex": "workspace:*",
     "@mathblocks/math-omml": "workspace:*",
     "@mathblocks/ooxml": "workspace:*",
+    "@mathjax/mathjax-newcm-font": "4.1.3",
+    "@mathjax/src": "4.1.3",
     "@types/node": "^22.10.0",
     "fast-xml-parser": "^5.2.0",
     "tsx": "^4.19.0",
