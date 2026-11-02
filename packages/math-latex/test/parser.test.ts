@@ -173,6 +173,11 @@ describe("parseLatex — diagnostics", () => {
     expect(diagnostics[0]).toMatchObject({ severity: "error", message: "Missing closing brace '}'" });
   });
 
+  it("reports each problem once", () => {
+    expect(parse("\\frac{a}{b").diagnostics).toHaveLength(1);
+    expect(parse("{{x").diagnostics).toHaveLength(2);
+  });
+
   it("keeps unknown commands as raw nodes", () => {
     const { root, diagnostics } = parse("\\foo x");
     expect(root.children[0]).toMatchObject({ kind: "raw", latex: "\\foo" });
