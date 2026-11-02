@@ -124,10 +124,8 @@ class Parser {
     const items: MathNode[] = [];
     for (;;) {
       const t = this.peek();
-      if (t.type === "eof") {
-        if (ctx.inGroup) this.error("Missing closing brace '}'", t);
-        break;
-      }
+      // At end of input inside a group, the caller's expect("rbrace") reports the missing brace.
+      if (t.type === "eof") break;
       if (t.type === "rbrace") {
         if (ctx.inGroup) break;
         this.error("Unmatched closing brace '}'", t);
