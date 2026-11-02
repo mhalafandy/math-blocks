@@ -72,4 +72,6 @@ foreach ($view in 'Registry64', 'Registry32') {
 
 Write-Host "MathBlocks Word connector installed:" -ForegroundColor Green
 Write-Host "  $dll"
+# Word stops loading an add-in after a load error (LoadBehavior becomes 2). Reinstalling resets it.
 Write-Host "Start Word: a 'MathBlocks' tab should appear on the ribbon."
+Write-Host "If it does not, run diagnose.ps1 in this folder and send the report."
