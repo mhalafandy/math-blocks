@@ -3,7 +3,7 @@
   Installs the MathBlocks Word connector for the current user (no administrator rights needed).
 
 .DESCRIPTION
-  Copies the connector DLL to %LOCALAPPDATA%\MathBlocks\Connector and registers it as a COM
+  Copies the connector DLL to %LOCALAPPDATA%\MathBlocksWordAddin and registers it as a COM
   add-in for Word, in both the 64-bit and 32-bit registry views (works for 32- and 64-bit Office).
   Close Word before running. Run:
       powershell -ExecutionPolicy Bypass -File install.ps1
@@ -29,7 +29,7 @@ if (Get-Process WINWORD -ErrorAction SilentlyContinue) {
     exit 1
 }
 
-$target = Join-Path $env:LOCALAPPDATA 'MathBlocks\Connector'
+$target = Join-Path $env:LOCALAPPDATA 'MathBlocksWordAddin'
 New-Item -ItemType Directory -Force -Path $target | Out-Null
 Copy-Item (Resolve-Path $DllPath).Path $target -Force
 $pdb = [IO.Path]::ChangeExtension((Resolve-Path $DllPath).Path, '.pdb')

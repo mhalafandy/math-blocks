@@ -1,7 +1,7 @@
 //! Keeps the Word connector (COM add-in) installed and up to date, so users never run
 //! install.ps1 by hand. The connector DLL ships inside the app as a resource; on start-up
 //! (and every 30 s while an update is pending) it is copied to
-//! %LOCALAPPDATA%\MathBlocks\Connector and registered for the current user, exactly as
+//! %LOCALAPPDATA%\MathBlocksWordAddin and registered for the current user, exactly as
 //! connector-word/install/install.ps1 does (both registry views, no admin rights).
 //!
 //! Word keeps the DLL locked while it runs, so an update can only be applied when Word is
@@ -47,7 +47,9 @@ mod imp {
     const DLL: &str = "MathBlocks.WordConnector.dll";
 
     fn target_dir() -> Option<PathBuf> {
-        std::env::var_os("LOCALAPPDATA").map(|d| PathBuf::from(d).join("MathBlocks").join("Connector"))
+        // Deliberately NOT under the app's own install folder (%LOCALAPPDATA%\MathBlocks): Word keeps
+        // the loaded DLL locked, and the app installer must never have to overwrite a locked file.
+        std::env::var_os("LOCALAPPDATA").map(|d| PathBuf::from(d).join("MathBlocksWordAddin"))
     }
 
     fn register(dll: &Path, enable: bool) -> std::io::Result<()> {

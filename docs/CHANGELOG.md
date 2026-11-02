@@ -34,6 +34,7 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
   meaning search; all items available in the command palette.
 
 ### Fixed
+- Installer could not update while Word was open: the Word add-in now lives in its own folder (`%LOCALAPPDATA%\MathBlocksWordAddin`).
 - Equation wrapper no longer draws a second box around Word's equation (D-013).
 - Structure buttons (vector, dot, hat…) now insert a typeable slot, and wrap the selection when there is one.
 - MathLive placeholders are parsed as empty slots instead of unknown commands.
