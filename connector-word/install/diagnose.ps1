@@ -30,7 +30,7 @@ $c2r = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Office\ClickToRun\Configuratio
 if ($c2r) { W "Click-to-Run: platform=$($c2r.Platform) version=$($c2r.VersionToReport) products=$($c2r.ProductReleaseIds)" } else { W "Click-to-Run: not found (MSI install?)" }
 
 W "`n--- Installed file ---"
-$dll = Join-Path $env:LOCALAPPDATA 'MathBlocks\Connector\MathBlocks.WordConnector.dll'
+$dll = Join-Path $env:LOCALAPPDATA 'MathBlocksWordAddin\MathBlocks.WordConnector.dll'
 W "DLL exists: $(Test-Path $dll)  $dll"
 if (Test-Path $dll) {
     W "Blocked (downloaded mark): $([bool](Get-Item $dll -Stream Zone.Identifier -ErrorAction SilentlyContinue))"

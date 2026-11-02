@@ -13,6 +13,6 @@ foreach ($view in 'Registry64', 'Registry32') {
     }
     $root.Close()
 }
-$target = Join-Path $env:LOCALAPPDATA 'MathBlocks\Connector'
+$target = Join-Path $env:LOCALAPPDATA 'MathBlocksWordAddin'
 if (Test-Path $target) { Remove-Item $target -Recurse -Force }
 Write-Host "MathBlocks Word connector removed." -ForegroundColor Green

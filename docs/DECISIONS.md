@@ -209,7 +209,8 @@ warning about missing fonts is tracked for M5.
   "Update to x: restart". Only installers signed with the private key are accepted (public key
   in `tauri.conf.json`).
 - The Word connector DLL ships inside the app. At start-up the Rust shell copies it to
-  `%LOCALAPPDATA%\MathBlocks\Connector` and registers it per user (same as `install.ps1`).
+  `%LOCALAPPDATA%\MathBlocksWordAddin` (deliberately outside the app's install folder, see
+  FEATURES "known bugs") and registers it per user (same as `install.ps1`).
   If Word holds the old DLL, the app retries every 30 s and shows "close Word to finish".
   `install.ps1` stays as a manual fallback.
 - The connector's AssemblyVersion stays fixed at 0.1.0.0 because the COM registration names it.
