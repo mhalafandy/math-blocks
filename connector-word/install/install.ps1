@@ -41,7 +41,10 @@ $clsid    = '{B18397FB-F3F1-4634-AC20-9DEA0673976A}'
 $progId   = 'MathBlocks.WordConnector'
 $class    = 'MathBlocks.WordConnector.Connect'
 $assembly = [System.Reflection.AssemblyName]::GetAssemblyName($dll).FullName
-$codeBase = ([Uri]$dll).AbsoluteUri
+# Same format RegAsm writes: plain path, NOT URL-escaped. ([Uri]::AbsoluteUri would turn spaces into
+# %20, which the .NET COM loader does not decode: activation then fails with 0x80070002 "file not
+# found" for user names containing spaces.)
+$codeBase = 'file:///' + $dll.Replace('\', '/')
 
 foreach ($view in 'Registry64', 'Registry32') {
     $root = [Microsoft.Win32.RegistryKey]::OpenBaseKey('CurrentUser', $view)
