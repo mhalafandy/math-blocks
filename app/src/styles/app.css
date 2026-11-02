@@ -20,6 +20,12 @@
   --font-mono: "Cascadia Code", Consolas, "SF Mono", ui-monospace, monospace;
   --font-math: "Latin Modern Math", "Cambria Math", "STIX Two Math", serif;
   --scroll-thumb: rgb(0 0 0 / 0.18);
+  --cm-command: #4338ca;
+  --cm-keyword: #b4235f;
+  --cm-env: #0f7b6c;
+  --cm-brace: #8a6d00;
+  --cm-operator: #c2410c;
+  --cm-number: #1d6fb8;
   color-scheme: light;
 }
 
@@ -40,6 +46,12 @@
     --bad: #ff6b63;
     --warn: #e7a74a;
     --scroll-thumb: rgb(255 255 255 / 0.16);
+    --cm-command: #a5a1ff;
+    --cm-keyword: #f472b6;
+    --cm-env: #5eead4;
+    --cm-brace: #e5c07b;
+    --cm-operator: #fb923c;
+    --cm-number: #7dd3fc;
     color-scheme: dark;
   }
 }
@@ -60,6 +72,12 @@
   --bad: #ff6b63;
   --warn: #e7a74a;
   --scroll-thumb: rgb(255 255 255 / 0.16);
+  --cm-command: #a5a1ff;
+  --cm-keyword: #f472b6;
+  --cm-env: #5eead4;
+  --cm-brace: #e5c07b;
+  --cm-operator: #fb923c;
+  --cm-number: #7dd3fc;
   color-scheme: dark;
 }
 
@@ -217,10 +235,8 @@ kbd {
 .scroll { overflow: auto; flex: 1; min-height: 0; }
 .pad { padding: 10px 14px; }
 .latex-editor { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.latex-editor textarea {
-  flex: 1; min-height: 40px; resize: none; border: none; outline: none; padding: 10px 14px;
-  background: transparent; font: 14px/1.6 var(--font-mono);
-}
+.cm-host { flex: 1; min-height: 0; overflow: hidden; }
+.cm-host .cm-editor { height: 100%; }
 .diagnostics { list-style: none; margin: 0; padding: 4px 8px; border-top: 1px solid var(--border); max-height: 84px; overflow: auto; flex: 0 0 auto; }
 .diagnostics li { font-size: 12px; }
 .diagnostics li button { padding: 1px 4px; text-align: left; }

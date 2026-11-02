@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { BottomPanel } from "./components/BottomPanel";
 import { CommandPalette } from "./components/CommandPalette";
+import { focusLatexEditor } from "./components/LatexEditor";
 import { focusVisualEditor, MathEditor } from "./components/MathEditor";
 import { Sidebar } from "./components/Sidebar";
 import { HSplitter, Splitter } from "./components/Splitter";
@@ -53,7 +54,7 @@ export function App() {
 
   const focusLatex = useCallback(() => {
     useApp.getState().setPrefs({ bottomOpen: true, bottomTab: "latex" });
-    requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>(".latex-editor textarea")?.focus());
+    requestAnimationFrame(() => focusLatexEditor());
   }, []);
 
   const commands = useMemo(() => buildCommands({ insertIntoWord, copyLatex, focusLatex }), [insertIntoWord, copyLatex, focusLatex]);

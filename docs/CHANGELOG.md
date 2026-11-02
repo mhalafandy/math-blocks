@@ -25,7 +25,9 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
-### Added (M2, in progress)
+### Added (M2)
+- LaTeX editor rebuilt on CodeMirror 6: syntax colours, auto-completion with templates, bracket
+  matching, error underlines from the MathBlocks parser, undo/redo.
 - New workspace layout (D-016): collapsible library (left), symbols (right) and LaTeX/details
   panel (bottom); focus mode; centred, zoomable, horizontally scrolling equation canvas; thin
   scrollbars; search results with names; previews with sample letters.
