@@ -43,7 +43,7 @@ interface AppState extends Prefs {
   notify: (text: string, kind?: "info" | "error") => void;
 }
 
-const PREFS_KEY = "mathblocks.prefs.v1";
+const PREFS_KEY = "mathblocks.prefs.v2";
 
 const DEFAULT_PREFS: Prefs = {
   theme: "system",
@@ -52,7 +52,7 @@ const DEFAULT_PREFS: Prefs = {
   rightWidth: 340,
   inspectorTab: "structure",
   profileBase: "tuned",
-  mathFont: "Cambria Math",
+  mathFont: "Latin Modern Math",
   vectorStyle: "arrow",
 };
 

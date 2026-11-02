@@ -6,7 +6,7 @@ These tests answer the open `[M1]` questions from the feasibility report. Please
 Word version used: `File → Account → About Word` → ____________
 
 **Results so far (user's PC):** Windows 11 (22621), Office 2021 Volume (Click-to-Run, 64-bit), Word 16.0.16501.20196.
-B1 ✅ (after fixing the CodeBase bug for user names with spaces) · B2 ✅
+B1 ✅ (after fixing the CodeBase bug for user names with spaces) · B2 ✅ · A6: **Latin Modern Math** preferred (D-013)
 
 ## Part A — Spike documents (no add-in needed)
 

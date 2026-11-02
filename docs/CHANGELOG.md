@@ -26,7 +26,11 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
 ### Fixed
+- Equation wrapper no longer draws a second box around Word's equation (D-013).
+- Structure buttons (vector, dot, hat…) now insert a typeable slot, and wrap the selection when there is one.
+- MathLive placeholders are parsed as empty slots instead of unknown commands.
 - Connector install on user profiles whose name contains a space (CodeBase must not be URL-escaped).
 
 ### Changed
+- Default math font: Latin Modern Math (D-013).
 - Word connector implemented as a plain COM add-in instead of VSTO (D-011).
