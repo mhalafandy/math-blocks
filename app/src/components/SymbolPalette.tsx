@@ -2,6 +2,7 @@ import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from "reac
 import { convertLatexToMarkup } from "mathlive/ssr";
 import { findItem, GROUPS, itemKey, plainLatex, previewLatex, searchPalette, type IndexedItem, type PaletteGroup } from "../lib/palette";
 import { useApp } from "../lib/store";
+import { lastEditor } from "../lib/focus";
 import { insertIntoLatex } from "./LatexEditor";
 import { insertIntoVisual } from "./MathEditor";
 
@@ -10,7 +11,9 @@ const MAX_RECENTS = 18;
 /** Inserts a palette item into whichever editor is active and records it as recent. */
 export function insertPaletteItem(x: IndexedItem) {
   const s = useApp.getState();
-  const ok = s.mode === "latex" ? insertIntoLatex(plainLatex(x.item.latex)) : insertIntoVisual(x.item.latex);
+  const ok =
+    (lastEditor() === "latex" && s.bottomOpen && s.bottomTab === "latex" && insertIntoLatex(plainLatex(x.item.latex))) ||
+    insertIntoVisual(x.item.latex);
   if (!ok) return;
   const recents = [x.key, ...s.recents.filter((k) => k !== x.key)].slice(0, MAX_RECENTS);
   s.setPrefs({ recents });
@@ -124,6 +127,36 @@ function SearchResults({ query }: { query: string }) {
   );
 }
 
+/** Search results as a list with names (used in the narrow right panel). */
+function ResultList({ query }: { query: string }) {
+  const results = useMemo(() => searchPalette(query, 80), [query]);
+  if (results.length === 0) return <p className="empty">No symbols match “{query}”.</p>;
+  return (
+    <ul className="result-list">
+      {results.map((x) => (
+        <li key={x.key}>
+          <button
+            type="button"
+            title={`${x.item.latex.replace(/#0|#\?/g, "□")}\nRight-click: pin to quick access`}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => insertPaletteItem(x)}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              toggleFavorite(x.key);
+            }}
+          >
+            <span className="preview">
+              {x.item.glyph ? <span className="glyph">{x.item.glyph}</span> : <span className="tex" dangerouslySetInnerHTML={{ __html: markup(x.item.latex) }} />}
+            </span>
+            <span className="name">{x.item.name}</span>
+            <span className="where">{x.group.label}</span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function LocationToggle() {
   const loc = useApp((s) => s.paletteLocation);
   const setPrefs = useApp((s) => s.setPrefs);
@@ -131,10 +164,10 @@ function LocationToggle() {
     <button
       type="button"
       className="pal-toggle"
-      title={loc === "top" ? "Move the symbol palette to the side panel" : "Move the symbol palette above the editor"}
-      onClick={() => setPrefs({ paletteLocation: loc === "top" ? "side" : "top" })}
+      title={loc === "top" ? "Move the symbols to the right-hand panel" : "Move the symbols above the editor (MathType style)"}
+      onClick={() => setPrefs({ paletteLocation: loc === "top" ? "right" : "top", rightOpen: true })}
     >
-      {loc === "top" ? "⇤ Side" : "⇡ Top"}
+      {loc === "top" ? "⇥ Right" : "⇡ Top"}
     </button>
   );
 }
@@ -227,48 +260,89 @@ export function PaletteTop() {
   );
 }
 
-// ------------------------------------------------------------------ side layout
+// ------------------------------------------------------------------ right panel layout
 
-function Section({ title, children, defaultOpen = false }: { title: string; children: ReactNode; defaultOpen?: boolean }) {
+function Section({ title, children, defaultOpen = false, count }: { title: string; children: ReactNode; defaultOpen?: boolean; count?: number }) {
   return (
     <details className="pal-section" open={defaultOpen}>
-      <summary>{title}</summary>
+      <summary>
+        {title}
+        {count !== undefined && <span className="count">{count}</span>}
+      </summary>
       {children}
     </details>
   );
 }
 
-export function PaletteSide() {
+export function SymbolPanel() {
   const [query, setQuery] = useState("");
   const favorites = useApp((s) => s.favorites);
   const recents = useApp((s) => s.recents);
+  const tab = useApp((s) => s.paletteTab);
+  const setPrefs = useApp((s) => s.setPrefs);
   const favItems = favorites.map(findItem).filter((x): x is IndexedItem => !!x);
   const recentItems = recents.map(findItem).filter((x): x is IndexedItem => !!x);
+  const collections = GROUPS.filter((g) => g.row === "tabs");
+  const collection = collections.find((g) => g.id === tab) ?? collections[0]!;
   return (
-    <div className="palette-side">
-      <div className="pal-side-head">
-        <SearchBox query={query} setQuery={setQuery} />
+    <aside className="symbol-panel" aria-label="Symbols">
+      <div className="panel-head">
+        <span className="panel-title">Symbols</span>
+        <div className="spacer" />
         <LocationToggle />
+        <button className="icon-btn" title="Hide symbols (Ctrl+Alt+B)" onClick={() => setPrefs({ rightOpen: false })}>
+          ⇥
+        </button>
       </div>
-      {query ? (
-        <SearchResults query={query} />
-      ) : (
-        <>
-          <Section title="Quick access" defaultOpen>
-            <Grid items={favItems} size="glyph" />
-          </Section>
-          {recentItems.length > 0 && (
-            <Section title="Recent" defaultOpen>
-              <Grid items={recentItems} size="small" />
+      <div className="panel-search">
+        <SearchBox query={query} setQuery={setQuery} />
+      </div>
+      <div className="panel-scroll">
+        {query ? (
+          <ResultList query={query} />
+        ) : (
+          <>
+            <Section title="Quick access" defaultOpen count={favItems.length}>
+              {favItems.length === 0 ? <p className="empty">Right-click any symbol to pin it here.</p> : <Grid items={favItems} size="glyph" />}
             </Section>
-          )}
-          {GROUPS.filter((g) => g.id !== "tab-matrices").map((g) => (
-            <Section key={g.id} title={g.label}>
-              <Grid items={groupItems(g)} size={g.kind === "symbols" ? "glyph" : "small"} />
-            </Section>
-          ))}
-        </>
-      )}
-    </div>
+            {recentItems.length > 0 && (
+              <Section title="Recent" defaultOpen>
+                <Grid items={recentItems} size="small" />
+              </Section>
+            )}
+            <details className="pal-section" open>
+              <summary>
+                Collection
+                <select
+                  className="collection-select"
+                  value={collection.id}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => setPrefs({ paletteTab: e.target.value })}
+                >
+                  {collections.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </summary>
+              <Grid items={groupItems(collection)} size="large" />
+            </details>
+            <div className="pal-divider">Symbols</div>
+            {GROUPS.filter((g) => g.row === "symbols").map((g) => (
+              <Section key={g.id} title={g.label} count={g.items.length}>
+                <Grid items={groupItems(g)} size="glyph" />
+              </Section>
+            ))}
+            <div className="pal-divider">Templates</div>
+            {GROUPS.filter((g) => g.row === "templates").map((g) => (
+              <Section key={g.id} title={g.label} count={g.items.length}>
+                <Grid items={groupItems(g)} size="small" />
+              </Section>
+            ))}
+          </>
+        )}
+      </div>
+    </aside>
   );
 }

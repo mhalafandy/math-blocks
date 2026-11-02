@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Diagnostic } from "@mathblocks/math-latex";
+import { setLastEditor } from "../lib/focus";
 import { useApp } from "../lib/store";
 
 let inserter: ((text: string) => void) | null = null;
@@ -64,6 +65,7 @@ export function LatexEditor({ diagnostics }: { diagnostics: Diagnostic[] }) {
         value={text}
         spellCheck={false}
         aria-label="LaTeX source"
+        onFocus={() => setLastEditor("latex")}
         onChange={(e) => {
           setText(e.target.value);
           setLatex(e.target.value, "latex");

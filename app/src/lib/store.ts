@@ -2,8 +2,8 @@ import { create } from "zustand";
 import { DEFAULT_FAVORITES } from "./palette";
 
 export type Theme = "system" | "light" | "dark";
-export type EditMode = "split" | "visual" | "latex";
-export type InspectorTab = "structure" | "omml" | "style";
+/** Tabs of the bottom panel under the equation canvas. */
+export type BottomTab = "latex" | "structure" | "style" | "omml";
 export type ProfileBase = "tuned" | "word-default";
 export type VectorStyle = "arrow" | "bold" | "bold-italic";
 
@@ -19,15 +19,20 @@ export interface ConnectorState {
 
 interface Prefs {
   theme: Theme;
-  mode: EditMode;
   leftWidth: number;
   rightWidth: number;
-  inspectorTab: InspectorTab;
+  leftOpen: boolean;
+  rightOpen: boolean;
+  bottomOpen: boolean;
+  bottomHeight: number;
+  bottomTab: BottomTab;
+  /** Equation canvas zoom factor (1 = 100%). */
+  zoom: number;
   profileBase: ProfileBase;
   mathFont: string;
   vectorStyle: VectorStyle;
   /** Where the symbol palette lives (user can switch). */
-  paletteLocation: "top" | "side";
+  paletteLocation: "right" | "top";
   /** Pinned palette items (keys from palette.ts). */
   favorites: string[];
   /** Recently inserted palette items, newest first. */
@@ -62,18 +67,22 @@ interface AppState extends Prefs {
   notify: (text: string, kind?: "info" | "error") => void;
 }
 
-const PREFS_KEY = "mathblocks.prefs.v2";
+const PREFS_KEY = "mathblocks.prefs.v3";
 
 const DEFAULT_PREFS: Prefs = {
   theme: "system",
-  mode: "split",
-  leftWidth: 260,
-  rightWidth: 340,
-  inspectorTab: "structure",
+  leftWidth: 250,
+  rightWidth: 360,
+  leftOpen: true,
+  rightOpen: true,
+  bottomOpen: true,
+  bottomHeight: 210,
+  bottomTab: "latex",
+  zoom: 1,
   profileBase: "tuned",
   mathFont: "Latin Modern Math",
   vectorStyle: "arrow",
-  paletteLocation: "top",
+  paletteLocation: "right",
   favorites: DEFAULT_FAVORITES,
   recents: [],
   paletteTab: "tab-spacecraft",
@@ -90,11 +99,8 @@ function loadPrefs(): Prefs {
 
 function savePrefs(s: Prefs) {
   try {
-    const p: Prefs = {
-      theme: s.theme, mode: s.mode, leftWidth: s.leftWidth, rightWidth: s.rightWidth,
-      inspectorTab: s.inspectorTab, profileBase: s.profileBase, mathFont: s.mathFont, vectorStyle: s.vectorStyle,
-      paletteLocation: s.paletteLocation, favorites: s.favorites, recents: s.recents, paletteTab: s.paletteTab,
-    };
+    const keys = Object.keys(DEFAULT_PREFS) as (keyof Prefs)[];
+    const p = Object.fromEntries(keys.map((k) => [k, s[k]])) as unknown as Prefs;
     localStorage.setItem(PREFS_KEY, JSON.stringify(p));
   } catch {
     // Storage unavailable: preferences simply do not persist.

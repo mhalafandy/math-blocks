@@ -1,32 +1,51 @@
 import type { MathNode, Row } from "@mathblocks/math-core";
 import { childRows } from "@mathblocks/math-core";
 import type { CompiledEquation } from "../lib/equation";
-import { useApp, type InspectorTab } from "../lib/store";
+import { useApp, type BottomTab } from "../lib/store";
+import { LatexEditor } from "./LatexEditor";
 
-const TABS: { id: InspectorTab; label: string }[] = [
+const TABS: { id: BottomTab; label: string }[] = [
+  { id: "latex", label: "LaTeX" },
   { id: "structure", label: "Structure" },
   { id: "style", label: "Word style" },
   { id: "omml", label: "OMML" },
 ];
 
-export function Inspector({ eq }: { eq: CompiledEquation }) {
-  const tab = useApp((s) => s.inspectorTab);
+/** Collapsible panel under the equation canvas (like VS Code's panel): source and details. */
+export function BottomPanel({ eq }: { eq: CompiledEquation }) {
+  const tab = useApp((s) => s.bottomTab);
+  const open = useApp((s) => s.bottomOpen);
   const setPrefs = useApp((s) => s.setPrefs);
+  const problems = eq.diagnostics.length;
   return (
-    <aside className="inspector" aria-label="Inspector">
-      <div className="tabs" role="tablist">
+    <section className={open ? "bottom-panel" : "bottom-panel collapsed"} aria-label="LaTeX and details">
+      <div className="panel-tabs" role="tablist">
         {TABS.map((t) => (
-          <button key={t.id} role="tab" aria-selected={tab === t.id} className={tab === t.id ? "tab active" : "tab"} onClick={() => setPrefs({ inspectorTab: t.id })}>
+          <button
+            key={t.id}
+            role="tab"
+            aria-selected={open && tab === t.id}
+            className={open && tab === t.id ? "tab active" : "tab"}
+            onClick={() => setPrefs(open && tab === t.id ? { bottomOpen: false } : { bottomTab: t.id, bottomOpen: true })}
+          >
             {t.label}
+            {t.id === "latex" && problems > 0 && <span className={eq.errors ? "badge bad" : "badge warn"}>{problems}</span>}
           </button>
         ))}
+        <div className="spacer" />
+        <button className="icon-btn" title={open ? "Hide panel (Ctrl+J)" : "Show panel (Ctrl+J)"} onClick={() => setPrefs({ bottomOpen: !open })}>
+          {open ? "▾" : "▴"}
+        </button>
       </div>
-      <div className="tab-body">
-        {tab === "structure" && <StructureTree root={eq.root} />}
-        {tab === "style" && <StylePanel />}
-        {tab === "omml" && <pre className="code">{eq.omml}</pre>}
-      </div>
-    </aside>
+      {open && (
+        <div className="panel-body">
+          {tab === "latex" && <LatexEditor diagnostics={eq.diagnostics} />}
+          {tab === "structure" && <div className="scroll pad"><StructureTree root={eq.root} /></div>}
+          {tab === "style" && <div className="scroll pad"><StylePanel /></div>}
+          {tab === "omml" && <pre className="code scroll pad">{eq.omml}</pre>}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -101,7 +120,7 @@ function StylePanel() {
   const vectorStyle = useApp((s) => s.vectorStyle);
   const setPrefs = useApp((s) => s.setPrefs);
   return (
-    <div className="form">
+    <div className="form narrow">
       <p className="hint">How equations look when inserted into Word as native equations.</p>
       <label>
         Spacing
