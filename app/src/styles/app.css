@@ -308,3 +308,9 @@ kbd {
 .pal-row.quick .pal-item.small { height: 32px; min-width: 40px; }
 .pal-row.quick .pal-item.small .tex { font-size: 12px; }
 .pal-tabs .pal-toggle { border-radius: 6px; }
+.update-pill {
+  background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent);
+  border-radius: 999px; padding: 3px 12px; font-weight: 600; font-size: 12px;
+}
+.update-pill.busy { opacity: 0.8; }
+.warn { color: var(--warn); }

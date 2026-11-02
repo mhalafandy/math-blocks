@@ -1,5 +1,6 @@
 import { insertPaletteItem } from "../components/SymbolPalette";
 import { ALL_ITEMS } from "./palette";
+import { checkForUpdate } from "./updates";
 import { useApp } from "./store";
 
 export interface Command {
@@ -29,6 +30,7 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       keywords: "symbols toolbar dock",
       run: () => app.setPrefs({ paletteLocation: useApp.getState().paletteLocation === "top" ? "side" : "top" }),
     },
+    { id: "app.update", title: "Check for updates", group: "View", keywords: "upgrade new version", run: () => checkForUpdate(true) },
     { id: "word.insert", title: "Send to Word", group: "Word", shortcut: "Ctrl+Enter", keywords: "insert export", run: actions.insertIntoWord },
     { id: "edit.copyLatex", title: "Copy LaTeX", group: "Edit", run: actions.copyLatex },
     { id: "edit.focusLatex", title: "Switch to LaTeX editor", group: "Edit", shortcut: "Ctrl+L", keywords: "latex mode source", run: actions.focusLatex },

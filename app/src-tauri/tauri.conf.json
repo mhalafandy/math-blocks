@@ -43,7 +43,22 @@
       "nsis": {
         "installMode": "currentUser"
       }
-    }
+    },
+    "resources": {
+      "../../connector-word/src/bin/Release/net48/MathBlocks.WordConnector.dll": "connector/MathBlocks.WordConnector.dll"
+    },
+    "createUpdaterArtifacts": false
   },
-  "mainBinaryName": "MathBlocks"
+  "mainBinaryName": "MathBlocks",
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEIyNUM5QzI0NTA2NjFENDMKUldSREhXWlFKSnhjc3RHN0FEU29hU3BKMFhydFVPRDljTy8vdm1YdGlTbXlyVVdUL21HYmcvSEEK",
+      "endpoints": [
+        "https://github.com/mhalafandy/math-blocks/releases/download/dev-build/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
 }
