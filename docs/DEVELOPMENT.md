@@ -2,17 +2,28 @@
 
 ## 0. Just testing? You do not need to build anything
 
-Every push to `main` is built by GitHub Actions. Open the repository → **Actions** → latest
-**CI** run → **Artifacts** → download `MathBlocks-windows-…`. It contains:
+Every update to `main` is built automatically and published as the **Latest test build** release:
 
-- `MathBlocks_0.1.0_x64-setup.exe`: desktop app installer (per user, no admin)
-- `connector/`: `MathBlocks.WordConnector.dll` + `install.ps1` / `uninstall.ps1`
+**https://github.com/mhalafandy/math-blocks/releases/tag/dev-build**
 
-Install the connector (close Word first), from the extracted `connector` folder:
+(On the repository's main page it is also under **Releases** in the right-hand column.)
+Download from the **Assets** list:
+
+| File | What it is |
+|---|---|
+| `MathBlocks_0.1.0_x64-setup.exe` | desktop app installer (for your user only, no admin needed) |
+| `MathBlocks-Word-connector.zip` | Word add-in: `MathBlocks.WordConnector.dll` + `install.ps1` / `uninstall.ps1` |
+| `MathBlocks-M1-test-documents.zip` | the five Word test documents for checklist part A |
+
+Install the Word add-in: close Word, unzip `MathBlocks-Word-connector.zip`, then in that folder
+click the address bar, type `powershell` and press Enter, and run:
 
 ```bash
 powershell -ExecutionPolicy Bypass -File install.ps1
 ```
+
+Windows may warn that the installer is from an unknown publisher (it is not code-signed yet):
+choose **More info → Run anyway**.
 
 ## 1. Install the development tools (Windows 10/11), only needed to build yourself
 

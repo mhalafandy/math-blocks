@@ -7,7 +7,7 @@ Word version used: `File → Account → About Word` → ____________
 
 ## Part A — Spike documents (no add-in needed)
 
-Files: `fixtures/spike/m1-A … m1-E *.docx` (download from GitHub: open the file, then "Download raw file").
+Files: `MathBlocks-M1-test-documents.zip` from the [Latest test build](https://github.com/mhalafandy/math-blocks/releases/tag/dev-build) release.
 
 | # | Test | How | Result |
 |---|---|---|---|
@@ -28,7 +28,7 @@ Files: `fixtures/spike/m1-A … m1-E *.docx` (download from GitHub: open the fil
 
 ## Part B — Desktop app and Word connector
 
-Setup: download the CI artifact and install both parts, see [DEVELOPMENT.md §0](DEVELOPMENT.md).
+Setup: download from the [Latest test build](https://github.com/mhalafandy/math-blocks/releases/tag/dev-build) release and install both parts, see [DEVELOPMENT.md §0](DEVELOPMENT.md).
 
 | # | Test | How | Result |
 |---|---|---|---|
