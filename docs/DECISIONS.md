@@ -194,3 +194,26 @@ comparison (checklist A6) the user preferred Latin Modern Math.
 **Consequences.** Latin Modern Math must be installed on every PC that opens the document;
 otherwise Word substitutes Cambria Math (layout stays correct, glyphs differ). Embedding or
 warning about missing fonts is tracked for M5.
+
+---
+
+## D-014 — Self-updating app that also installs and updates the Word add-in
+
+**Status:** Accepted (user request)
+
+**Decision.**
+- The app uses the Tauri updater. CI gives every `main` build the version `0.1.<run number>`,
+  signs the NSIS installer with the project's updater key (GitHub secret
+  `TAURI_SIGNING_PRIVATE_KEY`) and publishes `latest.json` in the "Latest test build" release.
+  The app checks at start-up and every 2 hours, downloads in the background and offers
+  "Update to x: restart". Only installers signed with the private key are accepted (public key
+  in `tauri.conf.json`).
+- The Word connector DLL ships inside the app. At start-up the Rust shell copies it to
+  `%LOCALAPPDATA%\MathBlocks\Connector` and registers it per user (same as `install.ps1`).
+  If Word holds the old DLL, the app retries every 30 s and shows "close Word to finish".
+  `install.ps1` stays as a manual fallback.
+- The connector's AssemblyVersion stays fixed at 0.1.0.0 because the COM registration names it.
+
+**Consequences.** One last manual install is needed to get the first self-updating version.
+If the private key is lost, a new key pair means one more manual install. Builds without the
+secret still work but publish no update files.

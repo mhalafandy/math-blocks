@@ -49,8 +49,26 @@ jobs:
       - name: Build Word connector
         run: dotnet build connector-word/src -c Release
 
+      - name: Set build version and updater signing
+        shell: pwsh
+        env:
+          HAS_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY != '' }}
+        run: |
+          # Every build gets a higher version (0.1.<run number>) so installed apps see it as an update.
+          $version = "0.1.${{ github.run_number }}"
+          $conf = Get-Content app/src-tauri/tauri.conf.json -Raw | ConvertFrom-Json
+          $conf.version = $version
+          $conf.bundle.createUpdaterArtifacts = ($env:HAS_KEY -eq 'true')
+          $conf | ConvertTo-Json -Depth 20 | Set-Content app/src-tauri/tauri.conf.json -Encoding utf8
+          "APP_VERSION=$version" | Out-File $env:GITHUB_ENV -Append
+          "SIGNED=$env:HAS_KEY" | Out-File $env:GITHUB_ENV -Append
+          if ($env:HAS_KEY -ne 'true') { Write-Warning "TAURI_SIGNING_PRIVATE_KEY secret not set: building without auto-update files." }
+
       - name: Build desktop app installer
         working-directory: app
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: pnpm tauri build
 
       - name: Collect artifacts
@@ -66,6 +84,22 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force dl | Out-Null
           Copy-Item out/*.exe dl/
+          if ($env:SIGNED -eq 'true') {
+            $exe = Get-ChildItem app/src-tauri/target/release/bundle/nsis/*-setup.exe | Select-Object -First 1
+            Copy-Item "$($exe.FullName).sig" dl/
+            $manifest = [ordered]@{
+              version  = $env:APP_VERSION
+              notes    = "Build of commit ${{ github.sha }}"
+              pub_date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+              platforms = @{
+                "windows-x86_64" = @{
+                  signature = (Get-Content "$($exe.FullName).sig" -Raw).Trim()
+                  url       = "https://github.com/${{ github.repository }}/releases/download/dev-build/$($exe.Name)"
+                }
+              }
+            }
+            $manifest | ConvertTo-Json -Depth 5 | Set-Content dl/latest.json -Encoding utf8
+          }
           Compress-Archive -Path out/connector/* -DestinationPath dl/MathBlocks-Word-connector.zip
           Compress-Archive -Path fixtures/spike/*.docx -DestinationPath dl/MathBlocks-M1-test-documents.zip
 
@@ -77,8 +111,8 @@ jobs:
         run: |
           gh release delete dev-build --cleanup-tag --yes || true
           gh release create dev-build dl/* --prerelease --target "$GITHUB_SHA" \
-            --title "Latest test build" \
-            --notes "Automatic build of commit ${GITHUB_SHA::7}. Install steps: docs/DEVELOPMENT.md section 0. Test steps: docs/M1-CHECKLIST.md."
+            --title "Latest test build ($APP_VERSION)" \
+            --notes "Automatic build $APP_VERSION of commit ${GITHUB_SHA::7}. Installed apps update themselves and keep the Word add-in installed. First install: docs/DEVELOPMENT.md section 0."
 
       - uses: actions/upload-artifact@v4
         with:

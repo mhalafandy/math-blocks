@@ -36,6 +36,14 @@ interface Prefs {
   paletteTab: string | null;
 }
 
+export interface UpdateState {
+  currentVersion?: string;
+  newVersion?: string;
+  status: "idle" | "downloading" | "ready" | "installing";
+  /** Word add-in installation state reported by the Rust shell. */
+  addin?: "unavailable" | "upToDate" | "installed" | "pendingWordClosed" | "failed";
+}
+
 interface AppState extends Prefs {
   latex: string;
   display: boolean;
@@ -43,6 +51,8 @@ interface AppState extends Prefs {
   paletteOpen: boolean;
   connector: ConnectorState;
   toast: { text: string; kind: "info" | "error" } | null;
+  update: UpdateState;
+  setUpdate: (u: Partial<UpdateState>) => void;
 
   setLatex: (latex: string, source: ChangeSource) => void;
   setDisplay: (display: boolean) => void;
@@ -101,6 +111,8 @@ export const useApp = create<AppState>((set, get) => ({
   paletteOpen: false,
   connector: { available: false, connected: false },
   toast: null,
+  update: { status: "idle" },
+  setUpdate: (u) => set({ update: { ...get().update, ...u } }),
 
   setLatex: (latex, source) => set({ latex, source }),
   setDisplay: (display) => set({ display }),

@@ -13,6 +13,8 @@
     <Nullable>disable</Nullable>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Version>0.1.0</Version>
+    <!-- Fixed: the COM registration names this exact version. Bump only together with app/src-tauri/src/connector_install.rs. -->
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
     <Company>MathBlocks</Company>
     <Product>MathBlocks Word Connector</Product>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>

@@ -10,6 +10,7 @@ import { buildCommands } from "./lib/commands";
 import { connector } from "./lib/connector";
 import { buildInsertion, useCompiledEquation, useProfile } from "./lib/equation";
 import { useApp } from "./lib/store";
+import { installAndRestart, startUpdates } from "./lib/updates";
 
 export function App() {
   const s = useApp();
@@ -24,6 +25,7 @@ export function App() {
 
   useEffect(() => {
     void connector.start();
+    void startUpdates();
   }, []);
 
   const insertIntoWord = useCallback(async () => {
@@ -104,6 +106,12 @@ export function App() {
         >
           {s.theme === "dark" ? "☾" : s.theme === "light" ? "☀" : "◐"}
         </button>
+        {s.update.status === "ready" && (
+          <button className="update-pill" onClick={() => void installAndRestart()} title="Install the downloaded update and restart MathBlocks">
+            Update to {s.update.newVersion}: restart
+          </button>
+        )}
+        {s.update.status === "installing" && <span className="update-pill busy">Installing update…</span>}
         <button className="primary" onClick={() => void insertIntoWord()} disabled={!s.connector.connected} title="Ctrl+Enter">
           Send to Word
         </button>
@@ -135,6 +143,9 @@ export function App() {
         <span>{s.display ? "Display" : "Inline"}</span>
         <span>{profile.mathFont}</span>
         <div className="spacer" />
+        {s.update.status === "downloading" && <span className="muted">Downloading update {s.update.newVersion}…</span>}
+        {s.update.addin === "pendingWordClosed" && <span className="warn">Word add-in update waiting: close Word to finish</span>}
+        {s.update.currentVersion && <span className="muted">v{s.update.currentVersion}</span>}
         <span className={s.connector.connected ? "good" : "muted"}>
           {s.connector.available ? (s.connector.connected ? `● Word connected${s.connector.hostVersion ? ` (${s.connector.hostVersion})` : ""}` : "○ Word not connected") : "○ Browser preview (no Word)"}
         </span>
