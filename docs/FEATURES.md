@@ -47,7 +47,7 @@ by meaning, numbering/references, MathType migration, precision mode, dependency
 
 | Bug | Status |
 |---|---|
-| 🐞 Installer error "Error opening file for writing …\MathBlocks\connector\MathBlocks.WordConnector.dll": the add-in was installed into the app's own folder (Windows paths ignore case), so Word locked a file the installer must replace | Fixed in 0.1.14: add-in lives in `%LOCALAPPDATA%\MathBlocksWordAddin` |
+| 🐞 Installer error "Error opening file for writing …\MathBlocks\connector\MathBlocks.WordConnector.dll": the add-in was installed into the app's own folder (Windows paths ignore case), so Word locked a file the installer must replace | Fixed in 0.1.14 (separate add-in folder) and 0.1.17 (DLL embedded in the app, no loose file for the installer to overwrite) |
 | 🐞 Equation wrapper box drawn around Word's equation frame | Fixed: wrapper hidden (D-013) |
 | 🐞 Vector / dot / hat buttons inserted an empty slot that could not be typed into | Fixed |
 | 🐞 Toolbar buttons did not wrap the selected expression (focus lost on click) | Fixed |

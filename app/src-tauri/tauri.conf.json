@@ -44,9 +44,6 @@
         "installMode": "currentUser"
       }
     },
-    "resources": {
-      "../../connector-word/src/bin/Release/net48/MathBlocks.WordConnector.dll": "connector/MathBlocks.WordConnector.dll"
-    },
     "createUpdaterArtifacts": false
   },
   "mainBinaryName": "MathBlocks",

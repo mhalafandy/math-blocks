@@ -37,6 +37,7 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
   meaning search; all items available in the command palette.
 
 ### Fixed
+- The Word add-in DLL is embedded in the app executable instead of shipped as a separate file, so installing an update never collides with Word or an antivirus scan holding the file.
 - Installer could not update while Word was open: the Word add-in now lives in its own folder (`%LOCALAPPDATA%\MathBlocksWordAddin`).
 - Equation wrapper no longer draws a second box around Word's equation (D-013).
 - Structure buttons (vector, dot, hat…) now insert a typeable slot, and wrap the selection when there is one.
