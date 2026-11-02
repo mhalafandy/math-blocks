@@ -1,5 +1,7 @@
 //! Keeps the Word connector (COM add-in) installed and up to date, so users never run
-//! install.ps1 by hand. The connector DLL ships inside the app as a resource; on start-up
+//! install.ps1 by hand. The connector DLL is embedded in the app executable (not shipped as a
+//! loose file, so the installer never has to overwrite a DLL that Word or an antivirus scan
+//! holds open); on start-up
 //! (and every 30 s while an update is pending) it is copied to
 //! %LOCALAPPDATA%\MathBlocksWordAddin and registered for the current user, exactly as
 //! connector-word/install/install.ps1 does (both registry views, no admin rights).
@@ -85,15 +87,17 @@ mod imp {
         Ok(())
     }
 
-    pub fn sync(bundled: &Path) -> ConnectorInstall {
+    /// The connector DLL, embedded at compile time (CI builds it before the app).
+    pub static EMBEDDED_DLL: &[u8] = include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../connector-word/src/bin/Release/net48/MathBlocks.WordConnector.dll"
+    ));
+
+    pub fn sync(new_bytes: &[u8]) -> ConnectorInstall {
         let Some(dir) = target_dir() else {
             return ConnectorInstall::Failed { message: "LOCALAPPDATA is not set".into() };
         };
         let dst = dir.join(DLL);
-        let new_bytes = match std::fs::read(bundled) {
-            Ok(b) => b,
-            Err(_) => return ConnectorInstall::Unavailable,
-        };
         let same = std::fs::read(&dst).map(|old| old == new_bytes).unwrap_or(false);
         if same {
             return match register(&dst, false) {
@@ -106,7 +110,7 @@ mod imp {
         }
         // Write to a temporary file, then swap it in; a locked DLL (Word running) fails the swap.
         let tmp = dir.join(format!("{DLL}.new"));
-        if let Err(e) = std::fs::write(&tmp, &new_bytes) {
+        if let Err(e) = std::fs::write(&tmp, new_bytes) {
             return ConnectorInstall::Failed { message: format!("write: {e}") };
         }
         if let Err(e) = std::fs::rename(&tmp, &dst) {
@@ -126,13 +130,10 @@ mod imp {
 
 #[cfg(windows)]
 pub fn start(app: tauri::AppHandle) {
-    use tauri::{path::BaseDirectory, Emitter, Manager};
+    use tauri::{Emitter, Manager};
     std::thread::spawn(move || {
-        let Ok(bundled) = app.path().resolve("connector/MathBlocks.WordConnector.dll", BaseDirectory::Resource) else {
-            return;
-        };
         loop {
-            let result = imp::sync(&bundled);
+            let result = imp::sync(imp::EMBEDDED_DLL);
             if let Ok(mut g) = app.state::<InstallState>().0.lock() {
                 *g = Some(result.clone());
             }

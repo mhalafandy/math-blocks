@@ -208,7 +208,8 @@ warning about missing fonts is tracked for M5.
   The app checks at start-up and every 2 hours, downloads in the background and offers
   "Update to x: restart". Only installers signed with the private key are accepted (public key
   in `tauri.conf.json`).
-- The Word connector DLL ships inside the app. At start-up the Rust shell copies it to
+- The Word connector DLL is embedded in the app executable (`include_bytes!`), not shipped as a
+  loose file, so the installer never overwrites a file that Word or Defender holds open. At start-up the Rust shell copies it to
   `%LOCALAPPDATA%\MathBlocksWordAddin` (deliberately outside the app's install folder, see
   FEATURES "known bugs") and registers it per user (same as `install.ps1`).
   If Word holds the old DLL, the app retries every 30 s and shows "close Word to finish".
