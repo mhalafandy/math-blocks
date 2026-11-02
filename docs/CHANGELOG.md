@@ -25,5 +25,8 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed
+- Connector install on user profiles whose name contains a space (CodeBase must not be URL-escaped).
+
 ### Changed
 - Word connector implemented as a plain COM add-in instead of VSTO (D-011).

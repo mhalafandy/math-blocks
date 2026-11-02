@@ -40,4 +40,6 @@ by meaning, numbering/references, MathType migration, precision mode, dependency
 
 ## Known bugs
 
-None recorded yet.
+| Bug | Status |
+|---|---|
+| 🐞 Connector failed to load (0x80070002) when the Windows user name contains a space: install.ps1 wrote a URL-escaped CodeBase (`%20`) | Fixed in install.ps1; reinstall |
