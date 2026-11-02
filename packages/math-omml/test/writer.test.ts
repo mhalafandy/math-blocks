@@ -87,6 +87,15 @@ describe("toOmml — structures", () => {
     expect(tuned).toContain('<m:cGpRule m:val="1"/>');
   });
 
+  it("matrix bracket padding adds an invisible zero-width strut inside the brackets", () => {
+    const base = { ...WORD_DEFAULT_PROFILE, matrix: { bracketPadding: "scripts" as const } };
+    const xml = lean(omml("\\begin{bmatrix} a \\end{bmatrix}", false, base));
+    expect(xml).toContain('<m:phant><m:phantPr><m:show m:val="0"/><m:zeroWid m:val="1"/></m:phantPr>');
+    expect(xml.match(/<m:m>/g)).toHaveLength(2); // strut copy + visible matrix
+    const match = lean(omml("\\begin{bmatrix} a \\end{bmatrix}", false, { ...WORD_DEFAULT_PROFILE, matrix: { bracketPadding: "match" } }));
+    expect(match).toContain('<m:shp m:val="match"/>');
+  });
+
   it("aligned derivations mark alignment points", () => {
     const xml = lean(omml("\\begin{aligned} a &= b \\\\ &= c \\end{aligned}"));
     expect(xml).toContain("<m:eqArr>");

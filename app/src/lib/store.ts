@@ -76,7 +76,7 @@ const DEFAULT_PREFS: Prefs = {
   paletteLocation: "top",
   favorites: DEFAULT_FAVORITES,
   recents: [],
-  paletteTab: "tab-derivs",
+  paletteTab: "tab-spacecraft",
 };
 
 function loadPrefs(): Prefs {

@@ -43,5 +43,15 @@ export const REFERENCE_EQUATIONS: ReferenceEquation[] = [
   { id: "binomial", title: "Binomial theorem", category: "General Mathematics", latex: "(x+y)^n = \\sum_{k=0}^{n} \\binom{n}{k} x^{n-k} y^k", display: true },
   { id: "underbrace", title: "Underbrace annotation", category: "General Mathematics", latex: "\\underbrace{1 + 1 + \\cdots + 1}_{n \\text{ times}} = n", display: true },
   { id: "norm", title: "Norm and inner product", category: "Linear Algebra", latex: "\\left\\| \\mathbf{x} \\right\\| = \\sqrt{\\left\\langle \\mathbf{x}, \\mathbf{x} \\right\\rangle}", display: true },
+  // Mechanics examples in vectrix notation (bold vectors, arrows, upright differentials).
+  { id: "mech-centroid", title: "Centre of mass integral", category: "Spacecraft Dynamics", latex: "\\vec{\\mathbf{p}}_k = \\int_{\\mathbf{V}_k} \\vec{\\mathbf{x}}\\,\\mathrm{d}m", display: true },
+  { id: "mech-vectrix", title: "Vectrix form", category: "Spacecraft Dynamics", latex: "\\vec{\\mathbf{p}}_2 = \\vec{\\mathbf{F}}^{\\mathbf{T}}\\mathbf{p}_2 = \\vec{\\mathbf{F}}^{\\mathbf{T}}\\int_{\\mathbf{V}_2}\\mathbf{x}\\,\\mathrm{d}m", display: true },
+  { id: "mech-area", title: "Area element and position", category: "Spacecraft Dynamics", latex: "\\mathrm{d}A = \\mathrm{d}u\\,\\mathrm{d}v, \\qquad \\mathbf{x} = \\begin{bmatrix} u & v & 0 \\end{bmatrix}^{\\mathbf{T}}", display: true },
+  { id: "mech-double", title: "Split double integral", category: "Spacecraft Dynamics", latex: "\\mathbf{q} = \\int_{-a}^{0}\\int_{-u-a}^{u+a}\\mu\\,\\mathbf{x}\\,\\mathrm{d}v\\,\\mathrm{d}u + \\int_{0}^{a}\\int_{u-a}^{a-u}\\mu\\,\\mathbf{x}\\,\\mathrm{d}v\\,\\mathrm{d}u", display: true },
+  { id: "mech-aligned", title: "Aligned definitions", category: "Spacecraft Dynamics", latex: "\\begin{aligned} \\mathrm{d}m &= \\mu\\,\\mathrm{d}A, \\\\ \\mathrm{d}A &= R\\,\\mathrm{d}\\theta\\,\\mathrm{d}u \\quad \\text{(cylinder surface)} \\end{aligned}", display: true },
+  { id: "mech-column", title: "Column with fraction", category: "Spacecraft Dynamics", latex: "\\mathbf{q}_r = \\begin{bmatrix} \\dfrac{M L}{2} & 0 & 0 \\end{bmatrix}^{\\mathbf{T}}", display: true },
+  { id: "mech-ranges", title: "Ranges", category: "Spacecraft Dynamics", latex: "a \\leq u \\leq a + b, \\qquad -\\frac{c}{2} \\leq v \\leq \\frac{c}{2}", display: true },
+  { id: "mech-triple", title: "Triple integral, cylindrical", category: "Spacecraft Dynamics", latex: "\\mathbf{q} = \\int_{-H/2}^{H/2}\\int_{0}^{2\\pi}\\int_{0}^{R}\\rho\\, r\\,\\mathbf{x}\\,\\mathrm{d}r\\,\\mathrm{d}\\theta\\,\\mathrm{d}u", display: true },
+  { id: "mech-sum", title: "Sum of moments", category: "Spacecraft Dynamics", latex: "\\vec{\\mathbf{p}} = \\vec{\\mathbf{p}}_1 + \\vec{\\mathbf{p}}_2 = \\vec{\\mathbf{F}}^{\\mathbf{T}}\\left(\\mathbf{p}_1 + \\mathbf{p}_2\\right)", display: true },
   { id: "inline-energy", title: "Kinetic energy (inline)", category: "Classical Mechanics", latex: "E_k = \\tfrac{1}{2} m v^2", display: false },
 ];

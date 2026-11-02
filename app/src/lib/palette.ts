@@ -341,6 +341,38 @@ const orbital: PaletteItem[] = [
   tpl("statespace", "\\begin{aligned}\\dot{\\mathbf{x}} &= A\\mathbf{x}+B\\mathbf{u}\\\\ \\mathbf{y} &= C\\mathbf{x}+D\\mathbf{u}\\end{aligned}", "State-space model", "control"),
 ];
 
+/** Spacecraft dynamics in vectrix notation (Hughes): the user's thesis notation. */
+const spacecraft: PaletteItem[] = [
+  tpl("vecbold", "\\vec{\\mathbf{#0}}", "Geometric vector (bold with arrow)", "physical vector arrow bold"),
+  tpl("vectrixT", "\\vec{\\mathbf{#0}}^{\\mathbf{T}}", "Vectrix transpose (frame)", "vectrix frame basis hughes transpose"),
+  tpl("vectrix", "\\vec{\\mathbf{#0}}", "Vectrix / frame", "vectrix frame basis"),
+  tpl("colmat", "\\mathbf{#0}", "Column matrix (bold)", "components bold matrix column"),
+  tpl("transpose", "#0^{\\mathbf{T}}", "Transpose (bold T)", "transpose T"),
+  tpl("colmatsub", "\\mathbf{#0}_{#?}", "Bold with subscript", "components index"),
+  tpl("unitbold", "\\hat{\\mathbf{#0}}_{#?}", "Unit vector, bold (b̂₁)", "unit vector basis axis"),
+  tpl("unitsub", "\\hat{#0}_{#?}", "Unit vector (ŝ₂)", "unit vector basis axis"),
+  tpl("zerovec", "\\vec{\\mathbf{0}}", "Zero vector", "null vector"),
+  tpl("zerocol", "\\mathbf{0}", "Zero column", "null zero matrix"),
+  tpl("rowT", "\\begin{bmatrix}#? & #? & #?\\end{bmatrix}^{\\mathbf{T}}", "Components [x y z]ᵀ", "column components transpose row"),
+  tpl("bodyint", "\\int_{\\mathbf{B}_{#?}}#0\\,\\mathrm{d}m", "Integral over a body", "mass body integral first moment"),
+  tpl("dm", "\\mathrm{d}m", "Mass element dm", "differential mass"),
+  tpl("dA", "\\mathrm{d}A", "Area element dA", "differential area"),
+  tpl("dV", "\\mathrm{d}V", "Volume element dV", "differential volume"),
+  tpl("dx", "\\mathrm{d}#0", "Upright differential d", "differential"),
+  tpl("dint2", "\\int_{#?}^{#?}\\int_{#?}^{#?}#0\\,\\mathrm{d}#?\\,\\mathrm{d}#?", "Double integral with limits", "iterated"),
+  tpl("dint3", "\\int_{#?}^{#?}\\int_{#?}^{#?}\\int_{#?}^{#?}#0\\,\\mathrm{d}#?\\,\\mathrm{d}#?\\,\\mathrm{d}#?", "Triple integral with limits", "iterated volume"),
+  tpl("range", "#?\\leq #?\\leq #?", "Range a ≤ x ≤ b", "bounds interval limits inequality"),
+  tpl("cross", "#0^{\\times}", "Cross (skew-symmetric) matrix", "skew symmetric cross product matrix"),
+  tpl("omega", "\\boldsymbol{\\omega}", "Angular velocity column ω", "angular velocity bold greek"),
+  tpl("omegacross", "\\boldsymbol{\\omega}^{\\times}", "ω× matrix", "angular velocity cross"),
+  tpl("dyadic", "\\vec{\\vec{\\mathbf{#0}}}", "Dyadic (double arrow)", "inertia dyadic tensor"),
+  tpl("rot", "\\mathbf{C}_{#?#?}", "Rotation matrix C_ab", "direction cosine dcm attitude"),
+  tpl("vectrixrel", "\\vec{\\mathbf{c}}=\\vec{\\mathbf{S}}^{\\mathbf{T}}\\mathbf{c}", "Vector from frame components", "vectrix"),
+  tpl("firstmoment", "\\vec{\\mathbf{p}}=\\int_{\\mathbf{V}}\\vec{\\mathbf{x}}\\,\\mathrm{d}m", "First moment of mass", "mass properties"),
+  tpl("cylr", "\\mathbf{r}=\\begin{bmatrix}x & r\\cos\\phi & r\\sin\\phi\\end{bmatrix}^{\\mathbf{T}}", "Position, cylindrical", "cylindrical coordinates"),
+  tpl("cyldv", "r\\,\\mathrm{d}r\\,\\mathrm{d}\\phi\\,\\mathrm{d}x", "Cylindrical volume element", "cylindrical dV"),
+];
+
 const trig: PaletteItem[] = [
   tpl("sin", "\\sin #0", "Sine"),
   tpl("cos", "\\cos #0", "Cosine"),
@@ -383,6 +415,7 @@ export const GROUPS: PaletteGroup[] = [
   { id: "labeled", label: "Labeled arrows", icon: "\\overset{#?}{\\to}\\,\\overset{#?}{=}", iconTex: true, kind: "templates", row: "templates", items: labeledArrows },
   { id: "matrices", label: "Matrices & cases", icon: "\\begin{pmatrix}#? & #?\\\\ #? & #?\\end{pmatrix}", iconTex: true, kind: "templates", row: "templates", items: matrices },
 
+  { id: "tab-spacecraft", label: "Spacecraft dynamics", icon: "", kind: "templates", row: "tabs", items: spacecraft },
   { id: "tab-algebra", label: "Algebra", icon: "", kind: "templates", row: "tabs", items: algebra },
   { id: "tab-derivs", label: "Derivatives", icon: "", kind: "templates", row: "tabs", items: derivs },
   { id: "tab-vectors", label: "Vectors & mechanics", icon: "", kind: "templates", row: "tabs", items: vectors },
@@ -399,6 +432,8 @@ export const DEFAULT_FAVORITES = [
   "templates:fences:paren", "templates:fences:bracket", "templates:fences:brace", "templates:fractions:frac",
   "templates:sums:sumlim", "templates:fractions:sqrt", "templates:scripts:sup", "templates:scripts:sub",
   "templates:accents:vec", "templates:accents:dot",
+  "tabs:tab-spacecraft:vecbold", "tabs:tab-spacecraft:vectrixT", "tabs:tab-spacecraft:colmat", "tabs:tab-spacecraft:transpose",
+  "tabs:tab-spacecraft:unitsub", "tabs:tab-spacecraft:bodyint", "tabs:tab-spacecraft:dm",
 ];
 
 /** Global key of an item: "<row>:<group>:<item>" (unique even when a group appears twice). */
