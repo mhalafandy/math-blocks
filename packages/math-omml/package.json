@@ -1,0 +1,9 @@
+{
+  "name": "@mathblocks/math-omml",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AST to Office Math Markup Language (OMML) writer, Word packaging helpers.",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@mathblocks/math-core": "workspace:*" }
+}

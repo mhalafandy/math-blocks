@@ -1,0 +1,3 @@
+export * from "./ids";
+export * from "./wordml";
+export { buildDocx, type CustomXmlPart, type DocxOptions } from "./docx";

@@ -1,0 +1,12 @@
+{
+  "name": "@mathblocks/ooxml",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "WordprocessingML packaging: content controls, Flat OPC for Range.InsertXML, .docx builder, custom XML registry.",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@mathblocks/math-omml": "workspace:*",
+    "fflate": "^0.8.2"
+  }
+}

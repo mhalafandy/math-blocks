@@ -1,0 +1,9 @@
+{
+  "name": "@mathblocks/math-latex",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "LaTeX parser and serializer for the MathBlocks AST.",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@mathblocks/math-core": "workspace:*" }
+}

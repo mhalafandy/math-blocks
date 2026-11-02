@@ -1,0 +1,13 @@
+node_modules/
+dist/
+target/
+*.log
+.DS_Store
+.vite/
+coverage/
+# Visual Studio / VSTO
+connector-word/**/bin/
+connector-word/**/obj/
+connector-word/.vs/
+*.user
+*.pfx

@@ -1,0 +1,8 @@
+{
+  "name": "@mathblocks/math-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Presentation AST for mathematical expressions (the canonical internal model).",
+  "exports": { ".": "./src/index.ts" }
+}
