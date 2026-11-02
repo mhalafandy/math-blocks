@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    MathBlocks Word Connector: a COM add-in for Word 2016+ (.NET Framework 4.8).
+    Plain SDK-style project: builds with `dotnet build` (no Visual Studio Office workload, no VSTO runtime).
+    See docs/DECISIONS.md D-011.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <OutputType>Library</OutputType>
+    <RootNamespace>MathBlocks.WordConnector</RootNamespace>
+    <AssemblyName>MathBlocks.WordConnector</AssemblyName>
+    <LangVersion>10.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Version>0.1.0</Version>
+    <Company>MathBlocks</Company>
+    <Product>MathBlocks Word Connector</Product>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Microsoft's Word primary interop assembly. Types are embedded (NoPIA), so nothing extra ships. -->
+    <PackageReference Include="Microsoft.Office.Interop.Word" Version="15.0.4797.1004" ExcludeAssets="runtime" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Web.Extensions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Ribbon.xml" LogicalName="MathBlocks.WordConnector.Ribbon.xml" />
+    <EmbeddedResource Include="SampleEquation.xml" LogicalName="MathBlocks.WordConnector.SampleEquation.xml" />
+  </ItemGroup>
+
+  <!-- Embed interop types instead of shipping/depending on the interop DLL. -->
+  <Target Name="EmbedWordInteropTypes" AfterTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <ReferencePath Condition="'%(FileName)' == 'Microsoft.Office.Interop.Word'">
+        <EmbedInteropTypes>true</EmbedInteropTypes>
+      </ReferencePath>
+    </ItemGroup>
+  </Target>
+</Project>

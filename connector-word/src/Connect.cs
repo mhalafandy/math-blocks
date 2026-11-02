@@ -1,0 +1,259 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Windows.Forms;
+using Word = Microsoft.Office.Interop.Word;
+
+namespace MathBlocks.WordConnector
+{
+    /// <summary>
+    /// Entry point Word loads (COM add-in). Bridges Word and the MathBlocks app:
+    /// ribbon, Word events, and requests arriving over the named pipe.
+    /// Every callback is wrapped in try/catch: an exception escaping into Word would get the
+    /// add-in disabled.
+    /// </summary>
+    [ComVisible(true)]
+    [Guid("B18397FB-F3F1-4634-AC20-9DEA0673976A")]
+    [ProgId("MathBlocks.WordConnector")]
+    [ClassInterface(ClassInterfaceType.AutoDispatch)]
+    public class Connect : IDTExtensibility2, IRibbonExtensibility
+    {
+        private Word.Application _app;
+        private WordOps _ops;
+        private PipeClient _pipe;
+        private Control _ui; // marshals work from the pipe thread onto Word's main thread
+        private int _nextId = 1;
+
+        // ------------------------------------------------------------ IDTExtensibility2
+
+        public void OnConnection(object application, ext_ConnectMode connectMode, object addInInst, ref Array custom)
+        {
+            try
+            {
+                _app = (Word.Application)application;
+                _ops = new WordOps(_app);
+                _ui = new Control();
+                _ui.CreateControl();
+                _ = _ui.Handle; // force handle creation on this (main) thread
+
+                _app.WindowBeforeDoubleClick += OnWindowBeforeDoubleClick;
+
+                _pipe = new PipeClient(PipeClient.DefaultPipeName());
+                _pipe.LineReceived += OnLine;
+                _pipe.ConnectionChanged += connected => { if (connected) OnUi(SendHello); };
+                _pipe.Start();
+                Log.Info("connector " + Version + " loaded in Word " + _app.Build);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("OnConnection failed", ex);
+            }
+        }
+
+        public void OnDisconnection(ext_DisconnectMode removeMode, ref Array custom)
+        {
+            try
+            {
+                _pipe?.Dispose();
+                if (_app != null) _app.WindowBeforeDoubleClick -= OnWindowBeforeDoubleClick;
+                _ui?.Dispose();
+                Log.Info("connector unloaded");
+            }
+            catch (Exception ex)
+            {
+                Log.Error("OnDisconnection failed", ex);
+            }
+        }
+
+        public void OnAddInsUpdate(ref Array custom) { }
+
+        public void OnStartupComplete(ref Array custom) { }
+
+        public void OnBeginShutdown(ref Array custom) { }
+
+        private static string Version => Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
+
+        // ------------------------------------------------------------ ribbon
+
+        public string GetCustomUI(string ribbonId) => ReadResource("MathBlocks.WordConnector.Ribbon.xml");
+
+        public void OnOpenApp(IRibbonControl control)
+        {
+            try
+            {
+                if (_pipe.IsConnected)
+                {
+                    SendRequest("showApp", new Dictionary<string, object>());
+                    return;
+                }
+                foreach (var exe in CandidateAppPaths())
+                {
+                    if (!File.Exists(exe)) continue;
+                    Process.Start(exe);
+                    return;
+                }
+                MessageBox.Show("The MathBlocks app was not found. Start it from the Start menu.", "MathBlocks",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("OnOpenApp failed", ex);
+            }
+        }
+
+        public void OnInsertSample(IRibbonControl control)
+        {
+            try
+            {
+                var result = _ops.InsertEquation(new Dictionary<string, object>
+                {
+                    ["flatOpc"] = ReadResource("MathBlocks.WordConnector.SampleEquation.xml"),
+                    ["tag"] = "mb1|-|SampleTest01",
+                    ["undoLabel"] = "Insert test equation",
+                });
+                Log.Info("sample inserted, controls with sample tag: " + result["found"]);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("OnInsertSample failed", ex);
+                MessageBox.Show(ex.Message, "MathBlocks", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        public void OnStatus(IRibbonControl control)
+        {
+            var state = _pipe != null && _pipe.IsConnected ? "Connected to the MathBlocks app." : "Not connected. Start the MathBlocks app.";
+            MessageBox.Show(
+                state + "\n\nConnector " + Version + "\nWord " + _app.Build + "\nPipe: " + PipeClient.DefaultPipeName() + "\nLog: " + Log.FilePath,
+                "MathBlocks", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private static IEnumerable<string> CandidateAppPaths()
+        {
+            var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            yield return Path.Combine(local, "MathBlocks", "MathBlocks.exe");
+            yield return Path.Combine(local, "Programs", "MathBlocks", "MathBlocks.exe");
+            yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "MathBlocks", "MathBlocks.exe");
+        }
+
+        // ------------------------------------------------------------ Word events
+
+        private void OnWindowBeforeDoubleClick(Word.Selection sel, ref bool cancel)
+        {
+            try
+            {
+                if (_pipe == null || !_pipe.IsConnected) return;
+                var cc = sel.Range.ParentContentControl;
+                var tag = cc?.Tag;
+                if (tag == null || !tag.StartsWith(WordOps.TagPrefix, StringComparison.Ordinal)) return;
+                cancel = true;
+                SendRequest("equationActivated", new Dictionary<string, object> { ["tag"] = tag, ["flatOpc"] = cc.Range.WordOpenXML });
+            }
+            catch (Exception ex)
+            {
+                Log.Error("double-click handler failed", ex);
+            }
+        }
+
+        // ------------------------------------------------------------ pipe
+
+        private void OnUi(Action action)
+        {
+            try
+            {
+                _ui.BeginInvoke(new MethodInvoker(() =>
+                {
+                    try { action(); }
+                    catch (Exception ex) { Log.Error("UI action failed", ex); }
+                }));
+            }
+            catch (Exception ex)
+            {
+                Log.Error("could not marshal to Word's thread", ex);
+            }
+        }
+
+        private void SendHello()
+        {
+            SendRequest("hello", new Dictionary<string, object>
+            {
+                ["client"] = "word-connector",
+                ["protocolVersion"] = Rpc.ProtocolVersion,
+                ["connectorVersion"] = Version,
+                ["hostVersion"] = _app.Version,
+                ["hostBuild"] = _app.Build,
+            });
+        }
+
+        private void SendRequest(string method, Dictionary<string, object> parameters)
+        {
+            _pipe.Send(Rpc.Request(_nextId++, method, parameters));
+        }
+
+        /// <summary>Pipe thread: parse, then handle requests on Word's main thread.</summary>
+        private void OnLine(string line)
+        {
+            Dictionary<string, object> msg;
+            try
+            {
+                msg = Rpc.Parse(line);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("invalid JSON from app", ex);
+                return;
+            }
+            if (!msg.TryGetValue("method", out var m) || !(m is string method))
+            {
+                if (msg.TryGetValue("error", out var err)) Log.Error("app returned an error: " + Rpc.Result(null, err));
+                return; // response to one of our requests
+            }
+            msg.TryGetValue("id", out var id);
+            var p = msg.TryGetValue("params", out var raw) ? raw as Dictionary<string, object> : null;
+            OnUi(() => Handle(id, method, p ?? new Dictionary<string, object>()));
+        }
+
+        private void Handle(object id, string method, Dictionary<string, object> p)
+        {
+            string reply;
+            try
+            {
+                object result;
+                switch (method)
+                {
+                    case "ping": result = new Dictionary<string, object> { ["pong"] = true }; break;
+                    case "insertEquation": result = _ops.InsertEquation(p); break;
+                    case "readEquation": result = _ops.ReadEquation(p); break;
+                    case "documentInfo": result = _ops.DocumentInfo(); break;
+                    default: throw new RpcException(Rpc.MethodNotFound, "Unknown method " + method);
+                }
+                reply = Rpc.Result(id, result);
+            }
+            catch (RpcException ex)
+            {
+                reply = Rpc.Error(id, ex.Code, ex.Message);
+            }
+            catch (COMException ex)
+            {
+                Log.Error(method + " rejected by Word", ex);
+                reply = Rpc.Error(id, Rpc.WordRejected, ex.Message);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(method + " failed", ex);
+                reply = Rpc.Error(id, Rpc.Internal, ex.Message);
+            }
+            if (id != null) _pipe.Send(reply);
+        }
+
+        private static string ReadResource(string name)
+        {
+            using (var s = Assembly.GetExecutingAssembly().GetManifestResourceStream(name))
+            using (var r = new StreamReader(s ?? throw new InvalidOperationException("Missing resource " + name)))
+                return r.ReadToEnd();
+        }
+    }
+}

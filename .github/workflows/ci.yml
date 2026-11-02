@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests and type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm typecheck
+      - run: pnpm --filter @mathblocks/app build
+
+  windows:
+    name: Windows build (desktop app + Word connector)
+    runs-on: windows-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build Word connector
+        run: dotnet build connector-word/src -c Release
+
+      - name: Build desktop app installer
+        working-directory: app
+        run: pnpm tauri build
+
+      - name: Collect artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force out/connector | Out-Null
+          Copy-Item connector-word/src/bin/Release/net48/MathBlocks.WordConnector.dll out/connector/
+          Copy-Item connector-word/install/*.ps1 out/connector/
+          Copy-Item app/src-tauri/target/release/bundle/nsis/*.exe out/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MathBlocks-windows-${{ github.sha }}
+          path: out/
+          retention-days: 30

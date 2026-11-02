@@ -14,14 +14,16 @@ Legend: ✅ done · 🚧 in progress · 📋 planned · 🐞 known bug
 | ✅ Word packaging | M1 | Content controls, Flat OPC for `InsertXML`, `.docx` builder, registry custom XML |
 | ✅ Equation IDs and tags | M1 | `mb1\|block\|instance` |
 | ✅ Spike documents | M1 | 5 style variants in `fixtures/spike/` |
+| ✅ Desktop app shell (Tauri 2 + React) | M1 | Library sidebar with the reference set, MathLive visual editor, LaTeX editor with diagnostics, Visual/Both/LaTeX layouts, display/inline, structure toolbar, command palette (Ctrl+K), inspector (structure tree, Word style, OMML), resizable panels, light/dark/system theme, status bar |
+| ✅ Word connector (COM add-in) | M1 | Ribbon tab, self-test insertion, named-pipe connection with auto-reconnect, insert equation in one undo step, read equation, document info, double-click detection |
+| ✅ Connector protocol v1 | M1 | JSON-RPC over a named pipe, typed in `packages/connector-protocol` |
+| ✅ Windows CI | M1 | Installer + connector DLL as downloadable artifacts |
 
 ## In progress
 
 | Feature | Milestone |
 |---|---|
-| 🚧 Tauri desktop shell | M1 |
-| 🚧 VSTO Word connector skeleton | M1 |
-| 🚧 Windows CI build | M1 |
+| 🚧 M1 validation on a real Word installation (checklist) | M1 |
 
 ## Planned
 
