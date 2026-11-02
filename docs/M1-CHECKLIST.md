@@ -5,6 +5,9 @@ These tests answer the open `[M1]` questions from the feasibility report. Please
 
 Word version used: `File → Account → About Word` → ____________
 
+**Results so far (user's PC):** Windows 11 (22621), Office 2021 Volume (Click-to-Run, 64-bit), Word 16.0.16501.20196.
+B1 ✅ (after fixing the CodeBase bug for user names with spaces) · B2 ✅
+
 ## Part A — Spike documents (no add-in needed)
 
 Files: `MathBlocks-M1-test-documents.zip` from the [Latest test build](https://github.com/mhalafandy/math-blocks/releases/tag/dev-build) release.
