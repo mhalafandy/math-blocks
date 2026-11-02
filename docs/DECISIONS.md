@@ -217,3 +217,22 @@ warning about missing fonts is tracked for M5.
 **Consequences.** One last manual install is needed to get the first self-updating version.
 If the private key is lost, a new key pair means one more manual install. Builds without the
 secret still work but publish no update files.
+
+---
+
+## D-015 — Precision rendering as a first-class output (PROPOSED, awaiting user decision)
+
+**Context.** A6: none of the native Word styles looks professional enough; Latin Modern Math is the
+closest. The quality ceiling of native equations is Word's own math layout engine, which we cannot
+change (kerning, script sizes, operator spacing). MathType looks better because it draws equations
+itself.
+
+**Proposal.** Typeset equations with MathJax 4 (TeX layout rules, New Computer Modern font) and
+insert them as SVG pictures (PNG fallback), baseline-aligned for inline use, each wrapped in a
+MathBlocks content control and carrying its AST/LaTeX so the app re-edits it (double-click),
+exactly like MathType does. Native OMML stays available per document or per equation, with
+one-click conversion both ways. Comparison document: `fixtures/spike/m1-P-precision-vs-native.docx`.
+
+**Trade-offs.** Pictures cannot be edited with Word's own equation tools (only through MathBlocks),
+are not searchable as text, and collaborators without MathBlocks see but cannot edit them. Linked
+blocks, numbering and the library work the same in both modes.

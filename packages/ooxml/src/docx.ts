@@ -8,8 +8,17 @@ export interface CustomXmlPart {
   xml: string;
 }
 
+/** A file in word/media, referenced from document.xml as r:embed="<rId>". */
+export interface MediaPart {
+  rId: string;
+  /** File name inside word/media/, e.g. "eq1.svg". */
+  name: string;
+  data: Uint8Array;
+}
+
 export interface DocxOptions {
   paragraphs: string[];
+  media?: MediaPart[];
   /** Document-wide math font (m:mathFont). Runs written by toOmml also carry the font. */
   mathFont?: string;
   /** Body text font. */
@@ -29,6 +38,8 @@ export function buildDocx(o: DocxOptions): Uint8Array {
       `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
       `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
       `<Default Extension="xml" ContentType="application/xml"/>` +
+      `<Default Extension="png" ContentType="image/png"/>` +
+      `<Default Extension="svg" ContentType="image/svg+xml"/>` +
       `<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>` +
       `<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>` +
       `<Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>` +
@@ -53,10 +64,16 @@ export function buildDocx(o: DocxOptions): Uint8Array {
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXml",
         `../customXml/item${i + 1}.xml`,
       ]),
+      ...(o.media ?? []).map((m): [string, string, string] => [
+        m.rId,
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
+        `media/${m.name}`,
+      ]),
     ]),
   );
 
   add("word/document.xml", documentXml(o.paragraphs));
+  for (const m of o.media ?? []) files[`word/media/${m.name}`] = m.data;
   add("word/styles.xml", stylesXml(o.bodyFont ?? "Calibri"));
   add("word/settings.xml", settingsXml(o.mathFont ?? "Cambria Math"));
 
