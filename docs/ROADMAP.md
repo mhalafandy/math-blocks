@@ -6,7 +6,7 @@ editing experience → ease of use → performance → extensibility → visual 
 | Milestone | Contents | Exit criteria | Status |
 |---|---|---|---|
 | **M1 Foundation & spikes** ✔ (A10–A14 pending) | Repo, docs, monorepo; AST; LaTeX parser/serializer; OMML writer; Word packaging; spike `.docx` files; Tauri app shell; VSTO connector skeleton (named pipe, insert equation); Windows CI | All `[M1]` items in the checklist answered and recorded in DECISIONS.md; style default chosen | **In progress** |
-| M2 Editor | MathLive adapter, structure toolbar, LaTeX mode (CodeMirror 6: highlighting, completion, bracket matching, diagnostics), two-way sync, command palette, themes, resizable panels | 30 reference equations buildable in both modes | **In progress** (symbol palette done) |
+| M2 Editor | MathLive adapter, structure toolbar, LaTeX mode (CodeMirror 6: highlighting, completion, bracket matching, diagnostics), two-way sync, command palette, themes, resizable panels | 30 reference equations buildable in both modes | **Done** (awaiting user test) |
 | M3 Conversion | Full Tier-1 LaTeX ⇄ AST ⇄ OMML; OMML → AST reader (edit existing Word equations) | Golden + round-trip suites green | Planned |
 | M4 Library & persistence | SQLite schema + migrations, library UI (folders, tags, search, favourites, recents), autosave & crash recovery | Kill-test recovery passes | Planned |
 | M5 Word basics | Insert/edit inline & display, double-click to edit, registry, Style Profiles | **MVP**: tested on a 50-page sample thesis | Planned |
