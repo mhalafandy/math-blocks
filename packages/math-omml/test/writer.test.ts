@@ -87,6 +87,11 @@ describe("toOmml — structures", () => {
     expect(tuned).toContain('<m:cGpRule m:val="1"/>');
   });
 
+  it("the tuned profile pads matrix brackets by default (user's choice, D-017)", () => {
+    expect(TUNED_PROFILE.matrix.bracketPadding).toBe("scripts");
+    expect(omml("\\begin{bmatrix} 0 & y & z \\end{bmatrix}^{\\mathbf{T}}", false, TUNED_PROFILE)).toContain("<m:phant>");
+  });
+
   it("matrix bracket padding adds an invisible zero-width strut inside the brackets", () => {
     const base = { ...WORD_DEFAULT_PROFILE, matrix: { bracketPadding: "scripts" as const } };
     const xml = lean(omml("\\begin{bmatrix} a \\end{bmatrix}", false, base));

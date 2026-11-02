@@ -44,5 +44,6 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - Connector install on user profiles whose name contains a space (CodeBase must not be URL-escaped).
 
 ### Changed
+- Matrix, row- and column-vector brackets are now slightly taller than their entries by default (D-017).
 - Default math font: Latin Modern Math (D-013).
 - Word connector implemented as a plain COM add-in instead of VSTO (D-011).
