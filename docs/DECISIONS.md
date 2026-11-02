@@ -243,3 +243,20 @@ user to choose. Precision mode stays on the roadmap (M10) as an option.
 **Trade-offs.** Pictures cannot be edited with Word's own equation tools (only through MathBlocks),
 are not searchable as text, and collaborators without MathBlocks see but cannot edit them. Linked
 blocks, numbering and the library work the same in both modes.
+
+---
+
+## D-016 — Workspace layout: library left, symbols right, details bottom, all collapsible
+
+**Status:** Accepted (user feedback on 0.1.13)
+
+**Context.** The top palette took half the window, rows wrapped, previews were empty boxes and
+the equation canvas was squeezed.
+
+**Decision.** VS Code-style layout: library on the left (Ctrl+B), symbols on the right
+(Ctrl+Alt+B), and a bottom panel with LaTeX / Structure / Word style / OMML tabs (Ctrl+J). Every
+panel collapses and resizes; "Focus mode" hides all three. The equation canvas fills the rest,
+centres the equation, scrolls horizontally for long equations and zooms (Ctrl +/−/0, 60–250 %).
+The MathType-style top palette stays available as an option ("⇡ Top"). Template previews show a
+sample letter in the main slot (bold **x**, x⃗, xᵀ) so similar templates are distinguishable.
+Layout preferences moved to a new storage key, so everyone starts from the new defaults once.

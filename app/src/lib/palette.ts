@@ -477,8 +477,11 @@ export function searchPalette(query: string, limit = 60): IndexedItem[] {
   return scored.sort((a, b) => b.s - a.s).slice(0, limit).map((r) => r.x);
 }
 
-/** LaTeX used to draw a template preview: empty slots become visible grey boxes. */
-export const previewLatex = (latex: string) => latex.replace(/#0|#\?/g, "{\\color{#9a9aa6}\\square}");
+/**
+ * LaTeX used to draw a template preview. The main slot (#0) shows a sample letter so that styles
+ * are visible (bold x, x with arrow, xᵀ); other slots (#?) become grey boxes.
+ */
+export const previewLatex = (latex: string) => latex.replace(/#0/g, "x").replace(/#\?/g, "{\\color{#9a9aa6}\\square}");
 
 /** LaTeX inserted into the plain-text LaTeX editor: slots become empty groups. */
 export const plainLatex = (latex: string) => latex.replace(/#0|#\?/g, "{}");

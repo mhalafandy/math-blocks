@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { MathfieldElement } from "mathlive";
+import { setLastEditor } from "../lib/focus";
 import { useApp } from "../lib/store";
 
 // Fonts are served locally (copied by scripts/copy-mathlive-assets.mjs): no internet needed.
@@ -40,7 +41,10 @@ export function MathEditor() {
     mf.setAttribute("aria-label", "Equation editor");
     mf.value = useApp.getState().latex;
     mf.addEventListener("input", () => setLatex(mf.value, "visual"));
-    mf.addEventListener("focus", () => (activeField = mf));
+    mf.addEventListener("focus", () => {
+      activeField = mf;
+      setLastEditor("visual");
+    });
     host.current?.appendChild(mf);
     field.current = mf;
     activeField = mf;

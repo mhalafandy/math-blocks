@@ -1,25 +1,22 @@
 import { useMemo, useState } from "react";
 import { REFERENCE_EQUATIONS, type ReferenceEquation } from "../../../fixtures/reference-equations";
 import { useApp } from "../lib/store";
-import { PaletteSide } from "./SymbolPalette";
 
+/** Left panel: the equation library (M4) and, for now, the reference set. */
 export function Sidebar() {
-  const paletteLocation = useApp((s) => s.paletteLocation);
-  const [tab, setTab] = useState<"library" | "symbols">("symbols");
-  const showSymbols = paletteLocation === "side";
+  const setPrefs = useApp((s) => s.setPrefs);
   return (
-    <nav className="sidebar" aria-label="Library and symbols">
-      {showSymbols && (
-        <div className="sidebar-tabs" role="tablist">
-          <button role="tab" aria-selected={tab === "symbols"} className={tab === "symbols" ? "active" : undefined} onClick={() => setTab("symbols")}>
-            Symbols
-          </button>
-          <button role="tab" aria-selected={tab === "library"} className={tab === "library" ? "active" : undefined} onClick={() => setTab("library")}>
-            Library
-          </button>
-        </div>
-      )}
-      {showSymbols && tab === "symbols" ? <PaletteSide /> : <LibraryPanel />}
+    <nav className="sidebar" aria-label="Library">
+      <div className="panel-head">
+        <span className="panel-title">Library</span>
+        <div className="spacer" />
+        <button className="icon-btn" title="Hide library (Ctrl+B)" onClick={() => setPrefs({ leftOpen: false })}>
+          ⇤
+        </button>
+      </div>
+      <div className="panel-scroll">
+        <LibraryPanel />
+      </div>
     </nav>
   );
 }
