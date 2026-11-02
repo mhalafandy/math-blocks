@@ -42,4 +42,8 @@ by meaning, numbering/references, MathType migration, precision mode, dependency
 
 | Bug | Status |
 |---|---|
+| 🐞 Equation wrapper box drawn around Word's equation frame | Fixed: wrapper hidden (D-013) |
+| 🐞 Vector / dot / hat buttons inserted an empty slot that could not be typed into | Fixed |
+| 🐞 Toolbar buttons did not wrap the selected expression (focus lost on click) | Fixed |
+| 🐞 MathLive `\\placeholder{}` reached Word as red text | Fixed: parsed as an empty slot |
 | 🐞 Connector failed to load (0x80070002) when the Windows user name contains a space: install.ps1 wrote a URL-escaped CodeBase (`%20`) | Fixed in install.ps1; reinstall |

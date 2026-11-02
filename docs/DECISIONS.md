@@ -172,3 +172,25 @@ C# (`connector-word/src/Connect.cs`), typed by `packages/connector-protocol`.
 
 **Consequences.** One Word process connected at a time (sufficient for now). Pipe access is limited
 to the current user by the default pipe security.
+
+---
+
+## D-013 — Equation wrappers are invisible; Latin Modern Math is the default style
+
+**Status:** Accepted (M1 feedback)
+
+**Context.** In Word the identity content control drew its own box and label around Word's
+equation frame ("a container inside a container"), which looked wrong to the user. In the style
+comparison (checklist A6) the user preferred Latin Modern Math.
+
+**Decision.**
+1. The connector sets every inserted wrapper to `Appearance = Hidden` (Word 2013+). The control and
+   its tag still exist, so identity, linking and double-click editing keep working; only the box
+   and label are no longer drawn. It is set through the object model after insertion rather than
+   in the inserted XML, so an unsupported element can never make Word reject an insertion.
+   Linked instances will be identified in the app's instance panel (M6) instead of by a box.
+2. The app's default Style Profile is "tuned" spacing with **Latin Modern Math**.
+
+**Consequences.** Latin Modern Math must be installed on every PC that opens the document;
+otherwise Word substitutes Cambria Math (layout stays correct, glyphs differ). Embedding or
+warning about missing fonts is tracked for M5.

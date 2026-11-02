@@ -352,6 +352,16 @@ class Parser {
     }
 
     switch (name) {
+      case "placeholder": {
+        // MathLive's empty slot (\placeholder{} or \placeholder[id]{default}): keep any default content.
+        const n = this.peek();
+        if (n.type === "char" && n.value === "[") {
+          while (this.peek().type !== "eof" && !(this.peek().type === "char" && this.peek().value === "]")) this.next();
+          this.next();
+        }
+        const body = this.parseArg(t);
+        return body.children.length === 1 ? body.children[0] : body.children.length === 0 ? undefined : body;
+      }
       case "frac":
       case "dfrac":
       case "tfrac":

@@ -10,9 +10,13 @@ let activeField: MathfieldElement | null = null;
 
 /** Inserts a LaTeX template at the cursor of the visual editor (#? = placeholder). */
 export function insertIntoVisual(template: string) {
-  if (!activeField) return false;
-  activeField.focus();
-  activeField.executeCommand(["insert", template, { selectionMode: "placeholder" }]);
+  const mf = activeField;
+  if (!mf) return false;
+  mf.focus();
+  // "#0" means "the current selection". With nothing selected MathLive leaves the slot empty and
+  // unreachable, so turn it into a placeholder (#?) the cursor can enter.
+  const t = mf.selectionIsCollapsed ? template.replace(/#0/g, "#?") : template;
+  mf.executeCommand(["insert", t, { selectionMode: "placeholder" }]);
   return true;
 }
 

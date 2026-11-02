@@ -63,6 +63,20 @@ namespace MathBlocks.WordConnector
             }
 
             var found = FindByTag(doc, tag);
+            foreach (var cc in found)
+            {
+                try
+                {
+                    // Keep the identity wrapper but do not draw its box/label around Word's own
+                    // equation frame (Word 2013+). Set here rather than in the XML so that an
+                    // unexpected XML element can never make Word reject the insertion.
+                    cc.Appearance = Word.WdContentControlAppearance.wdContentControlHidden;
+                }
+                catch (COMException)
+                {
+                    // Older Word: the box stays visible, which is harmless.
+                }
+            }
             if (found.Count == 1)
             {
                 try

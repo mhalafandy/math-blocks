@@ -167,6 +167,15 @@ describe("parseLatex — environments", () => {
   });
 });
 
+describe("parseLatex — MathLive output", () => {
+  it("treats empty placeholders as empty slots, without warnings", () => {
+    const { root, diagnostics } = parse("x^{\\placeholder{}}+\\frac{a}{\\placeholder{}}");
+    expect(diagnostics).toEqual([]);
+    expect(root.children[0]).toMatchObject({ kind: "scripts", sup: { children: [] } });
+    expect(root.children[2]).toMatchObject({ kind: "fraction", den: { children: [] } });
+  });
+});
+
 describe("parseLatex — diagnostics", () => {
   it("reports a missing brace with its position", () => {
     const { diagnostics } = parse("\\frac{a}{b");

@@ -114,7 +114,13 @@ export function App() {
       <main className="workspace">
         <div className="structure-bar" role="toolbar" aria-label="Structures">
           {STRUCTURES.map((st) => (
-            <button key={st.id} title={st.title} onClick={() => insertIntoVisual(st.template)}>
+            <button
+              key={st.id}
+              title={st.title}
+              // Keep focus (and the selection) in the visual editor when clicking a button.
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => insertIntoVisual(st.template)}
+            >
               {st.icon}
             </button>
           ))}
