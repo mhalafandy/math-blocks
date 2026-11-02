@@ -1,8 +1,30 @@
 import { useMemo, useState } from "react";
 import { REFERENCE_EQUATIONS, type ReferenceEquation } from "../../../fixtures/reference-equations";
 import { useApp } from "../lib/store";
+import { PaletteSide } from "./SymbolPalette";
 
 export function Sidebar() {
+  const paletteLocation = useApp((s) => s.paletteLocation);
+  const [tab, setTab] = useState<"library" | "symbols">("symbols");
+  const showSymbols = paletteLocation === "side";
+  return (
+    <nav className="sidebar" aria-label="Library and symbols">
+      {showSymbols && (
+        <div className="sidebar-tabs" role="tablist">
+          <button role="tab" aria-selected={tab === "symbols"} className={tab === "symbols" ? "active" : undefined} onClick={() => setTab("symbols")}>
+            Symbols
+          </button>
+          <button role="tab" aria-selected={tab === "library"} className={tab === "library" ? "active" : undefined} onClick={() => setTab("library")}>
+            Library
+          </button>
+        </div>
+      )}
+      {showSymbols && tab === "symbols" ? <PaletteSide /> : <LibraryPanel />}
+    </nav>
+  );
+}
+
+function LibraryPanel() {
   const [query, setQuery] = useState("");
   const setLatex = useApp((s) => s.setLatex);
   const setDisplay = useApp((s) => s.setDisplay);
@@ -19,7 +41,7 @@ export function Sidebar() {
   }, [query]);
 
   return (
-    <nav className="sidebar" aria-label="Library">
+    <>
       <div className="sidebar-search">
         <input type="search" placeholder="Search equations" value={query} onChange={(e) => setQuery(e.target.value)} />
       </div>
@@ -55,6 +77,6 @@ export function Sidebar() {
           </div>
         ))}
       </section>
-    </nav>
+    </>
   );
 }

@@ -50,6 +50,7 @@ export const SYMBOLS: Record<string, SymbolDef> = {
   mapsto: rel("↦"), longrightarrow: rel("⟶"), longleftarrow: rel("⟵"),
   Longrightarrow: rel("⟹"), Longleftarrow: rel("⟸"), uparrow: rel("↑"), downarrow: rel("↓"),
   rightleftharpoons: rel("⇌"),
+  therefore: rel("∴"), because: rel("∵"), vdash: rel("⊢"), models: rel("⊨"),
   // Punctuation-like
   colon: punct(":"),
 };
