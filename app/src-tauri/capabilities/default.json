@@ -8,6 +8,9 @@
   "permissions": [
     "core:default",
     "updater:default",
-    "process:allow-restart"
+    "process:allow-restart",
+    "core:window:allow-set-focus",
+    "core:window:allow-unminimize",
+    "core:window:allow-show"
   ]
 }

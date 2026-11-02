@@ -271,3 +271,24 @@ Layout preferences moved to a new storage key, so everyone starts from the new d
 The tuned Style Profile pads matrix brackets with an invisible zero-width strut that adds about
 0.3 em above and below the entries. Applies to every bracketed matrix kind (pmatrix, bmatrix,
 Bmatrix, vmatrix, Vmatrix), including row and column vectors such as `[0 y z]ᵀ`.
+
+---
+
+## D-018 — Editing equations from Word: read back, replace in place, adopt native equations
+
+**Status:** Accepted (M3/M5)
+
+**Decision.**
+- `math-omml` gets an OMML → AST reader with its own small XML parser (no dependency). Round trip
+  AST → OMML → AST is exact for every reference equation, except what OMML cannot store (forced
+  fraction size, \widehat vs \hat, negative space). Unknown Word structures become `raw` nodes
+  (shown red) instead of being dropped.
+- Double-clicking a MathBlocks equation in Word loads it into the app; the main button becomes
+  **Update in Word**, which replaces the content control (same tag, so the equation keeps its
+  identity) in one undo step.
+- Double-clicking an equation typed directly in Word first wraps it in a hidden MathBlocks content
+  control ("adopts" it, own undo step), so it can be updated the same way. This is also the basis of
+  the MathType migration (M9).
+
+**Consequences.** While the app is connected, double-click on an equation opens MathBlocks instead
+of Word's own equation editing; a setting to turn this off will come with the settings screen.

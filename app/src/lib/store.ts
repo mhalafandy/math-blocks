@@ -49,8 +49,17 @@ export interface UpdateState {
   addin?: "unavailable" | "upToDate" | "installed" | "pendingWordClosed" | "failed";
 }
 
+/** An equation from Word being edited; "Send to Word" then updates it in place. */
+export interface EditingTarget {
+  tag: string;
+  /** The equation was typed in Word and has just been wrapped by MathBlocks. */
+  adopted: boolean;
+}
+
 interface AppState extends Prefs {
   latex: string;
+  editing: EditingTarget | null;
+  setEditing: (e: EditingTarget | null) => void;
   display: boolean;
   source: ChangeSource;
   paletteOpen: boolean;
@@ -118,6 +127,8 @@ export const useApp = create<AppState>((set, get) => ({
   connector: { available: false, connected: false },
   toast: null,
   update: { status: "idle" },
+  editing: null,
+  setEditing: (editing) => set({ editing }),
   setUpdate: (u) => set({ update: { ...get().update, ...u } }),
 
   setLatex: (latex, source) => set({ latex, source }),

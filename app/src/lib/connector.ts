@@ -7,7 +7,23 @@ import {
   type RpcMessage,
   type RpcResponse,
 } from "@mathblocks/connector-protocol";
+import { serializeLatex } from "@mathblocks/math-latex";
+import { readOmml } from "@mathblocks/math-omml";
 import { useApp } from "./store";
+
+/** Shows and focuses the app window (after a double-click in Word or the ribbon button). */
+async function bringToFront() {
+  if (!isDesktop()) return;
+  try {
+    const { getCurrentWindow } = await import("@tauri-apps/api/window");
+    const w = getCurrentWindow();
+    await w.unminimize();
+    await w.show();
+    await w.setFocus();
+  } catch (e) {
+    console.warn("could not focus the window", e);
+  }
+}
 
 const APP_VERSION = "0.1.0";
 const TIMEOUT_MS = 20_000;
@@ -102,12 +118,28 @@ class ConnectorClient {
       }
       case "showApp":
         if (isRequest(msg)) this.reply(msg.id, null);
+        void bringToFront();
         break;
-      case "equationActivated":
-        // M5: load the equation into the editor. M1: just acknowledge.
-        app.notify("An equation was activated in Word (editing arrives in M5)");
+      case "equationActivated": {
         if (isRequest(msg)) this.reply(msg.id, null);
+        const params = msg.params as ConnectorToApp["equationActivated"]["params"];
+        const read = readOmml(params.flatOpc);
+        if (!read) {
+          app.notify("Could not find an equation in the selection.", "error");
+          break;
+        }
+        app.setLatex(serializeLatex(read.root), "external");
+        app.setDisplay(read.display);
+        app.setEditing({ tag: params.tag, adopted: !!params.adopted });
+        app.notify(
+          read.unknown.length
+            ? `Equation loaded. Some parts could not be read and are shown in red: ${[...new Set(read.unknown)].join(", ")}`
+            : "Editing the equation from Word. Press Update in Word (Ctrl+Enter) when done.",
+          read.unknown.length ? "error" : "info",
+        );
+        void bringToFront();
         break;
+      }
       default:
         if (isRequest(msg)) {
           void this.send(JSON.stringify({ jsonrpc: "2.0", id: msg.id, error: { code: -32601, message: `Unknown method ${String(method)}` } }));
