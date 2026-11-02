@@ -148,9 +148,28 @@ namespace MathBlocks.WordConnector
                 if (_pipe == null || !_pipe.IsConnected) return;
                 var cc = sel.Range.ParentContentControl;
                 var tag = cc?.Tag;
-                if (tag == null || !tag.StartsWith(WordOps.TagPrefix, StringComparison.Ordinal)) return;
+                if (tag != null && tag.StartsWith(WordOps.TagPrefix, StringComparison.Ordinal))
+                {
+                    cancel = true;
+                    SendRequest("equationActivated", new Dictionary<string, object> { ["tag"] = tag, ["flatOpc"] = cc.Range.WordOpenXML });
+                    return;
+                }
+                // A native Word equation (typed in Word or pasted): wrap it so MathBlocks can update it.
+                Word.OMath math = null;
+                foreach (Word.OMath m in sel.Range.OMaths)
+                {
+                    math = m;
+                    break;
+                }
+                if (math == null) return;
                 cancel = true;
-                SendRequest("equationActivated", new Dictionary<string, object> { ["tag"] = tag, ["flatOpc"] = cc.Range.WordOpenXML });
+                var newTag = _ops.AdoptEquation(math);
+                var wrapped = _app.ActiveDocument.SelectContentControlsByTag(newTag);
+                foreach (Word.ContentControl w in wrapped)
+                {
+                    SendRequest("equationActivated", new Dictionary<string, object> { ["tag"] = newTag, ["flatOpc"] = w.Range.WordOpenXML, ["adopted"] = true });
+                    break;
+                }
             }
             catch (Exception ex)
             {
@@ -226,6 +245,7 @@ namespace MathBlocks.WordConnector
                 {
                     case "ping": result = new Dictionary<string, object> { ["pong"] = true }; break;
                     case "insertEquation": result = _ops.InsertEquation(p); break;
+                    case "replaceEquation": result = _ops.ReplaceEquation(p); break;
                     case "readEquation": result = _ops.ReadEquation(p); break;
                     case "documentInfo": result = _ops.DocumentInfo(); break;
                     default: throw new RpcException(Rpc.MethodNotFound, "Unknown method " + method);

@@ -49,3 +49,14 @@ Setup: download from the [Latest test build](https://github.com/mhalafandy/math-
 | B10 | Edits in the app | Try Visual / Both / LaTeX layouts, Ctrl+K palette, structure buttons, dark/light theme, panel resizing. Anything confusing or broken? | |
 
 If something fails, attach `%LOCALAPPDATA%\MathBlocks\connector.log`.
+
+## Part C — Editing equations from Word (build 0.1.18+)
+
+| # | Test | How | Result |
+|---|---|---|---|
+| C1 | Edit a MathBlocks equation | Send an equation to Word, then double-click it in Word: the app comes to the front with that equation and shows "Editing equation from Word" | |
+| C2 | Update in place | Change it in the app, press **Update in Word**: it is replaced at the same place (inline stays inline, display stays display) | |
+| C3 | One undo step | In Word press Ctrl+Z once after C2: the old equation comes back | |
+| C4 | Equation typed in Word | Type an equation with Word's own editor (Alt+=), double-click it: it opens in MathBlocks. Change and update it | |
+| C5 | Fidelity | Double-click one of your real thesis equations: does everything appear (no red parts)? If something is red, send a screenshot | |
+

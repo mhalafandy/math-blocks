@@ -7,9 +7,9 @@ editing experience → ease of use → performance → extensibility → visual 
 |---|---|---|---|
 | **M1 Foundation & spikes** ✔ (A10–A14 pending) | Repo, docs, monorepo; AST; LaTeX parser/serializer; OMML writer; Word packaging; spike `.docx` files; Tauri app shell; VSTO connector skeleton (named pipe, insert equation); Windows CI | All `[M1]` items in the checklist answered and recorded in DECISIONS.md; style default chosen | **In progress** |
 | M2 Editor | MathLive adapter, structure toolbar, LaTeX mode (CodeMirror 6: highlighting, completion, bracket matching, diagnostics), two-way sync, command palette, themes, resizable panels | 30 reference equations buildable in both modes | **Done** (awaiting user test) |
-| M3 Conversion | Full Tier-1 LaTeX ⇄ AST ⇄ OMML; OMML → AST reader (edit existing Word equations) | Golden + round-trip suites green | Planned |
+| M3 Conversion | Full Tier-1 LaTeX ⇄ AST ⇄ OMML; OMML → AST reader (edit existing Word equations) | Golden + round-trip suites green | **Done**: OMML → AST reader, exact round trip on all reference equations |
 | M4 Library & persistence | SQLite schema + migrations, library UI (folders, tags, search, favourites, recents), autosave & crash recovery | Kill-test recovery passes | Planned |
-| M5 Word basics | Insert/edit inline & display, double-click to edit, registry, Style Profiles | **MVP**: tested on a 50-page sample thesis | Planned |
+| M5 Word basics | Insert/edit inline & display, double-click to edit, registry, Style Profiles | **MVP**: tested on a 50-page sample thesis | **In progress**: double-click to edit and Update in Word done; registry, .doc warning pending |
 | M6 Linked components | Sync engine, reconciliation (copy/delete/orphan/conflict), journal, single-step undo, instance panel | Scenario suite: copy, paste, delete, undo, crash, reopen | Planned |
 | M7 Components & search | Parameterized templates, independent copies, detach; symbol & meaning search; snippets; collections | — | Planned |
 | M8 Derivations & numbering | Equation numbering, references, alignment tools | — | Planned |

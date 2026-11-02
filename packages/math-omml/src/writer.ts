@@ -11,9 +11,9 @@ export interface OmmlOptions {
   standalone?: boolean;
 }
 
-const INTEGRALS = new Set(["∫", "∬", "∭", "∮", "∯", "∰"]);
+export const INTEGRALS = new Set(["∫", "∬", "∭", "∮", "∯", "∰"]);
 
-const ACCENT_CHARS: Record<Exclude<AccentKind, "overline" | "underline">, string> = {
+export const ACCENT_CHARS: Record<Exclude<AccentKind, "overline" | "underline">, string> = {
   hat: "̂",
   widehat: "̂",
   bar: "̅",
@@ -29,7 +29,7 @@ const ACCENT_CHARS: Record<Exclude<AccentKind, "overline" | "underline">, string
   breve: "̆",
 };
 
-const SPACE_CHARS: Record<string, string> = {
+export const SPACE_CHARS: Record<string, string> = {
   thin: " ",
   medium: " ",
   thick: " ",
@@ -39,7 +39,7 @@ const SPACE_CHARS: Record<string, string> = {
   negthin: "",
 };
 
-const MATRIX_DELIMS: Record<MatrixKind, [string, string] | null> = {
+export const MATRIX_DELIMS: Record<MatrixKind, [string, string] | null> = {
   matrix: null,
   smallmatrix: null,
   pmatrix: ["(", ")"],

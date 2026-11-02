@@ -41,9 +41,9 @@ export function useCompiledEquation(): CompiledEquation {
 }
 
 /** Builds the Flat OPC package the Word connector inserts with Range.InsertXML. */
-export function buildInsertion(latex: string, display: boolean, profile: StyleProfile) {
+export function buildInsertion(latex: string, display: boolean, profile: StyleProfile, existingTag?: string) {
   const { root } = parseLatex(latex);
-  const tag = formatTag({ blockId: null, instanceId: newInstanceId() });
+  const tag = existingTag ?? formatTag({ blockId: null, instanceId: newInstanceId() });
   const omml = toOmml(root, { display, profile });
   return { tag, flatOpc: flatOpc([paragraph(contentControl(omml, { tag, title: "MathBlocks equation" }))]) };
 }

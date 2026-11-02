@@ -25,6 +25,11 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added (M3/M5)
+- OMML → AST reader: equations in Word can be read back exactly.
+- Double-click an equation in Word to edit it in MathBlocks; "Update in Word" replaces it in place.
+  Equations typed directly in Word are wrapped (adopted) on first double-click.
+
 ### Added (M2)
 - LaTeX editor rebuilt on CodeMirror 6: syntax colours, auto-completion with templates, bracket
   matching, error underlines from the MathBlocks parser, undo/redo.

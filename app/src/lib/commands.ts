@@ -32,6 +32,7 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => app.setPrefs({ paletteLocation: useApp.getState().paletteLocation === "top" ? "right" : "top", rightOpen: true }),
     },
     { id: "app.update", title: "Check for updates", group: "View", keywords: "upgrade new version", run: () => checkForUpdate(true) },
+    { id: "word.new", title: "New equation (stop editing the Word equation)", group: "Word", keywords: "clear reset fresh", run: () => { app.setEditing(null); app.setLatex("", "external"); } },
     { id: "word.insert", title: "Send to Word", group: "Word", shortcut: "Ctrl+Enter", keywords: "insert export", run: actions.insertIntoWord },
     { id: "edit.copyLatex", title: "Copy LaTeX", group: "Edit", run: actions.copyLatex },
     { id: "edit.focusLatex", title: "Switch to LaTeX editor", group: "Edit", shortcut: "Ctrl+L", keywords: "latex mode source", run: actions.focusLatex },

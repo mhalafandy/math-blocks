@@ -66,9 +66,14 @@ export interface HelloParams {
   hostBuild: string;
 }
 
-/** The user double-clicked (or selected) a MathBlocks equation in Word. */
+/**
+ * The user double-clicked an equation in Word. Equations without a MathBlocks wrapper (typed in
+ * Word) are wrapped first, so `tag` always identifies the equation for a later replaceEquation.
+ */
 export interface EquationActivatedParams {
   tag: string;
+  /** true when the connector just wrapped a native Word equation. */
+  adopted?: boolean;
   /** Full WordprocessingML (Flat OPC) of the content control's range. */
   flatOpc: string;
 }
@@ -111,9 +116,18 @@ export interface DocumentInfoResult {
   equationTags: string[];
 }
 
+export interface ReplaceEquationParams {
+  /** Tag of the content control to replace (keeps the equation's identity). */
+  tag: string;
+  /** Flat OPC package with one paragraph holding a content control with the same tag. */
+  flatOpc: string;
+  undoLabel: string;
+}
+
 export interface AppToConnector {
   ping: { params: Record<string, never>; result: { pong: true } };
   insertEquation: { params: InsertEquationParams; result: InsertEquationResult };
+  replaceEquation: { params: ReplaceEquationParams; result: InsertEquationResult };
   readEquation: { params: { tag: string }; result: ReadEquationResult };
   documentInfo: { params: Record<string, never>; result: DocumentInfoResult };
 }

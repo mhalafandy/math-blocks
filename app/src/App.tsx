@@ -30,16 +30,24 @@ export function App() {
   }, []);
 
   const insertIntoWord = useCallback(async () => {
-    const { connector: c, latex, display, notify } = useApp.getState();
+    const { connector: c, latex, display, notify, editing, setEditing } = useApp.getState();
     if (!c.available) return notify("Sending to Word works in the desktop app.", "error");
     if (!c.connected) return notify("Word is not connected. Start Word with the MathBlocks add-in installed.", "error");
     if (eq.errors > 0) return notify("Fix the LaTeX errors first.", "error");
     try {
-      const { tag, flatOpc } = buildInsertion(latex, display, profile);
-      const r = await connector.request("insertEquation", { tag, flatOpc, display, undoLabel: "Insert equation" });
-      notify(r.found === 1 ? "Inserted into Word" : `Inserted, but found ${r.found} copies of its tag`);
+      if (editing) {
+        const { flatOpc } = buildInsertion(latex, display, profile, editing.tag);
+        const r = await connector.request("replaceEquation", { tag: editing.tag, flatOpc, undoLabel: "Update equation" });
+        notify(r.found === 1 ? "Equation updated in Word" : `Updated, but found ${r.found} copies of its tag`);
+      } else {
+        const { tag, flatOpc } = buildInsertion(latex, display, profile);
+        const r = await connector.request("insertEquation", { tag, flatOpc, display, undoLabel: "Insert equation" });
+        notify(r.found === 1 ? "Inserted into Word" : `Inserted, but found ${r.found} copies of its tag`);
+      }
     } catch (e) {
-      notify(e instanceof Error ? e.message : String(e), "error");
+      const message = e instanceof Error ? e.message : String(e);
+      notify(message, "error");
+      if (editing && /no longer in the document/.test(message)) setEditing(null);
     }
   }, [eq.errors, profile]);
 
@@ -131,8 +139,21 @@ export function App() {
         >
           <PanelIcon side="right" />
         </button>
-        <button className="primary" onClick={() => void insertIntoWord()} disabled={!s.connector.connected} title={s.connector.connected ? "Insert at Word's cursor (Ctrl+Enter)" : "Start Word to enable"}>
-          Send to Word
+        {s.editing && (
+          <span className="editing-pill" title={s.editing.adopted ? "Equation typed in Word, now managed by MathBlocks" : "MathBlocks equation from Word"}>
+            Editing equation from Word
+            <button className="icon-btn" title="Stop editing (next Send inserts a new equation)" onClick={() => s.setEditing(null)}>
+              ✕
+            </button>
+          </span>
+        )}
+        <button
+          className="primary"
+          onClick={() => void insertIntoWord()}
+          disabled={!s.connector.connected}
+          title={!s.connector.connected ? "Start Word to enable" : s.editing ? "Replace the equation in Word (Ctrl+Enter)" : "Insert at Word's cursor (Ctrl+Enter)"}
+        >
+          {s.editing ? "Update in Word" : "Send to Word"}
         </button>
       </header>
 
