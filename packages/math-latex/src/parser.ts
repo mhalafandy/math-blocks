@@ -352,6 +352,14 @@ class Parser {
     }
 
     switch (name) {
+      case "differentialD":
+        return { kind: "ident", text: "d", variant: "normal" };
+      case "exponentialE":
+        return { kind: "ident", text: "e", variant: "normal" };
+      case "imaginaryI":
+        return { kind: "ident", text: "i", variant: "normal" };
+      case "imaginaryJ":
+        return { kind: "ident", text: "j", variant: "normal" };
       case "placeholder": {
         // MathLive's empty slot (\placeholder{} or \placeholder[id]{default}): keep any default content.
         const n = this.peek();

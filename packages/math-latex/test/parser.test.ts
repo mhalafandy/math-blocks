@@ -168,6 +168,11 @@ describe("parseLatex — environments", () => {
 });
 
 describe("parseLatex — MathLive output", () => {
+  it("reads MathLive's semantic letters as upright letters", () => {
+    expect(parseLatex("\\differentialD x").root.children[0]).toEqual({ kind: "ident", text: "d", variant: "normal" });
+    expect(parseLatex("\\exponentialE").root.children[0]).toEqual({ kind: "ident", text: "e", variant: "normal" });
+  });
+
   it("treats empty placeholders as empty slots, without warnings", () => {
     const { root, diagnostics } = parse("x^{\\placeholder{}}+\\frac{a}{\\placeholder{}}");
     expect(diagnostics).toEqual([]);

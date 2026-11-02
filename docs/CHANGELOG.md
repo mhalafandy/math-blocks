@@ -37,6 +37,9 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
   meaning search; all items available in the command palette.
 
 ### Fixed
+- Every template box can be filled by clicking or Tab (172/172 verified); bold slots stay bold.
+- Typing after an upright differential d no longer makes the variable upright.
+- Clicking anywhere on the canvas puts the cursor in the equation; thinner empty boxes.
 - The Word add-in DLL is embedded in the app executable instead of shipped as a separate file, so installing an update never collides with Word or an antivirus scan holding the file.
 - Installer could not update while Word was open: the Word add-in now lives in its own folder (`%LOCALAPPDATA%\MathBlocksWordAddin`).
 - Equation wrapper no longer draws a second box around Word's equation (D-013).
