@@ -414,3 +414,27 @@ which carries the OLE embeddings as base64 parts); the app converts it with the 
 file conversion (`convertFlatOpc`) and the connector puts it back with `InsertXML`, last paragraph
 first, in one undo record. A paragraph whose objects changed meanwhile is skipped. Tabs, fields
 and bookmarks travel inside the paragraph XML, so numbers and references survive.
+
+## D-024 — Own typesetting engine; picture mode beside native equations
+
+**Status:** Accepted (supersedes the "MathJax precision mode" idea in D-015)
+
+**Context.** Native Word equations cannot match MathType's look: Word draws them with its own
+renderer and only OpenType math fonts (never Times New Roman), and numbered equations fall into
+inline size. The user wants MathType's quality or better.
+
+**Decision.**
+- `packages/math-render`: MathBlocks' own engine. AST → boxes (TeX-like atom spacing, fractions,
+  scripts, radicals, big operators, stretchy delimiters from size variants and assemblies,
+  matrices, cases, aligned, accents) → SVG of glyph outlines (needs no fonts to display).
+- Styles are rule sets (`RenderStyle`). **Classic** = MathType's defaults (Times New Roman
+  letters, scripts 58 %, big operators 150 %, its spacing), improved where MathType is weak.
+  Letters come from Times New Roman (Windows), everything a text font lacks from STIX Two Math
+  (OFL, designed to match Times).
+- Two equation kinds in Word, switchable per equation: **native** (editable in Word) and
+  **MathBlocks picture** (SVG + PNG fallback for Word 2016, inside the MathBlocks content
+  control, source stored with it; edited in MathBlocks, e.g. the floating panel).
+- Editing happens in a floating MathBlocks panel next to the equation (right-click/double-click).
+
+**Consequences.** Exact, consistent look on every PC; pictures are not editable with Word's own
+equation tools (same as MathType). The engine is checked against MathType's own previews.

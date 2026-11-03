@@ -1,0 +1,823 @@
+/**
+ * The typesetting engine: AST → boxes. A simplified TeX: atoms with spacing classes, boxes with
+ * width/height/depth in em, glyphs from the text fonts (Times) or the math font (STIX Two Math).
+ */
+import type { MathNode, MathVariant, Row } from "@mathblocks/math-core";
+import { charGlyph, glyphName, namedGlyph, type FontSet, type GlyphInfo } from "./fonts";
+import type { RenderStyle } from "./style";
+
+// ------------------------------------------------------------------ boxes
+
+export type Item =
+  | { k: "g"; g: GlyphInfo; x: number; y: number; s: number; sx?: number; sy?: number; color?: string }
+  | { k: "r"; x: number; y: number; w: number; h: number; color?: string };
+
+export interface Box {
+  w: number;
+  h: number;
+  d: number;
+  items: Item[];
+  /** Extra ink right of the advance (italic letters): superscripts go after it. */
+  overhang?: number;
+  /** A single italic or upright letter (accent placement). */
+  char?: { italic: boolean };
+  /** Height that scripts are placed against (an accented letter uses the letter's height). */
+  scriptH?: number;
+}
+
+const empty = (w = 0): Box => ({ w, h: 0, d: 0, items: [] });
+
+function shift(items: Item[], dx: number, dy: number): Item[] {
+  return items.map((it) => ({ ...it, x: it.x + dx, y: it.y + dy }));
+}
+
+/** Places boxes side by side (x offsets given), returns the union box. */
+function combine(parts: { box: Box; x: number; y: number }[], w?: number): Box {
+  let h = 0;
+  let d = 0;
+  let right = 0;
+  const items: Item[] = [];
+  for (const p of parts) {
+    h = Math.max(h, p.box.h + p.y);
+    d = Math.max(d, p.box.d - p.y);
+    right = Math.max(right, p.x + p.box.w);
+    items.push(...shift(p.box.items, p.x, p.y));
+  }
+  return { w: w ?? right, h, d, items };
+}
+
+function glyphBox(g: GlyphInfo, s: number, color?: string, sy = 1): Box {
+  return {
+    w: g.w * s,
+    h: g.h * s * sy,
+    d: g.d * s * sy,
+    items: [{ k: "g", g, x: 0, y: 0, s, sy: sy !== 1 ? sy : undefined, color }],
+    overhang: Math.max(0, (g.xMax - g.w) * s),
+  };
+}
+
+function rule(x: number, y: number, w: number, h: number): Item {
+  return { k: "r", x, y, w, h };
+}
+
+// ------------------------------------------------------------------ context
+
+interface Ctx {
+  fonts: FontSet;
+  st: RenderStyle;
+  /** Current size, relative to the base font size. */
+  s: number;
+  display: boolean;
+  /** 0 base, 1 script, 2 script-script. */
+  level: number;
+}
+
+const script = (c: Ctx): Ctx => ({
+  ...c,
+  display: false,
+  level: Math.min(2, c.level + 1),
+  s: c.level === 0 ? c.st.scriptScale : c.st.scriptScriptScale,
+});
+
+/** Height of the math axis (centre of the minus sign) at the current size. */
+function axis(c: Ctx): number {
+  const g = charGlyph(c.fonts.regular, "−") ?? charGlyph(c.fonts.math, "−");
+  return g ? ((g.h - g.d) / 2) * c.s : 0.25 * c.s;
+}
+
+// ------------------------------------------------------------------ characters
+
+const MATH_ALPHA: Partial<Record<MathVariant, [number, number, number?]>> = {
+  // [capital A, small a, digit 0]
+  "double-struck": [0x1d538, 0x1d552, 0x1d7d8],
+  script: [0x1d49c, 0x1d4b6],
+  fraktur: [0x1d504, 0x1d51e],
+  "sans-serif": [0x1d5a0, 0x1d5ba, 0x1d7e2],
+  monospace: [0x1d670, 0x1d68a, 0x1d7f6],
+};
+// Letters that have their own code points outside the math alphanumeric block.
+const ALPHA_HOLES: Record<number, string> = {
+  0x1d53a: "ℂ", 0x1d53f: "ℍ", 0x1d545: "ℕ", 0x1d547: "ℙ", 0x1d548: "ℚ", 0x1d549: "ℝ", 0x1d551: "ℤ",
+  0x1d49d: "ℬ", 0x1d4a0: "ℰ", 0x1d4a1: "ℱ", 0x1d4a3: "ℋ", 0x1d4a4: "ℐ", 0x1d4a7: "ℒ", 0x1d4a8: "ℳ", 0x1d4ad: "ℛ",
+  0x1d4ba: "ℯ", 0x1d4bc: "ℊ", 0x1d4c4: "ℴ", 0x1d506: "ℭ", 0x1d50b: "ℌ", 0x1d50c: "ℑ", 0x1d515: "ℜ", 0x1d51d: "ℨ",
+};
+
+function mathAlpha(ch: string, variant: MathVariant): string | null {
+  const base = MATH_ALPHA[variant];
+  if (!base) return null;
+  const c = ch.codePointAt(0)!;
+  let cp: number | null = null;
+  if (c >= 65 && c <= 90) cp = base[0] + (c - 65);
+  else if (c >= 97 && c <= 122) cp = base[1] + (c - 97);
+  else if (c >= 48 && c <= 57 && base[2]) cp = base[2] + (c - 48);
+  if (cp === null) return null;
+  return ALPHA_HOLES[cp] ?? String.fromCodePoint(cp);
+}
+
+const isLatin = (ch: string) => /^[A-Za-z]$/.test(ch);
+const isLowerGreek = (ch: string) => /^[α-ωϑϕϖϰϱϵ]$/.test(ch);
+const isUpperGreek = (ch: string) => /^[Α-Ω]$/.test(ch);
+
+type FaceName = "regular" | "italic" | "bold" | "boldItalic";
+
+function faceFor(ch: string, variant: MathVariant | undefined, kind: "ident" | "number" | "operator" | "text", c: Ctx): FaceName {
+  if (variant === "bold") return "bold";
+  if (variant === "bold-italic") return "boldItalic";
+  if (variant === "italic") return "italic";
+  if (variant === "normal" || kind !== "ident") return "regular";
+  if (isLatin(ch)) return "italic";
+  if (isLowerGreek(ch)) return c.st.greekItalic ? "italic" : "regular";
+  if (isUpperGreek(ch)) return "regular";
+  return "regular";
+}
+
+/** One character as a box, with font fallback (text face → math font → regular). */
+function charBox(ch: string, face: FaceName, c: Ctx, variant?: MathVariant): Box {
+  const alpha = variant ? mathAlpha(ch, variant) : null;
+  const tries: GlyphInfo[] = [];
+  if (alpha) {
+    const g = charGlyph(c.fonts.math, alpha);
+    if (g) tries.push(g);
+  }
+  const fromFace = charGlyph(c.fonts[face], ch);
+  if (fromFace) tries.push(fromFace);
+  const fromMath = charGlyph(c.fonts.math, ch);
+  if (fromMath) tries.push(fromMath);
+  const fromRegular = charGlyph(c.fonts.regular, ch);
+  if (fromRegular) tries.push(fromRegular);
+  const g = tries[0];
+  if (!g) return empty(0.5 * c.s);
+  const b = glyphBox(g, c.s);
+  b.char = { italic: face === "italic" || face === "boldItalic" };
+  return b;
+}
+
+function textBox(text: string, face: FaceName, c: Ctx, variant?: MathVariant, color?: string): Box {
+  const parts: { box: Box; x: number; y: number }[] = [];
+  let x = 0;
+  let last: Box | null = null;
+  for (const ch of text) {
+    if (ch === " ") {
+      x += 0.25 * c.s;
+      continue;
+    }
+    const b = charBox(ch, face, c, variant);
+    if (color) for (const it of b.items) it.color = color;
+    parts.push({ box: b, x, y: 0 });
+    x += b.w;
+    last = b;
+  }
+  const box = combine(parts, x);
+  if (last && parts.length === 1) {
+    box.overhang = last.overhang;
+    box.char = last.char;
+  } else if (last) box.overhang = last.overhang;
+  return box;
+}
+
+// ------------------------------------------------------------------ atoms and spacing
+
+type Cls = "ord" | "op" | "bin" | "rel" | "open" | "close" | "punct" | "inner";
+
+interface Atom {
+  box: Box;
+  cls: Cls;
+}
+
+// TeX's inter-atom spacing: 0 none, 1 thin, 2 medium, 3 thick; negative = only in display/text.
+const SPACING: Record<Cls, Record<Cls, number>> = {
+  ord: { ord: 0, op: 1, bin: -2, rel: -3, open: 0, close: 0, punct: 0, inner: -1 },
+  op: { ord: 1, op: 1, bin: 0, rel: -3, open: 0, close: 0, punct: 0, inner: -1 },
+  bin: { ord: -2, op: -2, bin: 0, rel: 0, open: -2, close: 0, punct: 0, inner: -2 },
+  rel: { ord: -3, op: -3, bin: 0, rel: 0, open: -3, close: 0, punct: 0, inner: -3 },
+  open: { ord: 0, op: 0, bin: 0, rel: 0, open: 0, close: 0, punct: 0, inner: 0 },
+  close: { ord: 0, op: 1, bin: -2, rel: -3, open: 0, close: 0, punct: 0, inner: -1 },
+  punct: { ord: -1, op: -1, bin: 0, rel: -1, open: -1, close: -1, punct: -1, inner: -1 },
+  inner: { ord: -1, op: 1, bin: -2, rel: -3, open: -1, close: 0, punct: -1, inner: -1 },
+};
+
+function space(a: Cls, b: Cls, c: Ctx): number {
+  const v = SPACING[a][b];
+  if (v === 0 || (v < 0 && c.level > 0)) return 0;
+  const k = Math.abs(v);
+  return (k === 1 ? c.st.thin : k === 2 ? c.st.medium : c.st.thick) * c.s;
+}
+
+const OPEN = new Set(["(", "[", "{", "⟨", "⌊", "⌈"]);
+const CLOSE = new Set([")", "]", "}", "⟩", "⌋", "⌉"]);
+
+/** Lays out a row: atoms with TeX spacing. */
+export function layoutRow(r: Row, c: Ctx, opts: { leadingOrd?: boolean } = {}): Box {
+  const atoms: Atom[] = [];
+  if (opts.leadingOrd) atoms.push({ box: empty(), cls: "ord" });
+  for (const n of r.children) atomsOf(n, c, atoms);
+  // Binary operators in a unary position act as ordinary symbols (−μ, a = −b).
+  for (let i = 0; i < atoms.length; i++) {
+    const a = atoms[i]!;
+    if (a.cls !== "bin") continue;
+    const prev = atoms[i - 1]?.cls;
+    const next = atoms[i + 1]?.cls;
+    if (!prev || ["bin", "op", "rel", "open", "punct"].includes(prev) || !next || ["rel", "close", "punct"].includes(next)) a.cls = "ord";
+  }
+  const parts: { box: Box; x: number; y: number }[] = [];
+  let x = 0;
+  for (let i = 0; i < atoms.length; i++) {
+    const a = atoms[i]!;
+    if (i > 0) x += space(atoms[i - 1]!.cls, a.cls, c);
+    parts.push({ box: a.box, x, y: 0 });
+    x += a.box.w;
+  }
+  const box = combine(parts, x);
+  if (atoms.length === 1) {
+    box.overhang = atoms[0]!.box.overhang;
+    box.char = atoms[0]!.box.char;
+    box.scriptH = atoms[0]!.box.scriptH;
+  } else if (atoms.length) box.overhang = atoms[atoms.length - 1]!.box.overhang;
+  return box;
+}
+
+function atomsOf(n: MathNode, c: Ctx, out: Atom[]) {
+  switch (n.kind) {
+    case "row":
+      out.push({ box: layoutRow(n, c), cls: "ord" });
+      return;
+    case "ident":
+      out.push({ box: textBox(n.text, faceFor(n.text, n.variant, "ident", c), c, n.variant), cls: "ord" });
+      return;
+    case "number":
+      out.push({ box: textBox(n.text, faceFor(n.text, n.variant, "number", c), c, n.variant), cls: "ord" });
+      return;
+    case "text":
+      out.push({ box: textBox(n.text, "regular", c), cls: "ord" });
+      return;
+    case "operator": {
+      const cls: Cls =
+        n.opClass === "binary" ? "bin" : n.opClass === "relation" ? "rel" : n.opClass === "punctuation" ? "punct" : OPEN.has(n.text) ? "open" : CLOSE.has(n.text) ? "close" : "ord";
+      out.push({ box: textBox(n.text, "regular", c), cls });
+      return;
+    }
+    case "space": {
+      const w = { thin: c.st.thin, medium: c.st.medium, thick: c.st.thick, quad: 1, qquad: 2, negthin: -c.st.thin, nbsp: 0.25 }[n.width];
+      out.push({ box: empty(w * c.s), cls: "ord" });
+      return;
+    }
+    case "fraction":
+      out.push({ box: fraction(n, c), cls: "inner" });
+      return;
+    case "scripts":
+      out.push({ box: scripts(layoutRow(n.base, c), n.sub, n.sup, c), cls: classOfRow(n.base) });
+      return;
+    case "prescripts":
+      out.push({ box: prescripts(n.base, n.sub, n.sup, c), cls: "ord" });
+      return;
+    case "radical":
+      out.push({ box: radical(n.body, n.index, c), cls: "ord" });
+      return;
+    case "nary":
+      out.push({ box: nary(n.op, n.sub, n.sup, n.limits, c), cls: "op" });
+      for (const b of n.body.children) atomsOf(b, c, out);
+      return;
+    case "function": {
+      const name = textBox(n.name, "regular", c);
+      const limits = n.limits && c.display;
+      out.push({ box: limits ? underOver(name, n.sub, n.sup, c) : n.sub || n.sup ? scripts(name, n.sub, n.sup, c) : name, cls: "op" });
+      for (const b of n.arg.children) atomsOf(b, c, out);
+      return;
+    }
+    case "delimited":
+      out.push({ box: delimited(n.open, n.close, n.parts, n.separator, c), cls: "inner" });
+      return;
+    case "accent":
+      out.push({ box: accent(n.accent, n.body, c), cls: "ord" });
+      return;
+    case "stack": {
+      const body = layoutRow(n.body, c);
+      out.push({ box: stack(body, n.annotation, n.position, n.brace, c), cls: "ord" });
+      return;
+    }
+    case "boxed":
+      out.push({ box: boxed(layoutRow(n.body, c), c), cls: "ord" });
+      return;
+    case "matrix":
+      out.push({ box: matrix(n.matrixKind, n.rows, c), cls: "inner" });
+      return;
+    case "cases":
+      out.push({ box: cases(n.rows, c), cls: "inner" });
+      return;
+    case "aligned":
+      out.push({ box: aligned(n.rows, c), cls: "ord" });
+      return;
+    case "raw":
+      out.push({ box: textBox(n.latex, "regular", c, undefined, "#c0392b"), cls: "ord" });
+      return;
+  }
+}
+
+function classOfRow(r: Row): Cls {
+  if (r.children.length !== 1) return "ord";
+  const n = r.children[0]!;
+  if (n.kind === "operator") return n.opClass === "binary" ? "bin" : n.opClass === "relation" ? "rel" : "ord";
+  if (n.kind === "nary" || n.kind === "function") return "op";
+  return "ord";
+}
+
+// ------------------------------------------------------------------ constructions
+
+function fraction(n: Extract<MathNode, { kind: "fraction" }>, c0: Ctx): Box {
+  // MathType keeps numerator and denominator at full size; \tfrac and nested levels shrink.
+  const c = n.size === "text" ? script(c0) : c0;
+  const num = layoutRow(n.num, c);
+  const den = layoutRow(n.den, c);
+  const st = c0.st;
+  const s = c0.s;
+  const t = n.bar ? st.rule * s : 0;
+  const a = axis(c0);
+  const gap = (n.bar ? st.fracGap : st.fracGap * 2) * s;
+  const w = Math.max(num.w, den.w) + 2 * st.fracOverhang * s;
+  const up = a + t / 2 + gap + num.d;
+  const down = a - t / 2 - gap - den.h;
+  const box = combine(
+    [
+      { box: num, x: (w - num.w) / 2, y: up },
+      { box: den, x: (w - den.w) / 2, y: down },
+    ],
+    w,
+  );
+  if (n.bar) box.items.push(rule(0, a - t / 2, w, t));
+  // Thin space on both sides keeps the bar off its neighbours.
+  const pad = c0.st.thin * 0.5 * s;
+  return { w: w + 2 * pad, h: box.h, d: box.d, items: shift(box.items, pad, 0) };
+}
+
+function scripts(base: Box, sub: Row | undefined, sup: Row | undefined, c: Ctx): Box {
+  const sc = script(c);
+  const st = c.st;
+  const subB = sub ? layoutRow(sub, sc) : null;
+  const supB = sup ? layoutRow(sup, sc) : null;
+  let up = 0;
+  let down = 0;
+  const baseH = base.scriptH ?? base.h;
+  if (supB) up = Math.max(st.supShift * c.s, baseH - 0.5 * supB.h, supB.d + 0.2 * c.s);
+  if (subB) down = Math.max(st.subShift * c.s, base.d + 0.4 * subB.h - 0.2 * c.s, subB.h - 0.55 * c.s);
+  if (supB && subB) {
+    const gap = up - supB.d - (subB.h - down);
+    const need = 4 * st.rule * c.s;
+    if (gap < need) {
+      const extra = need - gap;
+      up += extra / 2;
+      down += extra / 2;
+    }
+  }
+  const gx = st.scriptGap * c.s;
+  const parts = [{ box: base, x: 0, y: 0 }];
+  let w = base.w;
+  if (supB) {
+    const x = base.w + (base.overhang ?? 0) + gx;
+    parts.push({ box: supB, x, y: up });
+    w = Math.max(w, x + supB.w);
+  }
+  if (subB) {
+    const x = base.w + gx * 0.5;
+    parts.push({ box: subB, x, y: -down });
+    w = Math.max(w, x + subB.w);
+  }
+  return combine(parts, w + gx * 0.5);
+}
+
+function prescripts(baseRow: Row, sub: Row | undefined, sup: Row | undefined, c: Ctx): Box {
+  const base = layoutRow(baseRow, c);
+  const sc = script(c);
+  const subB = sub ? layoutRow(sub, sc) : null;
+  const supB = sup ? layoutRow(sup, sc) : null;
+  const pw = Math.max(subB?.w ?? 0, supB?.w ?? 0) + c.st.scriptGap * c.s;
+  const parts = [{ box: base, x: pw, y: 0 }];
+  if (supB) parts.push({ box: supB, x: pw - c.st.scriptGap * c.s - supB.w, y: Math.max(c.st.supShift * c.s, base.h - 0.5 * supB.h) });
+  if (subB) parts.push({ box: subB, x: pw - c.st.scriptGap * c.s - subB.w, y: -Math.max(c.st.subShift * c.s, base.d) });
+  return combine(parts, pw + base.w);
+}
+
+/** Limits centred above and below a base (sums in display, lim). */
+function underOver(base: Box, sub: Row | undefined, sup: Row | undefined, c: Ctx): Box {
+  const sc = script(c);
+  const subB = sub ? layoutRow(sub, sc) : null;
+  const supB = sup ? layoutRow(sup, sc) : null;
+  const gap = c.st.limitGap * c.s;
+  const w = Math.max(base.w, subB?.w ?? 0, supB?.w ?? 0);
+  const parts = [{ box: base, x: (w - base.w) / 2, y: 0 }];
+  if (supB) parts.push({ box: supB, x: (w - supB.w) / 2, y: base.h + gap + supB.d });
+  if (subB) parts.push({ box: subB, x: (w - subB.w) / 2, y: -(base.d + gap + subB.h) });
+  return combine(parts, w);
+}
+
+const INTEGRALS = new Set(["∫", "∬", "∭", "∮", "∯", "∰", "⨌"]);
+
+function nary(op: string, sub: Row | undefined, sup: Row | undefined, limits: "auto" | "limits" | "nolimits", c: Ctx): Box {
+  const integral = INTEGRALS.has(op);
+  const m = c.fonts.math;
+  let g = charGlyph(m, op) ?? charGlyph(c.fonts.regular, op);
+  if (!g) return textBox(op, "regular", c);
+  let size = c.s;
+  if (c.display && c.st.bigOpScale > 0) size = c.s * c.st.bigOpScale;
+  else if (c.display) {
+    const name = g.glyph.name;
+    const big = name ? (namedGlyph(m, `${name}.dsp`) ?? namedGlyph(m, `${name}.s1`)) : null;
+    if (big) g = big;
+  }
+  const a = axis(c);
+  const opBox = glyphBox(g, size);
+  const dy = a - ((g.h - g.d) / 2) * size;
+  const centred: Box = { ...opBox, h: opBox.h + dy, d: opBox.d - dy, items: shift(opBox.items, 0, dy) };
+  const under = limits === "limits" || (limits === "auto" && !integral && c.display);
+  if (under) return underOver(centred, sub, sup, c);
+  if (!sub && !sup) return centred;
+  // Side limits; integrals are slanted, so the lower limit tucks in under the bottom.
+  const sc = script(c);
+  const subB = sub ? layoutRow(sub, sc) : null;
+  const supB = sup ? layoutRow(sup, sc) : null;
+  const parts = [{ box: centred, x: 0, y: 0 }];
+  let w = centred.w;
+  const gx = c.st.scriptGap * c.s;
+  if (supB) {
+    const x = (integral ? g.xMax * size + 0.03 * c.s : centred.w) + gx;
+    const y = centred.h - supB.h * 0.75;
+    parts.push({ box: supB, x, y });
+    w = Math.max(w, x + supB.w);
+  }
+  if (subB) {
+    const x = (integral ? centred.w * 0.55 : centred.w) + gx;
+    const y = -centred.d + subB.d * 0.5;
+    parts.push({ box: subB, x, y });
+    w = Math.max(w, x + subB.w);
+  }
+  return combine(parts, w + gx);
+}
+
+// ------------------------------------------------------------------ delimiters
+
+const ASSEMBLY: Record<string, [string, string, string, string?]> = {
+  // top, extender, bottom, middle
+  "(": ["⎛", "⎜", "⎝"],
+  ")": ["⎞", "⎟", "⎠"],
+  "[": ["⎡", "⎢", "⎣"],
+  "]": ["⎤", "⎥", "⎦"],
+  "{": ["⎧", "⎪", "⎩", "⎨"],
+  "}": ["⎫", "⎪", "⎭", "⎬"],
+  "⌈": ["⎡", "⎢", "⎢"],
+  "⌉": ["⎤", "⎥", "⎥"],
+  "⌊": ["⎢", "⎢", "⎣"],
+  "⌋": ["⎥", "⎥", "⎦"],
+};
+
+/** A delimiter at least `size` tall (em, already scaled), centred on the axis. */
+export function delimiter(ch: string, size: number, c: Ctx): Box {
+  if (!ch) return empty(0.12 * c.s);
+  const a = axis(c);
+  const centre = (b: Box, g: GlyphInfo, sy = 1): Box => {
+    const dy = a - ((g.h - g.d) / 2) * c.s * sy;
+    return { w: b.w, h: b.h + dy, d: b.d - dy, items: shift(b.items, 0, dy) };
+  };
+  if (ch === "|" || ch === "‖" || ch === "∣" || ch === "∥") {
+    const textBar = charGlyph(c.fonts.regular, "|");
+    const tall = Math.max(size, (textBar ? textBar.h + textBar.d : 1) * c.s);
+    const t = c.st.rule * 1.1 * c.s;
+    const side = 0.1 * c.s;
+    const double = ch === "‖" || ch === "∥";
+    const w = side * 2 + t * (double ? 3 : 1);
+    const y = a - tall / 2;
+    const items = [rule(side, y, t, tall)];
+    if (double) items.push(rule(side + 2 * t, y, t, tall));
+    return { w, h: y + tall, d: -y, items };
+  }
+  // Small: the text font's own glyph (matches the letters).
+  const text = charGlyph(c.fonts.regular, ch);
+  if (text && (text.h + text.d) * c.s >= size * 0.98) return glyphBox(text, c.s);
+  const m = c.fonts.math;
+  const base = charGlyph(m, ch);
+  const name = base?.glyph.name;
+  if (name) {
+    for (let i = 1; i <= 12; i++) {
+      const v = namedGlyph(m, `${name}.s${i}`);
+      if (!v) break;
+      if ((v.h + v.d) * c.s >= size) return centre(glyphBox(v, c.s), v);
+    }
+  }
+  const parts = ASSEMBLY[ch];
+  if (!parts) {
+    const g = base ?? text;
+    if (!g) return empty(0.2 * c.s);
+    const sy = size / ((g.h + g.d) * c.s);
+    return centre(glyphBox(g, c.s, undefined, sy), g, sy);
+  }
+  // Built from pieces: top, extender(s), [middle], bottom.
+  const [topC, extC, botC, midC] = parts;
+  const top = charGlyph(m, topC)!;
+  const ext = charGlyph(m, extC)!;
+  const bot = charGlyph(m, botC)!;
+  const mid = midC ? charGlyph(m, midC) : null;
+  const s = c.s;
+  const ht = (g: GlyphInfo) => (g.h + g.d) * s;
+  const fixed = ht(top) + ht(bot) + (mid ? ht(mid) : 0);
+  const extTotal = Math.max(0, size - fixed);
+  const nExt = mid ? 2 : 1;
+  const extH = extTotal / nExt;
+  const yTop = a + size / 2;
+  const items: Item[] = [];
+  let y = yTop;
+  const put = (g: GlyphInfo, height: number, sy = 1) => {
+    // Place so the piece's ink top is at y.
+    items.push({ k: "g", g, x: 0, y: y - g.h * s * sy, s, sy: sy !== 1 ? sy : undefined });
+    y -= height;
+  };
+  const overlap = 0.01 * s;
+  put(top, ht(top) - overlap);
+  const extSy = (extH + 2 * overlap) / ht(ext);
+  if (extH > 0) put(ext, extH, extSy);
+  if (mid) {
+    put(mid, ht(mid) - overlap);
+    if (extH > 0) put(ext, extH, extSy);
+  }
+  put(bot, ht(bot));
+  const w = Math.max(top.w, ext.w, bot.w) * s;
+  return { w, h: yTop, d: -(yTop - size), items };
+}
+
+function delimited(open: string, close: string, parts: Row[], separator: string | undefined, c: Ctx): Box {
+  const inner = parts.map((p) => layoutRow(p, c));
+  const a = axis(c);
+  const h = Math.max(...inner.map((b) => b.h), 0.5 * c.s);
+  const d = Math.max(...inner.map((b) => b.d), 0);
+  const half = Math.max(h - a, d + a);
+  const size = 2 * half + 2 * c.st.delimiterPad * c.s;
+  const pieces: Box[] = [delimiter(open, size, c)];
+  inner.forEach((b, i) => {
+    if (i > 0 && separator) pieces.push(delimiter(separator, size, c));
+    pieces.push(b);
+  });
+  pieces.push(delimiter(close, size, c));
+  let x = 0;
+  const pad = 0.04 * c.s;
+  const placed = pieces.map((b, i) => {
+    const p = { box: b, x, y: 0 };
+    x += b.w + (i < pieces.length - 1 ? pad : 0);
+    return p;
+  });
+  return combine(placed, x);
+}
+
+// ------------------------------------------------------------------ radicals, accents, stacks
+
+function radical(bodyRow: Row, index: Row | undefined, c: Ctx): Box {
+  const body = layoutRow(bodyRow, c);
+  const m = c.fonts.math;
+  const t = c.st.rule * c.s;
+  const gap = c.st.radicalGap * c.s;
+  const need = body.h + body.d + gap + t;
+  let g = charGlyph(m, "√");
+  if (!g) return body;
+  let sy = 1;
+  const variants = [g, ...[1, 2, 3].map((i) => namedGlyph(m, `uni221A.s${i}`)).filter((x): x is GlyphInfo => !!x)];
+  const fit = variants.find((v) => (v.h + v.d) * c.s >= need);
+  if (fit) g = fit;
+  else {
+    g = variants[variants.length - 1]!;
+    sy = need / ((g.h + g.d) * c.s);
+  }
+  // Top of the sign = top of the bar.
+  const top = body.h + gap + t;
+  const y = top - g.h * c.s * sy;
+  const signW = g.xMax * c.s;
+  const items: Item[] = [{ k: "g", g, x: 0, y, s: c.s, sy: sy !== 1 ? sy : undefined }];
+  const bodyX = signW + 0.03 * c.s;
+  items.push(rule(signW - 0.01 * c.s, top - t, bodyX - signW + body.w + 0.06 * c.s, t));
+  items.push(...shift(body.items, bodyX, 0));
+  let box: Box = { w: bodyX + body.w + 0.08 * c.s, h: top, d: Math.max(body.d, -(y - g.d * c.s * sy)), items };
+  if (index) {
+    const ic = script(script(c));
+    const ib = layoutRow(index, ic);
+    const raise = y + (g.h * c.s * sy) * 0.55;
+    const ix = Math.max(0, signW * 0.55 - ib.w);
+    const shiftX = Math.max(0, ib.w - signW * 0.55);
+    box = combine([{ box: { ...box }, x: shiftX, y: 0 }, { box: ib, x: ix, y: raise + ib.d }]);
+  }
+  return box;
+}
+
+const ACCENT_CHAR: Record<string, string> = {
+  hat: "̂",
+  widehat: "̂",
+  check: "̌",
+  tilde: "̃",
+  widetilde: "̃",
+  breve: "̆",
+  dot: "̇",
+  ddot: "̈",
+  dddot: "⃛",
+  vec: "⃗",
+  overrightharpoon: "⃑",
+  overleftharpoon: "⃐",
+  overrightarrow: "⃗",
+  overleftarrow: "⃖",
+};
+
+function accent(kind: string, bodyRow: Row, c: Ctx): Box {
+  const body = layoutRow(bodyRow, c);
+  const t = c.st.rule * c.s;
+  const gap = c.st.accentGap * c.s;
+  if (kind === "overline" || kind === "bar") {
+    if (kind === "bar" && body.char) {
+      const g = charGlyph(c.fonts.math, "̄");
+      if (g) return placeAccent(body, g, c, gap);
+    }
+    const y = body.h + gap * 2;
+    return { ...body, h: y + t, items: [...body.items, rule(0.02 * c.s, y, body.w - 0.04 * c.s, t)] };
+  }
+  if (kind === "underline") {
+    const y = -body.d - gap * 2 - t;
+    return { ...body, d: -y, items: [...body.items, rule(0, y, body.w, t)] };
+  }
+  const ch = ACCENT_CHAR[kind];
+  const g = ch ? charGlyph(c.fonts.math, ch) : null;
+  if (!g) return body;
+  const wide = !body.char && (kind.startsWith("over") || kind === "vec") && body.w > (g.xMax - g.xMin) * c.s * 1.3;
+  if (wide) return wideArrow(body, g, c, gap);
+  if (!body.char && (kind === "widehat" || kind === "widetilde")) {
+    const sx = body.w / ((g.xMax - g.xMin) * c.s);
+    return placeAccent(body, g, c, gap, Math.max(1, sx));
+  }
+  return placeAccent(body, g, c, gap);
+}
+
+/** Centres an accent glyph over the base's ink (shifted right for italic letters). */
+function placeAccent(body: Box, g: GlyphInfo, c: Ctx, gap: number, sx = 1): Box {
+  const s = c.s;
+  const inkW = (g.xMax - g.xMin) * s * sx;
+  const skew = body.char?.italic ? 0.08 * body.h : 0;
+  const x = body.w / 2 + skew - inkW / 2 - g.xMin * s * sx;
+  // Accent ink bottom sits `gap` above the base ink top.
+  const y = body.h + gap + g.d * s;
+  const item: Item = { k: "g", g, x, y, s, sx: sx !== 1 ? sx : undefined };
+  return { ...body, h: Math.max(body.h, y + g.h * s), items: [...body.items, item], scriptH: body.scriptH ?? body.h };
+}
+
+/** Arrow over a wide base: a rule with the arrow's head at the end. */
+function wideArrow(body: Box, head: GlyphInfo, c: Ctx, gap: number): Box {
+  const s = c.s;
+  const t = c.st.rule * s * 0.9;
+  const inkH = (head.h + head.d) * s;
+  const yMid = body.h + gap + inkH / 2;
+  const y = yMid - ((head.h - head.d) / 2) * s;
+  const headW = (head.xMax - head.xMin) * s;
+  const left = head.glyph.unicode === 0x20d6 || head.glyph.unicode === 0x20d0;
+  const inkLeft = left ? 0 : body.w - headW;
+  const items: Item[] = [...body.items, { k: "g", g: head, x: inkLeft - head.xMin * s, y, s }];
+  items.push(left ? rule(headW * 0.5, yMid - t / 2, body.w - headW * 0.5, t) : rule(0, yMid - t / 2, body.w - headW * 0.5, t));
+  return { ...body, h: Math.max(body.h, yMid + inkH / 2), items };
+}
+
+function stack(body: Box, annotation: Row | undefined, position: "over" | "under", brace: boolean, c: Ctx): Box {
+  const s = c.s;
+  const gap = c.st.limitGap * s;
+  const ann = annotation ? layoutRow(annotation, script(c)) : null;
+  const parts = [{ box: body, x: 0, y: 0 }];
+  let w = Math.max(body.w, ann?.w ?? 0);
+  const bx = (w - body.w) / 2;
+  parts[0]!.x = bx;
+  let yEdge = position === "over" ? body.h + gap : -(body.d + gap);
+  if (brace) {
+    const g = charGlyph(c.fonts.math, position === "over" ? "⏞" : "⏟");
+    if (g) {
+      const sx = body.w / ((g.xMax - g.xMin) * s);
+      const bb: Box = { w: body.w, h: g.h * s, d: g.d * s, items: [{ k: "g", g, x: -g.xMin * s * sx, y: 0, s, sx }] };
+      const y = position === "over" ? yEdge + bb.d : yEdge - bb.h;
+      parts.push({ box: bb, x: bx, y });
+      yEdge = position === "over" ? y + bb.h + gap : y - bb.d - gap;
+    }
+  }
+  if (ann) parts.push({ box: ann, x: (w - ann.w) / 2, y: position === "over" ? yEdge + ann.d : yEdge - ann.h });
+  w = Math.max(w, body.w);
+  return combine(parts, w);
+}
+
+function boxed(body: Box, c: Ctx): Box {
+  const p = 0.15 * c.s;
+  const t = c.st.rule * c.s;
+  const w = body.w + 2 * p + 2 * t;
+  const top = body.h + p + t;
+  const bottom = -(body.d + p + t);
+  const items = [...shift(body.items, p + t, 0), rule(0, bottom, w, t), rule(0, top - t, w, t), rule(0, bottom, t, top - bottom), rule(w - t, bottom, t, top - bottom)];
+  return { w, h: top, d: -bottom, items };
+}
+
+// ------------------------------------------------------------------ arrays
+
+interface Grid {
+  box: Box;
+}
+
+/**
+ * Lays out rows of cells. align[j]: "c" | "l" | "r" per column; gaps[j]: space after column j.
+ * The grid is centred on the math axis.
+ */
+function grid(rows: Row[][], c: Ctx, align: (j: number) => "c" | "l" | "r", gapAfter: (j: number) => number, leadingOrd?: (j: number) => boolean): Grid {
+  const cells = rows.map((r) => r.map((cell, j) => layoutRow(cell, c, { leadingOrd: leadingOrd?.(j) })));
+  const nCols = Math.max(1, ...cells.map((r) => r.length));
+  const colW = Array.from({ length: nCols }, (_, j) => Math.max(0, ...cells.map((r) => r[j]?.w ?? 0)));
+  const rowH = cells.map((r) => Math.max(0.6 * c.s, ...r.map((b) => b.h)));
+  const rowD = cells.map((r) => Math.max(0.2 * c.s, ...r.map((b) => b.d)));
+  const baselines: number[] = [];
+  let y = 0;
+  cells.forEach((_, i) => {
+    if (i > 0) y -= Math.max(c.st.minBaselineSkip * c.s, rowD[i - 1]! + c.st.rowGap * c.s + rowH[i]!);
+    baselines.push(y);
+  });
+  const xs: number[] = [];
+  let x = 0;
+  for (let j = 0; j < nCols; j++) {
+    xs.push(x);
+    x += colW[j]! + (j < nCols - 1 ? gapAfter(j) : 0);
+  }
+  const parts: { box: Box; x: number; y: number }[] = [];
+  cells.forEach((r, i) =>
+    r.forEach((b, j) => {
+      const al = align(j);
+      const dx = al === "c" ? (colW[j]! - b.w) / 2 : al === "r" ? colW[j]! - b.w : 0;
+      parts.push({ box: b, x: xs[j]! + dx, y: baselines[i]! });
+    }),
+  );
+  const top = rowH[0]!;
+  const bottom = baselines[baselines.length - 1]! - rowD[rowD.length - 1]!;
+  const centre = (top + bottom) / 2;
+  const dy = axis(c) - centre;
+  const box = combine(parts.map((p) => ({ ...p, y: p.y + dy })), x);
+  box.h = top + dy;
+  box.d = -(bottom + dy);
+  return { box };
+}
+
+const MATRIX_DELIMS: Record<string, [string, string]> = {
+  matrix: ["", ""],
+  pmatrix: ["(", ")"],
+  bmatrix: ["[", "]"],
+  Bmatrix: ["{", "}"],
+  vmatrix: ["|", "|"],
+  Vmatrix: ["‖", "‖"],
+  smallmatrix: ["", ""],
+};
+
+function matrix(kind: string, rows: Row[][], c0: Ctx): Box {
+  const c = kind === "smallmatrix" ? script(c0) : c0;
+  const g = grid(rows, c, () => "c", () => c.st.colGap * c.s).box;
+  const [open, close] = MATRIX_DELIMS[kind] ?? ["", ""];
+  if (!open && !close) return g;
+  return wrapDelims(g, open, close, c0);
+}
+
+function wrapDelims(inner: Box, open: string, close: string, c: Ctx): Box {
+  const a = axis(c);
+  const half = Math.max(inner.h - a, inner.d + a);
+  const size = 2 * half + 2 * c.st.delimiterPad * c.s;
+  const l = delimiter(open, size, c);
+  const r = delimiter(close, size, c);
+  const pad = 0.12 * c.s;
+  return combine([
+    { box: l, x: 0, y: 0 },
+    { box: inner, x: l.w + pad, y: 0 },
+    { box: r, x: l.w + pad + inner.w + pad, y: 0 },
+  ]);
+}
+
+function cases(rows: Row[][], c: Ctx): Box {
+  const g = grid(rows, c, () => "l", () => 1 * c.s).box;
+  const a = axis(c);
+  const half = Math.max(g.h - a, g.d + a);
+  const l = delimiter("{", 2 * half + 2 * c.st.delimiterPad * c.s, c);
+  return combine([
+    { box: l, x: 0, y: 0 },
+    { box: g, x: l.w + 0.15 * c.s, y: 0 },
+  ]);
+}
+
+function aligned(rows: Row[][], c: Ctx): Box {
+  return grid(
+    rows,
+    c,
+    (j) => (j % 2 === 0 ? "r" : "l"),
+    (j) => (j % 2 === 0 ? 0 : 1.5 * c.s),
+    (j) => j % 2 === 1,
+  ).box;
+}
+
+// ------------------------------------------------------------------ entry
+
+export interface LayoutOptions {
+  fonts: FontSet;
+  style: RenderStyle;
+  display: boolean;
+}
+
+export function layout(root: Row, o: LayoutOptions): Box {
+  return layoutRow(root, { fonts: o.fonts, st: o.style, s: 1, display: o.display, level: 0 });
+}
+
+// Re-exported for tests.
+export { glyphName };

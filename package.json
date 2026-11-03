@@ -2,7 +2,7 @@
   "name": "mathblocks",
   "private": true,
   "version": "0.1.0",
-  "description": "MathBlocks — advanced mathematical equation editor for Microsoft Word",
+  "description": "MathBlocks \u2014 advanced mathematical equation editor for Microsoft Word",
   "type": "module",
   "packageManager": "pnpm@10.28.0",
   "engines": {
@@ -32,6 +32,7 @@
     "fast-xml-parser": "^5.2.0",
     "tsx": "^4.19.0",
     "typescript": "~5.9.3",
-    "vitest": "^4.1.12"
+    "vitest": "^4.1.12",
+    "@mathblocks/math-render": "workspace:*"
   }
 }

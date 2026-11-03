@@ -7,13 +7,35 @@
 import { strFromU8, strToU8, unzipSync, zipSync, type Unzipped } from "fflate";
 import { parseLatex } from "@mathblocks/math-latex";
 import { toOmml, TUNED_PROFILE, type StyleProfile } from "@mathblocks/math-omml";
-import { formatTag, newInstanceId } from "@mathblocks/ooxml";
+import { formatTag, newInstanceId, pictureRun } from "@mathblocks/ooxml";
 import { readCfb } from "./cfb";
 import { readMtef } from "./mtef";
 import { mtefToLatex } from "./toLatex";
 
 export interface ConvertOptions {
   profile?: StyleProfile;
+  /**
+   * Picture mode: equations become MathBlocks pictures (SVG with a PNG fallback) instead of
+   * native Word equations. Returns null to fall back to a native equation.
+   */
+  picture?: (latex: string, display: boolean) => PictureData | null;
+}
+
+export interface PictureData {
+  svg: string;
+  png: Uint8Array;
+  widthPt: number;
+  heightPt: number;
+  /** How far the picture reaches below the text baseline. */
+  depthPt: number;
+}
+
+interface MediaOut {
+  part: string;
+  svgId: string;
+  pngId: string;
+  name: string;
+  data: PictureData;
 }
 
 export interface ConvertedEquation {
@@ -58,6 +80,7 @@ export function convertDocx(input: Uint8Array, options: ConvertOptions = {}): Co
   const zip = unzipSync(input);
   const equations: ConvertedEquation[] = [];
   const removedRels = new Map<string, Set<string>>();
+  const media: MediaOut[] = [];
 
   const parts = Object.keys(zip).filter((n) => /^word\/(document|footnotes|endnotes|header\d*|footer\d*)\.xml$/.test(n));
   parts.sort((a, b) => (a === "word/document.xml" ? -1 : b === "word/document.xml" ? 1 : a.localeCompare(b)));
@@ -67,11 +90,12 @@ export function convertDocx(input: Uint8Array, options: ConvertOptions = {}): Co
     const rels = zip[relsName] ? parseRels(strFromU8(zip[relsName]!)) : new Map<string, string>();
     const xml = strFromU8(zip[part]!);
     if (!xml.includes("<w:object")) continue;
-    const out = convertPartXml(part, xml, rels, (path) => zip[path], profile, equations);
+    const out = convertPartXml(part, xml, rels, (path) => zip[path], profile, equations, options.picture, media);
     zip[part] = strToU8(out.xml);
     if (out.dropped.size) removedRels.set(relsName, out.dropped);
   }
   removeUnusedParts(zip, removedRels);
+  addMedia(zip, media);
 
   const converted = equations.filter((e) => e.status === "converted").length;
   return { docx: zipSync(zip, { level: 6 }), equations, converted, skipped: equations.length - converted };
@@ -85,6 +109,8 @@ function convertPartXml(
   getBinary: (path: string) => Uint8Array | undefined,
   profile: StyleProfile,
   equations: ConvertedEquation[],
+  picture?: ConvertOptions["picture"],
+  media?: MediaOut[],
 ): { xml: string; dropped: Set<string> } {
   const hasW15 = source.includes(`xmlns:w15="${W15}"`);
   const dropped = new Set<string>();
@@ -118,10 +144,27 @@ function convertPartXml(
       const parsed = parseLatex(latex);
       entry.latex = latex;
       entry.messages.push(...warnings, ...parsed.diagnostics.map((x) => x.message));
-      const omml = toOmml(parsed.root, { profile, display: false });
       entry.status = "converted";
       for (const m of run.matchAll(/\br:id="([^"]+)"/g)) dropped.add(m[1]!);
       entry.tag = formatTag({ blockId: null, instanceId: newInstanceId() });
+      const pic = picture && media ? picture(latex, display) : null;
+      if (pic && media) {
+        const n = media.length + 1;
+        const item: MediaOut = { part, svgId: `rIdMbS${n}`, pngId: `rIdMbP${n}`, name: `mathblocks${n}`, data: pic };
+        media.push(item);
+        const drawing = pictureRun({
+          svgRId: item.svgId,
+          pngRId: item.pngId,
+          widthPt: pic.widthPt,
+          heightPt: pic.heightPt,
+          depthPt: pic.depthPt,
+          id: 90000 + n,
+          name: `MathBlocks equation ${n}`,
+          description: `MathBlocks: ${latex}`,
+        });
+        return sdt(drawing, hasW15, entry.tag, true);
+      }
+      const omml = toOmml(parsed.root, { profile, display: false });
       return sdt(omml, hasW15, entry.tag);
     } catch (e) {
       entry.messages.push(e instanceof Error ? e.message : String(e));
@@ -177,9 +220,10 @@ function base64ToBytes(b64: string): Uint8Array {
 }
 
 /** The content control MathBlocks uses for every equation (tag mb1|-|id, box hidden). */
-function sdt(omml: string, hasW15: boolean, tag: string) {
+function sdt(omml: string, hasW15: boolean, tag: string, picture = false) {
   const id = Math.floor(Math.random() * 2_000_000_000) + 1;
   const appearance = hasW15 ? `<w15:appearance w15:val="hidden"/>` : "";
+  if (picture) return `<w:sdt><w:sdtPr><w:tag w:val="${tag}"/><w:id w:val="${id}"/>${appearance}</w:sdtPr><w:sdtContent>${omml}</w:sdtContent></w:sdt>`;
   return `${MARK}<w:sdt><w:sdtPr><w:tag w:val="${tag}"/><w:id w:val="${id}"/>${appearance}</w:sdtPr><w:sdtContent>${omml}</w:sdtContent></w:sdt>`;
 }
 
@@ -341,4 +385,27 @@ function removeUnusedParts(zip: Unzipped, removed: Map<string, Set<string>>) {
     if (types) types = types.replace(new RegExp(`<Override PartName="/${p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"[^>]*/>`), "");
   }
   if (types) zip["[Content_Types].xml"] = strToU8(types);
+}
+
+/** Adds picture-mode media (SVG + PNG) with their relationships and content types. */
+function addMedia(zip: Unzipped, media: MediaOut[]) {
+  if (!media.length) return;
+  const byPart = new Map<string, MediaOut[]>();
+  for (const m of media) byPart.set(m.part, [...(byPart.get(m.part) ?? []), m]);
+  for (const [part, items] of byPart) {
+    const relsName = part.replace(/^word\//, "word/_rels/") + ".rels";
+    let rels = zip[relsName] ? strFromU8(zip[relsName]!) : `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`;
+    const IMG = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image";
+    const add = items.map((m) => `<Relationship Id="${m.svgId}" Type="${IMG}" Target="media/${m.name}.svg"/><Relationship Id="${m.pngId}" Type="${IMG}" Target="media/${m.name}.png"/>`).join("");
+    rels = rels.replace("</Relationships>", `${add}</Relationships>`);
+    zip[relsName] = strToU8(rels);
+    for (const m of items) {
+      zip[`word/media/${m.name}.svg`] = strToU8(m.data.svg);
+      zip[`word/media/${m.name}.png`] = new Uint8Array(m.data.png);
+    }
+  }
+  let types = strFromU8(zip["[Content_Types].xml"]!);
+  for (const [ext, type] of [["svg", "image/svg+xml"], ["png", "image/png"]] as const)
+    if (!new RegExp(`Extension="${ext}"`, "i").test(types)) types = types.replace("<Default ", `<Default Extension="${ext}" ContentType="${type}"/><Default `);
+  zip["[Content_Types].xml"] = strToU8(types);
 }
