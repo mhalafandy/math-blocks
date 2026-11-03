@@ -25,6 +25,11 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed (0.1.33)
+- "Couldn't draw the equation": the PNG copy of Classic equations is now painted directly from
+  the engine (the app's security policy blocked the temporary image); blob images allowed for
+  exports.
+
 ### Added (Classic equations)
 - `packages/math-render` typesetting engine; Classic style from MathType's own preferences
   (read from MTEF) and fonts; Classic pictures in the app (insert, update, numbering, linked

@@ -45,31 +45,36 @@ export interface Picture extends RenderResult {
 
 const PX_PER_PT = 4 * (96 / 72);
 
-/** Rasterises an SVG for Word 2016, which cannot show SVG pictures. */
-async function rasterise(svg: string, widthPt: number, heightPt: number): Promise<Uint8Array> {
-  const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
-  try {
-    const img = new Image();
-    await new Promise<void>((res, rej) => {
-      img.onload = () => res();
-      img.onerror = () => rej(new Error("Could not draw the equation"));
-      img.src = url;
-    });
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.ceil(widthPt * PX_PER_PT));
-    canvas.height = Math.max(1, Math.ceil(heightPt * PX_PER_PT));
-    canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob>((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error("PNG failed"))), "image/png"));
-    return new Uint8Array(await blob.arrayBuffer());
-  } finally {
-    URL.revokeObjectURL(url);
+/**
+ * PNG copy for Word 2016, which cannot show SVG pictures. Painted directly from the engine's
+ * drawing operations (no image decoding, so no dependency on the page's image policy).
+ */
+async function rasterise(r: RenderResult): Promise<Uint8Array> {
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.ceil(r.widthPt * PX_PER_PT));
+  canvas.height = Math.max(1, Math.ceil(r.heightPt * PX_PER_PT));
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not draw the equation (no canvas)");
+  const k = canvas.width / r.viewW;
+  for (const op of r.ops) {
+    ctx.fillStyle = op.color;
+    if (op.kind === "rect") {
+      ctx.setTransform(k, 0, 0, k, 0, 0);
+      ctx.fillRect(op.x, op.y, op.w, op.h);
+    } else {
+      const [a, b, c, d, e, f] = op.m;
+      ctx.setTransform(k * a, k * b, k * c, k * d, k * e, k * f);
+      ctx.fill(new Path2D(op.d));
+    }
   }
+  const blob = await new Promise<Blob>((res, rej) => canvas.toBlob((x) => (x ? res(x) : rej(new Error("Could not draw the equation (PNG)"))), "image/png"));
+  return new Uint8Array(await blob.arrayBuffer());
 }
 
 export async function renderPicture(latex: string, display: boolean, sizePt: number): Promise<Picture> {
   const fonts = await loadFonts();
   const r = renderSvg(parseLatex(latex).root, { fonts, style: CLASSIC, display, sizePt });
-  const png = await rasterise(r.svg, r.widthPt, r.heightPt);
+  const png = await rasterise(r);
   return { ...r, png };
 }
 

@@ -13,8 +13,17 @@ export interface RenderOptions {
   margin?: number;
 }
 
+/** One drawing operation in SVG units (y down), for painting without an SVG decoder. */
+export type PaintOp =
+  | { kind: "path"; d: string; m: [number, number, number, number, number, number]; color: string }
+  | { kind: "rect"; x: number; y: number; w: number; h: number; color: string };
+
 export interface RenderResult {
   svg: string;
+  /** Same drawing as `svg`, as operations; `viewW`/`viewH` are the SVG viewBox size. */
+  ops: PaintOp[];
+  viewW: number;
+  viewH: number;
   /** Size in points; depth = how far the picture goes below the text baseline. */
   widthPt: number;
   heightPt: number;
@@ -51,6 +60,7 @@ export function renderSvg(root: Row, o: RenderOptions): RenderResult {
   const h = box.h + m;
   const d = box.d + m;
   const paths: string[] = [];
+  const ops: PaintOp[] = [];
   const byColor = new Map<string, string[]>();
   const add = (color: string | undefined, el: string) => {
     const k = color ?? style.color;
@@ -60,6 +70,7 @@ export function renderSvg(root: Row, o: RenderOptions): RenderResult {
   for (const it of box.items) {
     if (it.k === "r") {
       add(it.color, `<rect x="${f((it.x + m) * U)}" y="${f((h - it.y - it.h) * U)}" width="${f(it.w * U)}" height="${f(it.h * U)}"/>`);
+      ops.push({ kind: "rect", x: (it.x + m) * U, y: (h - it.y - it.h) * U, w: it.w * U, h: it.h * U, color: it.color ?? style.color });
       continue;
     }
     const sx = it.sx ?? 1;
@@ -76,11 +87,12 @@ export function renderSvg(root: Row, o: RenderOptions): RenderResult {
         ? `translate(${f(tx)} ${f(ty)}) scale(${f(sx)} ${f(sy)})`
         : `translate(${f(tx)} ${f(ty)})`;
     add(it.color, `<path transform="${transform}" d="${p}"/>`);
+    ops.push({ kind: "path", d: p, m: [sx, 0, -k * sy, sy, tx, ty], color: it.color ?? style.color });
   }
   for (const [color, els] of byColor) paths.push(`<g fill="${color}">${els.join("")}</g>`);
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${f(w * sizePt)}pt" height="${f((h + d) * sizePt)}pt" viewBox="0 0 ${f(w * U)} ${f((h + d) * U)}">` +
     paths.join("") +
     `</svg>`;
-  return { svg, widthPt: w * sizePt, heightPt: (h + d) * sizePt, depthPt: d * sizePt, box };
+  return { svg, ops, viewW: w * U, viewH: (h + d) * U, widthPt: w * sizePt, heightPt: (h + d) * sizePt, depthPt: d * sizePt, box };
 }
