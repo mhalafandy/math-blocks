@@ -10,6 +10,12 @@ MathfieldElement.soundsDirectory = null;
 
 let activeField: MathfieldElement | null = null;
 
+/** The equation editor, when it has the keyboard focus. */
+export function focusedMathField(): MathfieldElement | null {
+  const el = document.activeElement;
+  return activeField && (el === activeField || activeField.contains(el)) ? activeField : null;
+}
+
 /*
  * LaTeX ⇄ MathLive dialect. In MathLive, letters typed after \mathrm{d} inherit its upright style
  * ("dx" becomes \mathrm{dx}). Its \differentialD atom is a proper upright differential d, so the
@@ -146,6 +152,26 @@ function balanced(s: string) {
   return d === 0;
 }
 
+/** Typed sequences replaced while typing (shown in the keyboard shortcuts sheet). */
+export const AUTOCORRECT: Record<string, string> = {
+  "->": "\\to",
+  "<-": "\\leftarrow",
+  "=>": "\\Rightarrow",
+  "<=>": "\\Leftrightarrow",
+  "<=": "\\le",
+  ">=": "\\ge",
+  "!=": "\\ne",
+  "~=": "\\approx",
+  "+-": "\\pm",
+  "-+": "\\mp",
+  xx: "\\times",
+  "**": "\\cdot",
+  oo: "\\infty",
+  grad: "\\nabla",
+  "...": "\\ldots",
+  "||": "\\parallel",
+};
+
 /** Style commands whose empty slot MathLive cannot fill without losing the style. */
 const STYLED_SLOT = /\\(mathbf|boldsymbol|bm|mathrm|mathsf|mathtt|mathcal|mathbb|mathfrak|mathit)\{#0\}/;
 const SAMPLE = "x";
@@ -249,6 +275,13 @@ export function MathEditor() {
       setLastEditor("visual");
     });
     host.current?.appendChild(mf);
+    // Autocorrect while typing (in addition to MathLive's: alpha → α, sqrt, sum, int…).
+    // MathLive only exposes its shortcut list once the field is in the page.
+    try {
+      mf.inlineShortcuts = { ...mf.inlineShortcuts, ...AUTOCORRECT };
+    } catch {
+      // Older MathLive: its own shortcuts only.
+    }
     field.current = mf;
     activeField = mf;
     return () => {

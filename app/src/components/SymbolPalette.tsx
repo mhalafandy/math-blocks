@@ -100,7 +100,7 @@ function SearchBox({ query, setQuery, autoFocus }: { query: string; setQuery: (q
     <input
       className="pal-search"
       type="search"
-      placeholder="Search symbols: gradient, ≤, \\alpha…"
+      placeholder="Search symbols: gradient, ≤, \alpha…"
       value={query}
       autoFocus={autoFocus}
       onChange={(e) => setQuery(e.target.value)}

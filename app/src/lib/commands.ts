@@ -81,6 +81,7 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
     { id: "export.svg", title: "Save equation as SVG…", group: "Edit", keywords: "export vector image file", run: () => import("./export").then((m) => m.saveSvg()) },
     { id: "export.png", title: "Save equation as PNG…", group: "Edit", keywords: "export image picture file", run: () => import("./export").then((m) => m.savePng()) },
     { id: "export.docLatex", title: "Export the Word document's equations as LaTeX…", group: "Word", keywords: "tex overleaf latex export thesis", run: () => import("./export").then((m) => m.exportDocumentLatex()) },
+    { id: "help.shortcuts", title: "Keyboard shortcuts", group: "View", shortcut: "F1", keywords: "keys help mathtype cheat sheet", run: () => import("../components/ShortcutsDialog").then((m) => m.openShortcuts()) },
     { id: "app.update", title: "Check for updates", group: "View", keywords: "upgrade new version", run: () => checkForUpdate(true) },
     { id: "word.new", title: "New equation", group: "Edit", shortcut: "Ctrl+N", keywords: "clear reset fresh blank stop editing", run: () => newEquation() },
     { id: "edit.bold", title: "Bold (toggle)", group: "Edit", shortcut: "Ctrl+Shift+B", keywords: "bold vector matrix strong", run: () => toggleBold() },
