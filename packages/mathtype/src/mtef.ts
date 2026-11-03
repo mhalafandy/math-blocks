@@ -19,6 +19,29 @@ export interface MtefEquation {
   items: MtNode[];
   /** TeX translation MathType stores alongside (lossy; used only as a fallback). */
   tex: string | null;
+  /** MathType's equation preferences (sizes, spacing, character styles), when present. */
+  prefs: MtPrefs | null;
+}
+
+/** A dimension from MathType's preferences: value and unit. */
+export interface MtDim {
+  value: number;
+  unit: "in" | "cm" | "pt" | "pc" | "%";
+}
+
+export interface MtStyle {
+  font: string | null;
+  italic: boolean;
+  bold: boolean;
+}
+
+export interface MtPrefs {
+  /** Full, subscript, sub-subscript, symbol, sub-symbol, user 1, user 2… */
+  sizes: MtDim[];
+  /** MathType's "Define Spacing" values, in order. */
+  spacing: MtDim[];
+  /** Text, function, variable, LC Greek, UC Greek, symbol, vector, number… (typeface 1, 2, …). */
+  styles: MtStyle[];
 }
 
 // Record tags
@@ -57,7 +80,29 @@ class Reader {
   skip(n: number) {
     this.pos += n;
   }
-  /** Nibble-encoded dimension arrays (equation preferences): unit nibble, digits, 0xF terminator. */
+  /** Nibble-encoded dimension arrays: unit nibble, digits (0xA point, 0xB minus), 0xF end. */
+  nibbleValues(count: number): MtDim[] {
+    let high = true;
+    let byte = 0;
+    const nibble = () => {
+      if (high) {
+        byte = this.u8();
+        high = false;
+        return byte >> 4;
+      }
+      high = true;
+      return byte & 0x0f;
+    };
+    const units: MtDim["unit"][] = ["in", "cm", "pt", "pc", "%"];
+    const out: MtDim[] = [];
+    for (let i = 0; i < count; i++) {
+      const unit = units[nibble()] ?? "%";
+      let txt = "";
+      for (let n = nibble(); n !== 0x0f; n = nibble()) txt += n === 0x0a ? "." : n === 0x0b ? "-" : String(n);
+      out.push({ value: Number(txt) || 0, unit });
+    }
+    return out;
+  }
   skipNibbleValues(count: number) {
     let high = true;
     let byte = 0;
@@ -85,10 +130,11 @@ export function readMtef(data: Uint8Array): MtefEquation {
   const app = r.cstr();
   r.u8(); // equation options
   let tex: string | null = null;
+  const ctx: ReadCtx = { fonts: [], prefs: null };
   const items = list(r, (label, value) => {
     if (label === "TeX Input Language") tex = value;
-  });
-  return { version, product: `${app} ${pv}.${ps}`, items, tex };
+  }, ctx);
+  return { version, product: `${app} ${pv}.${ps}`, items, tex, prefs: resolvePrefs(ctx) };
 }
 
 function nudge(r: Reader, opts: number) {
@@ -100,18 +146,32 @@ function nudge(r: Reader, opts: number) {
 }
 
 /** Reads records until END (or end of data), returning content nodes and skipping formatting. */
-function list(r: Reader, onFuture?: (label: string, value: string) => void): MtNode[] {
+interface ReadCtx {
+  fonts: string[];
+  prefs: { sizes: MtDim[]; spacing: MtDim[]; styles: { fontIndex: number; flags: number }[] } | null;
+}
+
+function resolvePrefs(ctx: ReadCtx): MtPrefs | null {
+  if (!ctx.prefs) return null;
+  return {
+    sizes: ctx.prefs.sizes,
+    spacing: ctx.prefs.spacing,
+    styles: ctx.prefs.styles.map((s) => ({ font: s.fontIndex > 0 ? (ctx.fonts[s.fontIndex - 1] ?? null) : null, italic: !!(s.flags & 1), bold: !!(s.flags & 2) })),
+  };
+}
+
+function list(r: Reader, onFuture?: (label: string, value: string) => void, ctx?: ReadCtx): MtNode[] {
   const out: MtNode[] = [];
   while (!r.done) {
     const tag = r.u8();
     if (tag === END) break;
-    const node = record(r, tag, onFuture);
+    const node = record(r, tag, onFuture, ctx);
     if (node) out.push(node);
   }
   return out;
 }
 
-function record(r: Reader, tag: number, onFuture?: (label: string, value: string) => void): MtNode | null {
+function record(r: Reader, tag: number, onFuture?: (label: string, value: string) => void, ctx?: ReadCtx): MtNode | null {
   switch (tag) {
     case LINE: {
       const o = r.u8();
@@ -210,16 +270,23 @@ function record(r: Reader, tag: number, onFuture?: (label: string, value: string
       if (o & OPT_COLOR_NAME) r.cstr();
       return null;
     }
-    case FONT_DEF:
-      r.u8();
-      r.cstr();
+    case FONT_DEF: {
+      r.u8(); // encoding definition index
+      const name = r.cstr();
+      ctx?.fonts.push(name);
       return null;
+    }
     case EQN_PREFS: {
       r.u8(); // options
-      r.skipNibbleValues(r.uint()); // sizes
-      r.skipNibbleValues(r.uint()); // spacing
-      const styles = r.uint();
-      for (let i = 0; i < styles; i++) if (r.u8() !== 0) r.u8();
+      const sizes = r.nibbleValues(r.uint());
+      const spacing = r.nibbleValues(r.uint());
+      const n = r.uint();
+      const styles: { fontIndex: number; flags: number }[] = [];
+      for (let i = 0; i < n; i++) {
+        const fontIndex = r.u8();
+        styles.push({ fontIndex, flags: fontIndex !== 0 ? r.u8() : 0 });
+      }
+      if (ctx) ctx.prefs = { sizes, spacing, styles };
       return null;
     }
     case ENCODING_DEF:

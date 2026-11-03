@@ -44,6 +44,13 @@ export interface RenderStyle {
    * (MathType: "Symbol 150%"), or 0 to use the math font's large display variants (LaTeX).
    */
   bigOpScale: number;
+  /** Greek letters, operators and big operators from the Symbol font (when one is loaded). */
+  useSymbolFont: boolean;
+  /** Slant of synthetic italic (Symbol has no italic face), as a shear factor. */
+  obliqueSlant: number;
+  /** MathType fractions: numerator baseline above / denominator baseline below the bar. */
+  fracNumHeight: number;
+  fracDenDepth: number;
   color: string;
 }
 
@@ -54,10 +61,10 @@ export const CLASSIC: RenderStyle = {
   scriptScriptScale: 0.42,
   supShift: 0.45,
   subShift: 0.25,
-  scriptGap: 0.04,
-  rule: 0.045,
-  fracGap: 0.09,
-  fracOverhang: 0.06,
+  scriptGap: 0.08,
+  rule: 0.5 / 12,
+  fracGap: 0.06,
+  fracOverhang: 1 / 12,
   limitGap: 0.08,
   rowGap: 0.3,
   minBaselineSkip: 1.25,
@@ -70,5 +77,9 @@ export const CLASSIC: RenderStyle = {
   thick: 5 / 18,
   greekItalic: true,
   bigOpScale: 1.5,
+  useSymbolFont: true,
+  obliqueSlant: 0.2,
+  fracNumHeight: 0.35,
+  fracDenDepth: 1.0,
   color: "#000000",
 };
