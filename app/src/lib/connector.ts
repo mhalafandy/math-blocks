@@ -159,6 +159,13 @@ class ConnectorClient {
         const params = msg.params as ConnectorToApp["equationActivated"]["params"];
         const read = readOmml(params.flatOpc);
         if (!read || read.root.children.length === 0) {
+          // A linked copy does not need Word's content: the library has it.
+          const opened = await import("./linking").then((m) => m.openLinkedForEditing(params.tag)).catch(() => false);
+          if (opened) {
+            void bringToFront();
+            app.notify("Editing the linked equation from the library. Press Update everywhere (Ctrl+Enter) when done.");
+            break;
+          }
           console.warn("equationActivated without readable math", params.tag, params.flatOpc?.length, params.flatOpc?.slice(0, 2000));
           void bringToFront();
           app.notify(

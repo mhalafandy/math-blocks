@@ -107,3 +107,22 @@ describe("harpoon vectors", () => {
     expect(xml).toContain('m:val="⃑"');
   });
 });
+
+describe("Word wrapping the math in other markup", () => {
+  const M = 'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
+  const r = (t: string) => `<m:r><m:t>${t}</m:t></m:r>`;
+  const sdt = (inner: string) => `<w:sdt><w:sdtPr><w:tag w:val="mb1|-|abcdefghijkl"/></w:sdtPr><w:sdtContent>${inner}</w:sdtContent></w:sdt>`;
+  const cases: [string, string, boolean][] = [
+    ["content control around oMathPara", `<w:p ${M}>${sdt(`<m:oMathPara><m:oMath>${r("x=1")}</m:oMath></m:oMathPara>`)}</w:p>`, true],
+    ["content control inside oMathPara", `<w:p ${M}><m:oMathPara><m:oMathParaPr/>${sdt(`<m:oMath>${r("x=1")}</m:oMath>`)}</m:oMathPara></w:p>`, true],
+    ["content control inside oMath", `<w:p ${M}><m:oMath>${sdt(r("x=1"))}</m:oMath></w:p>`, false],
+    ["bookmarks and tracked insertions", `<w:p ${M}><m:oMath><w:bookmarkStart w:id="0" w:name="a"/><w:ins w:id="1">${r("x")}</w:ins>${r("=1")}<w:del w:id="2">${r("9")}</w:del><w:bookmarkEnd w:id="0"/></m:oMath></w:p>`, false],
+  ];
+  for (const [name, xml, display] of cases)
+    it(name, () => {
+      const res = readOmml(xml)!;
+      expect(res.unknown).toEqual([]);
+      expect(res.display).toBe(display);
+      expect(res.root.children.map((n) => ("text" in n ? n.text : n.kind)).join("")).toBe("x=1");
+    });
+});
