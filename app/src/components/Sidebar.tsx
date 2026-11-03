@@ -3,6 +3,7 @@ import { REFERENCE_EQUATIONS } from "../../../fixtures/reference-equations";
 import { recentEquations, searchEquations } from "../lib/library/search";
 import type { Equation, Folder } from "../lib/library/types";
 import { isDirty, useLibrary } from "../lib/library/useLibrary";
+import { insertLinked } from "../lib/linking";
 import { useApp } from "../lib/store";
 import { openMenu, type MenuItem } from "./ContextMenu";
 import { askConfirm, askText } from "./Dialogs";
@@ -246,6 +247,20 @@ function EquationRow({ q, showFolder = false }: { q: Equation; showFolder?: bool
   const folder = showFolder && q.folderId ? lib.folders.find((f) => f.id === q.folderId)?.name : undefined;
   const menu: MenuItem[] = [
     { label: "Open in editor", onSelect: () => lib.openEquation(q) },
+    {
+      label: "Insert linked copy into Word",
+      disabled: !useApp.getState().connector.connected,
+      onSelect: async () => {
+        try {
+          lib.openEquation(q);
+          const found = await insertLinked(q);
+          useApp.getState().notify(found === 1 ? `Inserted a linked copy of “${q.name}”` : `Inserted, but found ${found} copies of its tag`);
+        } catch (e) {
+          useApp.getState().notify(e instanceof Error ? e.message : String(e), "error");
+        }
+      },
+    },
+    { separator: true, label: "" },
     { label: q.favorite ? "Remove from favourites" : "Add to favourites", onSelect: () => lib.toggleFavorite(q.id) },
     {
       label: "Rename…",

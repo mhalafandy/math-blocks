@@ -40,6 +40,8 @@ namespace MathBlocks.WordConnector
                 _ = _ui.Handle; // force handle creation on this (main) thread
 
                 _app.WindowBeforeDoubleClick += OnWindowBeforeDoubleClick;
+                _app.DocumentOpen += OnDocumentOpen;
+                _app.DocumentBeforeSave += OnDocumentBeforeSave;
 
                 _pipe = new PipeClient(PipeClient.DefaultPipeName());
                 _pipe.LineReceived += OnLine;
@@ -58,7 +60,12 @@ namespace MathBlocks.WordConnector
             try
             {
                 _pipe?.Dispose();
-                if (_app != null) _app.WindowBeforeDoubleClick -= OnWindowBeforeDoubleClick;
+                if (_app != null)
+                {
+                    _app.WindowBeforeDoubleClick -= OnWindowBeforeDoubleClick;
+                    _app.DocumentOpen -= OnDocumentOpen;
+                    _app.DocumentBeforeSave -= OnDocumentBeforeSave;
+                }
                 _ui?.Dispose();
                 Log.Info("connector unloaded");
             }
@@ -177,6 +184,60 @@ namespace MathBlocks.WordConnector
             }
         }
 
+        private bool _highlight;
+
+        /// <summary>Ribbon toggle: frame linked equations in every open document.</summary>
+        public void OnToggleHighlight(IRibbonControl control, bool pressed)
+        {
+            try
+            {
+                _highlight = pressed;
+                var n = _ops.HighlightLinked(pressed);
+                Log.Info((pressed ? "highlighted " : "unhighlighted ") + n + " linked equation(s)");
+            }
+            catch (Exception ex)
+            {
+                Log.Error("highlight failed", ex);
+            }
+        }
+
+        public bool GetHighlightPressed(IRibbonControl control) => _highlight;
+
+        private void OnDocumentOpen(Word.Document doc)
+        {
+            try
+            {
+                if (_pipe == null || !_pipe.IsConnected) return;
+                if (!WordOps.HasEquations(doc)) return;
+                SendRequest("documentOpened", new Dictionary<string, object> { ["name"] = doc.Name, ["fullName"] = doc.FullName });
+            }
+            catch (Exception ex)
+            {
+                Log.Error("DocumentOpen handler failed", ex);
+            }
+        }
+
+        /// <summary>The old .doc format turns equations into pictures and drops MathBlocks wrappers: warn.</summary>
+        private void OnDocumentBeforeSave(Word.Document doc, ref bool saveAsUI, ref bool cancel)
+        {
+            try
+            {
+                if (saveAsUI) return; // "Save As": the target format is not known yet.
+                if (doc.SaveFormat != (int)Word.WdSaveFormat.wdFormatDocument) return;
+                if (!WordOps.HasEquations(doc)) return;
+                var answer = MessageBox.Show(
+                    "This document is in the old Word 97-2003 format (.doc).\n\n" +
+                    "Saving in this format turns equations into pictures and removes MathBlocks links. " +
+                    "Use File > Save As > Word Document (*.docx) to keep them editable.\n\nSave as .doc anyway?",
+                    "MathBlocks", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
+                if (answer == DialogResult.No) cancel = true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("DocumentBeforeSave handler failed", ex);
+            }
+        }
+
         // ------------------------------------------------------------ pipe
 
         private void OnUi(Action action)
@@ -246,6 +307,12 @@ namespace MathBlocks.WordConnector
                     case "ping": result = new Dictionary<string, object> { ["pong"] = true }; break;
                     case "insertEquation": result = _ops.InsertEquation(p); break;
                     case "replaceEquation": result = _ops.ReplaceEquation(p); break;
+                    case "listInstances": result = _ops.ListInstances(p); break;
+                    case "replaceMany": result = _ops.ReplaceMany(p); break;
+                    case "retag": result = _ops.Retag(p); break;
+                    case "selectInstance": result = _ops.SelectInstance(p); break;
+                    case "getRegistry": result = _ops.GetRegistry(p); break;
+                    case "setRegistry": result = _ops.SetRegistry(p); break;
                     case "readEquation": result = _ops.ReadEquation(p); break;
                     case "documentInfo": result = _ops.DocumentInfo(); break;
                     default: throw new RpcException(Rpc.MethodNotFound, "Unknown method " + method);

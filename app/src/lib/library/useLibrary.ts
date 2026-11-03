@@ -47,6 +47,12 @@ interface LibraryState {
   markUsed: (id: string) => Promise<void>;
 }
 
+/** After the content of a library equation changed: update its linked copies in Word. */
+function afterContentSaved(saved: Equation, previousLatex: string | null) {
+  if (!useApp.getState().connector.connected) return;
+  void import("../linking").then((m) => m.propagate(saved, previousLatex)).catch(notifyError);
+}
+
 const notifyError = (e: unknown) => useApp.getState().notify(e instanceof Error ? e.message : String(e), "error");
 
 /** Wraps an action: refresh the lists afterwards, report failures as a toast. */
@@ -128,6 +134,7 @@ export const useLibrary = create<LibraryState>((set, get) => ({
     if (saved) {
       set({ open: { id: saved.id, latex: saved.latex, display: saved.display } });
       useApp.getState().notify(`Saved "${saved.name}" (version ${saved.currentVersion})`);
+      afterContentSaved(saved, q.latex);
     }
   },
 
@@ -135,7 +142,9 @@ export const useLibrary = create<LibraryState>((set, get) => ({
     const { latex, display } = useApp.getState();
     const { open } = get();
     const id = asNew ? null : (open?.id ?? null);
+    const before = id ? get().equations.find((x) => x.id === id) : undefined;
     const saved = await act((s) => s.save(newBlockId(), { ...meta, id, latex, display }));
+    if (saved && before && before.latex !== saved.latex) afterContentSaved(saved, before.latex);
     if (saved) {
       set({ open: { id: saved.id, latex: saved.latex, display: saved.display }, dialog: null });
       if (saved.folderId && !get().expanded.includes(saved.folderId)) set({ expanded: [...get().expanded, saved.folderId] });
@@ -181,8 +190,10 @@ export const useLibrary = create<LibraryState>((set, get) => ({
   },
   versions: async (id) => (await get().store?.versions(id)) ?? [],
   async restoreVersion(id, version) {
+    const before = get().equations.find((x) => x.id === id);
     const q = await act((s) => s.restoreVersion(id, version));
     if (q) {
+      afterContentSaved(q, before?.latex ?? null);
       get().openEquation(q);
       useApp.getState().notify(`Restored version ${version} as version ${q.currentVersion}`);
     }

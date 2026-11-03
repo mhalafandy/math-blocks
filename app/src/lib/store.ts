@@ -54,12 +54,22 @@ export interface EditingTarget {
   tag: string;
   /** The equation was typed in Word and has just been wrapped by MathBlocks. */
   adopted: boolean;
+  /** Set when the copy is linked to this library equation (block). */
+  blockId?: string;
+}
+
+/** A message bar above the editor with action buttons (e.g. "document out of date"). */
+export interface Notice {
+  text: string;
+  actions: { label: string; run: () => void | Promise<void> }[];
 }
 
 interface AppState extends Prefs {
   latex: string;
   editing: EditingTarget | null;
   setEditing: (e: EditingTarget | null) => void;
+  notice: Notice | null;
+  setNotice: (n: Notice | null) => void;
   display: boolean;
   source: ChangeSource;
   paletteOpen: boolean;
@@ -129,6 +139,8 @@ export const useApp = create<AppState>((set, get) => ({
   update: { status: "idle" },
   editing: null,
   setEditing: (editing) => set({ editing }),
+  notice: null,
+  setNotice: (notice) => set({ notice }),
   setUpdate: (u) => set({ update: { ...get().update, ...u } }),
 
   setLatex: (latex, source) => set({ latex, source }),

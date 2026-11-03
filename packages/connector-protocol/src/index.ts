@@ -78,7 +78,14 @@ export interface EquationActivatedParams {
   flatOpc: string;
 }
 
+/** A document with MathBlocks equations was opened in Word. */
+export interface DocumentOpenedParams {
+  name: string;
+  fullName: string;
+}
+
 export interface ConnectorToApp {
+  documentOpened: { params: DocumentOpenedParams; result: void };
   hello: { params: HelloParams; result: { appVersion: string; protocolVersion: number } };
   equationActivated: { params: EquationActivatedParams; result: void };
   /** Ribbon button "Open MathBlocks". */
@@ -124,7 +131,37 @@ export interface ReplaceEquationParams {
   undoLabel: string;
 }
 
+/** Optional target document (Word's FullName); default: the active document. */
+export interface DocTarget {
+  document?: string;
+}
+
+export interface InstanceInfo {
+  tag: string;
+  /** Page number of the equation (0 if unknown). */
+  page: number;
+  /** Text of the surrounding paragraph. */
+  context: string;
+  /** WordprocessingML of the equation, when requested (includeContent). */
+  flatOpc?: string;
+}
+
+export interface DocumentInstances {
+  name: string;
+  fullName: string;
+  instances: InstanceInfo[];
+}
+
 export interface AppToConnector {
+  /** MathBlocks equations per document; copies sharing a tag get new instance ids first. */
+  listInstances: { params: DocTarget & { all?: boolean; blockId?: string; includeContent?: boolean }; result: { documents: DocumentInstances[] } };
+  /** Replaces several equations (by tag) in one undo step. */
+  replaceMany: { params: DocTarget & { items: { tag: string; flatOpc: string }[]; undoLabel: string }; result: { replaced: number; missing: string[] } };
+  retag: { params: DocTarget & { tag: string; newTag: string }; result: { found: number } };
+  selectInstance: { params: DocTarget & { tag: string }; result: { found: number } };
+  /** The document's MathBlocks registry (Custom XML Part), or null. */
+  getRegistry: { params: DocTarget; result: { xml: string | null; fullName: string } };
+  setRegistry: { params: DocTarget & { xml: string }; result: { ok: true } };
   ping: { params: Record<string, never>; result: { pong: true } };
   insertEquation: { params: InsertEquationParams; result: InsertEquationResult };
   replaceEquation: { params: ReplaceEquationParams; result: InsertEquationResult };

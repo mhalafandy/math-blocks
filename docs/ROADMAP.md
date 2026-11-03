@@ -9,8 +9,8 @@ editing experience → ease of use → performance → extensibility → visual 
 | M2 Editor | MathLive adapter, structure toolbar, LaTeX mode (CodeMirror 6: highlighting, completion, bracket matching, diagnostics), two-way sync, command palette, themes, resizable panels | 30 reference equations buildable in both modes | **Done** (awaiting user test) |
 | M3 Conversion | Full Tier-1 LaTeX ⇄ AST ⇄ OMML; OMML → AST reader (edit existing Word equations) | Golden + round-trip suites green | **Done**: OMML → AST reader, exact round trip on all reference equations |
 | M4 Library & persistence | SQLite schema + migrations, library UI (folders, tags, search, favourites, recents), autosave & crash recovery | Kill-test recovery passes | **Done** (awaiting user test; collections moved to M7) |
-| M5 Word basics | Insert/edit inline & display, double-click to edit, registry, Style Profiles | **MVP**: tested on a 50-page sample thesis | **In progress**: double-click to edit and Update in Word done; registry, .doc warning pending |
-| M6 Linked components | Sync engine, reconciliation (copy/delete/orphan/conflict), journal, single-step undo, instance panel | Scenario suite: copy, paste, delete, undo, crash, reopen | Planned |
+| M5 Word basics | Insert/edit inline & display, double-click to edit, registry, Style Profiles | **MVP**: tested on a 50-page sample thesis | **Done**: double-click to edit, Update in Word, document registry, .doc warning |
+| M6 Linked components | Sync engine, reconciliation (copy/delete/orphan/conflict), journal, single-step undo, instance panel | Scenario suite: copy, paste, delete, undo, crash, reopen | **Done** (simulated Word suite green; awaiting user test) |
 | M7 Components & search | Parameterized templates, independent copies, detach; symbol & meaning search; snippets; collections | — | Planned |
 | M8 Derivations & numbering | Equation numbering, references, alignment tools | — | Planned |
 | M9 MathType migration | MTEF reader → AST → OMML, review UI | User's sample document converts | Planned |

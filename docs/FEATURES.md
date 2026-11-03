@@ -28,6 +28,9 @@ Legend: ✅ done · 🚧 in progress · 📋 planned · 🐞 known bug
 | ✅ Version history | M4 | Every save keeps a version; view or restore any version (restoring adds a new version) |
 | ✅ Autosave & crash recovery | M4 | Editor content saved as a draft 1.5 s after each change and restored at the next start; daily database backups (14 kept) |
 | ✅ Library import/export | M4 | One JSON file with folders, tags and history; import merges (newer wins) |
+| ✅ Linked equations | M6 | Insert library equations as linked copies; a new version updates every copy in all open documents (one undo per document); pasted copies stay linked; copies edited in Word are detected and you choose Replace or Keep (unlink); reopened documents are checked ("Update now"); equations from other computers can be added to the library; Unlink; Library tab lists copies with Go to; ribbon toggle "Show linked equations" (D-020) |
+| ✅ Document registry | M5 | Each .docx stores the definitions of the linked equations it uses |
+| ✅ .doc warning | M5 | Saving a .doc that contains MathBlocks equations asks first |
 | ✅ Auto-update | M2 | App checks the latest build, downloads in the background, one-click restart; app installs and updates the Word add-in itself (D-014) |
 | ✅ Symbol palette (MathType-style) | M2 | ~300 symbols and templates: 9 symbol groups (relations, spaces/dots, operators, arrows, logic, sets, calculus symbols, Greek, Greek capitals), 8 template groups (brackets, fractions/roots, scripts, sums/products, integrals, accents/bars, labeled arrows, matrices/cases), topic tabs (Algebra, Derivatives, Vectors & mechanics, Matrices, Orbital & control, Trig, Statistics), Recent tab, quick-access bar (right-click to pin/unpin), search by name/meaning/LaTeX, rendered previews, top or side layout (switchable), works in visual and LaTeX-only modes; every item is also a Ctrl+K command |
 
