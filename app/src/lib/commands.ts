@@ -65,6 +65,7 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       keywords: "template parameters substitute rename variables reuse",
       run: () => import("../components/TemplateDialog").then((m) => m.openTemplate(useApp.getState().latex, useApp.getState().display)),
     },
+    { id: "view.symbols", title: "Symbols: where is each symbol used? rename everywhere", group: "View", keywords: "symbol index dependency rename variable notation consistency", run: () => app.setPrefs({ bottomOpen: true, bottomTab: "symbols" }) },
     { id: "app.update", title: "Check for updates", group: "View", keywords: "upgrade new version", run: () => checkForUpdate(true) },
     { id: "word.new", title: "New equation", group: "Edit", shortcut: "Ctrl+N", keywords: "clear reset fresh blank stop editing", run: () => newEquation() },
     { id: "edit.bold", title: "Bold (toggle)", group: "Edit", shortcut: "Ctrl+Shift+B", keywords: "bold vector matrix strong", run: () => toggleBold() },

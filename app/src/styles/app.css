@@ -520,3 +520,21 @@ kbd {
 .tpl-row { display: grid !important; grid-template-columns: minmax(90px, 1fr) 16px 2fr; align-items: center; gap: 8px; flex-direction: row !important; }
 .tpl-from { display: flex; align-items: center; justify-content: flex-end; font-size: 15px; }
 .tpl-row input { font-family: var(--font-mono); }
+/* Symbols panel */
+.symbols-panel { display: flex; flex-direction: column; gap: 6px; }
+.sym-head { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.sym-head button { border-color: var(--border); padding: 3px 10px; white-space: nowrap; }
+.sym-search { width: 180px; }
+.sym-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 4px; }
+.sym-row.open { grid-column: 1 / -1; background: var(--surface-2); border-radius: 8px; }
+.sym-summary { width: 100%; display: flex; align-items: center; gap: 10px; padding: 4px 8px; text-align: left; border-radius: 6px; }
+.sym-summary:hover { background: var(--surface-2); }
+.sym-key { min-width: 48px; font-size: 15px; }
+.sym-def { font-size: 11px; color: var(--accent); white-space: nowrap; }
+.sym-detail { padding: 4px 10px 10px; display: flex; flex-direction: column; gap: 8px; }
+.sym-rename { display: flex; align-items: center; gap: 8px; }
+.sym-rename input { width: 160px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); font-family: var(--font-mono); }
+.sym-uses { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.sym-uses li { display: flex; align-items: center; gap: 10px; }
+.sym-uses .sym-eq { flex: 1; min-width: 0; overflow-x: auto; }
+.sym-uses button { padding: 1px 8px; border-color: var(--border); font-size: 12px; }

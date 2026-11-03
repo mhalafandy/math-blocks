@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseLatex } from "@mathblocks/math-latex";
 import { listSymbols, renameInLatex } from "./symbols";
+import { indexEquations } from "./symbolIndex";
 
 const keys = (latex: string) => listSymbols(parseLatex(latex).root).map((s) => `${s.key}×${s.count}`);
 
@@ -19,5 +20,15 @@ describe("symbols", () => {
     expect(renameInLatex("\\frac{m_b}{r_b}", { m_b: "M", r_b: "\\rho" })).toBe("\\frac{M}{\\rho}");
     expect(renameInLatex("x-x_0+\\vec{x}", { x: "s" })).toBe("s-x_0+\\vec{x}");
     expect(renameInLatex("\\theta^2+\\theta", { "\\theta": "\\phi_k" })).toBe("\\phi_k^2+\\phi_k");
+  });
+
+  it("indexes a document: where each symbol is defined and used", () => {
+    const eq = (latex: string, page: number) => ({ tag: `t${page}`, page, context: "", latex, display: true, blockId: null });
+    const idx = indexEquations([eq("v=v_0+at", 1), eq("v_0=\\sqrt{2gh}", 2), eq("E=\\frac{1}{2}mv^2", 3)]);
+    const v = idx.find((s) => s.key === "v")!;
+    expect(v.equations.map((e) => e.page)).toEqual([1, 3]);
+    expect(v.definedIn?.page).toBe(1);
+    expect(idx.find((s) => s.key === "v_0")!.definedIn?.page).toBe(2);
+    expect(idx.find((s) => s.key === "m")!.definedIn).toBeNull();
   });
 });
