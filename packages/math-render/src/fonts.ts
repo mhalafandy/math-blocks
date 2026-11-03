@@ -16,9 +16,11 @@ export interface FontSet {
   bold: Font;
   boldItalic: Font;
   math: Font;
+  /** Symbol-encoded font for Greek and operators (MathType's "Symbol" style), optional. */
+  symbol?: Font;
 }
 
-export type Face = keyof FontSet;
+export type Face = Exclude<keyof FontSet, "symbol">;
 
 export const loadFont = (bytes: ArrayBuffer | Uint8Array): Font =>
   parse(bytes instanceof Uint8Array ? (bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer) : bytes);
@@ -87,4 +89,31 @@ export function namedGlyph(font: Font, name: string): GlyphInfo | null {
 export function glyphName(font: Font, ch: string): string | null {
   const g = charGlyph(font, ch);
   return g?.glyph.name ?? null;
+}
+
+/** Adobe Symbol encoding (the Symbol font MathType uses for Greek and operators). */
+export const SYMBOL_CODES: Record<string, number> = (() => {
+  const m: Record<string, number> = {};
+  const greek = "αaβbχcδdεeφfγgηhιiϕjκkλlμmνnοoπpθqρrσsτtυuϖvωwξxψyζzΑAΒBΧCΔDΕEΦFΓGΗHΙIϑJΚKΛLΜMΝNΟOΠPΘQΡRΣSΤTΥUςVΩWΞXΨYΖZ";
+  for (let i = 0; i < greek.length; i += 2) m[greek[i]!] = greek.charCodeAt(i + 1);
+  m["φ"] = 0x6a; // TeX \varphi (φ) is Symbol's "j"; ϕ (\phi) is "f"
+  m["ϕ"] = 0x66;
+  const ops: [string, number][] = [
+    ["+", 0x2b], ["−", 0x2d], ["=", 0x3d], ["<", 0x3c], [">", 0x3e], ["∀", 0x22], ["∃", 0x24], ["∋", 0x27], ["∗", 0x2a],
+    ["≅", 0x40], ["⊥", 0x5e], ["∼", 0x7e], ["′", 0xa2], ["≤", 0xa3], ["∞", 0xa5], ["↔", 0xab], ["←", 0xac], ["↑", 0xad],
+    ["→", 0xae], ["↓", 0xaf], ["±", 0xb1], ["″", 0xb2], ["≥", 0xb3], ["×", 0xb4], ["∝", 0xb5], ["∂", 0xb6], ["•", 0xb7],
+    ["÷", 0xb8], ["≠", 0xb9], ["≡", 0xba], ["≈", 0xbb], ["…", 0xbc], ["ℵ", 0xc0], ["ℑ", 0xc1], ["ℜ", 0xc2], ["℘", 0xc3],
+    ["⊗", 0xc4], ["⊕", 0xc5], ["∅", 0xc6], ["∩", 0xc7], ["∪", 0xc8], ["⊃", 0xc9], ["⊇", 0xca], ["⊄", 0xcb], ["⊂", 0xcc],
+    ["⊆", 0xcd], ["∈", 0xce], ["∉", 0xcf], ["∠", 0xd0], ["∇", 0xd1], ["∏", 0xd5], ["√", 0xd6], ["⋅", 0xd7], ["¬", 0xd8],
+    ["∧", 0xd9], ["∨", 0xda], ["⇔", 0xdb], ["⇐", 0xdc], ["⇑", 0xdd], ["⇒", 0xde], ["⇓", 0xdf], ["∑", 0xe5], ["∫", 0xf2],
+  ];
+  for (const [c, v] of ops) m[c] = v;
+  return m;
+})();
+
+/** A character from a Symbol-encoded font (clone fonts map the code itself; Windows' Symbol F0xx). */
+export function symbolGlyph(font: Font, ch: string): GlyphInfo | null {
+  const code = SYMBOL_CODES[ch];
+  if (code === undefined) return null;
+  return charGlyph(font, String.fromCharCode(code)) ?? charGlyph(font, String.fromCharCode(0xf000 + code));
 }

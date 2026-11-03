@@ -3,13 +3,13 @@
  * width/height/depth in em, glyphs from the text fonts (Times) or the math font (STIX Two Math).
  */
 import type { MathNode, MathVariant, Row } from "@mathblocks/math-core";
-import { charGlyph, glyphName, namedGlyph, type FontSet, type GlyphInfo } from "./fonts";
+import { charGlyph, glyphName, namedGlyph, symbolGlyph, type FontSet, type GlyphInfo } from "./fonts";
 import type { RenderStyle } from "./style";
 
 // ------------------------------------------------------------------ boxes
 
 export type Item =
-  | { k: "g"; g: GlyphInfo; x: number; y: number; s: number; sx?: number; sy?: number; color?: string }
+  | { k: "g"; g: GlyphInfo; x: number; y: number; s: number; sx?: number; sy?: number; color?: string; slant?: number }
   | { k: "r"; x: number; y: number; w: number; h: number; color?: string };
 
 export interface Box {
@@ -132,7 +132,29 @@ function faceFor(ch: string, variant: MathVariant | undefined, kind: "ident" | "
 }
 
 /** One character as a box, with font fallback (text face → math font → regular). */
+/** Characters MathType takes from the Symbol font (its "Symbol" and Greek styles). */
+const SYMBOL_STYLE = new Set([..."+−=<>±×÷≤≥≠≈≡∼≅∝∂∞∇∈∉∋⊂⊃⊆⊇∩∪→←↔⇒⇔⇐↑↓⋅•…′″∀∃¬∧∨⊥∠∅⊗⊕"]);
+
 function charBox(ch: string, face: FaceName, c: Ctx, variant?: MathVariant): Box {
+  // Classic: Greek and operators from the Symbol font, like MathType.
+  const sym = c.fonts.symbol;
+  if (sym && c.st.useSymbolFont && !variant?.match(/double-struck|script|fraktur|sans-serif|monospace/)) {
+    const greek = isLowerGreek(ch) || isUpperGreek(ch) || ch === "ϕ" || ch === "φ";
+    if (greek || SYMBOL_STYLE.has(ch)) {
+      const g = symbolGlyph(sym, ch);
+      if (g) {
+        const italic = greek && (face === "italic" || face === "boldItalic");
+        const b = glyphBox(g, c.s);
+        if (italic) {
+          const k = c.st.obliqueSlant;
+          b.items[0] = { ...(b.items[0] as Extract<Item, { k: "g" }>), slant: k };
+          b.overhang = Math.max(0, (g.xMax + k * g.h - g.w) * c.s);
+        }
+        b.char = { italic };
+        return b;
+      }
+    }
+  }
   const alpha = variant ? mathAlpha(ch, variant) : null;
   const tries: GlyphInfo[] = [];
   if (alpha) {
@@ -334,8 +356,9 @@ function fraction(n: Extract<MathNode, { kind: "fraction" }>, c0: Ctx): Box {
   const a = axis(c0);
   const gap = (n.bar ? st.fracGap : st.fracGap * 2) * s;
   const w = Math.max(num.w, den.w) + 2 * st.fracOverhang * s;
-  const up = a + t / 2 + gap + num.d;
-  const down = a - t / 2 - gap - den.h;
+  // Fixed baselines (MathType's numerator height / denominator depth), pushed apart by tall parts.
+  const up = Math.max(a + t / 2 + st.fracNumHeight * s, a + t / 2 + gap + num.d);
+  const down = Math.min(a - t / 2 - st.fracDenDepth * s, a - t / 2 - gap - den.h);
   const box = combine(
     [
       { box: num, x: (w - num.w) / 2, y: up },
@@ -414,10 +437,11 @@ const INTEGRALS = new Set(["∫", "∬", "∭", "∮", "∯", "∰", "⨌"]);
 function nary(op: string, sub: Row | undefined, sup: Row | undefined, limits: "auto" | "limits" | "nolimits", c: Ctx): Box {
   const integral = INTEGRALS.has(op);
   const m = c.fonts.math;
-  let g = charGlyph(m, op) ?? charGlyph(c.fonts.regular, op);
+  const fromSymbol = c.fonts.symbol && c.st.useSymbolFont ? symbolGlyph(c.fonts.symbol, op) : null;
+  let g = fromSymbol ?? charGlyph(m, op) ?? charGlyph(c.fonts.regular, op);
   if (!g) return textBox(op, "regular", c);
   let size = c.s;
-  if (c.display && c.st.bigOpScale > 0) size = c.s * c.st.bigOpScale;
+  if ((c.display || fromSymbol) && c.st.bigOpScale > 0) size = c.s * (c.display ? c.st.bigOpScale : 1);
   else if (c.display) {
     const name = g.glyph.name;
     const big = name ? (namedGlyph(m, `${name}.dsp`) ?? namedGlyph(m, `${name}.s1`)) : null;

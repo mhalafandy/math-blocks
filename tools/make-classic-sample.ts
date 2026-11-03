@@ -1,7 +1,8 @@
 /**
  * Converts a MathType document to MathBlocks pictures in the Classic style, for comparing with
  * the original in Word. Run: pnpm tsx tools/make-classic-sample.ts <in.docx> <out.docx> [sizePt]
- * Fonts: Times New Roman when available (Windows), else Liberation Serif (same metrics).
+ * Fonts: Times New Roman + Symbol when available (Windows), else Liberation Serif (Times metrics)
+ * and Standard Symbols PS (a Symbol clone).
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -22,6 +23,7 @@ function textFonts(): [string, string, string, string] {
   const l = "/usr/share/fonts/truetype/liberation/LiberationSerif-";
   return [l + "Regular.ttf", l + "Italic.ttf", l + "Bold.ttf", l + "BoldItalic.ttf"];
 }
+const symbolFile = ["C:\\Windows\\Fonts\\symbol.ttf", "/usr/share/fonts/opentype/urw-base35/StandardSymbolsPS.otf"].find((p) => existsSync(p));
 const [r, i, b, bi] = textFonts();
 const stix = join(dirname(require.resolve("@fontsource/stix-two-math/package.json", { paths: [join(process.cwd(), "packages/math-render")] })), "files", "stix-two-math-latin-400-normal.woff");
 const fonts: FontSet = {
@@ -30,6 +32,7 @@ const fonts: FontSet = {
   bold: loadFont(readFileSync(b)),
   boldItalic: loadFont(readFileSync(bi)),
   math: loadFont(readFileSync(stix)),
+  symbol: symbolFile ? loadFont(readFileSync(symbolFile)) : undefined,
 };
 
 const bytes = new Uint8Array(readFileSync(input));

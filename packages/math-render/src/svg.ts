@@ -53,7 +53,12 @@ export function renderSvg(root: Row, o: RenderOptions): RenderResult {
     if (!p) continue;
     const tx = (it.x + m) * U;
     const ty = (h - it.y) * U;
-    const transform = sx !== 1 || sy !== 1 ? `translate(${f(tx)} ${f(ty)}) scale(${f(sx)} ${f(sy)})` : `translate(${f(tx)} ${f(ty)})`;
+    const k = it.slant ?? 0;
+    const transform = k
+      ? `matrix(${f(sx)} 0 ${f(-k * sy)} ${f(sy)} ${f(tx)} ${f(ty)})`
+      : sx !== 1 || sy !== 1
+        ? `translate(${f(tx)} ${f(ty)}) scale(${f(sx)} ${f(sy)})`
+        : `translate(${f(tx)} ${f(ty)})`;
     add(it.color, `<path transform="${transform}" d="${p}"/>`);
   }
   for (const [color, els] of byColor) paths.push(`<g fill="${color}">${els.join("")}</g>`);
