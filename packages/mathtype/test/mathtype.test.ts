@@ -3,7 +3,7 @@ import { strFromU8, unzipSync } from "fflate";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { readOmml } from "@mathblocks/math-omml";
 import { parseTag } from "@mathblocks/ooxml";
-import { convertDocx, mathTypeObjectToLatex, mtefToLatex, readCfb, readMtef } from "../src";
+import { convertDocx, convertFlatOpc, mathTypeObjectToLatex, mtefToLatex, readCfb, readMtef } from "../src";
 import { ch, docx, line, mathTypeObject, matrix, mtef, nullLine, numberedParagraph, objectRun, pile, tf, tmpl, v } from "./build";
 
 const latexOf = (...content: number[][]) => {
@@ -155,5 +155,20 @@ describe("document conversion", () => {
     const files = unzipSync(r.docx);
     expect(strFromU8(files["word/document.xml"]!)).toContain("<w:object");
     expect(files["word/embeddings/oleObject1.bin"]).toBeDefined();
+  });
+
+  it("converts a Flat OPC package from Word (Range.WordOpenXML)", () => {
+    const b64 = (b: Uint8Array) => Buffer.from(b).toString("base64").replace(/(.{76})/g, "$1\n");
+    const ns = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office"';
+    const flat = `<?xml version="1.0" standalone="yes"?><?mso-application progid="Word.Document"?><pkg:package xmlns:pkg="http://schemas.microsoft.com/office/2006/xmlPackage">` +
+      `<pkg:part pkg:name="/word/document.xml" pkg:contentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"><pkg:xmlData><w:document ${ns}><w:body>${numberedParagraph(1, "2.3")}</w:body></w:document></pkg:xmlData></pkg:part>` +
+      `<pkg:part pkg:name="/word/_rels/document.xml.rels" pkg:contentType="application/vnd.openxmlformats-package.relationships+xml"><pkg:xmlData><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdOle1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/oleObject" Target="embeddings/oleObject1.bin"/></Relationships></pkg:xmlData></pkg:part>` +
+      `<pkg:part pkg:name="/word/embeddings/oleObject1.bin" pkg:contentType="application/vnd.openxmlformats-officedocument.oleObject" pkg:compression="store"><pkg:binaryData>${b64(eq1)}</pkg:binaryData></pkg:part></pkg:package>`;
+    const r = convertFlatOpc(flat);
+    expect(r.equations.map((e) => [e.status, e.number, e.latex])).toEqual([["converted", "(2.3)", "\\mathbf{F}=m\\mathbf{a}"]]);
+    expect(r.flatOpc).not.toContain("<w:object");
+    expect(r.flatOpc).toContain("<m:oMath>");
+    expect(r.flatOpc).toContain("MACROBUTTON MTPlaceRef");
+    expect(convertFlatOpc(flat.replace(/<w:object[\s\S]*<\/w:object>/, "")).flatOpc).toBeNull();
   });
 });

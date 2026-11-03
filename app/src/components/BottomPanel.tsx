@@ -121,7 +121,9 @@ function StylePanel() {
   const profileBase = useApp((s) => s.profileBase);
   const mathFont = useApp((s) => s.mathFont);
   const vectorStyle = useApp((s) => s.vectorStyle);
+  const numberStyle = useApp((s) => s.numberStyle);
   const setPrefs = useApp((s) => s.setPrefs);
+  const numberKey = `${numberStyle.open}${numberStyle.chapter ? "c" : ""}${numberStyle.close}`;
   return (
     <div className="form narrow">
       <p className="hint">How equations look when inserted into Word as native equations.</p>
@@ -149,6 +151,25 @@ function StylePanel() {
           <option value="bold-italic">Bold italic (𝒗)</option>
         </select>
       </label>
+      <label>
+        Equation numbers
+        <select
+          value={numberKey}
+          onChange={(e) => {
+            const v = e.target.value;
+            const open = v.startsWith("[") ? "[" : v.startsWith("(") ? "(" : "";
+            const close = v.endsWith("]") ? "]" : v.endsWith(")") ? ")" : "";
+            setPrefs({ numberStyle: { open, close, chapter: v.includes("c") } });
+          }}
+        >
+          <option value="()">(1)</option>
+          <option value="(c)">(2.1): chapter number first</option>
+          <option value="[]">[1]</option>
+          <option value="[c]">[2.1]: chapter number first</option>
+          <option value="">1</option>
+        </select>
+      </label>
+      <p className="hint">Chapter numbers come from your numbered Heading 1 and restart in each chapter. Existing numbers keep their look; press Update numbers in Word after changes.</p>
       <p className="hint">Fonts other than Cambria Math must be installed on every PC that opens the document.</p>
     </div>
   );

@@ -12,7 +12,16 @@ import { readOmml } from "@mathblocks/math-omml";
 import { useApp } from "./store";
 
 /** Requests the app relies on; an add-in without them is an old one still loaded in Word. */
-const REQUIRED = ["replaceEquation", "listInstances", "replaceMany", "retag", "selectInstance", "getRegistry", "setRegistry"];
+const REQUIRED = [
+  "replaceEquation", "listInstances", "replaceMany", "retag", "selectInstance", "getRegistry", "setRegistry",
+  "listMathTypeParagraphs", "replaceParagraphs", "numberEquation", "listNumbered", "insertReference", "updateNumbers",
+];
+
+/** True when the Word add-in that is loaded understands this request (an old one may not). */
+export function addinSupports(method: string) {
+  const m = useApp.getState().connector.methods;
+  return !m || m.includes(method);
+}
 
 async function checkAddinVersion(params: ConnectorToApp["hello"]["params"]) {
   const app = useApp.getState();
@@ -93,14 +102,14 @@ class ConnectorClient {
     }
   }
 
-  request<M extends keyof AppToConnector>(method: M, params: AppToConnector[M]["params"]): Promise<AppToConnector[M]["result"]> {
+  request<M extends keyof AppToConnector>(method: M, params: AppToConnector[M]["params"], timeoutMs = TIMEOUT_MS): Promise<AppToConnector[M]["result"]> {
     const id = this.nextId++;
     const msg = { jsonrpc: "2.0", id, method, params };
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(id);
         reject(new Error(`Word did not answer "${method}" in time`));
-      }, TIMEOUT_MS);
+      }, timeoutMs);
       this.pending.set(id, { resolve: resolve as (v: unknown) => void, reject, timer });
       this.send(JSON.stringify(msg)).catch((e: unknown) => {
         clearTimeout(timer);
@@ -137,7 +146,7 @@ class ConnectorClient {
     switch (method) {
       case "hello": {
         const params = msg.params as ConnectorToApp["hello"]["params"];
-        app.setConnector({ connected: true, hostVersion: `Word ${params.hostBuild}` });
+        app.setConnector({ connected: true, hostVersion: `Word ${params.hostBuild}`, methods: params.methods });
         void checkAddinVersion(params);
         if (isRequest(msg)) this.reply(msg.id, { appVersion: APP_VERSION, protocolVersion: PROTOCOL_VERSION });
         // Once connected, check open documents for outdated linked equations.
@@ -180,7 +189,10 @@ class ConnectorClient {
           app.setLatex(serializeLatex(read.root), "external");
           app.setEditing({ tag: params.tag, adopted: !!params.adopted });
         }
-        app.setDisplay(read.display);
+        app.setDisplay(read.display || !!params.number);
+        app.setNumbered(!!params.number);
+        const ed = useApp.getState().editing;
+        if (ed) app.setEditing({ ...ed, numbered: !!params.number });
         app.notify(
           read.unknown.length
             ? `Equation loaded. Some parts could not be read and are shown in red: ${[...new Set(read.unknown)].join(", ")}`
@@ -188,6 +200,22 @@ class ConnectorClient {
           read.unknown.length ? "error" : "info",
         );
         void bringToFront();
+        break;
+      }
+      case "mathTypeActivated": {
+        if (isRequest(msg)) this.reply(msg.id, null);
+        const params = msg.params as ConnectorToApp["mathTypeActivated"]["params"];
+        void bringToFront();
+        void import("./convertMathType").then((m) => m.onMathTypeActivated(params));
+        break;
+      }
+      case "runCommand": {
+        if (isRequest(msg)) this.reply(msg.id, null);
+        const params = msg.params as ConnectorToApp["runCommand"]["params"];
+        void bringToFront();
+        if (params.command === "convertMathType") void import("./convertMathType").then((m) => m.convertOpenDocument(params.document));
+        else if (params.command === "insertReference") void import("./numbering").then((m) => m.openReferencePicker());
+        else if (params.command === "numberEquation") void import("./numbering").then((m) => m.toggleNumberFromRibbon(params));
         break;
       }
       default:

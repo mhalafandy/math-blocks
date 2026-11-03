@@ -25,6 +25,12 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added (M8, M9 in Word)
+- Equation numbering: Numbered mode, ribbon Number equation / Insert reference / Update numbers,
+  number styles with chapter numbers, reference picker listing MathBlocks and MathType numbers.
+- MathType conversion of the open Word document (ribbon, one undo step) and double-click on a
+  MathType equation to convert and edit it; `convertFlatOpc` in `packages/mathtype`.
+
 ### Fixed (user testing of 0.1.23, checklist E2/E3)
 - Equations whose math Word stores inside the content control (or behind bookmarks, tracked
   changes) are read correctly: double-click opens the right equation; updating no longer fails

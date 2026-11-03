@@ -78,6 +78,49 @@ export interface EquationActivatedParams {
   adopted?: boolean;
   /** Full WordprocessingML (Flat OPC) of the content control's range. */
   flatOpc: string;
+  /** The equation's number, when it is a numbered equation. */
+  number?: NumberInfo | null;
+}
+
+export interface NumberInfo {
+  /** Bookmark covering the number (_MBEq_… for MathBlocks, ZEqnNum… for MathType), if any. */
+  bookmark: string | null;
+  number: string;
+}
+
+/** A paragraph's content (without the paragraph mark) that holds MathType objects. */
+export interface MathTypeParagraph {
+  start: number;
+  end: number;
+  /** MathType objects in it (checked again before replacing). */
+  objects: number;
+  flatOpc: string;
+}
+
+/** The user double-clicked a MathType equation. */
+export interface MathTypeActivatedParams extends MathTypeParagraph {
+  document: string;
+  /** Which of the paragraph's MathType objects was clicked (0-based). */
+  index: number;
+}
+
+export interface NumberedEquation {
+  bookmark: string;
+  number: string;
+  kind: "mathblocks" | "mathtype";
+  page: number;
+  /** MathBlocks equation in that paragraph, if any. */
+  tag: string | null;
+  context: string;
+  flatOpc?: string;
+}
+
+/** How new equation numbers look: "(1)", "[1]", "(2.1)" with the chapter number. */
+export interface NumberFormat {
+  open: string;
+  close: string;
+  /** Prefix the number with the Heading 1 number (STYLEREF 1 \s) and restart it in each chapter. */
+  chapter: boolean;
 }
 
 /** A document with MathBlocks equations was opened in Word. */
@@ -90,6 +133,9 @@ export interface ConnectorToApp {
   documentOpened: { params: DocumentOpenedParams; result: void };
   hello: { params: HelloParams; result: { appVersion: string; protocolVersion: number } };
   equationActivated: { params: EquationActivatedParams; result: void };
+  mathTypeActivated: { params: MathTypeActivatedParams; result: void };
+  /** Ribbon buttons handled by the app: convertMathType, insertReference, numberEquation. */
+  runCommand: { params: { command: string; document?: string; tag?: string; flatOpc?: string; numbered?: boolean }; result: void };
   /** Ribbon button "Open MathBlocks". */
   showApp: { params: Record<string, never>; result: void };
 }
@@ -167,7 +213,20 @@ export interface AppToConnector {
   ping: { params: Record<string, never>; result: { pong: true } };
   insertEquation: { params: InsertEquationParams; result: InsertEquationResult };
   replaceEquation: { params: ReplaceEquationParams; result: InsertEquationResult };
-  readEquation: { params: { tag: string }; result: ReadEquationResult };
+  readEquation: { params: { tag: string }; result: ReadEquationResult & { number?: NumberInfo | null } };
+  listMathTypeParagraphs: {
+    params: DocTarget & { from: number; limit: number };
+    result: { name: string; fullName: string; total: number; totalObjects: number; paragraphs: MathTypeParagraph[] };
+  };
+  replaceParagraphs: { params: DocTarget & { items: MathTypeParagraph[]; undoLabel: string }; result: { replaced: number; skipped: number } };
+  activateObject: { params: DocTarget & { start: number; end: number; index: number }; result: { ok: true } };
+  /** Puts the equation in its own numbered paragraph; flatOpc is its inline version. */
+  numberEquation: { params: DocTarget & NumberFormat & { tag: string; flatOpc: string }; result: { bookmark: string; number: string } };
+  /** Removes the number; flatOpc is the display version. */
+  unnumberEquation: { params: DocTarget & { tag: string; flatOpc: string }; result: { ok: true } };
+  listNumbered: { params: DocTarget & { includeContent?: boolean }; result: { name: string; fullName: string; equations: NumberedEquation[] } };
+  insertReference: { params: { bookmark: string }; result: { text: string } };
+  updateNumbers: { params: DocTarget; result: { numbers: number; references: number } };
   documentInfo: { params: Record<string, never>; result: DocumentInfoResult };
 }
 

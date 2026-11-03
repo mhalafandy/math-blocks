@@ -182,7 +182,7 @@ namespace MathBlocks.WordConnector
             var cc = found[0];
             var xml = cc.Range.WordOpenXML;
             LogMathStructure("readEquation " + tag, xml);
-            return new Dictionary<string, object> { ["flatOpc"] = xml, ["locked"] = cc.LockContents };
+            return new Dictionary<string, object> { ["flatOpc"] = xml, ["locked"] = cc.LockContents, ["number"] = NumberInfo(cc) };
         }
 
         public Dictionary<string, object> DocumentInfo()

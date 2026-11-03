@@ -513,3 +513,6 @@ kbd {
 .conv-msg { color: var(--text-2); font-size: 12px; margin-top: 2px; }
 .panel-foot { border-top: 1px solid var(--border); padding: 6px 8px; }
 .panel-foot button { width: 100%; text-align: left; }
+.ref-row { width: 100%; text-align: left; background: none; border-radius: 0; }
+.ref-row:hover { background: var(--accent-soft); }
+.ref-page { flex: 0 0 auto; font-size: 11.5px; padding-top: 2px; }

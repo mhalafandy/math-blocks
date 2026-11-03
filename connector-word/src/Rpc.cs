@@ -40,6 +40,13 @@ namespace MathBlocks.WordConnector
             throw new RpcException(InvalidParams, "Missing string parameter '" + key + "'");
         }
 
+        public static int GetInt(Dictionary<string, object> p, string key, int fallback = 0)
+        {
+            if (p == null || !p.TryGetValue(key, out var v) || v == null) return fallback;
+            try { return Convert.ToInt32(v, System.Globalization.CultureInfo.InvariantCulture); }
+            catch (Exception) { return fallback; }
+        }
+
         public static bool GetBool(Dictionary<string, object> p, string key, bool fallback = false) =>
             p != null && p.TryGetValue(key, out var v) && v is bool b ? b : fallback;
     }
