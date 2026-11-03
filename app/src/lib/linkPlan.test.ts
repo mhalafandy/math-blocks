@@ -17,7 +17,7 @@ describe("linked equation update plan", () => {
       "\\vec{F}=m\\vec{a}",
       profiles,
     );
-    expect(plan.update).toEqual([{ tag: "a", display: true }, { tag: "b", display: false }]);
+    expect(plan.update).toEqual([{ tag: "a", display: true, kind: "native" }, { tag: "b", display: false, kind: "native" }]);
     expect(plan.conflicts).toEqual([]);
   });
 
@@ -28,7 +28,7 @@ describe("linked equation update plan", () => {
 
   it("flags copies edited directly in Word as conflicts", () => {
     const plan = planUpdate([{ tag: "a", flatOpc: word("F=2ma") }], "F=ma", "\\vec{F}=m\\vec{a}", profiles);
-    expect(plan.conflicts).toEqual([{ tag: "a", display: true }]);
+    expect(plan.conflicts).toEqual([{ tag: "a", display: true, kind: "native" }]);
   });
 
   it("with no known previous version, updates everything that differs", () => {
@@ -46,5 +46,14 @@ describe("linked equation update plan", () => {
   it("parses link tags", () => {
     expect(linkOf("mb1|AAAABBBBCCCCDDDD|abcdefghijkl")).toEqual({ blockId: "AAAABBBBCCCCDDDD", instanceId: "abcdefghijkl" });
     expect(linkOf("mb1|-|abcdefghijkl")).toBeNull();
+  });
+});
+
+describe("Classic pictures in linked updates", () => {
+  const pic = (latex: string, display = true) => `<w:sdt><w:sdtContent><w:r><w:drawing><wp:docPr id="1" name="x" descr="MathBlocks ${display ? "display" : "inline"}: ${latex.replace(/&/g, "&amp;")}"/></w:drawing></w:r></w:sdtContent></w:sdt>`;
+  it("reads a picture's equation from its alt text and plans the update", () => {
+    const plan = planUpdate([{ tag: "p", flatOpc: pic("F=ma", false) }, { tag: "q", flatOpc: pic("F=2ma") }], "F=ma", "F=ma+0", [TUNED_PROFILE]);
+    expect(plan.update).toEqual([{ tag: "p", display: false, kind: "picture" }]);
+    expect(plan.conflicts.map((c) => c.tag)).toEqual(["q"]);
   });
 });

@@ -24,6 +24,22 @@ export interface RenderResult {
 
 const U = 1000; // SVG units per em
 const f = (n: number) => (Math.round(n * 100) / 100).toString();
+const r1 = (n: number | undefined) => {
+  const v = Math.round((n ?? 0) * 10) / 10;
+  return Object.is(v, -0) ? "0" : String(v);
+};
+
+/** SVG path data from glyph outline commands (opentype.js' own toPathData can emit NaN). */
+function pathData(commands: { type: string; x?: number; y?: number; x1?: number; y1?: number; x2?: number; y2?: number }[]): string {
+  let d = "";
+  for (const c of commands) {
+    if (c.type === "M" || c.type === "L") d += `${c.type}${r1(c.x)} ${r1(c.y)}`;
+    else if (c.type === "Q") d += `Q${r1(c.x1)} ${r1(c.y1)} ${r1(c.x)} ${r1(c.y)}`;
+    else if (c.type === "C") d += `C${r1(c.x1)} ${r1(c.y1)} ${r1(c.x2)} ${r1(c.y2)} ${r1(c.x)} ${r1(c.y)}`;
+    else if (c.type === "Z") d += "Z";
+  }
+  return d;
+}
 
 /** Typesets an equation into a standalone SVG of glyph outlines (no fonts needed to view it). */
 export function renderSvg(root: Row, o: RenderOptions): RenderResult {
@@ -49,7 +65,7 @@ export function renderSvg(root: Row, o: RenderOptions): RenderResult {
     const sx = it.sx ?? 1;
     const sy = it.sy ?? 1;
     const fontSize = it.s * U;
-    const p = it.g.glyph.getPath(0, 0, fontSize).toPathData(1);
+    const p = pathData(it.g.glyph.getPath(0, 0, fontSize).commands);
     if (!p) continue;
     const tx = (it.x + m) * U;
     const ty = (h - it.y) * U;

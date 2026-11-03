@@ -5,6 +5,7 @@ import { useApp, type BottomTab } from "../lib/store";
 import { DetailsPanel } from "./DetailsPanel";
 import { LatexEditor } from "./LatexEditor";
 import { SymbolsPanel } from "./SymbolsPanel";
+import { ClassicPreview } from "./ClassicPreview";
 
 const TABS: { id: BottomTab; label: string }[] = [
   { id: "latex", label: "LaTeX" },
@@ -125,11 +126,40 @@ function StylePanel() {
   const mathFont = useApp((s) => s.mathFont);
   const vectorStyle = useApp((s) => s.vectorStyle);
   const numberStyle = useApp((s) => s.numberStyle);
+  const look = useApp((s) => s.look);
+  const sizePt = useApp((s) => s.equationSizePt);
+  const latex = useApp((s) => s.latex);
+  const display = useApp((s) => s.display);
   const setPrefs = useApp((s) => s.setPrefs);
   const numberKey = `${numberStyle.open}${numberStyle.chapter ? "c" : ""}${numberStyle.close}`;
   return (
     <div className="form narrow">
-      <p className="hint">How equations look when inserted into Word as native equations.</p>
+      <label>
+        Equations in Word
+        <select value={look} onChange={(e) => setPrefs({ look: e.target.value as "classic" | "native" })}>
+          <option value="classic">Classic: MathType look (drawn by MathBlocks)</option>
+          <option value="native">Native Word equation (editable with Word's tools)</option>
+        </select>
+      </label>
+      {look === "classic" ? (
+        <>
+          <label>
+            Size
+            <select value={sizePt} onChange={(e) => setPrefs({ equationSizePt: Number(e.target.value) })}>
+              {[10, 10.5, 11, 12, 14, 16].map((n) => (
+                <option key={n} value={n}>
+                  {n} pt{n === 12 ? " (MathType default)" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+          <ClassicPreview latex={latex} display={display} sizePt={sizePt} />
+          <p className="hint">Classic equations use MathType's fonts and spacing (Times New Roman, Symbol) and look the same on every PC. Double-click one in Word to edit it in MathBlocks.</p>
+        </>
+      ) : (
+        <p className="hint">Settings for native Word equations:</p>
+      )}
+      {look === "native" && <>
       <label>
         Spacing
         <select value={profileBase} onChange={(e) => setPrefs({ profileBase: e.target.value as "tuned" | "word-default" })}>
@@ -154,6 +184,7 @@ function StylePanel() {
           <option value="bold-italic">Bold italic (𝒗)</option>
         </select>
       </label>
+      </>}
       <label>
         Equation numbers
         <select

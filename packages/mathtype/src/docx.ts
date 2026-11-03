@@ -150,7 +150,8 @@ function convertPartXml(
       const pic = picture && media ? picture(latex, display) : null;
       if (pic && media) {
         const n = media.length + 1;
-        const item: MediaOut = { part, svgId: `rIdMbS${n}`, pngId: `rIdMbP${n}`, name: `mathblocks${n}`, data: pic };
+        const uid = newInstanceId();
+        const item: MediaOut = { part, svgId: `rIdMbS${n}`, pngId: `rIdMbP${n}`, name: `mathblocks-${uid}`, data: pic };
         media.push(item);
         const drawing = pictureRun({
           svgRId: item.svgId,
@@ -160,7 +161,7 @@ function convertPartXml(
           depthPt: pic.depthPt,
           id: 90000 + n,
           name: `MathBlocks equation ${n}`,
-          description: `MathBlocks: ${latex}`,
+          description: `MathBlocks ${display ? (entry.number ? "numbered" : "display") : "inline"}: ${latex}`,
         });
         return sdt(drawing, hasW15, entry.tag, true);
       }
@@ -206,10 +207,39 @@ export function convertFlatOpc(flat: string, options: ConvertOptions = {}): Flat
     const b64 = p && /<pkg:binaryData>([\s\S]*?)<\/pkg:binaryData>/.exec(p.body)?.[1];
     return b64 ? base64ToBytes(b64) : undefined;
   };
-  const out = convertPartXml(docName, xmlData[1]!, rels, getBinary, profile, equations);
+  const media: MediaOut[] = [];
+  const out = convertPartXml(docName, xmlData[1]!, rels, getBinary, profile, equations, options.picture, media);
   if (!equations.some((e) => e.status === "converted")) return { flatOpc: null, equations };
   const body = doc.body.replace(xmlData[1]!, () => out.xml);
-  return { flatOpc: flat.slice(0, doc.start) + `<pkg:part${doc.attrs}>${body}</pkg:part>` + flat.slice(doc.end), equations };
+  let result = flat.slice(0, doc.start) + `<pkg:part${doc.attrs}>${body}</pkg:part>` + flat.slice(doc.end);
+  if (media.length) {
+    // Pictures: relationships in the document's rels part, files as binary parts.
+    const IMG = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image";
+    const relXml = media.map((m) => `<Relationship Id="${m.svgId}" Type="${IMG}" Target="media/${m.name}.svg"/><Relationship Id="${m.pngId}" Type="${IMG}" Target="media/${m.name}.png"/>`).join("");
+    const relsName = docName.replace(/^word\//, "word/_rels/") + ".rels";
+    if (result.includes(`pkg:name="/${relsName}"`)) {
+      const at = result.indexOf(`pkg:name="/${relsName}"`);
+      const end = result.indexOf("</Relationships>", at);
+      result = result.slice(0, end) + relXml + result.slice(end);
+    } else {
+      result = result.replace("</pkg:package>", `<pkg:part pkg:name="/${relsName}" pkg:contentType="application/vnd.openxmlformats-package.relationships+xml"><pkg:xmlData><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${relXml}</Relationships></pkg:xmlData></pkg:part></pkg:package>`);
+    }
+    const files = media
+      .map(
+        (m) =>
+          `<pkg:part pkg:name="/word/media/${m.name}.svg" pkg:contentType="image/svg+xml" pkg:compression="store"><pkg:binaryData>${bytesToBase64(new TextEncoder().encode(m.data.svg))}</pkg:binaryData></pkg:part>` +
+          `<pkg:part pkg:name="/word/media/${m.name}.png" pkg:contentType="image/png" pkg:compression="store"><pkg:binaryData>${bytesToBase64(m.data.png)}</pkg:binaryData></pkg:part>`,
+      )
+      .join("");
+    result = result.replace("</pkg:package>", `${files}</pkg:package>`);
+  }
+  return { flatOpc: result, equations };
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let s = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s);
 }
 
 function base64ToBytes(b64: string): Uint8Array {

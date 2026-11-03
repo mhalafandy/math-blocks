@@ -113,8 +113,26 @@ export function documentXml(bodyParagraphs: string[]): string {
  * Flat OPC package for Word's Range.InsertXML (COM) or insertOoxml (Office.js).
  * Both APIs require a full package, not a bare fragment.
  */
-export function flatOpc(bodyParagraphs: string[]): string {
+/** A file carried inside a Flat OPC package (pictures), referenced from the document by rId. */
+export interface FlatOpcMedia {
+  rId: string;
+  /** Path inside word/, e.g. "media/mathblocks1.svg". */
+  target: string;
+  contentType: string;
+  /** Base64 content. */
+  base64: string;
+}
+
+export function flatOpc(bodyParagraphs: string[], media: FlatOpcMedia[] = []): string {
   const doc = documentXml(bodyParagraphs).replace(/^<\?xml[^>]*\?>/, "");
+  const IMG = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image";
+  const mediaParts = media.length
+    ? `<pkg:part pkg:name="/word/_rels/document.xml.rels" pkg:contentType="application/vnd.openxmlformats-package.relationships+xml"><pkg:xmlData>` +
+      `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+      media.map((m) => `<Relationship Id="${m.rId}" Type="${IMG}" Target="${m.target}"/>`).join("") +
+      `</Relationships></pkg:xmlData></pkg:part>` +
+      media.map((m) => `<pkg:part pkg:name="/word/${m.target}" pkg:contentType="${m.contentType}" pkg:compression="store"><pkg:binaryData>${m.base64}</pkg:binaryData></pkg:part>`).join("")
+    : "";
   return (
     `<?xml version="1.0" standalone="yes"?><?mso-application progid="Word.Document"?>` +
     `<pkg:package xmlns:pkg="http://schemas.microsoft.com/office/2006/xmlPackage">` +
@@ -124,6 +142,8 @@ export function flatOpc(bodyParagraphs: string[]): string {
     `</Relationships></pkg:xmlData></pkg:part>` +
     `<pkg:part pkg:name="/word/document.xml" pkg:contentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"><pkg:xmlData>` +
     doc +
-    `</pkg:xmlData></pkg:part></pkg:package>`
+    `</pkg:xmlData></pkg:part>` +
+    mediaParts +
+    `</pkg:package>`
   );
 }

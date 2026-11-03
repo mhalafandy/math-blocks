@@ -48,7 +48,8 @@ pub fn run() {
             documents::document_read,
             documents::document_write,
             documents::document_open,
-            documents::export_write
+            documents::export_write,
+            documents::system_font
         ])
         .setup(|app| {
             pipe::start(app.handle().clone());

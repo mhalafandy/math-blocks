@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { countNodes } from "@mathblocks/math-core";
 import { parseLatex, type Diagnostic } from "@mathblocks/math-latex";
 import { toOmml, TUNED_PROFILE, WORD_DEFAULT_PROFILE, type StyleProfile } from "@mathblocks/math-omml";
-import { contentControl, flatOpc, formatTag, newInstanceId, paragraph } from "@mathblocks/ooxml";
+import { contentControl, flatOpc, formatTag, newInstanceId, paragraph, pictureRun } from "@mathblocks/ooxml";
 import { useApp } from "./store";
 
 /** The Word style profile from the current preferences (outside React). */
@@ -47,10 +47,51 @@ export function useCompiledEquation(): CompiledEquation {
   }, [latex, display, profile]);
 }
 
-/** Builds the Flat OPC package the Word connector inserts with Range.InsertXML. */
-export function buildInsertion(latex: string, display: boolean, profile: StyleProfile, existingTag?: string) {
+/** Native Word equation (OMML) as a Flat OPC package for Range.InsertXML. */
+export function buildNativeInsertion(latex: string, display: boolean, profile: StyleProfile, existingTag?: string) {
   const { root } = parseLatex(latex);
   const tag = existingTag ?? formatTag({ blockId: null, instanceId: newInstanceId() });
   const omml = toOmml(root, { display, profile });
   return { tag, flatOpc: flatOpc([paragraph(contentControl(omml, { tag, title: "MathBlocks equation" }))]) };
+}
+
+let pictureCounter = 0;
+
+/**
+ * Builds what the Word connector inserts: a Classic picture (default) or a native equation,
+ * following the "look" preference unless `look` is given.
+ */
+export async function buildInsertion(
+  latex: string,
+  display: boolean,
+  profile: StyleProfile,
+  existingTag?: string,
+  look = useApp.getState().look,
+  /** Typeset in display style although placed inline (numbered equations). */
+  typesetDisplay = display,
+) {
+  if (look === "native") return buildNativeInsertion(latex, display, profile, existingTag);
+  const { renderPicture, toBase64, altText } = await import("./render");
+  const tag = existingTag ?? formatTag({ blockId: null, instanceId: newInstanceId() });
+  const pic = await renderPicture(latex, typesetDisplay, useApp.getState().equationSizePt);
+  const n = ++pictureCounter;
+  const run = pictureRun({
+    pngRId: "rIdMbP1",
+    svgRId: "rIdMbS1",
+    widthPt: pic.widthPt,
+    heightPt: pic.heightPt,
+    depthPt: pic.depthPt,
+    id: 1000 + (n % 100000),
+    name: "MathBlocks equation",
+    description: altText(latex, display ? "display" : typesetDisplay ? "numbered" : "inline"),
+  });
+  const cc = contentControl(run, { tag, title: "MathBlocks equation" });
+  const body = display ? `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${cc}</w:p>` : paragraph(cc);
+  return {
+    tag,
+    flatOpc: flatOpc([body], [
+      { rId: "rIdMbS1", target: `media/mathblocks${n}.svg`, contentType: "image/svg+xml", base64: toBase64(new TextEncoder().encode(pic.svg)) },
+      { rId: "rIdMbP1", target: `media/mathblocks${n}.png`, contentType: "image/png", base64: toBase64(pic.png) },
+    ]),
+  };
 }

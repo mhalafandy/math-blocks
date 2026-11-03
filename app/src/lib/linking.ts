@@ -33,7 +33,7 @@ async function writeBlock(document: string, q: Equation, reg?: Registry) {
 export async function insertLinked(q: Equation) {
   const { display: d, numbered } = useApp.getState();
   const display = d && !numbered;
-  const { tag, flatOpc } = buildInsertion(q.latex, display, currentProfile(), formatTag({ blockId: q.id, instanceId: newInstanceId() }));
+  const { tag, flatOpc } = await buildInsertion(q.latex, display, currentProfile(), formatTag({ blockId: q.id, instanceId: newInstanceId() }));
   const r = await connector.request("insertEquation", { tag, flatOpc, display, undoLabel: `Insert linked “${q.name}”` });
   if (numbered) await import("./numbering").then((m) => m.numberInWord(tag, q.latex));
   const docs = await connector.request("listInstances", { blockId: q.id });
@@ -71,7 +71,7 @@ export async function propagate(q: Equation, previousLatex: string | null, opts:
     }
     if (targets.length) {
       const profile = currentProfile();
-      const items = targets.map((t) => ({ tag: t.tag, flatOpc: buildInsertion(q.latex, t.display, profile, t.tag).flatOpc }));
+      const items = await Promise.all(targets.map(async (t) => ({ tag: t.tag, flatOpc: (await buildInsertion(q.latex, t.numbered ? false : t.display, profile, t.tag, t.kind === "picture" ? "classic" : t.kind === "native" ? "native" : undefined, t.display)).flatOpc })));
       const r = await connector.request("replaceMany", { document: doc.fullName, items, undoLabel: `Update linked “${q.name}”` });
       total += r.replaced;
       docsTouched++;
