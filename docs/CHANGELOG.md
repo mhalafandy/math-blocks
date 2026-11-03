@@ -25,6 +25,12 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed (0.1.36)
+- Ctrl+Shift+B on vectors: bold now goes on the letter (\vec{\mathbf{r}}, upright like MathType's
+  vector style; Greek in bold italic), works with the cursor right after an accented symbol, and
+  makes a partly bold selection fully bold. Bold applied around accents, fractions and other
+  structures reaches the letters inside (it used to be ignored there).
+
 ### Changed (0.1.35)
 - Classic equations are placed like MathType's: a classic (VML) picture holding a vector EMF,
   so Word shows the simple object frame (no rotation handle or layout button) and every Word

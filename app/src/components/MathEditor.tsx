@@ -1,3 +1,4 @@
+import { parseLatex } from "@mathblocks/math-latex";
 import { useEffect, useRef } from "react";
 import { MathfieldElement } from "mathlive";
 import { setLastEditor } from "../lib/focus";
@@ -61,19 +62,88 @@ export function focusVisualEditor() {
  * Ctrl+Shift+B (as in MathType): toggles bold upright on the selection, or on the symbol just
  * before the cursor when nothing is selected.
  */
+/**
+ * Ctrl+Shift+B: makes the selection (or the symbol before the cursor) bold, or plain again.
+ * Bold is upright \mathbf (MathType's vector style); Greek letters use bold italic \boldsymbol.
+ * Done on the LaTeX rather than with MathLive's styling, which writes \bm (bold italic) and
+ * leaves accented vectors (\vec{r}) unchanged.
+ */
 export function toggleBold() {
   const mf = activeField;
   if (!mf) return;
   mf.focus();
-  let restoreCaret: number | null = null;
-  if (mf.selectionIsCollapsed) {
-    const pos = mf.position;
-    if (pos === 0) return;
-    mf.selection = { ranges: [[pos - 1, pos]], direction: "forward" };
-    restoreCaret = pos;
+  const collapsed = mf.selectionIsCollapsed;
+  if (collapsed) {
+    if (mf.position === 0) return;
+    // Select the whole symbol before the cursor (an accented vector counts as one).
+    mf.executeCommand("extendSelectionBackward");
   }
-  mf.applyStyle({ variant: "normal", variantStyle: "bold" }, { operation: "toggle" });
-  if (restoreCaret !== null) mf.position = restoreCaret;
+  const src = mf.getValue(mf.selection, "latex").trim();
+  if (!src) return;
+  mf.insert(toggledBold(src), { insertionMode: "replaceSelection", selectionMode: collapsed ? "after" : "item", format: "latex" });
+}
+
+const BOLD_CMD = /\\(mathbf|boldsymbol|bm|pmb)\{/g;
+const ACCENT_CMD = /^\\(vec|hat|widehat|bar|overline|dot|ddot|dddot|tilde|widetilde|check|breve|overrightarrow|overleftarrow|overrightharpoon|overleftharpoon)\{([\s\S]*)\}$/;
+const GREEK_ONLY = /^(\\(alpha|beta|gamma|delta|epsilon|varepsilon|zeta|eta|theta|vartheta|iota|kappa|lambda|mu|nu|xi|pi|varpi|rho|varrho|sigma|varsigma|tau|upsilon|phi|varphi|chi|psi|omega)\s*)+$/;
+
+/** Removes every bold command, keeping its contents (braces matched). */
+function stripBold(src: string): string {
+  let out = "";
+  let i = 0;
+  BOLD_CMD.lastIndex = 0;
+  for (let m = BOLD_CMD.exec(src); m; m = BOLD_CMD.exec(src)) {
+    out += src.slice(i, m.index);
+    let depth = 1;
+    let j = m.index + m[0].length;
+    const bodyStart = j;
+    while (j < src.length && depth > 0) {
+      if (src[j] === "{") depth++;
+      else if (src[j] === "}") depth--;
+      j++;
+    }
+    out += stripBold(src.slice(bodyStart, j - 1));
+    i = j;
+    BOLD_CMD.lastIndex = j;
+  }
+  return out + src.slice(i);
+}
+
+/** True when every letter and digit of the LaTeX is bold. */
+function allBold(src: string): boolean {
+  let letters = 0;
+  let bold = 0;
+  const visit = (v: unknown) => {
+    if (!v || typeof v !== "object") return;
+    if (Array.isArray(v)) return v.forEach(visit);
+    const n = v as { kind?: string; variant?: string };
+    if (n.kind === "ident" || n.kind === "number") {
+      letters++;
+      if (n.variant === "bold" || n.variant === "bold-italic") bold++;
+    }
+    for (const x of Object.values(n)) visit(x);
+  };
+  visit(parseLatex(src).root);
+  return letters > 0 && bold === letters;
+}
+
+/** Bold ↔ plain for a piece of LaTeX: all bold → plain; otherwise all becomes bold. */
+export function toggledBold(src: string): string {
+  if (allBold(src)) return stripBold(src);
+  src = stripBold(src);
+  // A vector or accented letter: bold goes on the letter (\vec{\mathbf{r}}), as in MathType.
+  const acc = ACCENT_CMD.exec(src);
+  if (acc && balanced(acc[2]!)) return `\\${acc[1]}{${toggledBold(acc[2]!)}}`;
+  return `\\${GREEK_ONLY.test(src) ? "boldsymbol" : "mathbf"}{${src}}`;
+}
+
+function balanced(s: string) {
+  let d = 0;
+  for (const c of s) {
+    if (c === "{") d++;
+    else if (c === "}" && --d < 0) return false;
+  }
+  return d === 0;
 }
 
 /** Style commands whose empty slot MathLive cannot fill without losing the style. */
