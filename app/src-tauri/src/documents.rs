@@ -12,6 +12,30 @@ fn check_docx(path: &str) -> Result<(), String> {
     }
 }
 
+fn check_export(path: &str) -> Result<(), String> {
+    let ext = Path::new(path).extension().and_then(|e| e.to_str()).unwrap_or("").to_ascii_lowercase();
+    match ext.as_str() {
+        "svg" | "png" | "tex" | "mml" | "html" | "txt" | "json" => Ok(()),
+        _ => Err("Exports are saved as .svg, .png, .tex, .mml, .html, .txt or .json".into()),
+    }
+}
+
+/// Saves an export (image, LaTeX…) to a path chosen in a save dialog. Body = content, path in `x-path`.
+#[tauri::command]
+pub fn export_write(request: tauri::ipc::Request<'_>) -> Result<(), String> {
+    let path = request
+        .headers()
+        .get("x-path")
+        .and_then(|v| v.to_str().ok())
+        .map(urlencoding_decode)
+        .ok_or("Missing target path")?;
+    check_export(&path)?;
+    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
+        return Err("Expected file content".into());
+    };
+    std::fs::write(&path, bytes).map_err(|e| format!("Could not save {path}: {e}"))
+}
+
 #[tauri::command]
 pub fn document_read(path: String) -> Result<tauri::ipc::Response, String> {
     check_docx(&path)?;
@@ -26,7 +50,7 @@ pub fn document_write(request: tauri::ipc::Request<'_>) -> Result<(), String> {
         .headers()
         .get("x-path")
         .and_then(|v| v.to_str().ok())
-        .map(|v| urlencoding_decode(v))
+        .map(urlencoding_decode)
         .ok_or("Missing target path")?;
     check_docx(&path)?;
     let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
@@ -88,6 +112,12 @@ fn urlencoding_decode(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn exports() {
+        assert!(check_export("C:\\x\\eq.SVG").is_ok());
+        assert!(check_export("C:\\x\\eq.exe").is_err());
+    }
 
     #[test]
     fn only_docx() {

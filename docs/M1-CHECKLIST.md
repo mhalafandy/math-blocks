@@ -83,6 +83,8 @@ Close Word completely after the update so the new ribbon buttons appear.
 | H1 | Template | Library: right-click an equation → **Use with other symbols…**, type new symbols: the preview follows; **Send to Word** inserts it | |
 | H2 | Symbols of an equation | Bottom panel **Symbols**: the list shows v₀, 𝐪_ab… (not d of dx); click one, Rename: the equation changes | |
 | H3 | Symbols of the document | With Word open, **Index Word document**: symbols with "defined p. n"; Go to selects the equation in Word | |
+| H5 | Export | Canvas **⤓** → Copy as image, paste into PowerPoint; Save as SVG opens in a browser | |
+| H6 | Document → LaTeX | Ctrl+K → "Export the Word document's equations as LaTeX…": the .tex compiles (e.g. on Overleaf) with your numbers | |
 | H4 | Rename everywhere | Rename a symbol used in several equations: all change; one Ctrl+Z in Word undoes it | |
 
 ## Part E — Linked equations (build 0.1.22+)

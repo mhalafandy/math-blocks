@@ -14,10 +14,10 @@ import { useApp } from "./lib/store";
 import { installAndRestart, startUpdates } from "./lib/updates";
 import { isDirty, useLibrary } from "./lib/library/useLibrary";
 import { insertLinked, unlinkEditing } from "./lib/linking";
-import { ContextMenu } from "./components/ContextMenu";
+import { ContextMenu, openMenu } from "./components/ContextMenu";
 import { PromptHost } from "./components/Dialogs";
 import { ReferencePicker } from "./components/ReferencePicker";
-import { TemplateDialog } from "./components/TemplateDialog";
+import { openTemplate, TemplateDialog } from "./components/TemplateDialog";
 import { numberInWord, unnumberInWord } from "./lib/numbering";
 import { ConversionReport } from "./components/ConversionReport";
 import { SaveDialog } from "./components/SaveDialog";
@@ -252,6 +252,25 @@ export function App() {
               </div>
             </div>
             <div className="canvas-tools">
+              <button
+                className="icon-btn"
+                title="Export: copy as image or MathML, save SVG/PNG, use with other symbols"
+                onClick={(e) => {
+                  const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                  openMenu({ clientX: r.left, clientY: r.top - 190, preventDefault: () => undefined }, [
+                    { label: "Copy as image (PNG)", onSelect: () => void import("./lib/export").then((m) => m.copyImage()) },
+                    { label: "Copy as MathML", onSelect: () => void import("./lib/export").then((m) => m.copyMathMl()) },
+                    { label: "Copy LaTeX", onSelect: () => void copyLatex() },
+                    { separator: true, label: "" },
+                    { label: "Save as SVG…", onSelect: () => void import("./lib/export").then((m) => m.saveSvg()) },
+                    { label: "Save as PNG…", onSelect: () => void import("./lib/export").then((m) => m.savePng()) },
+                    { separator: true, label: "" },
+                    { label: "Use with other symbols…", onSelect: () => openTemplate(s.latex, s.display) },
+                  ]);
+                }}
+              >
+                ⤓
+              </button>
               <button className="icon-btn" title="Zoom out (Ctrl −)" onClick={() => zoomStep(-1)}>−</button>
               <button className="zoom-label" title="Reset zoom (Ctrl 0)" onClick={() => s.setPrefs({ zoom: 1 })}>{Math.round(s.zoom * 100)}%</button>
               <button className="icon-btn" title="Zoom in (Ctrl +)" onClick={() => zoomStep(1)}>+</button>
