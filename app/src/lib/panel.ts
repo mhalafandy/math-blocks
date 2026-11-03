@@ -18,6 +18,7 @@ export interface PanelOpen {
   /** Library name when the equation is a linked copy. */
   linked: string | null;
   number: string | null;
+  theme?: "system" | "light" | "dark";
 }
 
 export interface PanelResult {
@@ -47,19 +48,22 @@ export async function openPanel(rect: ScreenRect) {
     sizePt: st.equationSizePt,
     linked: q?.name ?? null,
     number: null,
+    theme: st.theme,
   };
   const { PhysicalPosition } = await import("@tauri-apps/api/dpi");
   const size = await w.outerSize();
   const win = await import("@tauri-apps/api/window");
   const monitor = (await win.monitorFromPoint(rect.left, rect.top).catch(() => null)) ?? (await win.primaryMonitor().catch(() => null));
-  const gap = 10;
-  let x = rect.left;
-  let y = rect.top + rect.height + gap;
+  // The card sits 14 px (logical) inside the transparent window.
+  const inset = 14 * (await w.scaleFactor());
+  const gap = 6;
+  let x = rect.left - inset;
+  let y = rect.top + rect.height + gap - inset;
   if (monitor) {
     const right = monitor.position.x + monitor.size.width;
     const bottom = monitor.position.y + monitor.size.height;
     x = Math.max(monitor.position.x, Math.min(x, right - size.width));
-    if (y + size.height > bottom) y = Math.max(monitor.position.y, rect.top - size.height - gap);
+    if (y + size.height > bottom) y = Math.max(monitor.position.y, rect.top - size.height - gap + inset);
   }
   await w.setPosition(new PhysicalPosition(Math.round(x), Math.round(y)));
   const { emitTo } = await import("@tauri-apps/api/event");

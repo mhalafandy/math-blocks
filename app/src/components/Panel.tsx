@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MathEditor, focusVisualEditor } from "./MathEditor";
 import { PaletteTop } from "./SymbolPalette";
 import { LatexEditor } from "./LatexEditor";
@@ -16,6 +16,24 @@ import { useApp } from "../lib/store";
 export function PanelApp() {
   const [info, setInfo] = useState<PanelOpen | null>(null);
   const root = useRef<HTMLDivElement>(null);
+  const openedAt = useRef(0);
+  const [tab, setTab] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(TAB_KEY);
+    } catch {
+      return null;
+    }
+  });
+  const chooseTab = (t: string) => {
+    const next = tab === t ? null : t;
+    setTab(next);
+    try {
+      if (next) localStorage.setItem(TAB_KEY, next);
+      else localStorage.removeItem(TAB_KEY);
+    } catch {
+      // Not remembered.
+    }
+  };
   const latex = useApp((s) => s.latex);
   const display = useApp((s) => s.display);
   const numbered = useApp((s) => s.numbered);
@@ -23,6 +41,13 @@ export function PanelApp() {
   const sizePt = useApp((s) => s.equationSizePt);
   const eq = useCompiledEquation();
   const toast = useApp((s) => s.toast);
+  const theme = useApp((s) => s.theme);
+
+  // Same theme as the main window (shared preferences).
+  useEffect(() => {
+    if (theme === "system") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
   const hide = async () => (await import("@tauri-apps/api/window")).getCurrentWindow().hide();
   const apply = async () => {
@@ -43,11 +68,12 @@ export function PanelApp() {
       const { listen } = await import("@tauri-apps/api/event");
       off = await listen<PanelOpen>("panel:open", (e) => {
         const app = useApp.getState();
-        app.setPrefs({ look: e.payload.look, equationSizePt: e.payload.sizePt });
+        app.setPrefs({ look: e.payload.look, equationSizePt: e.payload.sizePt, ...(e.payload.theme ? { theme: e.payload.theme } : {}) });
         app.setLatex(e.payload.latex, "external");
         app.setDisplay(e.payload.display);
         app.setNumbered(e.payload.numbered);
         setInfo(e.payload);
+        openedAt.current = Date.now();
         requestAnimationFrame(() => focusVisualEditor());
       });
     })().catch(() => undefined); // browser preview: no Tauri
@@ -70,21 +96,35 @@ export function PanelApp() {
     return () => window.removeEventListener("keydown", onKey, true);
   });
 
-  // The window follows its content's height.
+  // The window takes the card's height (the card is sized by its content, never by the window).
   useEffect(() => {
     const el = root.current;
     if (!el) return;
+    let last = 0;
     const ro = new ResizeObserver(() => {
+      const h = Math.ceil(el.getBoundingClientRect().height) + 2 * CARD_MARGIN;
+      if (Math.abs(h - last) < 2) return;
+      last = h;
       void (async () => {
         const { getCurrentWindow } = await import("@tauri-apps/api/window");
         const { LogicalSize } = await import("@tauri-apps/api/dpi");
-        const w = getCurrentWindow();
-        const width = (await w.innerSize()).toLogical(await w.scaleFactor()).width;
-        await w.setSize(new LogicalSize(width, Math.min(760, Math.ceil(el.scrollHeight) + 2)));
+        await getCurrentWindow().setSize(new LogicalSize(PANEL_WIDTH, Math.min(720, h)));
       })().catch(() => undefined);
     });
     ro.observe(el);
     return () => ro.disconnect();
+  }, []);
+
+  // Behaves like a popover: clicking back into Word (or anywhere else) closes it.
+  useEffect(() => {
+    let off: (() => void) | undefined;
+    void (async () => {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      off = await getCurrentWindow().onFocusChanged(({ payload: focused }) => {
+        if (!focused && Date.now() - openedAt.current > 600) void hide();
+      });
+    })().catch(() => undefined);
+    return () => off?.();
   }, []);
 
   const commands = useMemo(
@@ -99,110 +139,91 @@ export function PanelApp() {
   );
 
   const app = useApp.getState();
+  const tabs: [string, string][] = [
+    ["preview", look === "classic" ? "Preview" : "Preview"],
+    ["symbols", "Symbols"],
+    ["latex", "LaTeX"],
+    ["style", "Style"],
+  ];
   return (
-    <div className="panel-app" ref={root}>
-      <header className="panel-bar" data-tauri-drag-region>
-        <span className="logo" aria-hidden data-tauri-drag-region>
-          ∑
-        </span>
-        <span className="panel-name" data-tauri-drag-region>
-          {info?.linked ? `Linked: ${info.linked}` : "MathBlocks"}
-        </span>
-        <div className="segmented" role="group" aria-label="Equation type">
-          <button className={display && !numbered ? "active" : undefined} onClick={() => (app.setDisplay(true), app.setNumbered(false))}>
-            Display
+    <div className="panel-shell">
+      <div className="panel-card" ref={root}>
+        <div className="panel-top" data-tauri-drag-region>
+          <div className="panel-modes" role="group" aria-label="Equation type">
+            <button className={display && !numbered ? "on" : undefined} onClick={() => (app.setDisplay(true), app.setNumbered(false))}>
+              Display
+            </button>
+            <button className={!display ? "on" : undefined} onClick={() => app.setDisplay(false)}>
+              Inline
+            </button>
+            <button className={numbered ? "on" : undefined} onClick={() => app.setNumbered(true)}>
+              Numbered
+            </button>
+          </div>
+          {info?.linked && <span className="panel-linked" title="A linked copy: applying updates every copy">⛓ {info.linked}</span>}
+          <div className="spacer" data-tauri-drag-region />
+          <button className="panel-icon" title="Word's own menu (cut, copy, paste…)" onClick={() => void send("panel:wordMenu").then(cancel)}>
+            ☰
           </button>
-          <button className={!display ? "active" : undefined} onClick={() => app.setDisplay(false)}>
-            Inline
+          <button className="panel-icon" title="Open in the MathBlocks window" onClick={() => void send("panel:openApp").then(cancel)}>
+            ↗
           </button>
-          <button className={numbered ? "active" : undefined} onClick={() => app.setNumbered(true)}>
-            Numbered
+          <button className="panel-icon" title="Cancel (Esc)" onClick={cancel}>
+            ✕
           </button>
         </div>
-        <div className="spacer" data-tauri-drag-region />
-        <button className="icon-btn" title="Word's own menu (cut, copy, paste…)" onClick={() => void send("panel:wordMenu").then(cancel)}>
-          ☰
-        </button>
-        <button className="icon-btn" title="Open in the MathBlocks window (library, all tools)" onClick={() => void send("panel:openApp").then(cancel)}>
-          ↗
-        </button>
-        <button className="icon-btn" title="Cancel (Esc)" onClick={cancel}>
-          ✕
-        </button>
-      </header>
 
-      <div className="panel-editor">
-        <MathEditor />
+        <div className="panel-editor">
+          <MathEditor />
+        </div>
+
+        <CommandLine commands={commands} />
+
+        <div className="panel-tabs" role="tablist">
+          {tabs.map(([id, label]) => (
+            <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? "on" : undefined} onClick={() => chooseTab(id)}>
+              {label}
+            </button>
+          ))}
+          <div className="spacer" />
+          <span className={eq.errors || toast?.kind === "error" ? "panel-hint bad" : "panel-hint"}>
+            {toast ? toast.text : eq.errors ? `${eq.errors} error(s)` : "Enter apply · Esc cancel"}
+          </span>
+          <button className="primary panel-apply" onClick={() => void apply()} disabled={eq.errors > 0}>
+            {info?.linked ? "Update everywhere" : "Apply"}
+          </button>
+        </div>
+
+        {tab && (
+          <div className="panel-pane">
+            {tab === "preview" && (look === "classic" ? <ClassicPreview latex={latex} display={display} sizePt={sizePt} /> : <MathPreview latex={latex} />)}
+            {tab === "symbols" && <PaletteTop />}
+            {tab === "latex" && (
+              <div className="panel-latex">
+                <LatexEditor diagnostics={eq.diagnostics} />
+              </div>
+            )}
+            {tab === "style" && (
+              <div className="form narrow">
+                <label>
+                  Equations in Word
+                  <select value={look} onChange={(e) => app.setPrefs({ look: e.target.value as "classic" | "native" })}>
+                    <option value="classic">Classic: MathType look</option>
+                    <option value="native">Native Word equation</option>
+                  </select>
+                </label>
+              </div>
+            )}
+          </div>
+        )}
       </div>
-
-      <CommandLine commands={commands} />
-
-      <Section id="preview" title={look === "classic" ? "Preview in Word" : "Preview"} defaultOpen>
-        {look === "classic" ? <ClassicPreview latex={latex} display={display} sizePt={sizePt} /> : <MathPreview latex={latex} />}
-      </Section>
-      <Section id="symbols" title="Symbols and templates">
-        <PaletteTop />
-      </Section>
-      <Section id="latex" title="LaTeX">
-        <div className="panel-latex">
-          <LatexEditor diagnostics={eq.diagnostics} />
-        </div>
-      </Section>
-      <Section id="style" title="Style">
-        <div className="form narrow">
-          <label>
-            Equations in Word
-            <select value={look} onChange={(e) => app.setPrefs({ look: e.target.value as "classic" | "native" })}>
-              <option value="classic">Classic: MathType look</option>
-              <option value="native">Native Word equation</option>
-            </select>
-          </label>
-        </div>
-      </Section>
-
-      <footer className="panel-foot-bar">
-        <span className={eq.errors || toast?.kind === "error" ? "bad" : "muted"}>
-          {toast ? toast.text : eq.errors ? `${eq.errors} error(s) in the LaTeX` : info?.linked ? "Enter updates every linked copy" : "Enter: apply in Word · Esc: cancel"}
-        </span>
-        <div className="spacer" />
-        <button onClick={cancel}>Cancel</button>
-        <button className="primary" onClick={() => void apply()} disabled={eq.errors > 0}>
-          {info?.linked ? "Update everywhere" : "Apply"}
-        </button>
-      </footer>
     </div>
   );
 }
 
-const SECTIONS_KEY = "mathblocks.panel.sections";
-
-function Section({ id, title, defaultOpen, children }: { id: string; title: string; defaultOpen?: boolean; children: ReactNode }) {
-  const [open, setOpen] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(SECTIONS_KEY) ?? "{}") as Record<string, boolean>;
-      return saved[id] ?? !!defaultOpen;
-    } catch {
-      return !!defaultOpen;
-    }
-  });
-  const toggle = () => {
-    setOpen(!open);
-    try {
-      const saved = JSON.parse(localStorage.getItem(SECTIONS_KEY) ?? "{}") as Record<string, boolean>;
-      localStorage.setItem(SECTIONS_KEY, JSON.stringify({ ...saved, [id]: !open }));
-    } catch {
-      // Not remembered.
-    }
-  };
-  return (
-    <section className={open ? "panel-section open" : "panel-section"}>
-      <button className="panel-section-head" onClick={toggle} aria-expanded={open}>
-        <span className={open ? "chev open" : "chev"}>›</span> {title}
-      </button>
-      {open && <div className="panel-section-body">{children}</div>}
-    </section>
-  );
-}
+const PANEL_WIDTH = 680;
+const CARD_MARGIN = 14;
+const TAB_KEY = "mathblocks.panel.tab";
 
 /** "/frac", "bold", "matrix 3"… with suggestions; Enter runs the first, arrows choose. */
 function CommandLine({ commands }: { commands: Command[] }) {

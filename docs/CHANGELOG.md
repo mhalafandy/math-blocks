@@ -25,6 +25,11 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Changed (0.1.38, floating editor)
+- Floating editor redesigned: transparent window with a rounded card and shadow, no title bar,
+  larger editing area, sections as a compact tab row; sized by its content (no more growing
+  when resized); behaves like a popover: not always on top, closes when you click elsewhere.
+
 ### Added (step 3)
 - Floating editor on right-click: second always-on-top window positioned under the equation
   (Word's screen coordinates), commands-first layout with collapsible sections; the main window
