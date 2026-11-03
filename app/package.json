@@ -23,6 +23,7 @@
     "@mathblocks/math-core": "workspace:*",
     "@mathblocks/math-latex": "workspace:*",
     "@mathblocks/math-omml": "workspace:*",
+    "@mathblocks/mathtype": "workspace:*",
     "@mathblocks/ooxml": "workspace:*",
     "@tauri-apps/api": "^2.12.0",
     "@tauri-apps/plugin-dialog": "^2.8.4",

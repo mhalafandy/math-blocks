@@ -5,6 +5,7 @@
 //! the SQLite database and file-system access.
 
 mod connector_install;
+mod documents;
 mod library;
 mod pipe;
 
@@ -43,7 +44,10 @@ pub fn run() {
             library::library_save_draft,
             library::library_load_draft,
             library::library_export,
-            library::library_import
+            library::library_import,
+            documents::document_read,
+            documents::document_write,
+            documents::document_open
         ])
         .setup(|app| {
             pipe::start(app.handle().clone());

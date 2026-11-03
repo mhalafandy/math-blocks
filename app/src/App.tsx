@@ -16,6 +16,7 @@ import { isDirty, useLibrary } from "./lib/library/useLibrary";
 import { insertLinked, unlinkEditing } from "./lib/linking";
 import { ContextMenu } from "./components/ContextMenu";
 import { PromptHost } from "./components/Dialogs";
+import { ConversionReport } from "./components/ConversionReport";
 import { SaveDialog } from "./components/SaveDialog";
 import { zoomStep } from "./lib/zoom";
 
@@ -258,6 +259,7 @@ export function App() {
       <CommandPalette commands={commands} />
       <SaveDialog />
       <PromptHost />
+      <ConversionReport />
       <ContextMenu />
       {s.toast && <div className={`toast ${s.toast.kind}`} role="status">{s.toast.text}</div>}
     </div>

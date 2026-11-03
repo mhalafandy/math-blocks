@@ -25,6 +25,13 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added (M9)
+- MathType conversion: `packages/mathtype` reads OLE compound files and MTEF v5 (MathType 4–7),
+  translates them to LaTeX/AST and converts a .docx: every MathType object becomes a native
+  equation in a MathBlocks content control; paragraphs, numbers, bookmarks and cross-reference
+  fields are kept; unused embeddings and previews are removed. App command "Convert MathType
+  document…" with a conversion report and "Open in Word".
+
 ### Fixed (user testing of 0.1.22)
 - Library drag and drop in the desktop app; detection of an outdated Word add-in; saving a second
   equation no longer overwrites the first (New button, Ctrl+N; clearing the editor detaches).

@@ -17,6 +17,9 @@ importers:
       '@mathblocks/math-omml':
         specifier: workspace:*
         version: link:packages/math-omml
+      '@mathblocks/mathtype':
+        specifier: workspace:*
+        version: link:packages/mathtype
       '@mathblocks/ooxml':
         specifier: workspace:*
         version: link:packages/ooxml
@@ -77,6 +80,9 @@ importers:
       '@mathblocks/math-omml':
         specifier: workspace:*
         version: link:../packages/math-omml
+      '@mathblocks/mathtype':
+        specifier: workspace:*
+        version: link:../packages/mathtype
       '@mathblocks/ooxml':
         specifier: workspace:*
         version: link:../packages/ooxml
@@ -139,6 +145,24 @@ importers:
       '@mathblocks/math-core':
         specifier: workspace:*
         version: link:../math-core
+
+  packages/mathtype:
+    dependencies:
+      '@mathblocks/math-core':
+        specifier: workspace:*
+        version: link:../math-core
+      '@mathblocks/math-latex':
+        specifier: workspace:*
+        version: link:../math-latex
+      '@mathblocks/math-omml':
+        specifier: workspace:*
+        version: link:../math-omml
+      '@mathblocks/ooxml':
+        specifier: workspace:*
+        version: link:../ooxml
+      fflate:
+        specifier: ^0.8.2
+        version: 0.8.3
 
   packages/ooxml:
     dependencies:

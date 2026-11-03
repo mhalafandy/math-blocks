@@ -1,3 +1,4 @@
+import { convertMathTypeDocument } from "../lib/convertMathType";
 import { useMemo, useState, type DragEvent, type ReactNode } from "react";
 import { REFERENCE_EQUATIONS } from "../../../fixtures/reference-equations";
 import { recentEquations, searchEquations } from "../lib/library/search";
@@ -40,6 +41,11 @@ export function Sidebar() {
         </button>
       </div>
       <LibraryPanel />
+      <div className="panel-foot">
+        <button className="ghost" title="Turn the MathType equations of a Word document into native, editable MathBlocks equations (saved as a new file)" onClick={() => void convertMathTypeDocument()}>
+          ⇄ Convert MathType document…
+        </button>
+      </div>
     </nav>
   );
 }

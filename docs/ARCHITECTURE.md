@@ -6,7 +6,7 @@
 ┌──────────────────────── Tauri desktop app ────────────────────────┐
 │  UI layer (React)  — command palette, panels, themes, layouts      │
 │  ───────────── TypeScript core (pure: no Word, no DOM) ─────────── │
-│  math-core (AST) · math-latex · math-omml · ooxml · render/export  │
+│  math-core · math-latex · math-omml · ooxml · mathtype · export    │
 │  symbols · components · sync engine · library · documents          │
 │  ───────────── Rust shell (thin) ───────────────────────────────── │
 │  SQLite + migrations · file system · tray/background · pipe server │
