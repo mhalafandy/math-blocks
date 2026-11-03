@@ -46,6 +46,9 @@ export function SymbolsPanel() {
         )}
         <div className="spacer" />
         <input className="pal-search sym-search" type="search" placeholder="Filter symbols…" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <button onClick={() => void import("./NotationDialog").then((m) => m.openNotation())} title="Change how vectors, dyadics, unit vectors… are written, everywhere at once">
+          Change notation…
+        </button>
         {connected && (
           <button onClick={() => void load()} disabled={loading} title="Read every MathBlocks equation of the active Word document">
             {loading ? "Reading…" : index ? "Refresh" : "Index Word document"}

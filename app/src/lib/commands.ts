@@ -65,6 +65,13 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       keywords: "template parameters substitute rename variables reuse",
       run: () => import("../components/TemplateDialog").then((m) => m.openTemplate(useApp.getState().latex, useApp.getState().display)),
     },
+    {
+      id: "word.notation",
+      title: "Change notation across the document (vectors, dyadics…)…",
+      group: "Word",
+      keywords: "vector dyadic tensor style arrow harpoon bold hat bar notation consistency all",
+      run: () => import("../components/NotationDialog").then((m) => m.openNotation()),
+    },
     { id: "view.symbols", title: "Symbols: where is each symbol used? rename everywhere", group: "View", keywords: "symbol index dependency rename variable notation consistency", run: () => app.setPrefs({ bottomOpen: true, bottomTab: "symbols" }) },
     { id: "export.mathml", title: "Copy as MathML", group: "Edit", keywords: "export paste web libreoffice", run: () => import("./export").then((m) => m.copyMathMl()) },
     { id: "export.image", title: "Copy as image (PNG)", group: "Edit", keywords: "export picture clipboard powerpoint slides", run: () => import("./export").then((m) => m.copyImage()) },

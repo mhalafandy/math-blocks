@@ -18,6 +18,7 @@ import { ContextMenu, openMenu } from "./components/ContextMenu";
 import { PromptHost } from "./components/Dialogs";
 import { ReferencePicker } from "./components/ReferencePicker";
 import { openTemplate, TemplateDialog } from "./components/TemplateDialog";
+import { NotationDialog } from "./components/NotationDialog";
 import { numberInWord, unnumberInWord } from "./lib/numbering";
 import { ConversionReport } from "./components/ConversionReport";
 import { SaveDialog } from "./components/SaveDialog";
@@ -320,6 +321,7 @@ export function App() {
       <ConversionReport />
       <ReferencePicker />
       <TemplateDialog onSend={() => void insertIntoWord()} />
+      <NotationDialog />
       <ContextMenu />
       {s.toast && <div className={`toast ${s.toast.kind}`} role="status">{s.toast.text}</div>}
     </div>

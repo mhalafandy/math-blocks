@@ -579,3 +579,17 @@ html.panel-window, html.panel-window body, html.panel-window #root { height: aut
 .panel-apply { padding: 4px 16px; border-radius: 8px; }
 .panel-pane { padding: 0 14px 14px; max-height: 300px; overflow: auto; }
 .panel-latex { height: 120px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+
+/* Notation dialog */
+.notation h4 { margin: 4px 0 6px; font-size: 12px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; }
+.notation-grid { display: grid; grid-template-columns: 1fr 1.3fr; gap: 18px; }
+.notation-list { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.notation-list button { width: 100%; display: grid; grid-template-columns: 110px 1fr auto; align-items: center; gap: 8px; text-align: left; padding: 5px 8px; border-radius: 7px; }
+.notation-list button.on, .notation-targets button.on { background: var(--accent-soft); outline: 1px solid var(--accent); }
+.notation-sample { font-size: 15px; overflow: hidden; white-space: nowrap; }
+.notation-letters { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.notation-targets { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 4px; margin-bottom: 8px; }
+.notation-targets button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px; border-radius: 7px; font-size: 11.5px; border: 1px solid var(--border); }
+.notation-targets button .math-preview { font-size: 18px; }
+.notation-group-name { font-size: 11.5px; margin: 2px 0 4px; }
+.notation-example { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 10px; background: var(--surface-2); border-radius: 8px; font-size: 16px; overflow-x: auto; }
