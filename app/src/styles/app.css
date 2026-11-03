@@ -516,3 +516,7 @@ kbd {
 .ref-row { width: 100%; text-align: left; background: none; border-radius: 0; }
 .ref-row:hover { background: var(--accent-soft); }
 .ref-page { flex: 0 0 auto; font-size: 11.5px; padding-top: 2px; }
+.tpl-grid { display: grid; gap: 6px; max-height: 40vh; overflow: auto; }
+.tpl-row { display: grid !important; grid-template-columns: minmax(90px, 1fr) 16px 2fr; align-items: center; gap: 8px; flex-direction: row !important; }
+.tpl-from { display: flex; align-items: center; justify-content: flex-end; font-size: 15px; }
+.tpl-row input { font-family: var(--font-mono); }

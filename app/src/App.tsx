@@ -17,6 +17,7 @@ import { insertLinked, unlinkEditing } from "./lib/linking";
 import { ContextMenu } from "./components/ContextMenu";
 import { PromptHost } from "./components/Dialogs";
 import { ReferencePicker } from "./components/ReferencePicker";
+import { TemplateDialog } from "./components/TemplateDialog";
 import { numberInWord, unnumberInWord } from "./lib/numbering";
 import { ConversionReport } from "./components/ConversionReport";
 import { SaveDialog } from "./components/SaveDialog";
@@ -290,6 +291,7 @@ export function App() {
       <PromptHost />
       <ConversionReport />
       <ReferencePicker />
+      <TemplateDialog onSend={() => void insertIntoWord()} />
       <ContextMenu />
       {s.toast && <div className={`toast ${s.toast.kind}`} role="status">{s.toast.text}</div>}
     </div>
