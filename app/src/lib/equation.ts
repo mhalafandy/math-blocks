@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { countNodes } from "@mathblocks/math-core";
 import { parseLatex, type Diagnostic } from "@mathblocks/math-latex";
 import { toOmml, TUNED_PROFILE, WORD_DEFAULT_PROFILE, type StyleProfile } from "@mathblocks/math-omml";
-import { contentControl, flatOpc, formatTag, newInstanceId, paragraph, pictureRun } from "@mathblocks/ooxml";
+import { contentControl, flatOpc, formatTag, newInstanceId, paragraph, vmlPictureRun } from "@mathblocks/ooxml";
 import { useApp } from "./store";
 
 /** The Word style profile from the current preferences (outside React). */
@@ -73,25 +73,21 @@ export async function buildInsertion(
   if (look === "native") return buildNativeInsertion(latex, display, profile, existingTag);
   const { renderPicture, toBase64, altText } = await import("./render");
   const tag = existingTag ?? formatTag({ blockId: null, instanceId: newInstanceId() });
-  const pic = await renderPicture(latex, typesetDisplay, useApp.getState().equationSizePt);
+  const mode = display ? "display" : typesetDisplay ? "numbered" : "inline";
+  const pic = await renderPicture(latex, typesetDisplay, useApp.getState().equationSizePt, mode);
   const n = ++pictureCounter;
-  const run = pictureRun({
-    pngRId: "rIdMbP1",
-    svgRId: "rIdMbS1",
+  const run = vmlPictureRun({
+    rId: "rIdMbE1",
     widthPt: pic.widthPt,
     heightPt: pic.heightPt,
     depthPt: pic.depthPt,
-    id: 1000 + (n % 100000),
-    name: "MathBlocks equation",
-    description: altText(latex, display ? "display" : typesetDisplay ? "numbered" : "inline"),
+    id: Date.now() % 1_000_000_000 + n,
+    alt: altText(latex, mode),
   });
   const cc = contentControl(run, { tag, title: "MathBlocks equation" });
   const body = display ? `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${cc}</w:p>` : paragraph(cc);
   return {
     tag,
-    flatOpc: flatOpc([body], [
-      { rId: "rIdMbS1", target: `media/mathblocks${n}.svg`, contentType: "image/svg+xml", base64: toBase64(new TextEncoder().encode(pic.svg)) },
-      { rId: "rIdMbP1", target: `media/mathblocks${n}.png`, contentType: "image/png", base64: toBase64(pic.png) },
-    ]),
+    flatOpc: flatOpc([body], [{ rId: "rIdMbE1", target: `media/mathblocks${n}.emf`, contentType: "image/x-emf", base64: toBase64(pic.emf) }]),
   };
 }

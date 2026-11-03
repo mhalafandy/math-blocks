@@ -86,7 +86,9 @@ namespace MathBlocks.WordConnector
             int i = xml.IndexOf("<m:oMath", StringComparison.Ordinal);
             if (i < 0)
             {
-                Log.Info(what + ": no <m:oMath> in " + xml.Length + " chars");
+                Log.Info(what + ": no <m:oMath> in " + xml.Length + " chars; VML picture: " + xml.Contains("<v:imagedata")
+                    + ", DrawingML picture: " + xml.Contains("<pic:pic") + ", EMF part: " + xml.Contains("image/x-emf")
+                    + ", MathBlocks alt text: " + xml.Contains("MathBlocks "));
                 return;
             }
             int body = xml.LastIndexOf("<w:body>", i, StringComparison.Ordinal);

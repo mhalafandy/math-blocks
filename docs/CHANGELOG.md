@@ -25,6 +25,12 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Changed (0.1.35)
+- Classic equations are placed like MathType's: a classic (VML) picture holding a vector EMF,
+  so Word shows the simple object frame (no rotation handle or layout button) and every Word
+  version draws them sharply. The equation's source is stored inside the EMF (and in the alt
+  text), so double-click always finds it ("the equation arrived empty" fixed).
+
 ### Fixed (0.1.33)
 - "Couldn't draw the equation": the PNG copy of Classic equations is now painted directly from
   the engine (the app's security policy blocked the temporary image); blob images allowed for

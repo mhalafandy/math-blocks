@@ -1,5 +1,5 @@
 import { parseLatex } from "@mathblocks/math-latex";
-import { CLASSIC, loadFont, renderSvg, type FontSet, type RenderResult } from "@mathblocks/math-render";
+import { CLASSIC, loadFont, renderEmf, renderSvg, type FontSet, type RenderResult } from "@mathblocks/math-render";
 import stixUrl from "@fontsource/stix-two-math/files/stix-two-math-latin-400-normal.woff?url";
 import { isDesktop } from "./connector";
 
@@ -41,6 +41,18 @@ export async function hasClassicFonts() {
 
 export interface Picture extends RenderResult {
   png: Uint8Array;
+  /** Vector picture for Word, with the equation's source inside. */
+  emf: Uint8Array;
+}
+
+export type PictureMode = "display" | "inline" | "numbered";
+
+/** What the picture carries (read back when the equation is edited). */
+export interface PictureSource {
+  latex: string;
+  mode: PictureMode;
+  style: string;
+  sizePt: number;
 }
 
 const PX_PER_PT = 4 * (96 / 72);
@@ -71,11 +83,13 @@ async function rasterise(r: RenderResult): Promise<Uint8Array> {
   return new Uint8Array(await blob.arrayBuffer());
 }
 
-export async function renderPicture(latex: string, display: boolean, sizePt: number): Promise<Picture> {
+export async function renderPicture(latex: string, display: boolean, sizePt: number, mode: PictureMode = display ? "display" : "inline", withPng = false): Promise<Picture> {
   const fonts = await loadFonts();
   const r = renderSvg(parseLatex(latex).root, { fonts, style: CLASSIC, display, sizePt });
-  const png = await rasterise(r);
-  return { ...r, png };
+  const source: PictureSource = { latex, mode, style: CLASSIC.id, sizePt };
+  const emf = renderEmf(r, { comment: JSON.stringify(source) });
+  const png = withPng ? await rasterise(r) : new Uint8Array();
+  return { ...r, png, emf };
 }
 
 export function toBase64(bytes: Uint8Array) {

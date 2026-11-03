@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseLatex } from "@mathblocks/math-latex";
-import { loadFont, renderSvg, type FontSet } from "../src";
+import { emfComment, loadFont, renderEmf, renderSvg, type FontSet } from "../src";
 import { REFERENCE_EQUATIONS } from "../../../fixtures/reference-equations";
 
 const L = "/usr/share/fonts/truetype/liberation/LiberationSerif-";
@@ -41,5 +41,15 @@ describe.skipIf(!available)("MathBlocks typesetting engine", () => {
     const small = renderSvg(parseLatex("\\left(x\\right)").root, { fonts });
     const tall = renderSvg(parseLatex("\\left(\\frac{\\frac{a}{b}}{c}\\right)").root, { fonts });
     expect(tall.box.h + tall.box.d).toBeGreaterThan(small.box.h + small.box.d + 1);
+  });
+
+  it("writes a vector EMF that carries the equation's source", () => {
+    const r = renderSvg(parseLatex("\\frac{a}{b}+\\sqrt{x}").root, { fonts });
+    const emf = renderEmf(r, { comment: '{"latex":"\\\\frac{a}{b}"}' });
+    const dv = new DataView(emf.buffer);
+    expect(dv.getUint32(0, true)).toBe(1); // EMR_HEADER
+    expect(dv.getUint32(40, true)).toBe(0x464d4520); // " EMF"
+    expect(dv.getUint32(48, true)).toBe(emf.length); // nBytes
+    expect(emfComment(emf)).toBe('{"latex":"\\\\frac{a}{b}"}');
   });
 });

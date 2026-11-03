@@ -7,7 +7,7 @@
 import { strFromU8, strToU8, unzipSync, zipSync, type Unzipped } from "fflate";
 import { parseLatex } from "@mathblocks/math-latex";
 import { toOmml, TUNED_PROFILE, type StyleProfile } from "@mathblocks/math-omml";
-import { formatTag, newInstanceId, pictureRun } from "@mathblocks/ooxml";
+import { formatTag, newInstanceId, pictureRun, vmlPictureRun } from "@mathblocks/ooxml";
 import { readCfb } from "./cfb";
 import { readMtef } from "./mtef";
 import { mtefToLatex } from "./toLatex";
@@ -22,6 +22,8 @@ export interface ConvertOptions {
 }
 
 export interface PictureData {
+  /** Vector picture (EMF) with the source inside: placed as a classic VML picture, like MathType. */
+  emf?: Uint8Array;
   svg: string;
   png: Uint8Array;
   widthPt: number;
@@ -153,7 +155,9 @@ function convertPartXml(
         const uid = newInstanceId();
         const item: MediaOut = { part, svgId: `rIdMbS${n}`, pngId: `rIdMbP${n}`, name: `mathblocks-${uid}`, data: pic };
         media.push(item);
-        const drawing = pictureRun({
+        const drawing = pic.emf
+          ? vmlPictureRun({ rId: item.pngId, widthPt: pic.widthPt, heightPt: pic.heightPt, depthPt: pic.depthPt, id: 90000 + n, alt: `MathBlocks ${display ? (entry.number ? "numbered" : "display") : "inline"}: ${latex}` })
+          : pictureRun({
           svgRId: item.svgId,
           pngRId: item.pngId,
           widthPt: pic.widthPt,
@@ -215,7 +219,9 @@ export function convertFlatOpc(flat: string, options: ConvertOptions = {}): Flat
   if (media.length) {
     // Pictures: relationships in the document's rels part, files as binary parts.
     const IMG = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image";
-    const relXml = media.map((m) => `<Relationship Id="${m.svgId}" Type="${IMG}" Target="media/${m.name}.svg"/><Relationship Id="${m.pngId}" Type="${IMG}" Target="media/${m.name}.png"/>`).join("");
+    const relXml = media
+      .map((m) => (m.data.emf ? `<Relationship Id="${m.pngId}" Type="${IMG}" Target="media/${m.name}.emf"/>` : `<Relationship Id="${m.svgId}" Type="${IMG}" Target="media/${m.name}.svg"/><Relationship Id="${m.pngId}" Type="${IMG}" Target="media/${m.name}.png"/>`))
+      .join("");
     const relsName = docName.replace(/^word\//, "word/_rels/") + ".rels";
     if (result.includes(`pkg:name="/${relsName}"`)) {
       const at = result.indexOf(`pkg:name="/${relsName}"`);
@@ -225,9 +231,10 @@ export function convertFlatOpc(flat: string, options: ConvertOptions = {}): Flat
       result = result.replace("</pkg:package>", `<pkg:part pkg:name="/${relsName}" pkg:contentType="application/vnd.openxmlformats-package.relationships+xml"><pkg:xmlData><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${relXml}</Relationships></pkg:xmlData></pkg:part></pkg:package>`);
     }
     const files = media
-      .map(
-        (m) =>
-          `<pkg:part pkg:name="/word/media/${m.name}.svg" pkg:contentType="image/svg+xml" pkg:compression="store"><pkg:binaryData>${bytesToBase64(new TextEncoder().encode(m.data.svg))}</pkg:binaryData></pkg:part>` +
+      .map((m) =>
+        m.data.emf
+          ? `<pkg:part pkg:name="/word/media/${m.name}.emf" pkg:contentType="image/x-emf" pkg:compression="store"><pkg:binaryData>${bytesToBase64(m.data.emf)}</pkg:binaryData></pkg:part>`
+          : `<pkg:part pkg:name="/word/media/${m.name}.svg" pkg:contentType="image/svg+xml" pkg:compression="store"><pkg:binaryData>${bytesToBase64(new TextEncoder().encode(m.data.svg))}</pkg:binaryData></pkg:part>` +
           `<pkg:part pkg:name="/word/media/${m.name}.png" pkg:contentType="image/png" pkg:compression="store"><pkg:binaryData>${bytesToBase64(m.data.png)}</pkg:binaryData></pkg:part>`,
       )
       .join("");
@@ -426,16 +433,22 @@ function addMedia(zip: Unzipped, media: MediaOut[]) {
     const relsName = part.replace(/^word\//, "word/_rels/") + ".rels";
     let rels = zip[relsName] ? strFromU8(zip[relsName]!) : `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`;
     const IMG = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image";
-    const add = items.map((m) => `<Relationship Id="${m.svgId}" Type="${IMG}" Target="media/${m.name}.svg"/><Relationship Id="${m.pngId}" Type="${IMG}" Target="media/${m.name}.png"/>`).join("");
+    const add = items
+      .map((m) => (m.data.emf ? `<Relationship Id="${m.pngId}" Type="${IMG}" Target="media/${m.name}.emf"/>` : `<Relationship Id="${m.svgId}" Type="${IMG}" Target="media/${m.name}.svg"/><Relationship Id="${m.pngId}" Type="${IMG}" Target="media/${m.name}.png"/>`))
+      .join("");
     rels = rels.replace("</Relationships>", `${add}</Relationships>`);
     zip[relsName] = strToU8(rels);
     for (const m of items) {
+      if (m.data.emf) {
+        zip[`word/media/${m.name}.emf`] = new Uint8Array(m.data.emf);
+        continue;
+      }
       zip[`word/media/${m.name}.svg`] = strToU8(m.data.svg);
       zip[`word/media/${m.name}.png`] = new Uint8Array(m.data.png);
     }
   }
   let types = strFromU8(zip["[Content_Types].xml"]!);
-  for (const [ext, type] of [["svg", "image/svg+xml"], ["png", "image/png"]] as const)
+  for (const [ext, type] of [["svg", "image/svg+xml"], ["png", "image/png"], ["emf", "image/x-emf"]] as const)
     if (!new RegExp(`Extension="${ext}"`, "i").test(types)) types = types.replace("<Default ", `<Default Extension="${ext}" ContentType="${type}"/><Default `);
   zip["[Content_Types].xml"] = strToU8(types);
 }

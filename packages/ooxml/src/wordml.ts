@@ -87,6 +87,36 @@ export function pictureRun(o: PictureOptions): string {
   );
 }
 
+export interface VmlPictureOptions {
+  /** Relationship id of the EMF image. */
+  rId: string;
+  widthPt: number;
+  heightPt: number;
+  /** Lowers the picture so the equation's baseline sits on the text baseline. */
+  depthPt: number;
+  /** Shape id, unique in the document. */
+  id: number;
+  alt: string;
+}
+
+/**
+ * A picture in Word's classic (VML) form, like MathType's equations: Word shows the simple
+ * object frame when it is selected (no rotation handle or layout button) and draws the EMF as
+ * vector graphics in every version.
+ */
+export function vmlPictureRun(o: VmlPictureOptions): string {
+  const position = o.depthPt ? `<w:rPr><w:position w:val="${-Math.round(o.depthPt * 2)}"/></w:rPr>` : "";
+  const shapetype =
+    `<v:shapetype id="_x0000_t75" coordsize="21600,21600" o:spt="75" o:preferrelative="t" path="m@4@5l@4@11@9@11@9@5xe" filled="f" stroked="f">` +
+    `<v:stroke joinstyle="miter"/><v:formulas><v:f eqn="if lineDrawn pixelLineWidth 0"/><v:f eqn="sum @0 1 0"/><v:f eqn="sum 0 0 @1"/><v:f eqn="prod @2 1 2"/><v:f eqn="prod @3 21600 pixelWidth"/><v:f eqn="prod @3 21600 pixelHeight"/><v:f eqn="sum @0 0 1"/><v:f eqn="prod @6 1 2"/><v:f eqn="prod @7 21600 pixelWidth"/><v:f eqn="sum @8 21600 0"/><v:f eqn="prod @7 21600 pixelHeight"/><v:f eqn="sum @10 21600 0"/></v:formulas>` +
+    `<v:path o:extrusionok="f" gradientshapeok="t" o:connecttype="rect"/><o:lock v:ext="edit" aspectratio="t"/></v:shapetype>`;
+  return (
+    `<w:r>${position}<w:pict>${shapetype}` +
+    `<v:shape id="_x0000_mb${o.id}" type="#_x0000_t75" alt="${escapeXml(o.alt)}" style="width:${o.widthPt.toFixed(2)}pt;height:${o.heightPt.toFixed(2)}pt">` +
+    `<v:imagedata r:id="${o.rId}" o:title=""/></v:shape></w:pict></w:r>`
+  );
+}
+
 /** A centred paragraph (display equations rendered as pictures). */
 export const centeredParagraph = (content: string) => `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${content}</w:p>`;
 
@@ -102,7 +132,7 @@ export const heading = (text: string, level: 1 | 2 = 1) => paragraph(textRun(tex
 export function documentXml(bodyParagraphs: string[]): string {
   return (
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
-    `<w:document xmlns:w="${NS_W}" xmlns:m="${NS_M}" xmlns:r="${NS_R}"><w:body>` +
+    `<w:document xmlns:w="${NS_W}" xmlns:m="${NS_M}" xmlns:r="${NS_R}" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office"><w:body>` +
     bodyParagraphs.join("") +
     `<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr>` +
     `</w:body></w:document>`

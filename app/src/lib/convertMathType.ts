@@ -141,8 +141,8 @@ async function renderAll(equations: ConvertedEquation[], progress?: (done: numbe
   const out: PictureData[] = [];
   for (const e of equations) {
     if (e.status !== "converted" || !e.latex) continue;
-    const p = await renderPicture(e.latex, e.display, size);
-    out.push({ svg: p.svg, png: p.png, widthPt: p.widthPt, heightPt: p.heightPt, depthPt: p.depthPt });
+    const p = await renderPicture(e.latex, e.display, size, e.display ? (e.number ? "numbered" : "display") : "inline");
+    out.push({ emf: p.emf, svg: p.svg, png: p.png, widthPt: p.widthPt, heightPt: p.heightPt, depthPt: p.depthPt });
     if (progress && out.length % 10 === 0) progress(out.length);
   }
   return out;

@@ -438,3 +438,8 @@ inline size. The user wants MathType's quality or better.
 
 **Consequences.** Exact, consistent look on every PC; pictures are not editable with Word's own
 equation tools (same as MathType). The engine is checked against MathType's own previews.
+
+**Update (0.1.35).** Pictures are VML shapes holding an EMF (vector) rather than DrawingML
+SVG + PNG: Word then treats them like MathType's objects (simple selection frame), all versions
+draw them as vectors, and the source travels inside the EMF as a GDI comment, as MathType does
+with its MTEF data.
