@@ -1,3 +1,4 @@
+import { openTemplate } from "./TemplateDialog";
 import { convertMathTypeDocument, convertOpenDocument } from "../lib/convertMathType";
 import { useMemo, useState, type DragEvent, type ReactNode } from "react";
 import { REFERENCE_EQUATIONS } from "../../../fixtures/reference-equations";
@@ -272,6 +273,7 @@ function EquationRow({ q, showFolder = false }: { q: Equation; showFolder?: bool
         }
       },
     },
+    { label: "Use with other symbols…", onSelect: () => openTemplate(q.latex, q.display, q.name) },
     { separator: true, label: "" },
     { label: q.favorite ? "Remove from favourites" : "Add to favourites", onSelect: () => lib.toggleFavorite(q.id) },
     {

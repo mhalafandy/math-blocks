@@ -58,6 +58,13 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
     { id: "word.updateNumbers", title: "Update equation numbers and references", group: "Word", keywords: "renumber refresh fields", run: () => import("./numbering").then((m) => m.updateNumbers()) },
     { id: "edit.numbered", title: "Numbered equation (toggle)", group: "Edit", keywords: "number label tag display", run: () => app.setNumbered(!useApp.getState().numbered) },
     { id: "view.numberStyle", title: "Equation number style…", group: "View", keywords: "format chapter brackets parentheses", run: () => app.setPrefs({ bottomOpen: true, bottomTab: "style" }) },
+    {
+      id: "edit.template",
+      title: "Use this equation with other symbols…",
+      group: "Edit",
+      keywords: "template parameters substitute rename variables reuse",
+      run: () => import("../components/TemplateDialog").then((m) => m.openTemplate(useApp.getState().latex, useApp.getState().display)),
+    },
     { id: "app.update", title: "Check for updates", group: "View", keywords: "upgrade new version", run: () => checkForUpdate(true) },
     { id: "word.new", title: "New equation", group: "Edit", shortcut: "Ctrl+N", keywords: "clear reset fresh blank stop editing", run: () => newEquation() },
     { id: "edit.bold", title: "Bold (toggle)", group: "Edit", shortcut: "Ctrl+Shift+B", keywords: "bold vector matrix strong", run: () => toggleBold() },

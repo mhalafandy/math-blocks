@@ -25,6 +25,10 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added (M7)
+- Templates: use any equation with other symbols (symbol detection with subscripts, accents and
+  bold; powers kept), from the library menu or Ctrl+K.
+
 ### Added (M8, M9 in Word)
 - Equation numbering: Numbered mode, ribbon Number equation / Insert reference / Update numbers,
   number styles with chapter numbers, reference picker listing MathBlocks and MathType numbers.
