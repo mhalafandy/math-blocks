@@ -8,6 +8,7 @@ mod connector_install;
 mod documents;
 mod library;
 mod pipe;
+mod shortcuts;
 
 #[tauri::command]
 fn app_version() -> &'static str {
@@ -20,6 +21,7 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .manage(pipe::PipeState::default())
         .manage(connector_install::InstallState::default())
         .manage(library::LibraryState::default())
@@ -54,6 +56,7 @@ pub fn run() {
         .setup(|app| {
             pipe::start(app.handle().clone());
             connector_install::start(app.handle().clone());
+            shortcuts::register(app.handle());
             {
                 use tauri::Manager;
                 let opened = app

@@ -26,6 +26,10 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
 ### Added
+- Keyboard shortcuts in Word (Ctrl+Alt+M edit/new at cursor, Ctrl+Alt+L equation ↔ LaTeX,
+  Ctrl+Alt+N number, Ctrl+Alt+R reference; active only while Word is in front) and ribbon key
+  tips (Alt, Q, …).
+- Convert all LaTeX in a Word document to MathBlocks equations (ribbon Convert LaTeX).
 - Change notation across the document: vectors, dyadics/tensors, unit vectors (detects the
   forms used, changes one form for chosen letters everywhere in one undo step).
 

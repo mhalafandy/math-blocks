@@ -62,6 +62,19 @@ If something fails, attach `%LOCALAPPDATA%\MathBlocks\connector.log`.
 | F6 | In Word | Open a copy of a chapter in Word, ribbon **Convert MathType equations**: all convert; one Ctrl+Z brings them back | |
 | F7 | Double-click MathType | In an unconverted copy, double-click a MathType equation: choose **Convert and edit**: it opens in MathBlocks; Cancel opens MathType | |
 
+## Part K — Notation, shortcuts, LaTeX (build 0.1.40+)
+
+Close Word completely after the update (new add-in, new ribbon buttons).
+
+| # | Test | How | Result |
+|---|---|---|---|
+| K1 | Change notation | Ctrl+K → "Change notation across the document…": the notations in use are listed (e.g. Arrow ×12); choose one, a target (e.g. Bold with harpoon), Change: all those vectors change; one Ctrl+Z in Word undoes it | |
+| K2 | Ctrl+Alt+M | In Word, cursor in a MathBlocks equation, press Ctrl+Alt+M: the floating editor opens for it; on empty text it opens for a new equation, Enter inserts it | |
+| K3 | Ctrl+Alt+L | Cursor in an equation, Ctrl+Alt+L: it becomes `$…$` text; edit it, Ctrl+Alt+L again: it is an equation again | |
+| K4 | Convert LaTeX | Type `The energy $E=mc^2$ and` and on its own line `$$\frac{a}{b}$$`, ribbon **Convert LaTeX**: both become equations (the second as a display equation) | |
+| K5 | Ctrl+Alt+N / R | Ctrl+Alt+N numbers the equation at the cursor; Ctrl+Alt+R opens the reference picker | |
+| K6 | Key tips | Press Alt, then Q: letters appear on the MathBlocks buttons | |
+
 ## Part J — Floating editor (build 0.1.37+)
 
 Close Word completely after the update (new add-in).

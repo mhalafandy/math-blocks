@@ -240,6 +240,20 @@ export interface AppToConnector {
   listNumbered: { params: DocTarget & { includeContent?: boolean }; result: { name: string; fullName: string; equations: NumberedEquation[] } };
   insertReference: { params: { bookmark: string }; result: { text: string } };
   updateNumbers: { params: DocTarget; result: { numbers: number; references: number } };
+  /** What is at the cursor: a MathBlocks equation, selected text, or a LaTeX span around it. */
+  selectionInfo: {
+    params: Record<string, never>;
+    result: { document: string; rect: ScreenRect | null; tag?: string; flatOpc?: string; number?: NumberInfo | null; text?: string; start?: number; end?: number };
+  };
+  /** LaTeX spans ($…$, $$…$$, \(…\), \[…\]) in the document text. */
+  findLatex: { params: DocTarget; result: { name: string; fullName: string; items: { start: number; end: number; text: string; alone: boolean }[] } };
+  /** Replaces ranges (still holding `expect`) by Flat OPC or text, one undo step. */
+  replaceRanges: {
+    params: DocTarget & { items: { start: number; end: number; expect?: string; flatOpc?: string; text?: string }[]; undoLabel: string };
+    result: { replaced: number; skipped: number };
+  };
+  /** Turns a MathBlocks equation into plain text (its LaTeX), selected. */
+  equationToText: { params: DocTarget & { tag: string; text: string }; result: { ok: true } };
   /** Word's own context menu at the mouse position. */
   showWordMenu: { params: Record<string, never>; result: { ok: true } };
   documentInfo: { params: Record<string, never>; result: DocumentInfoResult };

@@ -165,44 +165,7 @@ class ConnectorClient {
       }
       case "equationActivated": {
         if (isRequest(msg)) this.reply(msg.id, null);
-        const params = msg.params as ConnectorToApp["equationActivated"]["params"];
-        const read = readOmml(params.flatOpc);
-        if (!read || read.root.children.length === 0) {
-          // A linked copy does not need Word's content: the library has it.
-          const opened = await import("./linking").then((m) => m.openLinkedForEditing(params.tag)).catch(() => false);
-          if (opened) {
-            if (params.panel) void import("./panel").then((m) => m.openPanel(params.panel!));
-            else void bringToFront();
-            app.notify("Editing the linked equation from the library. Press Update everywhere (Ctrl+Enter) when done.");
-            break;
-          }
-          console.warn("equationActivated without readable math", params.tag, params.flatOpc?.length, params.flatOpc?.slice(0, 2000));
-          void bringToFront();
-          app.notify(
-            `The equation from Word arrived empty (${params.flatOpc?.length ?? 0} characters). Please send %LOCALAPPDATA%\\MathBlocks\\connector.log so this can be fixed.`,
-            "error",
-          );
-          break;
-        }
-        const linked = await import("./linking").then((m) => m.openLinkedForEditing(params.tag)).catch(() => false);
-        if (!linked) {
-          useLibraryClose();
-          app.setLatex(serializeLatex(read.root), "external");
-          app.setEditing({ tag: params.tag, adopted: !!params.adopted });
-        }
-        app.setDisplay(read.display || !!params.number);
-        app.setNumbered(!!params.number);
-        const ed = useApp.getState().editing;
-        if (ed) app.setEditing({ ...ed, numbered: !!params.number });
-        app.notify(
-          read.unknown.length
-            ? `Equation loaded. Some parts could not be read and are shown in red: ${[...new Set(read.unknown)].join(", ")}`
-            : "Editing the equation from Word. Press Update in Word (Ctrl+Enter) when done.",
-          read.unknown.length ? "error" : "info",
-        );
-        // Right-click: the floating editor next to the equation; double-click: the main window.
-        if (params.panel) void import("./panel").then((m) => m.openPanel(params.panel!));
-        else void bringToFront();
+        await activateEquation(msg.params as ConnectorToApp["equationActivated"]["params"]);
         break;
       }
       case "mathTypeActivated": {
@@ -217,6 +180,7 @@ class ConnectorClient {
         const params = msg.params as ConnectorToApp["runCommand"]["params"];
         void bringToFront();
         if (params.command === "convertMathType") void import("./convertMathType").then((m) => m.convertOpenDocument(params.document));
+        else if (params.command === "convertLatex") void import("./wordShortcuts").then((m) => m.convertAllLatex(params.document));
         else if (params.command === "insertReference") void import("./numbering").then((m) => m.openReferencePicker());
         else if (params.command === "numberEquation") void import("./numbering").then((m) => m.toggleNumberFromRibbon(params));
         break;
@@ -230,3 +194,45 @@ class ConnectorClient {
 }
 
 export const connector = new ConnectorClient();
+
+/** Opens an equation from Word for editing: main window (double-click) or floating editor (panel). */
+export async function activateEquation(params: ConnectorToApp["equationActivated"]["params"]) {
+  const app = useApp.getState();
+  const read = readOmml(params.flatOpc);
+  if (!read || read.root.children.length === 0) {
+    // A linked copy does not need Word's content: the library has it.
+    const opened = await import("./linking").then((m) => m.openLinkedForEditing(params.tag)).catch(() => false);
+    if (opened) {
+      if (params.panel) void import("./panel").then((m) => m.openPanel(params.panel!));
+      else void bringToFront();
+      app.notify("Editing the linked equation from the library. Press Update everywhere (Ctrl+Enter) when done.");
+      return;
+    }
+    console.warn("equationActivated without readable math", params.tag, params.flatOpc?.length, params.flatOpc?.slice(0, 2000));
+    void bringToFront();
+    app.notify(
+      `The equation from Word arrived empty (${params.flatOpc?.length ?? 0} characters). Please send %LOCALAPPDATA%\\MathBlocks\\connector.log so this can be fixed.`,
+      "error",
+    );
+    return;
+  }
+  const linked = await import("./linking").then((m) => m.openLinkedForEditing(params.tag)).catch(() => false);
+  if (!linked) {
+    useLibraryClose();
+    app.setLatex(serializeLatex(read.root), "external");
+    app.setEditing({ tag: params.tag, adopted: !!params.adopted });
+  }
+  app.setDisplay(read.display || !!params.number);
+  app.setNumbered(!!params.number);
+  const ed = useApp.getState().editing;
+  if (ed) app.setEditing({ ...ed, numbered: !!params.number });
+  app.notify(
+    read.unknown.length
+      ? `Equation loaded. Some parts could not be read and are shown in red: ${[...new Set(read.unknown)].join(", ")}`
+      : "Editing the equation from Word. Press Update in Word (Ctrl+Enter) when done.",
+    read.unknown.length ? "error" : "info",
+  );
+  // Right-click: the floating editor next to the equation; double-click: the main window.
+  if (params.panel) void import("./panel").then((m) => m.openPanel(params.panel!));
+  else void bringToFront();
+}

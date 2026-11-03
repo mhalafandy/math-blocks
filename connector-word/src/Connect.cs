@@ -102,7 +102,7 @@ namespace MathBlocks.WordConnector
             "listInstances", "replaceMany", "retag", "selectInstance", "getRegistry", "setRegistry",
             "listMathTypeParagraphs", "replaceParagraphs", "activateObject",
             "numberEquation", "unnumberEquation", "listNumbered", "insertReference", "updateNumbers",
-            "showWordMenu",
+            "showWordMenu", "selectionInfo", "findLatex", "replaceRanges", "equationToText",
         };
 
         // ------------------------------------------------------------ ribbon
@@ -186,6 +186,7 @@ namespace MathBlocks.WordConnector
         }
 
         public void OnConvertMathType(IRibbonControl control) => RunAppCommand("convertMathType");
+        public void OnConvertLatex(IRibbonControl control) => RunAppCommand("convertLatex");
         public void OnInsertReference(IRibbonControl control) => RunAppCommand("insertReference");
         public void OnNumberEquation(IRibbonControl control) => RunAppCommand("numberEquation");
 
@@ -461,6 +462,10 @@ namespace MathBlocks.WordConnector
                     case "listNumbered": result = _ops.ListNumbered(p); break;
                     case "insertReference": result = _ops.InsertReference(p); break;
                     case "updateNumbers": result = _ops.UpdateNumbers(p); break;
+                    case "selectionInfo": result = _ops.SelectionInfo(p); break;
+                    case "findLatex": result = _ops.FindLatex(p); break;
+                    case "replaceRanges": result = _ops.ReplaceRanges(p); break;
+                    case "equationToText": result = _ops.EquationToText(p); break;
                     case "showWordMenu":
                         // Word's own context menu at the mouse (late-bound: CommandBars lives in office.dll).
                         ((dynamic)_app).CommandBars["Text"].ShowPopup();
