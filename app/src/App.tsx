@@ -12,6 +12,7 @@ import { buildInsertion, useCompiledEquation, useProfile } from "./lib/equation"
 import { useApp } from "./lib/store";
 import { installAndRestart, startUpdates } from "./lib/updates";
 import { isDirty, useLibrary } from "./lib/library/useLibrary";
+import { insertLinked, unlinkEditing } from "./lib/linking";
 import { ContextMenu } from "./components/ContextMenu";
 import { PromptHost } from "./components/Dialogs";
 import { SaveDialog } from "./components/SaveDialog";
@@ -40,16 +41,29 @@ export function App() {
     if (!c.connected) return notify("Word is not connected. Start Word with the MathBlocks add-in installed.", "error");
     if (eq.errors > 0) return notify("Fix the LaTeX errors first.", "error");
     try {
-      if (editing) {
+      const lib = useLibrary.getState();
+      const libEq = lib.open ? lib.equations.find((q) => q.id === lib.open!.id) : undefined;
+      const dirty = isDirty(lib.open, latex, display);
+      if (editing?.blockId && libEq) {
+        // A linked copy: save a new library version; every copy (this one included) follows.
+        if (dirty) await lib.saveCurrent();
+        else notify("No changes: the linked copies already show this version");
+      } else if (editing) {
         const { flatOpc } = buildInsertion(latex, display, profile, editing.tag);
         const r = await connector.request("replaceEquation", { tag: editing.tag, flatOpc, undoLabel: "Update equation" });
         notify(r.found === 1 ? "Equation updated in Word" : `Updated, but found ${r.found} copies of its tag`);
+      } else if (libEq && !dirty) {
+        const found = await insertLinked(libEq);
+        notify(found === 1 ? `Inserted a linked copy of “${libEq.name}”` : `Inserted, but found ${found} copies of its tag`);
+        void lib.markUsed(libEq.id);
       } else {
         const { tag, flatOpc } = buildInsertion(latex, display, profile);
         const r = await connector.request("insertEquation", { tag, flatOpc, display, undoLabel: "Insert equation" });
-        notify(r.found === 1 ? "Inserted into Word" : `Inserted, but found ${r.found} copies of its tag`);
-        const open = useLibrary.getState().open;
-        if (open) void useLibrary.getState().markUsed(open.id);
+        notify(
+          libEq
+            ? "Inserted as an unlinked copy because of unsaved changes. Save (Ctrl+S) first to insert a linked copy."
+            : r.found === 1 ? "Inserted into Word" : `Inserted, but found ${r.found} copies of its tag`,
+        );
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
@@ -150,8 +164,16 @@ export function App() {
           <PanelIcon side="right" />
         </button>
         {s.editing && (
-          <span className="editing-pill" title={s.editing.adopted ? "Equation typed in Word, now managed by MathBlocks" : "MathBlocks equation from Word"}>
-            Editing equation from Word
+          <span
+            className={s.editing.blockId ? "editing-pill linked" : "editing-pill"}
+            title={s.editing.blockId ? "A linked copy: saving updates every copy in your documents" : s.editing.adopted ? "Equation typed in Word, now managed by MathBlocks" : "MathBlocks equation from Word"}
+          >
+            {s.editing.blockId ? "Editing a linked equation" : "Editing equation from Word"}
+            {s.editing.blockId && (
+              <button className="pill-btn" title="Make this copy an ordinary equation that no longer follows the library" onClick={() => void unlinkEditing()}>
+                Unlink this copy
+              </button>
+            )}
             <button className="icon-btn" title="Stop editing (next Send inserts a new equation)" onClick={() => s.setEditing(null)}>
               ✕
             </button>
@@ -161,9 +183,9 @@ export function App() {
           className="primary"
           onClick={() => void insertIntoWord()}
           disabled={!s.connector.connected}
-          title={!s.connector.connected ? "Start Word to enable" : s.editing ? "Replace the equation in Word (Ctrl+Enter)" : "Insert at Word's cursor (Ctrl+Enter)"}
+          title={!s.connector.connected ? "Start Word to enable" : s.editing?.blockId ? "Save a new version and update all linked copies (Ctrl+Enter)" : s.editing ? "Replace the equation in Word (Ctrl+Enter)" : useLibrary.getState().open ? "Insert a linked copy at Word's cursor (Ctrl+Enter)" : "Insert at Word's cursor (Ctrl+Enter)"}
         >
-          {s.editing ? "Update in Word" : "Send to Word"}
+          {s.editing?.blockId ? "Update everywhere" : s.editing ? "Update in Word" : "Send to Word"}
         </button>
       </header>
 
@@ -176,7 +198,10 @@ export function App() {
         )}
 
         <main className="workspace" style={{ gridTemplateRows: s.bottomOpen ? `auto minmax(140px, 1fr) 4px ${s.bottomHeight}px` : "auto minmax(140px, 1fr) 0 auto" }}>
-          <div>{s.paletteLocation === "top" && <PaletteTop />}</div>
+          <div>
+            <NoticeBar />
+            {s.paletteLocation === "top" && <PaletteTop />}
+          </div>
           <section className="canvas" aria-label="Equation editor">
             <div
               className="canvas-scroll"
@@ -274,6 +299,23 @@ function TitleArea() {
       <button className="ghost save-btn" onClick={() => void saveCurrent()} title={q ? "Save a new version (Ctrl+S)" : "Save to library (Ctrl+S)"} disabled={!!q && !dirty}>
         {q ? (dirty ? "Save" : "Saved") : "Save"}
       </button>
+    </div>
+  );
+}
+
+/** Message bar with actions (e.g. a document whose linked equations are out of date). */
+function NoticeBar() {
+  const notice = useApp((s) => s.notice);
+  if (!notice) return null;
+  return (
+    <div className="notice-bar" role="status">
+      <span>{notice.text}</span>
+      <div className="spacer" />
+      {notice.actions.map((a, i) => (
+        <button key={a.label} className={i === 0 ? "primary" : undefined} onClick={() => void a.run()}>
+          {a.label}
+        </button>
+      ))}
     </div>
   );
 }

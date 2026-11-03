@@ -50,6 +50,21 @@ Setup: download from the [Latest test build](https://github.com/mhalafandy/math-
 
 If something fails, attach `%LOCALAPPDATA%\MathBlocks\connector.log`.
 
+## Part E — Linked equations (build 0.1.22+)
+
+| # | Test | How | Result |
+|---|---|---|---|
+| E1 | Insert linked | Open a saved library equation (no unsaved changes), press **Send to Word** twice at two places. Right-click it in the library → "Insert linked copy into Word" also works | |
+| E2 | Update everywhere | Change the equation in the app, press **Ctrl+S**: both copies in Word change; one Ctrl+Z in Word undoes the update | |
+| E3 | Edit from a copy | Double-click a copy in Word: the app shows "Editing a linked equation". Change it, press **Update everywhere** | |
+| E4 | Copy and paste | Copy a linked equation in Word and paste it elsewhere; change the equation in the app and save: the pasted copy follows too | |
+| E5 | Edited in Word | Edit one copy with Word's own equation editor, then save a new version in the app: MathBlocks asks Replace / Cancel (Cancel keeps your Word edit and unlinks that copy) | |
+| E6 | Closed document | Close the document, change and save the equation in the app, reopen the document: a bar offers **Update now** | |
+| E7 | Show linked | MathBlocks ribbon → **Show linked equations**: linked copies get a frame; click again to hide | |
+| E8 | Where used | In the app's **Library** tab: list of copies with page numbers; **Go to** jumps there in Word | |
+| E9 | Unlink | Double-click a copy → **Unlink this copy** in the app; later saves no longer change it | |
+| E10 | .doc warning | Open a .doc containing MathBlocks equations, press Ctrl+S: a warning appears | |
+
 ## Part D — Library (build 0.1.21+)
 
 | # | Test | How | Result |

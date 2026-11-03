@@ -319,3 +319,38 @@ of Word's own equation editing; a setting to turn this off will come with the se
   equations, tags and full history. Import merges by ID; the newer `updatedAt` wins.
 
 **Deferred.** Project collections (an equation in several collections) come with M7 components.
+
+---
+
+## D-020 — Linked equations: library blocks, registry in the document, content-based conflict detection
+
+**Status:** Accepted (M6)
+
+**Decision.**
+- A library equation is a **block**; its 16-character id goes into the tag of every linked copy
+  (`mb1|<block>|<instance>`). Inserting from an open, saved library equation inserts a linked copy;
+  with unsaved changes it inserts an unlinked copy and says so.
+- Saving a new version (Ctrl+S, "Update everywhere" after double-clicking a copy, restoring a
+  version) updates all linked copies in **all open documents**, one undo step per document. Each
+  copy keeps its own inline/display mode.
+- Every document stores the definitions it uses in a registry Custom XML Part
+  (`urn:mathblocks:registry:v1`, `packages/ooxml/src/registry.ts`): the version last written.
+- **Conflicts** are detected by mathematical content, not XML (Word rewrites XML): each copy is
+  read back (OMML → AST → LaTeX) and compared with what MathBlocks last wrote. Copies that match
+  neither the previous nor the new version were edited in Word; the user chooses Replace or
+  Keep (which unlinks them).
+- **Copy/paste**: duplicated tags are given new instance ids by the connector before any linked
+  operation, so pasted copies stay linked.
+- **Reopening**: when Word opens a document with linked equations (and on connect), the app
+  compares its registry with the library and offers "Update now"; blocks unknown to the library
+  (document from another PC) can be added to it, keeping their ids.
+- **Unlink** turns one copy into an ordinary equation (`mb1|-|<instance>`).
+- Visibility: ribbon toggle "Show linked equations" frames linked copies; the Library tab lists all
+  copies with page, context and Go to.
+- `.doc` safety: saving a `.doc` that contains MathBlocks equations asks first (Save As cannot be
+  intercepted before the format is chosen, so that path is not covered).
+
+**Limitations.** Documents that are closed are updated when they are next opened (with MathBlocks
+running), not in the background. Linked equations only follow the library on the PC where the
+library lives; on another PC the document's registry keeps them consistent with each other.
+The logic is tested end-to-end against a simulated Word (`app/src/lib/linking.test.ts`).

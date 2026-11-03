@@ -11,6 +11,11 @@ import { serializeLatex } from "@mathblocks/math-latex";
 import { readOmml } from "@mathblocks/math-omml";
 import { useApp } from "./store";
 
+/** Leaves the library equation when an unlinked Word equation is opened for editing. */
+function useLibraryClose() {
+  void import("./library/useLibrary").then((m) => m.useLibrary.getState().closeEquation());
+}
+
 /** Shows and focuses the app window (after a double-click in Word or the ribbon button). */
 async function bringToFront() {
   if (!isDesktop()) return;
@@ -52,7 +57,7 @@ class ConnectorClient {
     this.send = (line) => invoke("connector_send", { line });
     useApp.getState().setConnector({ available: true });
 
-    await listen<string>("connector://line", (e) => this.receive(e.payload));
+    await listen<string>("connector://line", (e) => void this.receive(e.payload));
     await listen<boolean>("connector://status", (e) => this.onStatus(e.payload));
     this.onStatus(await invoke<boolean>("connector_status"));
   }
@@ -90,7 +95,7 @@ class ConnectorClient {
     void this.send(JSON.stringify(msg));
   }
 
-  private receive(line: string) {
+  private async receive(line: string) {
     let msg: RpcMessage;
     try {
       msg = JSON.parse(line) as RpcMessage;
@@ -114,12 +119,20 @@ class ConnectorClient {
         const params = msg.params as ConnectorToApp["hello"]["params"];
         app.setConnector({ connected: true, hostVersion: `Word ${params.hostBuild}` });
         if (isRequest(msg)) this.reply(msg.id, { appVersion: APP_VERSION, protocolVersion: PROTOCOL_VERSION });
+        // Once connected, check open documents for outdated linked equations.
+        setTimeout(() => void import("./linking").then((m) => m.checkOpenDocuments()), 1500);
         break;
       }
       case "showApp":
         if (isRequest(msg)) this.reply(msg.id, null);
         void bringToFront();
         break;
+      case "documentOpened": {
+        if (isRequest(msg)) this.reply(msg.id, null);
+        const params = msg.params as ConnectorToApp["documentOpened"]["params"];
+        void import("./linking").then((m) => m.checkDocument(params.fullName)).catch(() => undefined);
+        break;
+      }
       case "equationActivated": {
         if (isRequest(msg)) this.reply(msg.id, null);
         const params = msg.params as ConnectorToApp["equationActivated"]["params"];
@@ -128,9 +141,13 @@ class ConnectorClient {
           app.notify("Could not find an equation in the selection.", "error");
           break;
         }
-        app.setLatex(serializeLatex(read.root), "external");
+        const linked = await import("./linking").then((m) => m.openLinkedForEditing(params.tag)).catch(() => false);
+        if (!linked) {
+          useLibraryClose();
+          app.setLatex(serializeLatex(read.root), "external");
+          app.setEditing({ tag: params.tag, adopted: !!params.adopted });
+        }
         app.setDisplay(read.display);
-        app.setEditing({ tag: params.tag, adopted: !!params.adopted });
         app.notify(
           read.unknown.length
             ? `Equation loaded. Some parts could not be read and are shown in red: ${[...new Set(read.unknown)].join(", ")}`

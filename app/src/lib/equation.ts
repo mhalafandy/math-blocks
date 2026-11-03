@@ -5,6 +5,13 @@ import { toOmml, TUNED_PROFILE, WORD_DEFAULT_PROFILE, type StyleProfile } from "
 import { contentControl, flatOpc, formatTag, newInstanceId, paragraph } from "@mathblocks/ooxml";
 import { useApp } from "./store";
 
+/** The Word style profile from the current preferences (outside React). */
+export function currentProfile(): StyleProfile {
+  const { profileBase, mathFont, vectorStyle } = useApp.getState();
+  const base = profileBase === "tuned" ? TUNED_PROFILE : WORD_DEFAULT_PROFILE;
+  return { ...base, mathFont, vectorStyle, id: `${base.id}-custom` };
+}
+
 export function useProfile(): StyleProfile {
   const profileBase = useApp((s) => s.profileBase);
   const mathFont = useApp((s) => s.mathFont);

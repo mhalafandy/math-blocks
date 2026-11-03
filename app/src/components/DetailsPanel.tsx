@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import type { Version } from "../lib/library/types";
 import { isDirty, useLibrary } from "../lib/library/useLibrary";
 import { useApp } from "../lib/store";
+import type { DocumentInstances } from "@mathblocks/connector-protocol";
+import { goToCopy, listCopies } from "../lib/linking";
 import { askConfirm } from "./Dialogs";
 import { MathPreview } from "./MathPreview";
 
@@ -58,6 +60,7 @@ export function DetailsPanel() {
           <dt>Changed</dt>
           <dd>{fmt(q.updatedAt)}</dd>
         </dl>
+        <LinkedCopies blockId={q.id} version={q.currentVersion} />
         <div className="details-actions">
           <button className="primary" disabled={!dirty} onClick={() => void lib.saveCurrent()} title="Save the editor content as a new version (Ctrl+S)">
             {dirty ? "Save new version" : "Saved"}
@@ -107,6 +110,47 @@ export function DetailsPanel() {
           ))}
         </ul>
       </div>
+    </div>
+  );
+}
+
+/** Linked copies of this equation in the documents open in Word. */
+function LinkedCopies({ blockId, version }: { blockId: string; version: number }) {
+  const connected = useApp((s) => s.connector.connected);
+  const [docs, setDocs] = useState<DocumentInstances[] | null>(null);
+  const load = () => {
+    if (!connected) return setDocs(null);
+    void listCopies(blockId).then(setDocs, () => setDocs([]));
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(load, [blockId, version, connected]);
+  if (!connected) return <p className="hint linked-hint">Start Word to see where this equation is used.</p>;
+  if (!docs) return null;
+  const n = docs.reduce((k, d) => k + d.instances.length, 0);
+  return (
+    <div className="linked-copies">
+      <div className="linked-head">
+        <span>{n ? `Linked copies in open documents: ${n}` : "No linked copies in the open documents."}</span>
+        <button className="icon-btn" title="Refresh" onClick={load}>
+          ↻
+        </button>
+      </div>
+      {docs.map((d) => (
+        <div key={d.fullName}>
+          {docs.length > 1 && <div className="linked-doc">{d.name}</div>}
+          <ul>
+            {d.instances.map((i) => (
+              <li key={i.tag}>
+                <button title="Show this copy in Word" onClick={() => void goToCopy(d.fullName, i.tag)}>
+                  <span className="page">{i.page ? `p. ${i.page}` : ""}</span>
+                  <span className="ctx">{i.context || "(equation on its own line)"}</span>
+                  <span className="go">Go to</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </div>
   );
 }

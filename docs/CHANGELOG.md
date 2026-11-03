@@ -25,6 +25,12 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added (M5/M6)
+- Linked equations: linked copies from the library, updates to all copies in all open documents,
+  copy/paste handling, conflict detection for copies edited in Word, out-of-date check when a
+  document opens, unlink, list of copies with Go to, ribbon toggle to show linked equations.
+- Document registry (Custom XML Part) and a warning before saving MathBlocks equations as .doc.
+
 ### Added (M4)
 - Equation library: folders, tags, favourites, recent, search, drag and drop, context menus,
   Save (Ctrl+S) / Save as new (Ctrl+Shift+S), title with unsaved marker.

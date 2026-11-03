@@ -8,6 +8,9 @@
                   screentip="Open the MathBlocks editor" onAction="OnOpenApp" />
           <button id="mbSample" label="Insert test equation" imageMso="EquationProfessional"
                   screentip="Insert a sample equation without the app (connector self-test)" onAction="OnInsertSample" />
+          <toggleButton id="mbHighlight" label="Show linked equations" imageMso="HyperlinkInsert"
+                  screentip="Frame equations that are linked to your MathBlocks library"
+                  onAction="OnToggleHighlight" getPressed="GetHighlightPressed" />
           <button id="mbStatus" label="Connection status" imageMso="Info"
                   screentip="Show whether Word is connected to the MathBlocks app" onAction="OnStatus" />
         </group>

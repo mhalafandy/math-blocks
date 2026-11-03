@@ -29,6 +29,8 @@
   <ItemGroup>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Web.Extensions" />
+    <!-- Late binding (dynamic) for the few Office-shared APIs, e.g. CustomXMLParts, so office.dll is not needed. -->
+    <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
 
   <ItemGroup>

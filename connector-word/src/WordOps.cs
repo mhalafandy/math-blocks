@@ -8,7 +8,7 @@ namespace MathBlocks.WordConnector
     /// <summary>
     /// Document operations requested by the app. Must run on Word's main thread.
     /// </summary>
-    internal sealed class WordOps
+    internal sealed partial class WordOps
     {
         public const string TagPrefix = "mb1|";
         private readonly Word.Application _app;
