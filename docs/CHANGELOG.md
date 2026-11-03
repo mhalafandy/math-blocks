@@ -25,6 +25,12 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added (M4)
+- Equation library: folders, tags, favourites, recent, search, drag and drop, context menus,
+  Save (Ctrl+S) / Save as new (Ctrl+Shift+S), title with unsaved marker.
+- Version history with view and restore (Library tab in the bottom panel).
+- Autosave and crash recovery; daily database backups; JSON import/export.
+
 ### Added (M3/M5)
 - OMML → AST reader: equations in Word can be read back exactly.
 - Double-click an equation in Word to edit it in MathBlocks; "Update in Word" replaces it in place.

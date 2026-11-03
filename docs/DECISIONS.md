@@ -292,3 +292,30 @@ Bmatrix, vmatrix, Vmatrix), including row and column vectors such as `[0 y z]ᵀ
 
 **Consequences.** While the app is connected, double-click on an equation opens MathBlocks instead
 of Word's own equation editing; a setting to turn this off will come with the settings screen.
+
+---
+
+## D-019 — Equation library: SQLite in the Rust shell, logic in TypeScript
+
+**Status:** Accepted (M4)
+
+**Decision.**
+- The library is `library.sqlite3` in the app data folder (`%APPDATA%\app.mathblocks.desktop\`),
+  WAL mode, foreign keys on. The schema is versioned with `PRAGMA user_version`; migrations are
+  append-only (`MIGRATIONS` in `app/src-tauri/src/library.rs`). A consistent copy is written to
+  `backups/` once a day (`VACUUM INTO`), the last 14 are kept.
+- Rust only stores and retrieves (typed commands, one transaction per change); searching, ranking,
+  presentation and the editor integration are TypeScript (`app/src/lib/library/`).
+- A `LibraryStore` interface has two implementations with the same behaviour: SQLite (desktop)
+  and an in-memory store (browser preview in localStorage, unit tests). Both have test suites for
+  the same rules.
+- Every save that changes the equation records a new version; restoring an old version adds a new
+  version, so history is never rewritten.
+- Equation IDs are 16-character base62 block IDs (D-008), so a library equation can become a linked
+  block (M6) without changing its identity.
+- Autosave: the editor content is saved as a draft 1.5 s after every change and restored at the next
+  start (crash recovery).
+- Export/import: one JSON file (`format: "mathblocks-library"`, `formatVersion: 1`) with folders,
+  equations, tags and full history. Import merges by ID; the newer `updatedAt` wins.
+
+**Deferred.** Project collections (an equation in several collections) come with M7 components.

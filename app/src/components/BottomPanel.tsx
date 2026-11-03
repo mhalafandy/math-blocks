@@ -2,10 +2,12 @@ import type { MathNode, Row } from "@mathblocks/math-core";
 import { childRows } from "@mathblocks/math-core";
 import type { CompiledEquation } from "../lib/equation";
 import { useApp, type BottomTab } from "../lib/store";
+import { DetailsPanel } from "./DetailsPanel";
 import { LatexEditor } from "./LatexEditor";
 
 const TABS: { id: BottomTab; label: string }[] = [
   { id: "latex", label: "LaTeX" },
+  { id: "details", label: "Library" },
   { id: "structure", label: "Structure" },
   { id: "style", label: "Word style" },
   { id: "omml", label: "OMML" },
@@ -40,6 +42,7 @@ export function BottomPanel({ eq }: { eq: CompiledEquation }) {
       {open && (
         <div className="panel-body">
           {tab === "latex" && <LatexEditor diagnostics={eq.diagnostics} />}
+          {tab === "details" && <div className="scroll pad"><DetailsPanel /></div>}
           {tab === "structure" && <div className="scroll pad"><StructureTree root={eq.root} /></div>}
           {tab === "style" && <div className="scroll pad"><StylePanel /></div>}
           {tab === "omml" && <pre className="code scroll pad">{eq.omml}</pre>}
