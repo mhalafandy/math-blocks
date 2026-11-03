@@ -25,6 +25,10 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added (M10)
+- Export: copy as PNG or MathML, save SVG/PNG (MathJax bundled, offline), Word document's
+  equations as a LaTeX file.
+
 ### Added (M11)
 - Symbol index of the document with definition and uses, Go to, and Rename everywhere.
 

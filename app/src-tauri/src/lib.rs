@@ -47,7 +47,8 @@ pub fn run() {
             library::library_import,
             documents::document_read,
             documents::document_write,
-            documents::document_open
+            documents::document_open,
+            documents::export_write
         ])
         .setup(|app| {
             pipe::start(app.handle().clone());

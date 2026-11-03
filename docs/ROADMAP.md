@@ -14,7 +14,7 @@ editing experience → ease of use → performance → extensibility → visual 
 | M7 Components & search | Parameterized templates, independent copies, detach; symbol & meaning search; snippets; collections | — | **Done**: templates by symbol substitution; unlink = detach; meaning search and collections in the palette |
 | M8 Derivations & numbering | Equation numbering, references, alignment tools | — | **Done** (numbering, references, update; awaiting test in Word). Alignment tools: aligned environments exist; dedicated tools later |
 | M9 MathType migration | MTEF reader → AST → OMML, review UI | User's sample document converts | **Done** (document conversion; all 152 equations of the sample convert; awaiting test in Word). Also in the open Word document (ribbon button, one undo step) and by double-clicking a MathType equation |
-| M10 Precision mode & export | MathJax → EMF/SVG, baseline alignment, PDF/LaTeX export | — | Planned |
+| M10 Precision mode & export | MathJax → EMF/SVG, baseline alignment, PDF/LaTeX export | — | **Export done** (SVG/PNG/MathML, document → LaTeX). Precision mode (pictures in Word) postponed: native equations are the default (D-015) |
 | M11+ Tier 3 | Semantic layer, dependency manager, relationship graph, closed-document updates, other connectors | — | **Started**: symbol index (defined/used, rename everywhere). Next: relationship graph between equations, closed-document updates |
 
 ## Tiers
