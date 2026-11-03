@@ -62,6 +62,19 @@ If something fails, attach `%LOCALAPPDATA%\MathBlocks\connector.log`.
 | F6 | In Word | Open a copy of a chapter in Word, ribbon **Convert MathType equations**: all convert; one Ctrl+Z brings them back | |
 | F7 | Double-click MathType | In an unconverted copy, double-click a MathType equation: choose **Convert and edit**: it opens in MathBlocks; Cancel opens MathType | |
 
+## Part J — Floating editor (build 0.1.37+)
+
+Close Word completely after the update (new add-in).
+
+| # | Test | How | Result |
+|---|---|---|---|
+| J1 | Opens next to it | Right-click a MathBlocks equation: the small editor opens just below it (above it near the bottom of the screen) | |
+| J2 | Edit + Enter | Change the equation, press **Enter**: Word updates; Esc instead leaves it unchanged | |
+| J3 | Commands | Type `/frac` in the command line, Enter: a fraction is inserted; try `/bold`, `/numbered` | |
+| J4 | Sections | Open **Symbols and templates**, insert something; close it again: it stays closed next time | |
+| J5 | Word menu | Click ☰: Word's own right-click menu appears | |
+| J6 | Linked copy | Right-click a linked copy: the panel says "Linked: …"; Enter updates every copy | |
+
 ## Part I — Classic equations (build 0.1.32+)
 
 | # | Test | How | Result |

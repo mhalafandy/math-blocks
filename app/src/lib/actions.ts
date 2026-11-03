@@ -10,3 +10,9 @@ export function newEquation() {
   app.setLatex("", "external");
   requestAnimationFrame(() => focusVisualEditor());
 }
+
+let wordUpdater: (() => Promise<void>) | null = null;
+
+/** The main window's "Send / Update in Word" action, for callers outside React (the panel). */
+export const setWordUpdater = (f: (() => Promise<void>) | null) => (wordUpdater = f);
+export const runWordUpdate = () => wordUpdater?.() ?? Promise.resolve();

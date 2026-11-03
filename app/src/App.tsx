@@ -3,7 +3,7 @@ import { BottomPanel } from "./components/BottomPanel";
 import { CommandPalette } from "./components/CommandPalette";
 import { focusLatexEditor } from "./components/LatexEditor";
 import { focusVisualEditor, MathEditor, toggleBold } from "./components/MathEditor";
-import { newEquation } from "./lib/actions";
+import { newEquation, setWordUpdater } from "./lib/actions";
 import { Sidebar } from "./components/Sidebar";
 import { HSplitter, Splitter } from "./components/Splitter";
 import { PaletteTop, SymbolPanel } from "./components/SymbolPalette";
@@ -51,6 +51,7 @@ export function App() {
 
   useEffect(() => {
     void connector.start();
+    void import("./lib/panel").then((m) => m.initPanelBridge()).catch(() => undefined);
     void useLibrary.getState().init();
     void startUpdates();
   }, []);
@@ -116,6 +117,12 @@ export function App() {
   }, []);
 
   const commands = useMemo(() => buildCommands({ insertIntoWord, copyLatex, focusLatex }), [insertIntoWord, copyLatex, focusLatex]);
+
+  // The floating editor applies its changes through the same action as "Update in Word".
+  useEffect(() => {
+    setWordUpdater(insertIntoWord);
+    return () => void setWordUpdater(null);
+  }, [insertIntoWord]);
 
   // VS Code-style shortcuts. Capture phase, so they work even while the equation editor has focus.
   useEffect(() => {

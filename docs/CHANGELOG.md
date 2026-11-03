@@ -25,6 +25,11 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added (step 3)
+- Floating editor on right-click: second always-on-top window positioned under the equation
+  (Word's screen coordinates), commands-first layout with collapsible sections; the main window
+  keeps the Word connection and applies the result.
+
 ### Fixed (0.1.36)
 - Ctrl+Shift+B on vectors: bold now goes on the letter (\vec{\mathbf{r}}, upright like MathType's
   vector style; Greek in bold italic), works with the cursor right after an accented symbol, and

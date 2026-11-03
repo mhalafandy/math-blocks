@@ -171,7 +171,8 @@ class ConnectorClient {
           // A linked copy does not need Word's content: the library has it.
           const opened = await import("./linking").then((m) => m.openLinkedForEditing(params.tag)).catch(() => false);
           if (opened) {
-            void bringToFront();
+            if (params.panel) void import("./panel").then((m) => m.openPanel(params.panel!));
+            else void bringToFront();
             app.notify("Editing the linked equation from the library. Press Update everywhere (Ctrl+Enter) when done.");
             break;
           }
@@ -199,7 +200,9 @@ class ConnectorClient {
             : "Editing the equation from Word. Press Update in Word (Ctrl+Enter) when done.",
           read.unknown.length ? "error" : "info",
         );
-        void bringToFront();
+        // Right-click: the floating editor next to the equation; double-click: the main window.
+        if (params.panel) void import("./panel").then((m) => m.openPanel(params.panel!));
+        else void bringToFront();
         break;
       }
       case "mathTypeActivated": {

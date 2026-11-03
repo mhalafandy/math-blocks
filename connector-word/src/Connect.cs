@@ -40,6 +40,7 @@ namespace MathBlocks.WordConnector
                 _ = _ui.Handle; // force handle creation on this (main) thread
 
                 _app.WindowBeforeDoubleClick += OnWindowBeforeDoubleClick;
+                _app.WindowBeforeRightClick += OnWindowBeforeRightClick;
                 _app.DocumentOpen += OnDocumentOpen;
                 _app.DocumentBeforeSave += OnDocumentBeforeSave;
 
@@ -63,6 +64,7 @@ namespace MathBlocks.WordConnector
                 if (_app != null)
                 {
                     _app.WindowBeforeDoubleClick -= OnWindowBeforeDoubleClick;
+                    _app.WindowBeforeRightClick -= OnWindowBeforeRightClick;
                     _app.DocumentOpen -= OnDocumentOpen;
                     _app.DocumentBeforeSave -= OnDocumentBeforeSave;
                 }
@@ -100,6 +102,7 @@ namespace MathBlocks.WordConnector
             "listInstances", "replaceMany", "retag", "selectInstance", "getRegistry", "setRegistry",
             "listMathTypeParagraphs", "replaceParagraphs", "activateObject",
             "numberEquation", "unnumberEquation", "listNumbered", "insertReference", "updateNumbers",
+            "showWordMenu",
         };
 
         // ------------------------------------------------------------ ribbon
@@ -217,6 +220,53 @@ namespace MathBlocks.WordConnector
         }
 
         // ------------------------------------------------------------ Word events
+
+        /// <summary>
+        /// Right-click on a MathBlocks equation: instead of Word's menu, the app shows its floating
+        /// editor next to the equation (the panel has a "Word menu" button for cut/copy/paste).
+        /// </summary>
+        private void OnWindowBeforeRightClick(Word.Selection sel, ref bool cancel)
+        {
+            try
+            {
+                if (_pipe == null || !_pipe.IsConnected) return;
+                var cc = sel.Range.ParentContentControl;
+                if (cc == null)
+                    foreach (Word.ContentControl c in sel.Range.ContentControls) { cc = c; break; }
+                var tag = cc?.Tag;
+                if (tag == null || !tag.StartsWith(WordOps.TagPrefix, StringComparison.Ordinal)) return;
+                cancel = true;
+                var xml = cc.Range.WordOpenXML;
+                WordOps.LogMathStructure("panel", xml);
+                var rect = ScreenRect(cc.Range);
+                Log.Info("panel for " + tag + " at " + (rect == null ? "?" : rect["left"] + "," + rect["top"]));
+                SendRequest("equationActivated", new Dictionary<string, object>
+                {
+                    ["tag"] = tag,
+                    ["flatOpc"] = xml,
+                    ["number"] = WordOps.NumberInfo(cc),
+                    ["panel"] = rect ?? new Dictionary<string, object> { ["left"] = 200, ["top"] = 200, ["width"] = 0, ["height"] = 0 },
+                });
+            }
+            catch (Exception ex)
+            {
+                Log.Error("right-click handler failed", ex);
+            }
+        }
+
+        /// <summary>Screen rectangle of a range in pixels (null when Word cannot tell).</summary>
+        private Dictionary<string, object> ScreenRect(Word.Range r)
+        {
+            try
+            {
+                _app.ActiveWindow.GetPoint(out int left, out int top, out int width, out int height, r);
+                return new Dictionary<string, object> { ["left"] = left, ["top"] = top, ["width"] = width, ["height"] = height };
+            }
+            catch (COMException)
+            {
+                return null;
+            }
+        }
 
         private void OnWindowBeforeDoubleClick(Word.Selection sel, ref bool cancel)
         {
@@ -411,6 +461,11 @@ namespace MathBlocks.WordConnector
                     case "listNumbered": result = _ops.ListNumbered(p); break;
                     case "insertReference": result = _ops.InsertReference(p); break;
                     case "updateNumbers": result = _ops.UpdateNumbers(p); break;
+                    case "showWordMenu":
+                        // Word's own context menu at the mouse (late-bound: CommandBars lives in office.dll).
+                        ((dynamic)_app).CommandBars["Text"].ShowPopup();
+                        result = new Dictionary<string, object> { ["ok"] = true };
+                        break;
                     default: throw new RpcException(Rpc.MethodNotFound, "Unknown method " + method);
                 }
                 reply = Rpc.Result(id, result);

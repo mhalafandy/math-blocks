@@ -80,6 +80,15 @@ export interface EquationActivatedParams {
   flatOpc: string;
   /** The equation's number, when it is a numbered equation. */
   number?: NumberInfo | null;
+  /** Right-click: show the floating editor next to the equation (screen pixels). */
+  panel?: ScreenRect;
+}
+
+export interface ScreenRect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
 }
 
 export interface NumberInfo {
@@ -227,6 +236,8 @@ export interface AppToConnector {
   listNumbered: { params: DocTarget & { includeContent?: boolean }; result: { name: string; fullName: string; equations: NumberedEquation[] } };
   insertReference: { params: { bookmark: string }; result: { text: string } };
   updateNumbers: { params: DocTarget; result: { numbers: number; references: number } };
+  /** Word's own context menu at the mouse position. */
+  showWordMenu: { params: Record<string, never>; result: { ok: true } };
   documentInfo: { params: Record<string, never>; result: DocumentInfoResult };
 }
 
