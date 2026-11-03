@@ -62,6 +62,15 @@ If something fails, attach `%LOCALAPPDATA%\MathBlocks\connector.log`.
 | F6 | In Word | Open a copy of a chapter in Word, ribbon **Convert MathType equations**: all convert; one Ctrl+Z brings them back | |
 | F7 | Double-click MathType | In an unconverted copy, double-click a MathType equation: choose **Convert and edit**: it opens in MathBlocks; Cancel opens MathType | |
 
+## Part L — Writing faster (build 0.1.42+)
+
+| # | Test | How | Result |
+|---|---|---|---|
+| L1 | MathType keys | In the equation editor: Ctrl+F, type a, ↓, b, →; Ctrl+R x; Ctrl+H 2; Ctrl+Shift+V r; Ctrl+G w (ω); Ctrl+9 | |
+| L2 | Autocorrect | Type `->`, `<=`, `+-`, `xx`, `oo`: they become → ≤ ± × ∞ | |
+| L3 | Sheet | Press F1 (or ⌨ Shortcuts in the status bar) | |
+| L4 | Panel extras | Right-click an equation in Word: click a favourite symbol; type `\alpha_1` in the command line + Enter; type the name of a library equation + Enter | |
+
 ## Part K — Notation, shortcuts, LaTeX (build 0.1.40+)
 
 Close Word completely after the update (new add-in, new ribbon buttons).

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MathEditor, focusVisualEditor } from "./MathEditor";
+import { MathEditor, focusVisualEditor, insertIntoVisual } from "./MathEditor";
+import { insertPaletteItem } from "./SymbolPalette";
+import { ALL_ITEMS, type IndexedItem } from "../lib/palette";
 import { PaletteTop } from "./SymbolPalette";
 import { LatexEditor } from "./LatexEditor";
 import { ClassicPreview } from "./ClassicPreview";
@@ -8,6 +10,7 @@ import { buildCommands, type Command } from "../lib/commands";
 import { useCompiledEquation } from "../lib/equation";
 import type { PanelOpen, PanelResult } from "../lib/panel";
 import { useApp } from "../lib/store";
+import { handleEditorKey } from "../lib/editorKeys";
 
 /**
  * The floating editor window (opened by right-clicking an equation in Word). Commands first
@@ -84,6 +87,12 @@ export function PanelApp() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.closest?.(".panel-command")) return;
+      if (handleEditorKey(e)) return;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        (document.querySelector(".panel-command input") as HTMLInputElement | null)?.focus();
+        return;
+      }
       if (e.key === "Escape") {
         e.preventDefault();
         cancel();
@@ -127,15 +136,40 @@ export function PanelApp() {
     return () => off?.();
   }, []);
 
+  // Library equations, searchable from the command line (read each time the panel opens).
+  const [library, setLibrary] = useState<Command[]>([]);
+  useEffect(() => {
+    if (!info) return;
+    void (async () => {
+      const { invoke } = await import("@tauri-apps/api/core");
+      const { tauriStore } = await import("../lib/library/tauriStore");
+      const { equations } = await tauriStore(invoke).list();
+      setLibrary(
+        equations.map((q) => ({
+          id: `lib.${q.id}`,
+          title: `Library: ${q.name}`,
+          group: "Insert" as const,
+          keywords: `${q.tags.map((t) => `#${t}`).join(" ")} ${q.description} ${q.latex}`,
+          run: () => {
+            useApp.getState().setLatex(q.latex, "external");
+            useApp.getState().setDisplay(q.display);
+          },
+        })),
+      );
+    })().catch(() => setLibrary([]));
+  }, [info]);
+
   const commands = useMemo(
-    () =>
-      buildCommands({
+    () => [
+      ...library,
+      ...buildCommands({
         insertIntoWord: () => void apply(),
         copyLatex: () => void navigator.clipboard.writeText(useApp.getState().latex),
         focusLatex: () => undefined,
       }),
+    ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [library],
   );
 
   const app = useApp.getState();
@@ -178,6 +212,7 @@ export function PanelApp() {
         </div>
 
         <CommandLine commands={commands} />
+        <QuickRow />
 
         <div className="panel-tabs" role="tablist">
           {tabs.map(([id, label]) => (
@@ -225,7 +260,25 @@ const PANEL_WIDTH = 680;
 const CARD_MARGIN = 14;
 const TAB_KEY = "mathblocks.panel.tab";
 
-/** "/frac", "bold", "matrix 3"… with suggestions; Enter runs the first, arrows choose. */
+/** One-click favourites (the main window's Quick access, right-click there to change them). */
+function QuickRow() {
+  const favorites = useApp((s) => s.favorites);
+  const items = useMemo(() => favorites.map((k) => ALL_ITEMS.find((x) => x.key === k)).filter((x): x is IndexedItem => !!x).slice(0, 18), [favorites]);
+  if (!items.length) return null;
+  return (
+    <div className="panel-quick" role="toolbar" aria-label="Favourite symbols">
+      {items.map((x) => (
+        <button key={x.key} title={x.item.name} onMouseDown={(e) => e.preventDefault()} onClick={() => insertPaletteItem(x)}>
+          {x.item.glyph ? <span className="glyph">{x.item.glyph}</span> : <MathPreview latex={x.item.latex.replace(/#[0?@]/g, "\\square")} />}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+const LOOKS_LIKE_LATEX = /[\\^_{}]/;
+
+/** "/frac", "bold", "matrix 3"… with suggestions; Enter runs the first, arrows choose. LaTeX is inserted as is. */
 function CommandLine({ commands }: { commands: Command[] }) {
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
@@ -245,8 +298,15 @@ function CommandLine({ commands }: { commands: Command[] }) {
       .slice(0, 7)
       .map((x) => x.c);
   }, [commands, query]);
+  const asLatex = !q.trim().startsWith("/") && LOOKS_LIKE_LATEX.test(q) ? q.trim() : null;
   const run = (c: Command | undefined) => {
-    if (!c) return;
+    if (!c) {
+      if (asLatex) {
+        setQ("");
+        insertIntoVisual(asLatex);
+      }
+      return;
+    }
     setQ("");
     void c.run();
     requestAnimationFrame(() => focusVisualEditor());
@@ -255,7 +315,7 @@ function CommandLine({ commands }: { commands: Command[] }) {
     <div className="panel-command">
       <input
         value={q}
-        placeholder="Type a command: /frac, /matrix, /bold, /numbered, /integral…"
+        placeholder="Command or LaTeX: /frac, /matrix, /bold, /numbered, \alpha_1…   (Ctrl+K)"
         onChange={(e) => {
           setQ(e.target.value);
           setSel(0);
@@ -263,11 +323,12 @@ function CommandLine({ commands }: { commands: Command[] }) {
         onKeyDown={(e) => {
           if (e.key === "ArrowDown") (e.preventDefault(), setSel(Math.min(sel + 1, matches.length - 1)));
           else if (e.key === "ArrowUp") (e.preventDefault(), setSel(Math.max(sel - 1, 0)));
-          else if (e.key === "Enter") (e.preventDefault(), run(matches[sel]));
+          else if (e.key === "Enter") (e.preventDefault(), run(asLatex && sel === 0 && !matches.length ? undefined : matches[sel]));
           else if (e.key === "Escape") (e.preventDefault(), q ? setQ("") : focusVisualEditor());
         }}
         spellCheck={false}
       />
+      {asLatex && !matches.length && <div className="panel-suggest panel-latex-hint">Enter inserts the LaTeX <MathPreview latex={asLatex} /></div>}
       {matches.length > 0 && (
         <ul className="panel-suggest">
           {matches.map((c, i) => (

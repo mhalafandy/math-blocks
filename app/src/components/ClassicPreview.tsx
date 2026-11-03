@@ -9,7 +9,8 @@ export function ClassicPreview({ latex, display, sizePt }: { latex: string; disp
   const [real, setReal] = useState(true);
   useEffect(() => {
     let live = true;
-    void (async () => {
+    // Typeset shortly after typing pauses (keeps typing fluid on long equations).
+    const timer = setTimeout(() => void (async () => {
       try {
         const fonts = await loadFonts();
         if (!live) return;
@@ -19,9 +20,10 @@ export function ClassicPreview({ latex, display, sizePt }: { latex: string; disp
       } catch {
         setSvg(null);
       }
-    })();
+    })(), svg ? 120 : 0);
     return () => {
       live = false;
+      clearTimeout(timer);
     };
   }, [latex, display, sizePt]);
   return (

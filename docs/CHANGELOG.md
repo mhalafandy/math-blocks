@@ -25,6 +25,13 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added (ease of writing)
+- MathType-style shortcuts in the equation editor (fraction, root, scripts, integral, sum,
+  brackets, vector, hat, dots, bar, matrix, thin space, Ctrl+G Greek), autocorrect for arrows,
+  relations, ±, ×, ∞…, keyboard shortcut sheet (F1), empty-editor hint.
+- Floating editor: favourite symbols row, LaTeX and library equations in the command line.
+- Smoother Classic preview while typing; the editor's own menu button is hidden (duplicate).
+
 ### Added
 - Keyboard shortcuts in Word (Ctrl+Alt+M edit/new at cursor, Ctrl+Alt+L equation ↔ LaTeX,
   Ctrl+Alt+N number, Ctrl+Alt+R reference; active only while Word is in front) and ribbon key

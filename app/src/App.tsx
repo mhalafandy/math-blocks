@@ -4,6 +4,8 @@ import { CommandPalette } from "./components/CommandPalette";
 import { focusLatexEditor } from "./components/LatexEditor";
 import { focusVisualEditor, MathEditor, toggleBold } from "./components/MathEditor";
 import { newEquation, setWordUpdater } from "./lib/actions";
+import { handleEditorKey } from "./lib/editorKeys";
+import { openShortcuts, ShortcutsDialog } from "./components/ShortcutsDialog";
 import { Sidebar } from "./components/Sidebar";
 import { HSplitter, Splitter } from "./components/Splitter";
 import { PaletteTop, SymbolPanel } from "./components/SymbolPalette";
@@ -129,6 +131,12 @@ export function App() {
   // VS Code-style shortcuts. Capture phase, so they work even while the equation editor has focus.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === "F1") {
+        e.preventDefault();
+        return openShortcuts();
+      }
+      // MathType-style shortcuts while the equation editor has the focus.
+      if (handleEditorKey(e)) return;
       const st = useApp.getState();
       const mod = e.ctrlKey || e.metaKey;
       if (!mod) return;
@@ -259,6 +267,13 @@ export function App() {
               <div className="canvas-inner" style={{ fontSize: `${34 * s.zoom}px` }}>
                 <MathEditor />
               </div>
+              {!s.latex.trim() && (
+                <div className="canvas-hint" aria-hidden>
+                  Type an equation: <kbd>x^2</kbd> <kbd>alpha</kbd> <kbd>-&gt;</kbd> <kbd>/</kbd> for a fraction
+                  <br />
+                  <kbd>Ctrl F</kbd> fraction · <kbd>Ctrl R</kbd> root · <kbd>Ctrl H</kbd>/<kbd>Ctrl L</kbd> super/subscript · <kbd>Ctrl Shift V</kbd> vector · <kbd>F1</kbd> all shortcuts
+                </div>
+              )}
             </div>
             <div className="canvas-tools">
               <button
@@ -303,9 +318,12 @@ export function App() {
 
       <footer className="statusbar">
         <span className={eq.errors > 0 ? "bad" : "good"}>● {status}</span>
-        <span>{s.display ? "Display" : "Inline"}</span>
+        <span>{s.numbered ? "Numbered" : s.display ? "Display" : "Inline"}</span>
         <button className="status-btn" title="How equations go into Word (Word style tab)" onClick={() => s.setPrefs({ bottomOpen: true, bottomTab: "style" })}>
           {s.look === "classic" ? `Classic ${s.equationSizePt} pt` : `Native · ${profile.mathFont}`}
+        </button>
+        <button className="status-btn" title="Keyboard shortcuts (F1)" onClick={openShortcuts}>
+          ⌨ Shortcuts
         </button>
         <div className="spacer" />
         {s.update.status === "downloading" && <span className="muted">Downloading update {s.update.newVersion}…</span>}
@@ -323,6 +341,7 @@ export function App() {
       <ReferencePicker />
       <TemplateDialog onSend={() => void insertIntoWord()} />
       <NotationDialog />
+      <ShortcutsDialog />
       <ContextMenu />
       {s.toast && <div className={`toast ${s.toast.kind}`} role="status">{s.toast.text}</div>}
     </div>
