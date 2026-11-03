@@ -25,6 +25,10 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added
+- Change notation across the document: vectors, dyadics/tensors, unit vectors (detects the
+  forms used, changes one form for chosen letters everywhere in one undo step).
+
 ### Fixed (0.1.39)
 - Word flickered when a document with MathBlocks equations was opened: the background check of
   linked equations asked Word for every equation's page number (which makes Word lay out the

@@ -87,14 +87,33 @@ export async function renameInDocument(index: DocumentIndex, key: string, to: st
   const sym = index.symbols.find((s) => s.key === key);
   if (!sym || !to.trim()) return { equations: 0, libraryEquations: 0 };
   const renames = { [key]: to.trim() };
+  return rewriteDocument(index, sym.equations, (latex) => renameInLatex(latex, renames), `Rename ${key}`);
+}
+
+/**
+ * Rewrites equations of a document with `transform`, in one undo step; equations it leaves
+ * unchanged are not touched. Linked copies change through their library equation (a new
+ * version), so all their copies follow.
+ */
+export async function rewriteDocument(
+  index: DocumentIndex,
+  equations: IndexedEquation[],
+  transform: (latex: string) => string,
+  undoLabel: string,
+): Promise<{ equations: number; libraryEquations: number }> {
   const profile = currentProfile();
   const items: { tag: string; flatOpc: string }[] = [];
   const blocks = new Set<string>();
-  for (const eq of sym.equations) {
-    if (eq.blockId) blocks.add(eq.blockId);
-    else items.push({ tag: eq.tag, flatOpc: (await buildInsertion(renameInLatex(eq.latex, renames), eq.numbered ? false : eq.display, profile, eq.tag, eq.kind === "picture" ? "classic" : "native", eq.display)).flatOpc });
+  for (const eq of equations) {
+    if (eq.blockId) {
+      blocks.add(eq.blockId);
+      continue;
+    }
+    const next = transform(eq.latex);
+    if (next === eq.latex) continue;
+    items.push({ tag: eq.tag, flatOpc: (await buildInsertion(next, eq.numbered ? false : eq.display, profile, eq.tag, eq.kind === "picture" ? "classic" : "native", eq.display)).flatOpc });
   }
-  if (items.length) await connector.request("replaceMany", { document: index.document, items, undoLabel: `Rename ${key}` }, 120_000);
+  if (items.length) await connector.request("replaceMany", { document: index.document, items, undoLabel }, 300_000);
   let libraryEquations = 0;
   if (blocks.size) {
     const { useLibrary } = await import("./library/useLibrary");
@@ -103,7 +122,9 @@ export async function renameInDocument(index: DocumentIndex, key: string, to: st
     for (const id of blocks) {
       const q = lib.equations.find((x) => x.id === id);
       if (!q) continue;
-      const saved = await lib.store!.save("", { ...q, id, latex: renameInLatex(q.latex, renames) });
+      const next = transform(q.latex);
+      if (next === q.latex) continue;
+      const saved = await lib.store!.save("", { ...q, id, latex: next });
       await propagate(saved, q.latex);
       libraryEquations++;
     }
