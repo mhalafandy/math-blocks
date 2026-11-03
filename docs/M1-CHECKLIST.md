@@ -59,6 +59,22 @@ If something fails, attach `%LOCALAPPDATA%\MathBlocks\connector.log`.
 | F3 | Display size | Numbered display equations: are fractions and integrals full size, or do they look small (text style)? Send a screenshot either way | |
 | F4 | References | Cross-references to equation numbers in the text still work (Ctrl+click / F9 updates them) | |
 | F5 | Edit | Double-click a converted equation: it opens in MathBlocks; change it and press **Update in Word** | |
+| F6 | In Word | Open a copy of a chapter in Word, ribbon **Convert MathType equations**: all convert; one Ctrl+Z brings them back | |
+| F7 | Double-click MathType | In an unconverted copy, double-click a MathType equation: choose **Convert and edit**: it opens in MathBlocks; Cancel opens MathType | |
+
+## Part G — Numbering and references (build 0.1.26+)
+
+Close Word completely after the update so the new ribbon buttons appear.
+
+| # | Test | How | Result |
+|---|---|---|---|
+| G1 | Numbered | Choose **Numbered** in the toolbar, Send to Word: the equation is centred with (1) at the right margin | |
+| G2 | Renumber | Insert another numbered equation *above* the first one, press ribbon **Update numbers**: they read (1), (2) in order | |
+| G3 | Reference | In a text paragraph, ribbon **Insert reference**: pick (2): "(2)" appears; Ctrl+click jumps to the equation | |
+| G4 | MathType numbers | In a converted thesis chapter, Insert reference lists the (A.n) numbers too | |
+| G5 | Toggle | Click into an equation, ribbon **Number equation**: adds or removes its number | |
+| G6 | Chapter style | Word style tab → Equation numbers "(2.1)", in a document with numbered Heading 1: new numbers show the chapter | |
+| G7 | Edit numbered | Double-click a numbered equation, change it, Update in Word: the number stays | |
 
 ## Part E — Linked equations (build 0.1.22+)
 

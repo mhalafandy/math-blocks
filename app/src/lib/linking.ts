@@ -31,8 +31,11 @@ async function writeBlock(document: string, q: Equation, reg?: Registry) {
 
 /** Inserts the library equation at Word's cursor as a linked copy. */
 export async function insertLinked(q: Equation) {
-  const { tag, flatOpc } = buildInsertion(q.latex, useApp.getState().display, currentProfile(), formatTag({ blockId: q.id, instanceId: newInstanceId() }));
-  const r = await connector.request("insertEquation", { tag, flatOpc, display: useApp.getState().display, undoLabel: `Insert linked “${q.name}”` });
+  const { display: d, numbered } = useApp.getState();
+  const display = d && !numbered;
+  const { tag, flatOpc } = buildInsertion(q.latex, display, currentProfile(), formatTag({ blockId: q.id, instanceId: newInstanceId() }));
+  const r = await connector.request("insertEquation", { tag, flatOpc, display, undoLabel: `Insert linked “${q.name}”` });
+  if (numbered) await import("./numbering").then((m) => m.numberInWord(tag, q.latex));
   const docs = await connector.request("listInstances", { blockId: q.id });
   const doc = docs.documents[0];
   if (doc) await writeBlock(doc.fullName, q);

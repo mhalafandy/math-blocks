@@ -98,6 +98,8 @@ namespace MathBlocks.WordConnector
         {
             "ping", "insertEquation", "replaceEquation", "readEquation", "documentInfo",
             "listInstances", "replaceMany", "retag", "selectInstance", "getRegistry", "setRegistry",
+            "listMathTypeParagraphs", "replaceParagraphs", "activateObject",
+            "numberEquation", "unnumberEquation", "listNumbered", "insertReference", "updateNumbers",
         };
 
         // ------------------------------------------------------------ ribbon
@@ -147,6 +149,57 @@ namespace MathBlocks.WordConnector
             }
         }
 
+        /// <summary>Ribbon buttons whose work happens in the app (it shows the dialogs).</summary>
+        private void RunAppCommand(string command)
+        {
+            try
+            {
+                if (_pipe == null || !_pipe.IsConnected)
+                {
+                    OnOpenApp(null);
+                    MessageBox.Show("Start the MathBlocks app, then press the button again.", "MathBlocks", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                var prm = new Dictionary<string, object> { ["command"] = command, ["document"] = _app.ActiveDocument.FullName };
+                if (command == "numberEquation")
+                {
+                    // The MathBlocks equation the cursor is in.
+                    var cc = _app.Selection.Range.ParentContentControl;
+                    if (cc == null)
+                        foreach (Word.ContentControl c in _app.Selection.Range.ContentControls) { cc = c; break; }
+                    if (cc?.Tag != null && cc.Tag.StartsWith(WordOps.TagPrefix, StringComparison.Ordinal))
+                    {
+                        prm["tag"] = cc.Tag;
+                        prm["flatOpc"] = cc.Range.WordOpenXML;
+                        prm["numbered"] = WordOps.NumberInfo(cc) != null;
+                    }
+                }
+                SendRequest("runCommand", prm);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("command " + command + " failed", ex);
+            }
+        }
+
+        public void OnConvertMathType(IRibbonControl control) => RunAppCommand("convertMathType");
+        public void OnInsertReference(IRibbonControl control) => RunAppCommand("insertReference");
+        public void OnNumberEquation(IRibbonControl control) => RunAppCommand("numberEquation");
+
+        public void OnUpdateNumbers(IRibbonControl control)
+        {
+            try
+            {
+                var r = _ops.UpdateNumbers(new Dictionary<string, object>());
+                _app.StatusBar = "MathBlocks: updated " + r["numbers"] + " equation number(s) and " + r["references"] + " reference(s)";
+            }
+            catch (Exception ex)
+            {
+                Log.Error("update numbers failed", ex);
+                MessageBox.Show(ex.Message, "MathBlocks", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
         public void OnStatus(IRibbonControl control)
         {
             var state = _pipe != null && _pipe.IsConnected ? "Connected to the MathBlocks app." : "Not connected. Start the MathBlocks app.";
@@ -178,7 +231,16 @@ namespace MathBlocks.WordConnector
                     var xml = cc.Range.WordOpenXML;
                     Log.Info("equationActivated " + tag + " (" + xml.Length + " chars, has math: " + xml.Contains("oMath") + ")");
                     WordOps.LogMathStructure("equationActivated", xml);
-                    SendRequest("equationActivated", new Dictionary<string, object> { ["tag"] = tag, ["flatOpc"] = xml });
+                    SendRequest("equationActivated", new Dictionary<string, object> { ["tag"] = tag, ["flatOpc"] = xml, ["number"] = WordOps.NumberInfo(cc) });
+                    return;
+                }
+                // A MathType equation: offer to convert it and edit it in MathBlocks.
+                var mathType = WordOps.MathTypeAt(_app.ActiveDocument, sel);
+                if (mathType != null)
+                {
+                    cancel = true;
+                    Log.Info("mathTypeActivated in paragraph " + mathType["start"]);
+                    SendRequest("mathTypeActivated", mathType);
                     return;
                 }
                 // A native Word equation (typed in Word or pasted): wrap it so MathBlocks can update it.
@@ -341,6 +403,14 @@ namespace MathBlocks.WordConnector
                     case "setRegistry": result = _ops.SetRegistry(p); break;
                     case "readEquation": result = _ops.ReadEquation(p); break;
                     case "documentInfo": result = _ops.DocumentInfo(); break;
+                    case "listMathTypeParagraphs": result = _ops.ListMathTypeParagraphs(p); break;
+                    case "replaceParagraphs": result = _ops.ReplaceParagraphs(p); break;
+                    case "activateObject": result = _ops.ActivateObject(p); break;
+                    case "numberEquation": result = _ops.NumberEquation(p); break;
+                    case "unnumberEquation": result = _ops.UnnumberEquation(p); break;
+                    case "listNumbered": result = _ops.ListNumbered(p); break;
+                    case "insertReference": result = _ops.InsertReference(p); break;
+                    case "updateNumbers": result = _ops.UpdateNumbers(p); break;
                     default: throw new RpcException(Rpc.MethodNotFound, "Unknown method " + method);
                 }
                 reply = Rpc.Result(id, result);

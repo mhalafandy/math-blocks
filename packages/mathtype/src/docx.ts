@@ -27,6 +27,8 @@ export interface ConvertedEquation {
   status: "converted" | "skipped";
   /** Why the equation was skipped, or what may need a look. */
   messages: string[];
+  /** Content-control tag of the new MathBlocks equation. */
+  tag?: string;
 }
 
 export interface ConvertResult {
@@ -63,65 +65,122 @@ export function convertDocx(input: Uint8Array, options: ConvertOptions = {}): Co
   for (const part of parts) {
     const relsName = part.replace(/^word\//, "word/_rels/") + ".rels";
     const rels = zip[relsName] ? parseRels(strFromU8(zip[relsName]!)) : new Map<string, string>();
-    let xml = strFromU8(zip[part]!);
+    const xml = strFromU8(zip[part]!);
     if (!xml.includes("<w:object")) continue;
-    const hasW15 = xml.includes(`xmlns:w15="${W15}"`);
-    const dropped = new Set<string>();
-
-    xml = replaceObjectRuns(xml, (run, before, after) => {
-      const progId = /ProgID="([^"]+)"/.exec(run)?.[1] ?? "";
-      if (!MATHTYPE_PROGID.test(progId)) return null; // other OLE objects (Excel, Visio…) stay
-      const display = isDisplay(before, after);
-      const entry: ConvertedEquation = {
-        index: equations.length + 1,
-        part,
-        display,
-        number: display ? equationNumber(after) : null,
-        latex: null,
-        status: "skipped",
-        messages: [],
-      };
-      equations.push(entry);
-      const oleRel = /<o:OLEObject\b[^>]*\br:id="([^"]+)"/.exec(run)?.[1];
-      const target = oleRel ? rels.get(oleRel) : undefined;
-      const bin = target ? zip[resolveTarget(part, target)] : undefined;
-      if (!bin) {
-        entry.messages.push("The equation data is missing from the file");
-        return null;
-      }
-      try {
-        const { latex, warnings } = mathTypeObjectToLatex(bin);
-        const parsed = parseLatex(latex);
-        entry.latex = latex;
-        entry.messages.push(...warnings, ...parsed.diagnostics.map((x) => x.message));
-        const omml = toOmml(parsed.root, { profile, display: false });
-        entry.status = "converted";
-        for (const m of run.matchAll(/\br:id="([^"]+)"/g)) dropped.add(m[1]!);
-        return sdt(omml, hasW15);
-      } catch (e) {
-        entry.messages.push(e instanceof Error ? e.message : String(e));
-        return null;
-      }
-    });
-
-    // Paragraphs that hold nothing but one converted equation become display equations.
-    xml = promoteDisplayParagraphs(xml);
-
-    zip[part] = strToU8(xml);
-    if (dropped.size) removedRels.set(relsName, dropped);
+    const out = convertPartXml(part, xml, rels, (path) => zip[path], profile, equations);
+    zip[part] = strToU8(out.xml);
+    if (out.dropped.size) removedRels.set(relsName, out.dropped);
   }
-
   removeUnusedParts(zip, removedRels);
 
   const converted = equations.filter((e) => e.status === "converted").length;
   return { docx: zipSync(zip, { level: 6 }), equations, converted, skipped: equations.length - converted };
 }
 
+/** Converts the MathType objects of one WordprocessingML part (document, footnotes…). */
+function convertPartXml(
+  part: string,
+  source: string,
+  rels: Map<string, string>,
+  getBinary: (path: string) => Uint8Array | undefined,
+  profile: StyleProfile,
+  equations: ConvertedEquation[],
+): { xml: string; dropped: Set<string> } {
+  const hasW15 = source.includes(`xmlns:w15="${W15}"`);
+  const dropped = new Set<string>();
+  let xml = replaceObjectRuns(source, (run, before, after) => {
+    const progId = /ProgID="([^"]+)"/.exec(run)?.[1] ?? "";
+    if (!MATHTYPE_PROGID.test(progId)) return null; // other OLE objects (Excel, Visio…) stay
+    const display = isDisplay(before, after);
+    const entry: ConvertedEquation = {
+      index: equations.length + 1,
+      part,
+      display,
+      number: display ? equationNumber(after) : null,
+      latex: null,
+      status: "skipped",
+      messages: [],
+    };
+    equations.push(entry);
+    if (progId === "Equation.3") {
+      entry.messages.push("Old Equation Editor 3.0 object: not supported yet (open it in MathType and save, then convert)");
+      return null;
+    }
+    const oleRel = /<o:OLEObject\b[^>]*\br:id="([^"]+)"/.exec(run)?.[1];
+    const target = oleRel ? rels.get(oleRel) : undefined;
+    const bin = target ? getBinary(resolveTarget(part, target)) : undefined;
+    if (!bin) {
+      entry.messages.push("The equation data is missing from the file");
+      return null;
+    }
+    try {
+      const { latex, warnings } = mathTypeObjectToLatex(bin);
+      const parsed = parseLatex(latex);
+      entry.latex = latex;
+      entry.messages.push(...warnings, ...parsed.diagnostics.map((x) => x.message));
+      const omml = toOmml(parsed.root, { profile, display: false });
+      entry.status = "converted";
+      for (const m of run.matchAll(/\br:id="([^"]+)"/g)) dropped.add(m[1]!);
+      entry.tag = formatTag({ blockId: null, instanceId: newInstanceId() });
+      return sdt(omml, hasW15, entry.tag);
+    } catch (e) {
+      entry.messages.push(e instanceof Error ? e.message : String(e));
+      return null;
+    }
+  });
+  // Paragraphs that hold nothing but one converted equation become display equations.
+  xml = promoteDisplayParagraphs(xml);
+  return { xml, dropped };
+}
+
+export interface FlatOpcConvertResult {
+  /** The converted Flat OPC package (for Range.InsertXML), or null when nothing was converted. */
+  flatOpc: string | null;
+  equations: ConvertedEquation[];
+}
+
+/**
+ * Converts the MathType objects in a Flat OPC package, as Word returns it from
+ * Range.WordOpenXML (the embeddings travel along as base64 binary parts).
+ */
+export function convertFlatOpc(flat: string, options: ConvertOptions = {}): FlatOpcConvertResult {
+  const profile = options.profile ?? TUNED_PROFILE;
+  const parts = new Map<string, { attrs: string; body: string; start: number; end: number }>();
+  for (const m of flat.matchAll(/<pkg:part\b([^>]*)>([\s\S]*?)<\/pkg:part>/g)) {
+    const name = /pkg:name="\/?([^"]+)"/.exec(m[1]!)?.[1];
+    if (name) parts.set(name, { attrs: m[1]!, body: m[2]!, start: m.index!, end: m.index! + m[0].length });
+  }
+  const docName = [...parts.keys()].find((n) => /^word\/document\.xml$/.test(n)) ?? [...parts.keys()].find((n) => /main\+xml/.test(parts.get(n)!.attrs));
+  const equations: ConvertedEquation[] = [];
+  if (!docName) return { flatOpc: null, equations };
+  const doc = parts.get(docName)!;
+  const xmlData = /<pkg:xmlData>([\s\S]*)<\/pkg:xmlData>/.exec(doc.body);
+  if (!xmlData || !xmlData[1]!.includes("<w:object")) return { flatOpc: null, equations };
+  const relsPart = parts.get(docName.replace(/^word\//, "word/_rels/") + ".rels");
+  const rels = relsPart ? parseRels(relsPart.body) : new Map<string, string>();
+  const getBinary = (path: string) => {
+    const p = parts.get(path);
+    const b64 = p && /<pkg:binaryData>([\s\S]*?)<\/pkg:binaryData>/.exec(p.body)?.[1];
+    return b64 ? base64ToBytes(b64) : undefined;
+  };
+  const out = convertPartXml(docName, xmlData[1]!, rels, getBinary, profile, equations);
+  if (!equations.some((e) => e.status === "converted")) return { flatOpc: null, equations };
+  const body = doc.body.replace(xmlData[1]!, () => out.xml);
+  return { flatOpc: flat.slice(0, doc.start) + `<pkg:part${doc.attrs}>${body}</pkg:part>` + flat.slice(doc.end), equations };
+}
+
+function base64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64.replace(/\s+/g, ""));
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
 /** The content control MathBlocks uses for every equation (tag mb1|-|id, box hidden). */
-function sdt(omml: string, hasW15: boolean) {
+function sdt(omml: string, hasW15: boolean, tag: string) {
   const id = Math.floor(Math.random() * 2_000_000_000) + 1;
   const appearance = hasW15 ? `<w15:appearance w15:val="hidden"/>` : "";
-  return `${MARK}<w:sdt><w:sdtPr><w:tag w:val="${formatTag({ blockId: null, instanceId: newInstanceId() })}"/><w:id w:val="${id}"/>${appearance}</w:sdtPr><w:sdtContent>${omml}</w:sdtContent></w:sdt>`;
+  return `${MARK}<w:sdt><w:sdtPr><w:tag w:val="${tag}"/><w:id w:val="${id}"/>${appearance}</w:sdtPr><w:sdtContent>${omml}</w:sdtContent></w:sdt>`;
 }
 
 function parseRels(xml: string): Map<string, string> {

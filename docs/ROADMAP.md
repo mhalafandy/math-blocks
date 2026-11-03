@@ -12,8 +12,8 @@ editing experience → ease of use → performance → extensibility → visual 
 | M5 Word basics | Insert/edit inline & display, double-click to edit, registry, Style Profiles | **MVP**: tested on a 50-page sample thesis | **Done**: double-click to edit, Update in Word, document registry, .doc warning |
 | M6 Linked components | Sync engine, reconciliation (copy/delete/orphan/conflict), journal, single-step undo, instance panel | Scenario suite: copy, paste, delete, undo, crash, reopen | **Done** (simulated Word suite green; awaiting user test) |
 | M7 Components & search | Parameterized templates, independent copies, detach; symbol & meaning search; snippets; collections | — | Planned |
-| M8 Derivations & numbering | Equation numbering, references, alignment tools | — | Planned |
-| M9 MathType migration | MTEF reader → AST → OMML, review UI | User's sample document converts | **Done** (document conversion; all 152 equations of the sample convert; awaiting test in Word). In-Word conversion of the open document: next |
+| M8 Derivations & numbering | Equation numbering, references, alignment tools | — | **Done** (numbering, references, update; awaiting test in Word). Alignment tools: aligned environments exist; dedicated tools later |
+| M9 MathType migration | MTEF reader → AST → OMML, review UI | User's sample document converts | **Done** (document conversion; all 152 equations of the sample convert; awaiting test in Word). Also in the open Word document (ribbon button, one undo step) and by double-clicking a MathType equation |
 | M10 Precision mode & export | MathJax → EMF/SVG, baseline alignment, PDF/LaTeX export | — | Planned |
 | M11+ Tier 3 | Semantic layer, dependency manager, relationship graph, closed-document updates, other connectors | — | Planned |
 

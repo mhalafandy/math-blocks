@@ -381,3 +381,36 @@ bookmarks `ZEqnNum…`, `REF`/`GOTOBUTTON` cross-references).
 
 **Consequences.** Works without MathType or Word installed, on any computer. Old Equation Editor 3.0
 objects (`Equation.3`, MTEF v3) and `.doc` files are reported, not converted (save as .docx first).
+
+## D-022 — Equation numbers are Word fields in a MathType-style paragraph
+
+**Status:** Accepted (M8)
+
+**Context.** Numbers must renumber automatically and be cross-referenceable with Word's own
+mechanisms (REF fields, Ctrl+click), and the user's thesis already has MathType numbers that must
+keep working next to new ones. OMML cannot hold fields; Word's `#(1)` equation-array numbers are
+plain text (no references) and not available in all supported Word versions.
+
+**Decision.**
+- A numbered equation is its own paragraph: centre tab · equation (inline math) · right tab ·
+  `(` `SEQ MBEq` `)` (optionally `STYLEREF 1 \s` `.` `SEQ MBEq \s 1` for chapter numbers).
+  The number is covered by a hidden bookmark `_MBEq_<instance id>`; references are `REF … \h`.
+- The paragraph is laid out by the connector through Word's object model (tab stops from the
+  page's text width, fields, bookmark), not by XML, so it works in any document and style.
+- References can point at MathType numbers (`ZEqnNum…` bookmarks) as well; Update numbers updates
+  `SEQ MBEq`, `SEQ MTEqn` and references to both.
+- Whether an equation is numbered is a property of the copy in Word, not of the library equation.
+
+**Consequences.** Same layout and limits as MathType (inline math in a numbered paragraph).
+Numbers depend on Word fields: after moving equations, press Update numbers (Word also updates
+fields when printing).
+
+## D-023 — Converting MathType inside Word: paragraphs go to the app and back
+
+**Status:** Accepted (M9)
+
+The connector sends each paragraph holding MathType objects as Flat OPC (`Range.WordOpenXML`,
+which carries the OLE embeddings as base64 parts); the app converts it with the same code as the
+file conversion (`convertFlatOpc`) and the connector puts it back with `InsertXML`, last paragraph
+first, in one undo record. A paragraph whose objects changed meanwhile is skipped. Tabs, fields
+and bookmarks travel inside the paragraph XML, so numbers and references survive.

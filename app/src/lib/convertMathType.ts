@@ -1,6 +1,9 @@
 import { create } from "zustand";
 import type { ConvertResult } from "@mathblocks/mathtype";
-import { isDesktop } from "./connector";
+import type { ConvertedEquation } from "@mathblocks/mathtype";
+import type { MathTypeActivatedParams, MathTypeParagraph } from "@mathblocks/connector-protocol";
+import { askConfirm } from "../components/Dialogs";
+import { addinSupports, connector, isDesktop } from "./connector";
 import { currentProfile } from "./equation";
 import { useApp } from "./store";
 
@@ -11,10 +14,20 @@ export interface ConversionReport {
   result: Omit<ConvertResult, "docx">;
   /** Browser builds: the converted file to download. */
   download?: Blob;
+  /** Converted in the open Word document (not a file). */
+  inPlace?: boolean;
 }
 
-export const useConversion = create<{ busy: boolean; report: ConversionReport | null; set: (s: Partial<{ busy: boolean; report: ConversionReport | null }>) => void }>((set) => ({
+interface ConversionUi {
+  busy: boolean;
+  progress: string | null;
+  report: ConversionReport | null;
+  set: (s: Partial<Omit<ConversionUi, "set">>) => void;
+}
+
+export const useConversion = create<ConversionUi>((set) => ({
   busy: false,
+  progress: null,
   report: null,
   set: (s) => set(s),
 }));
@@ -110,4 +123,117 @@ function pickFile(): Promise<File | null> {
     input.onchange = () => resolve(input.files?.[0] ?? null);
     input.click();
   });
+}
+
+// ------------------------------------------------------------------ in the open Word document
+
+const PAGE = 15;
+const SLOW = 180_000;
+
+async function convertParagraphs(paragraphs: MathTypeParagraph[], equations: ConvertedEquation[]) {
+  const { convertFlatOpc } = await import("@mathblocks/mathtype");
+  const profile = currentProfile();
+  const items: MathTypeParagraph[] = [];
+  for (const p of paragraphs) {
+    const r = convertFlatOpc(p.flatOpc, { profile });
+    for (const e of r.equations) equations.push({ ...e, index: equations.length + 1 });
+    if (r.flatOpc) items.push({ ...p, flatOpc: r.flatOpc });
+  }
+  return items;
+}
+
+/**
+ * Converts every MathType equation of the open Word document in place, in one undo step
+ * (Ctrl+Z in Word brings them all back). Numbers, bookmarks and references are kept.
+ */
+export async function convertOpenDocument(document?: string) {
+  const app = useApp.getState();
+  const ui = useConversion.getState();
+  if (ui.busy) return;
+  if (!app.connector.connected) return app.notify("Word is not connected. Start Word with the MathBlocks add-in.", "error");
+  if (!addinSupports("listMathTypeParagraphs")) return app.notify("The MathBlocks add-in loaded in Word is too old for this. Close Word completely and start it again.", "error");
+  try {
+    ui.set({ busy: true, progress: "Looking for MathType equations…" });
+    const target = document ? { document } : {};
+    const first = await connector.request("listMathTypeParagraphs", { ...target, from: 0, limit: PAGE }, SLOW);
+    if (first.totalObjects === 0) {
+      ui.set({ busy: false, progress: null });
+      return app.notify(`No MathType equations in ${first.name}`);
+    }
+    ui.set({ busy: false, progress: null });
+    const ok = await askConfirm(
+      "Convert MathType equations",
+      `Convert the ${first.totalObjects} MathType equation(s) in “${first.name}” into MathBlocks equations? Numbers and cross-references are kept. You can undo it with one Ctrl+Z in Word; saving a backup copy first is a good idea.`,
+      "Convert",
+      false,
+    );
+    if (!ok) return;
+    ui.set({ busy: true, progress: `Reading equations… 0 / ${first.totalObjects}` });
+    const equations: ConvertedEquation[] = [];
+    const items: MathTypeParagraph[] = [];
+    let page = first;
+    let from = 0;
+    let objectsSeen = 0;
+    for (;;) {
+      items.push(...(await convertParagraphs(page.paragraphs, equations)));
+      objectsSeen += page.paragraphs.reduce((n, p) => n + p.objects, 0);
+      from += page.paragraphs.length;
+      ui.set({ progress: `Converting… ${objectsSeen} / ${first.totalObjects}` });
+      if (from >= page.total || page.paragraphs.length === 0) break;
+      page = await connector.request("listMathTypeParagraphs", { document: first.fullName, from, limit: PAGE }, SLOW);
+    }
+    ui.set({ progress: `Writing ${items.length} paragraph(s) into Word…` });
+    const r = items.length ? await connector.request("replaceParagraphs", { document: first.fullName, items, undoLabel: "Convert MathType equations" }, 600_000) : { replaced: 0, skipped: 0 };
+    if (r.skipped) {
+      app.notify(`${r.skipped} paragraph(s) changed while converting and were left as they were`, "error");
+    }
+    for (const e of equations) e.messages = e.messages.filter(Boolean);
+    const converted = equations.filter((e) => e.status === "converted").length;
+    ui.set({
+      busy: false,
+      progress: null,
+      report: { source: first.name, output: null, inPlace: true, result: { equations, converted, skipped: equations.length - converted } },
+    });
+  } catch (e) {
+    ui.set({ busy: false, progress: null });
+    app.notify(e instanceof Error ? e.message : String(e), "error");
+  }
+}
+
+/** Double-click on a MathType equation in Word: convert it (with its paragraph) and edit it here. */
+export async function onMathTypeActivated(p: MathTypeActivatedParams) {
+  const app = useApp.getState();
+  const choice = await askConfirm(
+    "MathType equation",
+    "Convert this MathType equation into a MathBlocks equation and edit it here? Other MathType equations in the same paragraph are converted too. (Cancel opens it in MathType.)",
+    "Convert and edit",
+    false,
+  );
+  try {
+    if (!choice) {
+      await connector.request("activateObject", { document: p.document, start: p.start, end: p.end, index: p.index });
+      return;
+    }
+    const equations: ConvertedEquation[] = [];
+    const items = await convertParagraphs([p], equations);
+    const target = equations[p.index];
+    if (!items.length || !target || target.status !== "converted" || !target.tag || !target.latex) {
+      return app.notify(`This equation could not be converted${target?.messages[0] ? `: ${target.messages[0]}` : ""}`, "error");
+    }
+    const r = await connector.request("replaceParagraphs", { document: p.document, items, undoLabel: "Convert MathType equation" }, SLOW);
+    if (!r.replaced) return app.notify("The paragraph changed in Word; double-click the equation again.", "error");
+    const lib = await import("./library/useLibrary");
+    lib.useLibrary.getState().closeEquation();
+    const { parseLatex, serializeLatex } = await import("@mathblocks/math-latex");
+    app.setLatex(serializeLatex(parseLatex(target.latex).root), "external");
+    app.setDisplay(target.display || !!target.number);
+    app.setNumbered(!!target.number);
+    app.setEditing({ tag: target.tag, adopted: true, numbered: !!target.number });
+    app.notify(
+      target.messages.length ? `Converted from MathType. Please check: ${target.messages.join("; ")}` : "Converted from MathType. Edit it, then press Update in Word (Ctrl+Enter).",
+      target.messages.length ? "error" : "info",
+    );
+  } catch (e) {
+    app.notify(e instanceof Error ? e.message : String(e), "error");
+  }
 }

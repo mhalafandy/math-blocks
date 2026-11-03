@@ -16,9 +16,26 @@ import { isDirty, useLibrary } from "./lib/library/useLibrary";
 import { insertLinked, unlinkEditing } from "./lib/linking";
 import { ContextMenu } from "./components/ContextMenu";
 import { PromptHost } from "./components/Dialogs";
+import { ReferencePicker } from "./components/ReferencePicker";
+import { numberInWord, unnumberInWord } from "./lib/numbering";
 import { ConversionReport } from "./components/ConversionReport";
 import { SaveDialog } from "./components/SaveDialog";
 import { zoomStep } from "./lib/zoom";
+
+/** Adds or removes the number of an equation that is in Word (keeps its tag). */
+async function setNumberOf(tag: string, latex: string, numbered: boolean, display: boolean) {
+  const st = useApp.getState();
+  if (numbered) {
+    const r = await numberInWord(tag, latex);
+    if (r) st.notify(`Numbered ${r.number}`);
+  } else {
+    await unnumberInWord(tag, latex, display);
+    st.notify("Number removed");
+  }
+  const ed = useApp.getState().editing;
+  if (ed?.tag === tag) st.setEditing({ ...ed, numbered });
+};
+
 
 export function App() {
   const s = useApp();
@@ -46,25 +63,34 @@ export function App() {
       const lib = useLibrary.getState();
       const libEq = lib.open ? lib.equations.find((q) => q.id === lib.open!.id) : undefined;
       const dirty = isDirty(lib.open, latex, display);
+      const { numbered } = useApp.getState();
+      const shape = display && !numbered; // display paragraph; numbered equations are inline math
       if (editing?.blockId && libEq) {
         // A linked copy: save a new library version; every copy (this one included) follows.
         if (dirty) await lib.saveCurrent();
-        else notify("No changes: the linked copies already show this version");
+        else if (!!editing.numbered === numbered) notify("No changes: the linked copies already show this version");
+        if (!!editing.numbered !== numbered) await setNumberOf(editing.tag, latex, numbered, display);
       } else if (editing) {
-        const { flatOpc } = buildInsertion(latex, display, profile, editing.tag);
-        const r = await connector.request("replaceEquation", { tag: editing.tag, flatOpc, undoLabel: "Update equation" });
-        notify(r.found === 1 ? "Equation updated in Word" : `Updated, but found ${r.found} copies of its tag`);
+        if (!!editing.numbered !== numbered) {
+          await setNumberOf(editing.tag, latex, numbered, display);
+        } else {
+          const { flatOpc } = buildInsertion(latex, shape, profile, editing.tag);
+          const r = await connector.request("replaceEquation", { tag: editing.tag, flatOpc, undoLabel: "Update equation" });
+          notify(r.found === 1 ? "Equation updated in Word" : `Updated, but found ${r.found} copies of its tag`);
+        }
       } else if (libEq && !dirty) {
         const found = await insertLinked(libEq);
         notify(found === 1 ? `Inserted a linked copy of “${libEq.name}”` : `Inserted, but found ${found} copies of its tag`);
         void lib.markUsed(libEq.id);
       } else {
-        const { tag, flatOpc } = buildInsertion(latex, display, profile);
-        const r = await connector.request("insertEquation", { tag, flatOpc, display, undoLabel: "Insert equation" });
+        const { tag, flatOpc } = buildInsertion(latex, shape, profile);
+        const r = await connector.request("insertEquation", { tag, flatOpc, display: shape, undoLabel: "Insert equation" });
+        let numberText = "";
+        if (numbered) numberText = (await numberInWord(tag, latex))?.number ?? "";
         notify(
           libEq
             ? "Inserted as an unlinked copy because of unsaved changes. Save (Ctrl+S) first to insert a linked copy."
-            : r.found === 1 ? "Inserted into Word" : `Inserted, but found ${r.found} copies of its tag`,
+            : r.found === 1 ? `Inserted into Word${numberText ? ` as ${numberText}` : ""}` : `Inserted, but found ${r.found} copies of its tag`,
         );
       }
     } catch (e) {
@@ -138,8 +164,9 @@ export function App() {
         </div>
         <TitleArea />
         <div className="segmented" role="group" aria-label="Equation type">
-          <button className={s.display ? "active" : undefined} onClick={() => s.setDisplay(true)} title="Equation on its own line">Display</button>
+          <button className={s.display && !s.numbered ? "active" : undefined} onClick={() => (s.setDisplay(true), s.setNumbered(false))} title="Equation on its own line">Display</button>
           <button className={!s.display ? "active" : undefined} onClick={() => s.setDisplay(false)} title="Equation inside a line of text">Inline</button>
+          <button className={s.numbered ? "active" : undefined} onClick={() => s.setNumbered(true)} title="Display equation with a number, e.g. (1), that Word renumbers and you can cross-reference">Numbered</button>
         </div>
         <div className="spacer" />
         <button className="search-trigger" onClick={() => s.setPaletteOpen(true)} title="Search commands and symbols">
@@ -262,6 +289,7 @@ export function App() {
       <SaveDialog />
       <PromptHost />
       <ConversionReport />
+      <ReferencePicker />
       <ContextMenu />
       {s.toast && <div className={`toast ${s.toast.kind}`} role="status">{s.toast.text}</div>}
     </div>

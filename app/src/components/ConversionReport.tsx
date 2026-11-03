@@ -10,13 +10,14 @@ const baseName = (p: string) => p.split(/[\\/]/).pop() ?? p;
 export function ConversionReport() {
   const report = useConversion((s) => s.report);
   const busy = useConversion((s) => s.busy);
+  const progress = useConversion((s) => s.progress);
   const set = useConversion((s) => s.set);
   const [filter, setFilter] = useState<"attention" | "display" | "all">("attention");
   if (busy)
     return (
       <div className="modal-backdrop">
         <div className="modal" role="status" style={{ width: 320 }}>
-          <p className="modal-text">Converting MathType equations…</p>
+          <p className="modal-text">{progress ?? "Converting MathType equations…"}</p>
         </div>
       </div>
     );
@@ -38,6 +39,11 @@ export function ConversionReport() {
           ) : null}
           . Equation numbers, bookmarks and cross-references are unchanged.
         </p>
+        {report.inPlace && (
+          <p className="modal-text muted">
+            Converted in the open Word document. One <strong>Ctrl+Z</strong> in Word brings the MathType equations back.
+          </p>
+        )}
         {report.output && (
           <p className="modal-text muted">
             Saved as <strong>{baseName(report.output)}</strong>. Your original document was not changed.

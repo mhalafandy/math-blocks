@@ -14,6 +14,19 @@
           <button id="mbStatus" label="Connection status" imageMso="Info"
                   screentip="Show whether Word is connected to the MathBlocks app" onAction="OnStatus" />
         </group>
+        <group id="MathBlocksNumbering" label="Numbering">
+          <button id="mbNumber" label="Number equation" size="large" imageMso="Numbering"
+                  screentip="Give the selected MathBlocks equation a number (or remove it)" onAction="OnNumberEquation" />
+          <button id="mbReference" label="Insert reference" imageMso="CrossReferenceInsert"
+                  screentip="Insert a reference to a numbered equation at the cursor" onAction="OnInsertReference" />
+          <button id="mbUpdateNumbers" label="Update numbers" imageMso="Refresh"
+                  screentip="Renumber equations and update references to them" onAction="OnUpdateNumbers" />
+        </group>
+        <group id="MathBlocksMathType" label="MathType">
+          <button id="mbConvertMathType" label="Convert MathType equations" size="large" imageMso="EquationProfessional"
+                  screentip="Turn this document's MathType equations into native, editable MathBlocks equations (one undo step)"
+                  onAction="OnConvertMathType" />
+        </group>
       </tab>
     </tabs>
   </ribbon>

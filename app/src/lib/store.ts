@@ -15,6 +15,15 @@ export interface ConnectorState {
   available: boolean;
   connected: boolean;
   hostVersion?: string;
+  /** Requests the loaded Word add-in understands (from its hello). */
+  methods?: string[];
+}
+
+/** How new equation numbers look (see NumberFormat in connector-protocol). */
+export interface NumberStyle {
+  open: string;
+  close: string;
+  chapter: boolean;
 }
 
 interface Prefs {
@@ -39,6 +48,7 @@ interface Prefs {
   recents: string[];
   /** Topic tab shown under the top palette; null = collapsed. */
   paletteTab: string | null;
+  numberStyle: NumberStyle;
 }
 
 export interface UpdateState {
@@ -56,6 +66,8 @@ export interface EditingTarget {
   adopted: boolean;
   /** Set when the copy is linked to this library equation (block). */
   blockId?: string;
+  /** The equation in Word has a number (its own paragraph with a number field). */
+  numbered?: boolean;
 }
 
 /** A message bar above the editor with action buttons (e.g. "document out of date"). */
@@ -71,6 +83,9 @@ interface AppState extends Prefs {
   notice: Notice | null;
   setNotice: (n: Notice | null) => void;
   display: boolean;
+  /** Display equation with a number (Word: numbered paragraph). */
+  numbered: boolean;
+  setNumbered: (n: boolean) => void;
   source: ChangeSource;
   paletteOpen: boolean;
   connector: ConnectorState;
@@ -105,6 +120,7 @@ const DEFAULT_PREFS: Prefs = {
   favorites: DEFAULT_FAVORITES,
   recents: [],
   paletteTab: "tab-spacecraft",
+  numberStyle: { open: "(", close: ")", chapter: false },
 };
 
 function loadPrefs(): Prefs {
@@ -132,6 +148,8 @@ export const useApp = create<AppState>((set, get) => ({
   ...loadPrefs(),
   latex: "\\vec{F} = m\\vec{a}",
   display: true,
+  numbered: false,
+  setNumbered: (numbered) => set(numbered ? { numbered, display: true } : { numbered }),
   source: "external",
   paletteOpen: false,
   connector: { available: false, connected: false },
@@ -144,7 +162,7 @@ export const useApp = create<AppState>((set, get) => ({
   setUpdate: (u) => set({ update: { ...get().update, ...u } }),
 
   setLatex: (latex, source) => set({ latex, source }),
-  setDisplay: (display) => set({ display }),
+  setDisplay: (display) => set(display ? { display } : { display, numbered: false }),
   setPrefs: (p) => {
     set(p);
     savePrefs(get());

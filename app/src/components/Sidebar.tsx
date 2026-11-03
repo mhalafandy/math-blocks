@@ -1,4 +1,4 @@
-import { convertMathTypeDocument } from "../lib/convertMathType";
+import { convertMathTypeDocument, convertOpenDocument } from "../lib/convertMathType";
 import { useMemo, useState, type DragEvent, type ReactNode } from "react";
 import { REFERENCE_EQUATIONS } from "../../../fixtures/reference-equations";
 import { recentEquations, searchEquations } from "../lib/library/search";
@@ -18,6 +18,7 @@ export function Sidebar() {
   const setPrefs = useApp((s) => s.setPrefs);
   const createFolder = useLibrary((s) => s.createFolder);
   const setDialog = useLibrary((s) => s.setDialog);
+  const connected = useApp((s) => s.connector.connected);
   return (
     <nav className="sidebar" aria-label="Library">
       <div className="panel-head">
@@ -42,8 +43,13 @@ export function Sidebar() {
       </div>
       <LibraryPanel />
       <div className="panel-foot">
+        {connected && (
+          <button className="ghost" title="Convert the MathType equations of the document open in Word, in place (one Ctrl+Z in Word undoes it)" onClick={() => void convertOpenDocument()}>
+            ⇄ Convert MathType in open document
+          </button>
+        )}
         <button className="ghost" title="Turn the MathType equations of a Word document into native, editable MathBlocks equations (saved as a new file)" onClick={() => void convertMathTypeDocument()}>
-          ⇄ Convert MathType document…
+          ⇄ Convert MathType document file…
         </button>
       </div>
     </nav>
