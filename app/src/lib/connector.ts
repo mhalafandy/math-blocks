@@ -160,7 +160,7 @@ class ConnectorClient {
       case "documentOpened": {
         if (isRequest(msg)) this.reply(msg.id, null);
         const params = msg.params as ConnectorToApp["documentOpened"]["params"];
-        void import("./linking").then((m) => m.checkDocument(params.fullName)).catch(() => undefined);
+        void import("./linking").then((m) => m.checkDocument(params.fullName, { auto: true })).catch(() => undefined);
         break;
       }
       case "equationActivated": {

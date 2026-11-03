@@ -211,7 +211,11 @@ export interface DocumentInstances {
 
 export interface AppToConnector {
   /** MathBlocks equations per document; copies sharing a tag get new instance ids first. */
-  listInstances: { params: DocTarget & { all?: boolean; blockId?: string; includeContent?: boolean }; result: { documents: DocumentInstances[] } };
+  listInstances: {
+    /** light: no page numbers / context (they make Word lay out the document). */
+    params: DocTarget & { all?: boolean; blockId?: string; includeContent?: boolean; light?: boolean };
+    result: { documents: DocumentInstances[] };
+  };
   /** Replaces several equations (by tag) in one undo step. */
   replaceMany: { params: DocTarget & { items: { tag: string; flatOpc: string }[]; undoLabel: string }; result: { replaced: number; missing: string[] } };
   retag: { params: DocTarget & { tag: string; newTag: string }; result: { found: number } };

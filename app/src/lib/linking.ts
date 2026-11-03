@@ -36,7 +36,7 @@ export async function insertLinked(q: Equation) {
   const { tag, flatOpc } = await buildInsertion(q.latex, display, currentProfile(), formatTag({ blockId: q.id, instanceId: newInstanceId() }));
   const r = await connector.request("insertEquation", { tag, flatOpc, display, undoLabel: `Insert linked “${q.name}”` });
   if (numbered) await import("./numbering").then((m) => m.numberInWord(tag, q.latex));
-  const docs = await connector.request("listInstances", { blockId: q.id });
+  const docs = await connector.request("listInstances", { blockId: q.id, light: true });
   const doc = docs.documents[0];
   if (doc) await writeBlock(doc.fullName, q);
   return r.found;
@@ -50,7 +50,7 @@ export async function insertLinked(q: Equation) {
 export async function propagate(q: Equation, previousLatex: string | null, opts: { onlyDocument?: string } = {}): Promise<number> {
   if (!wordReady()) return 0;
   const notify = useApp.getState().notify;
-  const listed = await connector.request("listInstances", opts.onlyDocument ? { document: opts.onlyDocument, blockId: q.id, includeContent: true } : { all: true, blockId: q.id, includeContent: true });
+  const listed = await connector.request("listInstances", opts.onlyDocument ? { document: opts.onlyDocument, blockId: q.id, includeContent: true, light: true } : { all: true, blockId: q.id, includeContent: true, light: true });
   let total = 0;
   let docsTouched = 0;
   for (const doc of listed.documents) {
@@ -123,9 +123,15 @@ export async function goToCopy(document: string, tag: string) {
  * Checks a document's linked copies against the library: offers to update outdated ones and to
  * add blocks the library does not know (document from another PC).
  */
-export async function checkDocument(fullName: string) {
+const lastChecked = new Map<string, number>();
+
+export async function checkDocument(fullName: string, opts: { auto?: boolean } = {}) {
   if (!wordReady()) return;
-  const listed = await connector.request("listInstances", { document: fullName });
+  // Opening a document and connecting both ask for a check: do it once.
+  const now = Date.now();
+  if (opts.auto && now - (lastChecked.get(fullName) ?? 0) < 10_000) return;
+  lastChecked.set(fullName, now);
+  const listed = await connector.request("listInstances", { document: fullName, light: true });
   const doc = listed.documents[0];
   if (!doc) return;
   const blockIds = [...new Set(doc.instances.map((i) => linkOf(i.tag)?.blockId).filter((b): b is string => !!b))];
@@ -208,8 +214,8 @@ export async function openLinkedForEditing(tag: string): Promise<boolean> {
 export async function checkOpenDocuments() {
   if (!wordReady()) return;
   try {
-    const all = await connector.request("listInstances", { all: true });
-    for (const d of all.documents) if (d.instances.some((i) => linkOf(i.tag))) await checkDocument(d.fullName);
+    const all = await connector.request("listInstances", { all: true, light: true });
+    for (const d of all.documents) if (d.instances.some((i) => linkOf(i.tag))) await checkDocument(d.fullName, { auto: true });
   } catch {
     // Word busy or no document: nothing to check.
   }
