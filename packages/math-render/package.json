@@ -1,0 +1,16 @@
+{
+  "name": "@mathblocks/math-render",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MathBlocks typesetting engine: AST → boxes → SVG paths (Classic Times style and others).",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@mathblocks/math-core": "workspace:*",
+    "opentype.js": "2.0.0"
+  },
+  "devDependencies": {
+    "@fontsource/stix-two-math": "5.3.0",
+    "@mathblocks/math-latex": "workspace:*"
+  }
+}

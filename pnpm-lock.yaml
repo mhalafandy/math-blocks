@@ -17,6 +17,9 @@ importers:
       '@mathblocks/math-omml':
         specifier: workspace:*
         version: link:packages/math-omml
+      '@mathblocks/math-render':
+        specifier: workspace:*
+        version: link:packages/math-render
       '@mathblocks/mathtype':
         specifier: workspace:*
         version: link:packages/mathtype
@@ -157,6 +160,22 @@ importers:
       '@mathblocks/math-core':
         specifier: workspace:*
         version: link:../math-core
+
+  packages/math-render:
+    dependencies:
+      '@mathblocks/math-core':
+        specifier: workspace:*
+        version: link:../math-core
+      opentype.js:
+        specifier: 2.0.0
+        version: 2.0.0
+    devDependencies:
+      '@fontsource/stix-two-math':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@mathblocks/math-latex':
+        specifier: workspace:*
+        version: link:../math-latex
 
   packages/mathtype:
     dependencies:
@@ -363,6 +382,9 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@fontsource/stix-two-math@5.3.0':
+    resolution: {integrity: sha512-negoeozw6VSXjZMozwKRSm/dhCQT62csZcuea9I8KYqPaZq/8KbbBBrA02ZHF7AyuR5mVML/p+q0bwFuSIf2GQ==}
 
   '@jridgewell/sourcemap-codec@1.6.0':
     resolution: {integrity: sha512-T7jf+5zgsZHwNJ4lvQ7/aezbyk0nNX+zJVWpmHA7VYsEx7a7qr5Rg5IbtJFqkgze5Y2sruq1RUY8Q837Od7iFw==}
@@ -830,6 +852,10 @@ packages:
     resolution: {integrity: sha512-XrsrhT5sybtKI6wakr2SPOlGZWWYbUXZ7a0jT8/QOeAPau+1X/bSegNe5YR75oJmEZQbKningirmGOEJCIk61Q==}
     engines: {node: '>=12.20.0'}
 
+  opentype.js@2.0.0:
+    resolution: {integrity: sha512-kCyjv6xdDY1W/jLWZ/L3QhhTlKUqDZMQ5+Jdlw12b3dXkKNpYBqqlMMj0YDQPShWFTMwgZI1hG14kN3XUDSg/A==}
+    hasBin: true
+
   package-json-from-dist@1.0.1:
     resolution: {integrity: sha512-UEZIS3/by4OC8vL3P2dTXRETpebLI2NiI5vIrjaD/5UtrkFX/tNbwjTSRAGC/+7CAo2pIcBaRgWmcBBHcsaCIw==}
 
@@ -1167,6 +1193,8 @@ snapshots:
 
   '@esbuild/win32-x64@0.28.2':
     optional: true
+
+  '@fontsource/stix-two-math@5.3.0': {}
 
   '@jridgewell/sourcemap-codec@1.6.0': {}
 
@@ -1540,6 +1568,8 @@ snapshots:
   nanoid@3.3.20: {}
 
   obug@2.2.1: {}
+
+  opentype.js@2.0.0: {}
 
   package-json-from-dist@1.0.1: {}
 
