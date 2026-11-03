@@ -22,14 +22,16 @@
     "@mathblocks/math-core": "workspace:*",
     "@mathblocks/math-latex": "workspace:*",
     "@mathblocks/math-omml": "workspace:*",
+    "@mathblocks/mathtype": "workspace:*",
     "@mathblocks/ooxml": "workspace:*",
     "@mathjax/mathjax-newcm-font": "4.1.3",
+    "@mathjax/mathjax-stix2-font": "4.1.3",
+    "@mathjax/mathjax-termes-font": "4.1.3",
     "@mathjax/src": "4.1.3",
     "@types/node": "^22.10.0",
     "fast-xml-parser": "^5.2.0",
     "tsx": "^4.19.0",
     "typescript": "~5.9.3",
-    "vitest": "^4.1.12",
-    "@mathblocks/mathtype": "workspace:*"
+    "vitest": "^4.1.12"
   }
 }

@@ -26,6 +26,12 @@ importers:
       '@mathjax/mathjax-newcm-font':
         specifier: 4.1.3
         version: 4.1.3
+      '@mathjax/mathjax-stix2-font':
+        specifier: 4.1.3
+        version: 4.1.3
+      '@mathjax/mathjax-termes-font':
+        specifier: 4.1.3
+        version: 4.1.3
       '@mathjax/src':
         specifier: 4.1.3
         version: 4.1.3
@@ -375,6 +381,12 @@ packages:
 
   '@mathjax/mathjax-newcm-font@4.1.3':
     resolution: {integrity: sha512-gzAB3dFHilHX1l5x2xUqRL+1jDQt3Fyza1DkEMVXWC4E8SvsGdlgEza47HYi2WhVcgfkvf4zgUGzuhbq3Pjlew==}
+
+  '@mathjax/mathjax-stix2-font@4.1.3':
+    resolution: {integrity: sha512-DjJh93JuKodoYmvWawiqa22y/dwP+hn6/DN/DepFRFaRbdndNcSD3iBsBunSrLPFIJBS83mn4iR015YRPWZWhg==}
+
+  '@mathjax/mathjax-termes-font@4.1.3':
+    resolution: {integrity: sha512-UwLS8H6YGnW7Yuaw3UcXUObTYZfLlgaQ7oOoCyCSoUW3lfJ9SM5cR6bzfWePiVTF4UDMhCsdhK2rnyNNC3e8Tg==}
 
   '@mathjax/src@4.1.3':
     resolution: {integrity: sha512-rIrWquuBSoJuoMBdC/1qD+AUHTorlccPicoVy6P2xbUgnuDBpCcpbHtOAsB8L3hdCHtNBg92lF8e3Fz+pkcQbw==}
@@ -1171,6 +1183,10 @@ snapshots:
   '@marijn/find-cluster-break@1.0.4': {}
 
   '@mathjax/mathjax-newcm-font@4.1.3': {}
+
+  '@mathjax/mathjax-stix2-font@4.1.3': {}
+
+  '@mathjax/mathjax-termes-font@4.1.3': {}
 
   '@mathjax/src@4.1.3':
     dependencies:
