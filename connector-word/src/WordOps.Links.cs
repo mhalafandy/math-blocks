@@ -74,20 +74,34 @@ namespace MathBlocks.WordConnector
         {
             var blockFilter = p.TryGetValue("blockId", out var b) ? b as string : null;
             var includeContent = Rpc.GetBool(p, "includeContent");
+            // Page numbers and context make Word lay out the document (visible as flicker):
+            // only computed when asked for (lists shown to the user), not for background checks.
+            var light = Rpc.GetBool(p, "light");
             var docs = new List<object>();
-            foreach (var doc in TargetDocuments(p))
+            bool screen = _app.ScreenUpdating;
+            try
             {
-                Dedupe(doc);
-                var items = new List<object>();
-                foreach (var cc in MathBlocksControls(doc))
+                _app.ScreenUpdating = false;
+                foreach (var doc in TargetDocuments(p))
                 {
-                    var tag = cc.Tag;
-                    if (blockFilter != null && tag.Split('|')[1] != blockFilter) continue;
-                    var item = new Dictionary<string, object> { ["tag"] = tag, ["page"] = PageOf(cc), ["context"] = ContextOf(cc) };
-                    if (includeContent) item["flatOpc"] = cc.Range.WordOpenXML;
-                    items.Add(item);
+                    Dedupe(doc);
+                    var items = new List<object>();
+                    foreach (var cc in MathBlocksControls(doc))
+                    {
+                        var tag = cc.Tag;
+                        if (blockFilter != null && tag.Split('|')[1] != blockFilter) continue;
+                        var item = light
+                            ? new Dictionary<string, object> { ["tag"] = tag, ["page"] = 0, ["context"] = "" }
+                            : new Dictionary<string, object> { ["tag"] = tag, ["page"] = PageOf(cc), ["context"] = ContextOf(cc) };
+                        if (includeContent) item["flatOpc"] = cc.Range.WordOpenXML;
+                        items.Add(item);
+                    }
+                    docs.Add(new Dictionary<string, object> { ["name"] = doc.Name, ["fullName"] = doc.FullName, ["instances"] = items });
                 }
-                docs.Add(new Dictionary<string, object> { ["name"] = doc.Name, ["fullName"] = doc.FullName, ["instances"] = items });
+            }
+            finally
+            {
+                _app.ScreenUpdating = screen;
             }
             return new Dictionary<string, object> { ["documents"] = docs };
         }

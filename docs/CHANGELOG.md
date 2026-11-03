@@ -25,6 +25,12 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed (0.1.39)
+- Word flickered when a document with MathBlocks equations was opened: the background check of
+  linked equations asked Word for every equation's page number (which makes Word lay out the
+  document) and ran twice. Background checks now list equations without page numbers, with
+  Word's screen updating paused, once per document.
+
 ### Changed (0.1.38, floating editor)
 - Floating editor redesigned: transparent window with a rounded card and shadow, no title bar,
   larger editing area, sections as a compact tab row; sized by its content (no more growing
