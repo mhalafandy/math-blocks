@@ -2,6 +2,9 @@ import { insertPaletteItem } from "../components/SymbolPalette";
 import { ALL_ITEMS } from "./palette";
 import { checkForUpdate } from "./updates";
 import { zoomStep } from "./zoom";
+import { askText } from "../components/Dialogs";
+import { exportLibrary, importLibrary } from "./library/transfer";
+import { useLibrary } from "./library/useLibrary";
 import { useApp } from "./store";
 
 export interface Command {
@@ -31,8 +34,23 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       keywords: "symbols toolbar dock",
       run: () => app.setPrefs({ paletteLocation: useApp.getState().paletteLocation === "top" ? "right" : "top", rightOpen: true }),
     },
+    { id: "lib.save", title: "Save to library", group: "Edit", shortcut: "Ctrl+S", keywords: "store keep library version", run: () => useLibrary.getState().saveCurrent() },
+    { id: "lib.saveAs", title: "Save as new library equation…", group: "Edit", shortcut: "Ctrl+Shift+S", keywords: "copy duplicate", run: () => useLibrary.getState().setDialog({ mode: "new" }) },
+    { id: "lib.details", title: "Library details and version history", group: "Edit", keywords: "versions history restore tags rename", run: () => app.setPrefs({ bottomOpen: true, bottomTab: "details" }) },
+    {
+      id: "lib.folder",
+      title: "New library folder…",
+      group: "Edit",
+      keywords: "folder organise",
+      run: async () => {
+        const name = await askText("New folder", "", "Folder name", "Create");
+        if (name) await useLibrary.getState().createFolder(name, null);
+      },
+    },
+    { id: "lib.export", title: "Export library…", group: "Edit", keywords: "backup save file json share", run: () => exportLibrary() },
+    { id: "lib.import", title: "Import library…", group: "Edit", keywords: "restore load file json merge", run: () => importLibrary() },
     { id: "app.update", title: "Check for updates", group: "View", keywords: "upgrade new version", run: () => checkForUpdate(true) },
-    { id: "word.new", title: "New equation (stop editing the Word equation)", group: "Word", keywords: "clear reset fresh", run: () => { app.setEditing(null); app.setLatex("", "external"); } },
+    { id: "word.new", title: "New equation", group: "Edit", keywords: "clear reset fresh blank stop editing", run: () => { app.setEditing(null); useLibrary.getState().closeEquation(); app.setLatex("", "external"); } },
     { id: "word.insert", title: "Send to Word", group: "Word", shortcut: "Ctrl+Enter", keywords: "insert export", run: actions.insertIntoWord },
     { id: "edit.copyLatex", title: "Copy LaTeX", group: "Edit", run: actions.copyLatex },
     { id: "edit.focusLatex", title: "Switch to LaTeX editor", group: "Edit", shortcut: "Ctrl+L", keywords: "latex mode source", run: actions.focusLatex },

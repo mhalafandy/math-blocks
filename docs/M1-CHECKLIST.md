@@ -50,6 +50,18 @@ Setup: download from the [Latest test build](https://github.com/mhalafandy/math-
 
 If something fails, attach `%LOCALAPPDATA%\MathBlocks\connector.log`.
 
+## Part D — Library (build 0.1.21+)
+
+| # | Test | How | Result |
+|---|---|---|---|
+| D1 | Save | Build an equation, press **Ctrl+S**, give it a name, folder and tags | |
+| D2 | Folders | Create a folder (folder icon in the Library header), sub-folders (right-click a folder), drag equations into folders | |
+| D3 | Versions | Change a saved equation, Ctrl+S again; open the **Library** tab at the bottom: two versions; **Restore** the first | |
+| D4 | Search | Search by name, by `#tag`, by `is:fav` | |
+| D5 | Crash recovery | Change an equation without saving, wait 2 s, close the app with Task Manager (End task), start it again: your change is back | |
+| D6 | Export/import | Ctrl+K → "Export library…", then "Import library…" the same file: nothing is duplicated | |
+| D7 | Persistence across updates | After the next automatic update, your library is still there | |
+
 ## Part C — Editing equations from Word (build 0.1.18+)
 
 | # | Test | How | Result |

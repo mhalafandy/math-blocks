@@ -11,6 +11,10 @@ import { connector } from "./lib/connector";
 import { buildInsertion, useCompiledEquation, useProfile } from "./lib/equation";
 import { useApp } from "./lib/store";
 import { installAndRestart, startUpdates } from "./lib/updates";
+import { isDirty, useLibrary } from "./lib/library/useLibrary";
+import { ContextMenu } from "./components/ContextMenu";
+import { PromptHost } from "./components/Dialogs";
+import { SaveDialog } from "./components/SaveDialog";
 import { zoomStep } from "./lib/zoom";
 
 export function App() {
@@ -26,6 +30,7 @@ export function App() {
 
   useEffect(() => {
     void connector.start();
+    void useLibrary.getState().init();
     void startUpdates();
   }, []);
 
@@ -43,6 +48,8 @@ export function App() {
         const { tag, flatOpc } = buildInsertion(latex, display, profile);
         const r = await connector.request("insertEquation", { tag, flatOpc, display, undoLabel: "Insert equation" });
         notify(r.found === 1 ? "Inserted into Word" : `Inserted, but found ${r.found} copies of its tag`);
+        const open = useLibrary.getState().open;
+        if (open) void useLibrary.getState().markUsed(open.id);
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
@@ -77,6 +84,8 @@ export function App() {
       let handled = true;
       if (k === "k" || (e.shiftKey && k === "p")) st.setPaletteOpen(!st.paletteOpen);
       else if (k === "enter") void insertIntoWord();
+      else if (k === "s" && e.shiftKey) useLibrary.getState().setDialog({ mode: "new", folderId: currentFolder() });
+      else if (k === "s") void useLibrary.getState().saveCurrent();
       else if (k === "l") focusLatex();
       else if (k === "b" && e.altKey) st.setPrefs({ rightOpen: !st.rightOpen });
       else if (k === "b") st.setPrefs({ leftOpen: !st.leftOpen });
@@ -109,6 +118,7 @@ export function App() {
         <div className="brand">
           <span className="logo" aria-hidden>∑</span> MathBlocks
         </div>
+        <TitleArea />
         <div className="segmented" role="group" aria-label="Equation type">
           <button className={s.display ? "active" : undefined} onClick={() => s.setDisplay(true)} title="Equation on its own line">Display</button>
           <button className={!s.display ? "active" : undefined} onClick={() => s.setDisplay(false)} title="Equation inside a line of text">Inline</button>
@@ -218,6 +228,9 @@ export function App() {
       </footer>
 
       <CommandPalette commands={commands} />
+      <SaveDialog />
+      <PromptHost />
+      <ContextMenu />
       {s.toast && <div className={`toast ${s.toast.kind}`} role="status">{s.toast.text}</div>}
     </div>
   );
@@ -230,5 +243,37 @@ function PanelIcon({ side }: { side: "left" | "right" }) {
       <rect x="1.5" y="2.5" width="13" height="11" rx="2" fill="none" stroke="currentColor" />
       <rect x={side === "left" ? 1.5 : 10} y="2.5" width="4.5" height="11" rx="1.5" fill="currentColor" opacity="0.55" />
     </svg>
+  );
+}
+
+/** Folder of the open library equation (new saves default to it). */
+const currentFolder = () => {
+  const { open, equations } = useLibrary.getState();
+  return open ? (equations.find((q) => q.id === open.id)?.folderId ?? null) : null;
+};
+
+/** Name of the open library equation (or "Untitled"), unsaved marker and Save button. */
+function TitleArea() {
+  const open = useLibrary((s) => s.open);
+  const equations = useLibrary((s) => s.equations);
+  const saveCurrent = useLibrary((s) => s.saveCurrent);
+  const latex = useApp((s) => s.latex);
+  const display = useApp((s) => s.display);
+  const q = open ? equations.find((x) => x.id === open.id) : undefined;
+  const dirty = isDirty(open, latex, display);
+  return (
+    <div className="title-area">
+      <button
+        className="doc-title"
+        title={q ? "Show library details and version history" : "Not in the library yet: click to save"}
+        onClick={() => (q ? useApp.getState().setPrefs({ bottomOpen: true, bottomTab: "details" }) : useLibrary.getState().setDialog({ mode: "new" }))}
+      >
+        <span className={q ? "name" : "name untitled"}>{q ? q.name : "Untitled equation"}</span>
+        {dirty && <span className="dirty" title="Unsaved changes">●</span>}
+      </button>
+      <button className="ghost save-btn" onClick={() => void saveCurrent()} title={q ? "Save a new version (Ctrl+S)" : "Save to library (Ctrl+S)"} disabled={!!q && !dirty}>
+        {q ? (dirty ? "Save" : "Saved") : "Save"}
+      </button>
+    </div>
   );
 }
