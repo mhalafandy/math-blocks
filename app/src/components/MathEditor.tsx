@@ -57,6 +57,25 @@ export function focusVisualEditor() {
   setLastEditor("visual");
 }
 
+/**
+ * Ctrl+Shift+B (as in MathType): toggles bold upright on the selection, or on the symbol just
+ * before the cursor when nothing is selected.
+ */
+export function toggleBold() {
+  const mf = activeField;
+  if (!mf) return;
+  mf.focus();
+  let restoreCaret: number | null = null;
+  if (mf.selectionIsCollapsed) {
+    const pos = mf.position;
+    if (pos === 0) return;
+    mf.selection = { ranges: [[pos - 1, pos]], direction: "forward" };
+    restoreCaret = pos;
+  }
+  mf.applyStyle({ variant: "normal", variantStyle: "bold" }, { operation: "toggle" });
+  if (restoreCaret !== null) mf.position = restoreCaret;
+}
+
 /** Style commands whose empty slot MathLive cannot fill without losing the style. */
 const STYLED_SLOT = /\\(mathbf|boldsymbol|bm|mathrm|mathsf|mathtt|mathcal|mathbb|mathfrak|mathit)\{#0\}/;
 const SAMPLE = "x";

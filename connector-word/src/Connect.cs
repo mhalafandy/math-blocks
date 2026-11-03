@@ -81,7 +81,24 @@ namespace MathBlocks.WordConnector
 
         public void OnBeginShutdown(ref Array custom) { }
 
-        private static string Version => Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
+        /// <summary>Build version (CI stamps 0.1.&lt;build&gt;; the COM AssemblyVersion stays fixed).</summary>
+        private static string Version
+        {
+            get
+            {
+                var info = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+                if (string.IsNullOrEmpty(info)) return Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
+                var plus = info.IndexOf('+');
+                return plus > 0 ? info.Substring(0, plus) : info;
+            }
+        }
+
+        /// <summary>Requests this add-in understands (sent in hello, so the app can detect an old add-in).</summary>
+        private static readonly string[] Methods =
+        {
+            "ping", "insertEquation", "replaceEquation", "readEquation", "documentInfo",
+            "listInstances", "replaceMany", "retag", "selectInstance", "getRegistry", "setRegistry",
+        };
 
         // ------------------------------------------------------------ ribbon
 
@@ -158,7 +175,9 @@ namespace MathBlocks.WordConnector
                 if (tag != null && tag.StartsWith(WordOps.TagPrefix, StringComparison.Ordinal))
                 {
                     cancel = true;
-                    SendRequest("equationActivated", new Dictionary<string, object> { ["tag"] = tag, ["flatOpc"] = cc.Range.WordOpenXML });
+                    var xml = cc.Range.WordOpenXML;
+                    Log.Info("equationActivated " + tag + " (" + xml.Length + " chars, has math: " + xml.Contains("oMath") + ")");
+                    SendRequest("equationActivated", new Dictionary<string, object> { ["tag"] = tag, ["flatOpc"] = xml });
                     return;
                 }
                 // A native Word equation (typed in Word or pasted): wrap it so MathBlocks can update it.
@@ -168,12 +187,17 @@ namespace MathBlocks.WordConnector
                     math = m;
                     break;
                 }
-                if (math == null) return;
+                if (math == null)
+                {
+                    Log.Info("double-click: no MathBlocks control and no Word equation in the selection");
+                    return;
+                }
                 cancel = true;
                 var newTag = _ops.AdoptEquation(math);
                 var wrapped = _app.ActiveDocument.SelectContentControlsByTag(newTag);
                 foreach (Word.ContentControl w in wrapped)
                 {
+                    Log.Info("equationActivated (adopted) " + newTag + " (has math: " + w.Range.WordOpenXML.Contains("oMath") + ")");
                     SendRequest("equationActivated", new Dictionary<string, object> { ["tag"] = newTag, ["flatOpc"] = w.Range.WordOpenXML, ["adopted"] = true });
                     break;
                 }
@@ -265,6 +289,7 @@ namespace MathBlocks.WordConnector
                 ["connectorVersion"] = Version,
                 ["hostVersion"] = _app.Version,
                 ["hostBuild"] = _app.Build,
+                ["methods"] = Methods,
             });
         }
 

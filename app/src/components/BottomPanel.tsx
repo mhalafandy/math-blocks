@@ -142,8 +142,9 @@ function StylePanel() {
       </label>
       <label>
         Vectors
-        <select value={vectorStyle} onChange={(e) => setPrefs({ vectorStyle: e.target.value as "arrow" | "bold" | "bold-italic" })}>
+        <select value={vectorStyle} onChange={(e) => setPrefs({ vectorStyle: e.target.value as "arrow" | "harpoon" | "bold" | "bold-italic" })}>
           <option value="arrow">Arrow accent (v⃗)</option>
+          <option value="harpoon">Harpoon accent (v⃑)</option>
           <option value="bold">Bold upright (𝐯)</option>
           <option value="bold-italic">Bold italic (𝒗)</option>
         </select>

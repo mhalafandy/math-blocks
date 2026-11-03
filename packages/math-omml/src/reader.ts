@@ -51,7 +51,6 @@ for (const [kind, ch] of Object.entries(ACCENT_CHARS)) {
   if (!ACCENT_FROM_CHAR.has(ch)) ACCENT_FROM_CHAR.set(ch, kind as AccentKind);
 }
 ACCENT_FROM_CHAR.set("̄", "bar"); // macron, used by Word for "bar"
-ACCENT_FROM_CHAR.set("⃑", "vec"); // harpoon, Word's alternative vector accent
 
 /** Functions whose subscript is placed underneath in display style (mirror of math-latex). */
 const LIMIT_FUNCTIONS = new Set(["lim", "lim inf", "lim sup", "max", "min", "sup", "inf", "det", "gcd", "Pr"]);

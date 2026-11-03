@@ -20,6 +20,8 @@ export const ACCENT_CHARS: Record<Exclude<AccentKind, "overline" | "underline">,
   vec: "⃗",
   overrightarrow: "⃗",
   overleftarrow: "⃖",
+  overrightharpoon: "\u20D1",
+  overleftharpoon: "\u20D0",
   dot: "̇",
   ddot: "̈",
   dddot: "⃛",
@@ -234,9 +236,12 @@ class OmmlWriter {
         if (n.accent === "overline" || n.accent === "underline") {
           return el("m:bar", null, this.pr("m:barPr", val("m:pos", n.accent === "overline" ? "top" : "bot")), this.e(n.body));
         }
+        if (n.accent === "vec" && this.profile.vectorStyle === "harpoon") {
+          return el("m:acc", null, this.pr("m:accPr", val("m:chr", ACCENT_CHARS.overrightharpoon)), this.e(n.body));
+        }
         if (n.accent === "vec" && this.profile.vectorStyle !== "arrow") {
           const saved = this.forced;
-          this.forced = this.profile.vectorStyle;
+          this.forced = this.profile.vectorStyle as "bold" | "bold-italic";
           const out = this.row(n.body);
           this.forced = saved;
           return out;

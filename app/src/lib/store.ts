@@ -5,7 +5,7 @@ export type Theme = "system" | "light" | "dark";
 /** Tabs of the bottom panel under the equation canvas. */
 export type BottomTab = "latex" | "details" | "structure" | "style" | "omml";
 export type ProfileBase = "tuned" | "word-default";
-export type VectorStyle = "arrow" | "bold" | "bold-italic";
+export type VectorStyle = "arrow" | "harpoon" | "bold" | "bold-italic";
 
 /** Where the latest LaTeX change came from; used to avoid sync loops between editors. */
 export type ChangeSource = "visual" | "latex" | "external";

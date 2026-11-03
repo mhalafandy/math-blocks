@@ -94,3 +94,16 @@ describe("parseXml", () => {
     expect(a.children[0]!.children[0]).toBe("<αβ>");
   });
 });
+
+describe("harpoon vectors", () => {
+  it("write U+20D1 and read back as \\overrightharpoon", () => {
+    const xml = toOmml(parseLatex("\\overrightharpoon{\\mathbf{r}}").root, { standalone: true });
+    expect(xml).toContain('m:val="⃑"');
+    expect(readOmml(xml)!.root.children[0]).toMatchObject({ kind: "accent", accent: "overrightharpoon" });
+  });
+
+  it("the harpoon vector style turns \\vec into a harpoon in Word", () => {
+    const xml = toOmml(parseLatex("\\vec{v}").root, { standalone: true, profile: { ...TUNED_PROFILE, vectorStyle: "harpoon" } });
+    expect(xml).toContain('m:val="⃑"');
+  });
+});

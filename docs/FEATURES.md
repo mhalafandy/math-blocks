@@ -31,6 +31,8 @@ Legend: ✅ done · 🚧 in progress · 📋 planned · 🐞 known bug
 | ✅ Linked equations | M6 | Insert library equations as linked copies; a new version updates every copy in all open documents (one undo per document); pasted copies stay linked; copies edited in Word are detected and you choose Replace or Keep (unlink); reopened documents are checked ("Update now"); equations from other computers can be added to the library; Unlink; Library tab lists copies with Go to; ribbon toggle "Show linked equations" (D-020) |
 | ✅ Document registry | M5 | Each .docx stores the definitions of the linked equations it uses |
 | ✅ .doc warning | M5 | Saving a .doc that contains MathBlocks equations asks first |
+| ✅ Harpoon vectors | M6+ | `\overrightharpoon` / `\overleftharpoon` accents (U+20D1/20D0 in Word), palette templates (bold vector and vectrix with harpoon), Word style option "Harpoon" for all `\vec` |
+| ✅ Bold shortcut | M6+ | Ctrl+Shift+B toggles bold on the selection or the symbol before the cursor (as in MathType) |
 | ✅ Auto-update | M2 | App checks the latest build, downloads in the background, one-click restart; app installs and updates the Word add-in itself (D-014) |
 | ✅ Symbol palette (MathType-style) | M2 | ~300 symbols and templates: 9 symbol groups (relations, spaces/dots, operators, arrows, logic, sets, calculus symbols, Greek, Greek capitals), 8 template groups (brackets, fractions/roots, scripts, sums/products, integrals, accents/bars, labeled arrows, matrices/cases), topic tabs (Algebra, Derivatives, Vectors & mechanics, Matrices, Orbital & control, Trig, Statistics), Recent tab, quick-access bar (right-click to pin/unpin), search by name/meaning/LaTeX, rendered previews, top or side layout (switchable), works in visual and LaTeX-only modes; every item is also a Ctrl+K command |
 
@@ -58,6 +60,9 @@ by meaning, numbering/references, MathType migration, precision mode, dependency
 | Bug | Status |
 |---|---|
 | 🐞 Installer error "Error opening file for writing …\MathBlocks\connector\MathBlocks.WordConnector.dll": the add-in was installed into the app's own folder (Windows paths ignore case), so Word locked a file the installer must replace | Fixed in 0.1.14 (separate add-in folder) and 0.1.17 (DLL embedded in the app, no loose file for the installer to overwrite) |
+| 🐞 Drag and drop in the library did nothing in the desktop app (the window's file-drop handler swallowed drag events) | Fixed: file drop disabled for the window |
+| 🐞 "Unknown method replaceEquation": Word was still running the previous add-in | The app now detects an outdated add-in and asks to restart Word |
+| 🐞 After saving, the next equation was saved as a new version of the first one | Fixed: **New** button (Ctrl+N), clearing the editor detaches, title shows "Library: name" |
 | 🐞 Empty boxes inside bold templates (vectrix, bold vectors, unit vectors, dyadics…) could not be filled by clicking, and lost their bold | Fixed: click selects the box under the pointer; bold slots insert a selected bold sample letter whose first keystroke keeps the style. Verified on all 172 templates (Tab and click) |
 | 🐞 Letters typed after an upright `d` became upright (`\mathrm{dx}`) | Fixed: the editor uses a dedicated differential-d atom |
 | 🐞 Clicking empty canvas space did not focus the equation | Fixed |
