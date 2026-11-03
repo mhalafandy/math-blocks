@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo } from "react";
 import { BottomPanel } from "./components/BottomPanel";
 import { CommandPalette } from "./components/CommandPalette";
 import { focusLatexEditor } from "./components/LatexEditor";
-import { focusVisualEditor, MathEditor } from "./components/MathEditor";
+import { focusVisualEditor, MathEditor, toggleBold } from "./components/MathEditor";
+import { newEquation } from "./lib/actions";
 import { Sidebar } from "./components/Sidebar";
 import { HSplitter, Splitter } from "./components/Splitter";
 import { PaletteTop, SymbolPanel } from "./components/SymbolPalette";
@@ -101,6 +102,8 @@ export function App() {
       else if (k === "s" && e.shiftKey) useLibrary.getState().setDialog({ mode: "new", folderId: currentFolder() });
       else if (k === "s") void useLibrary.getState().saveCurrent();
       else if (k === "l") focusLatex();
+      else if (k === "b" && e.shiftKey) toggleBold();
+      else if (k === "n") newEquation();
       else if (k === "b" && e.altKey) st.setPrefs({ rightOpen: !st.rightOpen });
       else if (k === "b") st.setPrefs({ leftOpen: !st.leftOpen });
       else if (k === "j") st.setPrefs({ bottomOpen: !st.bottomOpen });
@@ -293,8 +296,12 @@ function TitleArea() {
         title={q ? "Show library details and version history" : "Not in the library yet: click to save"}
         onClick={() => (q ? useApp.getState().setPrefs({ bottomOpen: true, bottomTab: "details" }) : useLibrary.getState().setDialog({ mode: "new" }))}
       >
-        <span className={q ? "name" : "name untitled"}>{q ? q.name : "Untitled equation"}</span>
+        {q && <span className="muted editing-label">Library:</span>}
+        <span className={q ? "name" : "name untitled"}>{q ? q.name : "New equation (not saved)"}</span>
         {dirty && <span className="dirty" title="Unsaved changes">●</span>}
+      </button>
+      <button className="ghost save-btn" onClick={newEquation} title="Start a new, empty equation (Ctrl+N)">
+        ＋ New
       </button>
       <button className="ghost save-btn" onClick={() => void saveCurrent()} title={q ? "Save a new version (Ctrl+S)" : "Save to library (Ctrl+S)"} disabled={!!q && !dirty}>
         {q ? (dirty ? "Save" : "Saved") : "Save"}

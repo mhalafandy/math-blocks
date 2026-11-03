@@ -11,7 +11,7 @@ export interface StyleProfile {
   /** OpenType MATH font, written on every run. Must be installed on the reader's PC. */
   mathFont: string;
   /** How \vec{x} is drawn. "arrow": accent arrow; "bold": bold upright; "bold-italic". */
-  vectorStyle: "arrow" | "bold" | "bold-italic";
+  vectorStyle: "arrow" | "harpoon" | "bold" | "bold-italic";
   matrix: {
     /** OMML m:rSpRule: 0 single, 1 one-and-a-half, 2 double, 3 exactly, 4 multiple. */
     rowSpacingRule?: 0 | 1 | 2 | 3 | 4;

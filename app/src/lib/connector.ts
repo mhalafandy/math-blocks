@@ -11,6 +11,26 @@ import { serializeLatex } from "@mathblocks/math-latex";
 import { readOmml } from "@mathblocks/math-omml";
 import { useApp } from "./store";
 
+/** Requests the app relies on; an add-in without them is an old one still loaded in Word. */
+const REQUIRED = ["replaceEquation", "listInstances", "replaceMany", "retag", "selectInstance", "getRegistry", "setRegistry"];
+
+async function checkAddinVersion(params: ConnectorToApp["hello"]["params"]) {
+  const app = useApp.getState();
+  let appVersion = "";
+  try {
+    appVersion = await (await import("@tauri-apps/api/app")).getVersion();
+  } catch {
+    // Browser preview.
+  }
+  const missing = REQUIRED.filter((m) => !params.methods?.includes(m));
+  const stale = missing.length > 0 || (!!appVersion && params.connectorVersion !== appVersion && params.connectorVersion !== "0.1.0");
+  if (!stale) return;
+  app.setNotice({
+    text: `Word is still running an older MathBlocks add-in (${params.connectorVersion}${appVersion ? `, app ${appVersion}` : ""}). Close Word completely and start it again to load the new one${missing.length ? "; until then some features will not work" : ""}.`,
+    actions: [{ label: "OK", run: () => app.setNotice(null) }],
+  });
+}
+
 /** Leaves the library equation when an unlinked Word equation is opened for editing. */
 function useLibraryClose() {
   void import("./library/useLibrary").then((m) => m.useLibrary.getState().closeEquation());
@@ -118,6 +138,7 @@ class ConnectorClient {
       case "hello": {
         const params = msg.params as ConnectorToApp["hello"]["params"];
         app.setConnector({ connected: true, hostVersion: `Word ${params.hostBuild}` });
+        void checkAddinVersion(params);
         if (isRequest(msg)) this.reply(msg.id, { appVersion: APP_VERSION, protocolVersion: PROTOCOL_VERSION });
         // Once connected, check open documents for outdated linked equations.
         setTimeout(() => void import("./linking").then((m) => m.checkOpenDocuments()), 1500);
@@ -137,8 +158,13 @@ class ConnectorClient {
         if (isRequest(msg)) this.reply(msg.id, null);
         const params = msg.params as ConnectorToApp["equationActivated"]["params"];
         const read = readOmml(params.flatOpc);
-        if (!read) {
-          app.notify("Could not find an equation in the selection.", "error");
+        if (!read || read.root.children.length === 0) {
+          console.warn("equationActivated without readable math", params.tag, params.flatOpc?.length, params.flatOpc?.slice(0, 2000));
+          void bringToFront();
+          app.notify(
+            `The equation from Word arrived empty (${params.flatOpc?.length ?? 0} characters). Please send %LOCALAPPDATA%\\MathBlocks\\connector.log so this can be fixed.`,
+            "error",
+          );
           break;
         }
         const linked = await import("./linking").then((m) => m.openLinkedForEditing(params.tag)).catch(() => false);

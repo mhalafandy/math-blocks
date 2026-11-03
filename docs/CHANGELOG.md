@@ -25,6 +25,14 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed (user testing of 0.1.22)
+- Library drag and drop in the desktop app; detection of an outdated Word add-in; saving a second
+  equation no longer overwrites the first (New button, Ctrl+N; clearing the editor detaches).
+- Diagnostics when an equation from Word cannot be read.
+
+### Added
+- Harpoon vector accents and templates; "Harpoon" vector style for Word; Ctrl+Shift+B bold toggle.
+
 ### Added (M5/M6)
 - Linked equations: linked copies from the library, updates to all copies in all open documents,
   copy/paste handling, conflict detection for copies edited in Word, out-of-date check when a

@@ -1,4 +1,6 @@
 import { insertPaletteItem } from "../components/SymbolPalette";
+import { toggleBold } from "../components/MathEditor";
+import { newEquation } from "./actions";
 import { ALL_ITEMS } from "./palette";
 import { checkForUpdate } from "./updates";
 import { zoomStep } from "./zoom";
@@ -50,7 +52,8 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
     { id: "lib.export", title: "Export library…", group: "Edit", keywords: "backup save file json share", run: () => exportLibrary() },
     { id: "lib.import", title: "Import library…", group: "Edit", keywords: "restore load file json merge", run: () => importLibrary() },
     { id: "app.update", title: "Check for updates", group: "View", keywords: "upgrade new version", run: () => checkForUpdate(true) },
-    { id: "word.new", title: "New equation", group: "Edit", keywords: "clear reset fresh blank stop editing", run: () => { app.setEditing(null); useLibrary.getState().closeEquation(); app.setLatex("", "external"); } },
+    { id: "word.new", title: "New equation", group: "Edit", shortcut: "Ctrl+N", keywords: "clear reset fresh blank stop editing", run: () => newEquation() },
+    { id: "edit.bold", title: "Bold (toggle)", group: "Edit", shortcut: "Ctrl+Shift+B", keywords: "bold vector matrix strong", run: () => toggleBold() },
     { id: "word.insert", title: "Send to Word", group: "Word", shortcut: "Ctrl+Enter", keywords: "insert export", run: actions.insertIntoWord },
     { id: "edit.copyLatex", title: "Copy LaTeX", group: "Edit", run: actions.copyLatex },
     { id: "edit.focusLatex", title: "Switch to LaTeX editor", group: "Edit", shortcut: "Ctrl+L", keywords: "latex mode source", run: actions.focusLatex },

@@ -82,7 +82,7 @@ export const FUNCTION_DISPLAY: Record<string, string> = {
 
 export const ACCENTS: Record<string, AccentKind> = {
   hat: "hat", widehat: "widehat", bar: "bar", vec: "vec", overrightarrow: "overrightarrow",
-  overleftarrow: "overleftarrow", dot: "dot", ddot: "ddot", dddot: "dddot", tilde: "tilde",
+  overleftarrow: "overleftarrow", overrightharpoon: "overrightharpoon", overleftharpoon: "overleftharpoon", dot: "dot", ddot: "ddot", dddot: "dddot", tilde: "tilde",
   widetilde: "widetilde", check: "check", breve: "breve", overline: "overline",
   underline: "underline",
 };

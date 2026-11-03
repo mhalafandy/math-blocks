@@ -155,6 +155,8 @@ export type AccentKind =
   | "vec"
   | "overrightarrow"
   | "overleftarrow"
+  | "overrightharpoon"
+  | "overleftharpoon"
   | "dot"
   | "ddot"
   | "dddot"

@@ -222,6 +222,14 @@ let autosaveStarted = false;
 function startAutosave() {
   if (autosaveStarted) return;
   autosaveStarted = true;
+  // Emptying the editor means "start a new equation": detach from the library equation
+  // (otherwise the next equation would be saved as a new version of the previous one).
+  useApp.subscribe((s, prev) => {
+    if (prev.latex.trim() && !s.latex.trim() && s.source !== "external" && useLibrary.getState().open) {
+      useLibrary.getState().closeEquation();
+      useApp.getState().setEditing(null);
+    }
+  });
   let timer: ReturnType<typeof setTimeout> | undefined;
   let last = "";
   useApp.subscribe((s) => {

@@ -64,6 +64,8 @@ export interface HelloParams {
   hostVersion: string;
   /** Word's Application.Build, e.g. "16.0.5422.1000". */
   hostBuild: string;
+  /** Requests the add-in understands (missing in add-ins older than 0.1.23). */
+  methods?: string[];
 }
 
 /**
