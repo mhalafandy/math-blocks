@@ -6,8 +6,11 @@ import "mathlive/fonts.css";
 import "mathlive/static.css";
 import "./styles/app.css";
 
+const isPanel = new URLSearchParams(location.search).has("panel");
+if (isPanel) document.documentElement.classList.add("panel-window");
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    {new URLSearchParams(location.search).has("panel") ? <PanelApp /> : <App />}
+    {isPanel ? <PanelApp /> : <App />}
   </StrictMode>,
 );

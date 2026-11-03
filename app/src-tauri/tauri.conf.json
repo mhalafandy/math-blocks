@@ -24,18 +24,19 @@
         "label": "panel",
         "title": "MathBlocks",
         "url": "index.html?panel=1",
-        "width": 580,
-        "height": 360,
-        "minWidth": 420,
+        "width": 680,
+        "height": 300,
+        "minWidth": 480,
         "minHeight": 160,
         "visible": false,
         "decorations": false,
-        "alwaysOnTop": true,
+        "alwaysOnTop": false,
         "skipTaskbar": true,
-        "resizable": true,
+        "resizable": false,
         "dragDropEnabled": false,
         "focus": true,
-        "shadow": true
+        "shadow": false,
+        "transparent": true
       }
     ],
     "security": {
