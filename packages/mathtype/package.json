@@ -1,0 +1,15 @@
+{
+  "name": "@mathblocks/mathtype",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MathType equation reader: OLE compound files, MTEF v5 → MathBlocks AST, .docx conversion.",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@mathblocks/math-core": "workspace:*",
+    "@mathblocks/math-latex": "workspace:*",
+    "@mathblocks/math-omml": "workspace:*",
+    "@mathblocks/ooxml": "workspace:*",
+    "fflate": "^0.8.2"
+  }
+}

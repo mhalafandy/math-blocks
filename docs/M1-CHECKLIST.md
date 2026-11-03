@@ -50,6 +50,16 @@ Setup: download from the [Latest test build](https://github.com/mhalafandy/math-
 
 If something fails, attach `%LOCALAPPDATA%\MathBlocks\connector.log`.
 
+## Part F — MathType conversion (build 0.1.24+)
+
+| # | Test | How | Result |
+|---|---|---|---|
+| F1 | Convert | Left panel → **Convert MathType document…**, pick a copy of a thesis chapter, save as suggested: the report says how many equations were converted | |
+| F2 | Look | Open the converted file: equations look right (bold vectors, harpoons, matrices, integrals)? Numbers (A.1)… still at the right? | |
+| F3 | Display size | Numbered display equations: are fractions and integrals full size, or do they look small (text style)? Send a screenshot either way | |
+| F4 | References | Cross-references to equation numbers in the text still work (Ctrl+click / F9 updates them) | |
+| F5 | Edit | Double-click a converted equation: it opens in MathBlocks; change it and press **Update in Word** | |
+
 ## Part E — Linked equations (build 0.1.22+)
 
 | # | Test | How | Result |

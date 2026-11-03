@@ -354,3 +354,30 @@ of Word's own equation editing; a setting to turn this off will come with the se
 running), not in the background. Linked equations only follow the library on the PC where the
 library lives; on another PC the document's registry keeps them consistent with each other.
 The logic is tested end-to-end against a simulated Word (`app/src/lib/linking.test.ts`).
+
+## D-021 — MathType conversion: from the binary equation data, as a new document
+
+**Status:** Accepted (M9)
+
+**Context.** The user's thesis has hundreds of MathType equations (OLE objects `Equation.DSMT4`
+with a WMF preview), numbered with MathType's fields (`MTDisplayEquation` paragraphs, `SEQ MTEqn`,
+bookmarks `ZEqnNum…`, `REF`/`GOTOBUTTON` cross-references).
+
+**Decision.**
+- Read the equation itself: the OLE compound file (`packages/mathtype/src/cfb.ts`), its
+  "Equation Native" stream and the MTEF v5 records (`mtef.ts`), translated to MathBlocks LaTeX
+  (`toLatex.ts`) and from there to the AST and OMML with the current Style Profile. MathType's
+  optional "TeX Input Language" annotation is **not** used: it is absent for many equations and
+  loses details (bold vectors, harpoons).
+- Convert a **copy** of the file (`… (MathBlocks).docx`); the original stays as a backup. Only the
+  `<w:run>` holding the object is replaced, by a content control `mb1|-|<id>` (box hidden). Everything
+  else is kept byte for byte, so MathType's numbering and cross-references keep working.
+- A numbered display equation stays in its MathType paragraph (tab · equation · tab · number), so
+  Word treats it as inline math (OMML has no display math next to text or fields). Integral limits
+  keep their placement from MathType explicitly. An equation alone in its paragraph becomes display
+  math (`m:oMathPara`). Moving numbers into MathBlocks numbering is M8.
+- Unknown records never fail a conversion: contents are kept and reported. Objects that cannot be
+  read stay as MathType objects.
+
+**Consequences.** Works without MathType or Word installed, on any computer. Old Equation Editor 3.0
+objects (`Equation.3`, MTEF v3) and `.doc` files are reported, not converted (save as .docx first).

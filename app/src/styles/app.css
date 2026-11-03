@@ -486,3 +486,15 @@ kbd {
 .linked-copies .go { color: var(--accent); font-size: 11.5px; }
 .linked-hint { margin: 2px 0 10px; }
 .editing-label { font-size: 11.5px; margin-right: -2px; }
+
+/* MathType conversion report */
+.conv-tabs { align-self: flex-start; }
+.conv-list { max-height: 46vh; overflow: auto; border: 1px solid var(--border); border-radius: 8px; }
+.conv-row { display: flex; gap: 12px; align-items: flex-start; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.conv-row:last-child { border-bottom: none; }
+.conv-row.skipped { background: color-mix(in srgb, var(--danger, #c0392b) 8%, transparent); }
+.conv-num { flex: 0 0 64px; color: var(--text-2); font-variant-numeric: tabular-nums; padding-top: 2px; }
+.conv-eq { flex: 1; min-width: 0; overflow-x: auto; }
+.conv-msg { color: var(--text-2); font-size: 12px; margin-top: 2px; }
+.panel-foot { border-top: 1px solid var(--border); padding: 6px 8px; }
+.panel-foot button { width: 100%; text-align: left; }

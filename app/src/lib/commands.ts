@@ -6,6 +6,7 @@ import { checkForUpdate } from "./updates";
 import { zoomStep } from "./zoom";
 import { askText } from "../components/Dialogs";
 import { exportLibrary, importLibrary } from "./library/transfer";
+import { convertMathTypeDocument } from "./convertMathType";
 import { useLibrary } from "./library/useLibrary";
 import { useApp } from "./store";
 
@@ -51,6 +52,7 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
     },
     { id: "lib.export", title: "Export library…", group: "Edit", keywords: "backup save file json share", run: () => exportLibrary() },
     { id: "lib.import", title: "Import library…", group: "Edit", keywords: "restore load file json merge", run: () => importLibrary() },
+    { id: "word.convertMathType", title: "Convert MathType equations in a document…", group: "Word", keywords: "mathtype import convert docx thesis equation editor ole", run: () => convertMathTypeDocument() },
     { id: "app.update", title: "Check for updates", group: "View", keywords: "upgrade new version", run: () => checkForUpdate(true) },
     { id: "word.new", title: "New equation", group: "Edit", shortcut: "Ctrl+N", keywords: "clear reset fresh blank stop editing", run: () => newEquation() },
     { id: "edit.bold", title: "Bold (toggle)", group: "Edit", shortcut: "Ctrl+Shift+B", keywords: "bold vector matrix strong", run: () => toggleBold() },
