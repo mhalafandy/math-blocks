@@ -3,7 +3,7 @@ import { ch, line, mathTypeObject, mtef, numberedParagraph, tf, v } from "../../
 
 /** In-Word MathType conversion and numbering, against a simulated connector. */
 
-const word = vi.hoisted(() => ({ calls: [] as { method: string; params: Record<string, unknown> }[], paragraphs: [] as { start: number; end: number; objects: number; flatOpc: string }[], confirm: true }));
+const word = vi.hoisted(() => ({ instances: [] as { tag: string; page: number; context: string; flatOpc: string }[], calls: [] as { method: string; params: Record<string, unknown> }[], paragraphs: [] as { start: number; end: number; objects: number; flatOpc: string }[], confirm: true }));
 
 vi.mock("./connector", () => ({
   isDesktop: () => false,
@@ -28,6 +28,10 @@ vi.mock("./connector", () => ({
           return { text: "(A.1)" };
         case "activateObject":
           return { ok: true };
+        case "listInstances":
+          return { documents: [{ name: "thesis.docx", fullName: "C:\\thesis.docx", instances: word.instances }] };
+        case "replaceMany":
+          return { replaced: (params.items as unknown[]).length, missing: [] };
         default:
           throw new Error(`unexpected ${method}`);
       }
@@ -110,5 +114,27 @@ describe("numbering", () => {
     await numbering.insertReference(items[0]!);
     expect(word.calls.at(-1)).toMatchObject({ method: "insertReference", params: { bookmark: "ZEqnNum1" } });
     expect(numbering.useReferences.getState().open).toBe(false);
+  });
+});
+
+describe("symbol index of the document", () => {
+  it("renames a symbol in every equation that uses it, keeping each equation's tag and shape", async () => {
+    const { buildInsertion } = await import("./equation");
+    const { TUNED_PROFILE } = await import("@mathblocks/math-omml");
+    const mk = (latex: string, display: boolean, id: string) => {
+      const tag = `mb1|-|${id}`;
+      return { tag, page: 1, context: "", flatOpc: buildInsertion(latex, display, TUNED_PROFILE, tag).flatOpc };
+    };
+    word.instances = [mk("v=v_0+at", true, "aaaaaaaaaaaa"), mk("x=v_0t", false, "bbbbbbbbbbbb"), mk("E=mc^2", true, "cccccccccccc")];
+    const { buildDocumentIndex, renameInDocument } = await import("./symbolIndex");
+    const index = await buildDocumentIndex();
+    expect(index.symbols.find((s) => s.key === "v_0")!.equations).toHaveLength(2);
+    const r = await renameInDocument(index, "v_0", "u");
+    expect(r.equations).toBe(2);
+    const call = word.calls.find((c) => c.method === "replaceMany")!;
+    const items = call.params.items as { tag: string; flatOpc: string }[];
+    expect(items.map((i) => i.tag)).toEqual(["mb1|-|aaaaaaaaaaaa", "mb1|-|bbbbbbbbbbbb"]);
+    expect(items[0]!.flatOpc).toContain("oMathPara");
+    expect(items[1]!.flatOpc).not.toContain("oMathPara");
   });
 });

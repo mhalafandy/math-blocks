@@ -25,6 +25,9 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added (M11)
+- Symbol index of the document with definition and uses, Go to, and Rename everywhere.
+
 ### Added (M7)
 - Templates: use any equation with other symbols (symbol detection with subscripts, accents and
   bold; powers kept), from the library menu or Ctrl+K.

@@ -3,7 +3,7 @@ import { DEFAULT_FAVORITES } from "./palette";
 
 export type Theme = "system" | "light" | "dark";
 /** Tabs of the bottom panel under the equation canvas. */
-export type BottomTab = "latex" | "details" | "structure" | "style" | "omml";
+export type BottomTab = "latex" | "details" | "symbols" | "structure" | "style" | "omml";
 export type ProfileBase = "tuned" | "word-default";
 export type VectorStyle = "arrow" | "harpoon" | "bold" | "bold-italic";
 

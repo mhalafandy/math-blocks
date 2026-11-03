@@ -76,6 +76,15 @@ Close Word completely after the update so the new ribbon buttons appear.
 | G6 | Chapter style | Word style tab → Equation numbers "(2.1)", in a document with numbered Heading 1: new numbers show the chapter | |
 | G7 | Edit numbered | Double-click a numbered equation, change it, Update in Word: the number stays | |
 
+## Part H — Templates and symbols (build 0.1.27+)
+
+| # | Test | How | Result |
+|---|---|---|---|
+| H1 | Template | Library: right-click an equation → **Use with other symbols…**, type new symbols: the preview follows; **Send to Word** inserts it | |
+| H2 | Symbols of an equation | Bottom panel **Symbols**: the list shows v₀, 𝐪_ab… (not d of dx); click one, Rename: the equation changes | |
+| H3 | Symbols of the document | With Word open, **Index Word document**: symbols with "defined p. n"; Go to selects the equation in Word | |
+| H4 | Rename everywhere | Rename a symbol used in several equations: all change; one Ctrl+Z in Word undoes it | |
+
 ## Part E — Linked equations (build 0.1.22+)
 
 | # | Test | How | Result |
