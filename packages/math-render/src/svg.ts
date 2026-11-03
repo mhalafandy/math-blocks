@@ -13,9 +13,20 @@ export interface RenderOptions {
   margin?: number;
 }
 
+/** Glyph outline command (opentype.js form, y down). */
+export interface PathCmd {
+  type: string;
+  x?: number;
+  y?: number;
+  x1?: number;
+  y1?: number;
+  x2?: number;
+  y2?: number;
+}
+
 /** One drawing operation in SVG units (y down), for painting without an SVG decoder. */
 export type PaintOp =
-  | { kind: "path"; d: string; m: [number, number, number, number, number, number]; color: string }
+  | { kind: "path"; d: string; cmds: PathCmd[]; m: [number, number, number, number, number, number]; color: string }
   | { kind: "rect"; x: number; y: number; w: number; h: number; color: string };
 
 export interface RenderResult {
@@ -76,7 +87,8 @@ export function renderSvg(root: Row, o: RenderOptions): RenderResult {
     const sx = it.sx ?? 1;
     const sy = it.sy ?? 1;
     const fontSize = it.s * U;
-    const p = pathData(it.g.glyph.getPath(0, 0, fontSize).commands);
+    const cmds = it.g.glyph.getPath(0, 0, fontSize).commands as PathCmd[];
+    const p = pathData(cmds);
     if (!p) continue;
     const tx = (it.x + m) * U;
     const ty = (h - it.y) * U;
@@ -87,7 +99,7 @@ export function renderSvg(root: Row, o: RenderOptions): RenderResult {
         ? `translate(${f(tx)} ${f(ty)}) scale(${f(sx)} ${f(sy)})`
         : `translate(${f(tx)} ${f(ty)})`;
     add(it.color, `<path transform="${transform}" d="${p}"/>`);
-    ops.push({ kind: "path", d: p, m: [sx, 0, -k * sy, sy, tx, ty], color: it.color ?? style.color });
+    ops.push({ kind: "path", d: p, cmds, m: [sx, 0, -k * sy, sy, tx, ty], color: it.color ?? style.color });
   }
   for (const [color, els] of byColor) paths.push(`<g fill="${color}">${els.join("")}</g>`);
   const svg =
