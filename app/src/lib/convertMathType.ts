@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { ConvertResult } from "@mathblocks/mathtype";
-import type { ConvertedEquation } from "@mathblocks/mathtype";
+import type { ConvertedEquation, PictureData } from "@mathblocks/mathtype";
 import type { MathTypeActivatedParams, MathTypeParagraph } from "@mathblocks/connector-protocol";
 import { askConfirm } from "../components/Dialogs";
 import { addinSupports, connector, isDesktop } from "./connector";
@@ -68,7 +68,16 @@ export async function convertMathTypeDocument() {
     // Let the "Converting…" state paint before the (synchronous) conversion runs.
     await new Promise((r) => setTimeout(r, 30));
     const { convertDocx } = await import("@mathblocks/mathtype");
-    const { docx, ...result } = convertDocx(bytes, { profile: currentProfile() });
+    const plan = convertDocx(bytes, { profile: currentProfile() });
+    let docx = plan.docx;
+    const { docx: _unused, ...result } = plan;
+    void _unused;
+    if (useApp.getState().look === "classic" && plan.converted) {
+      // Classic: typeset every equation, then convert again placing the pictures.
+      const pics = await renderAll(plan.equations, (done) => ui.set({ progress: `Typesetting equations… ${done} / ${plan.converted}` }));
+      let k = 0;
+      docx = convertDocx(bytes, { profile: currentProfile(), picture: () => pics[k++] ?? null }).docx;
+    }
     if (result.equations.length === 0) {
       ui.set({ busy: false });
       notify(`No MathType equations found in ${baseName(source)}`);
@@ -125,6 +134,20 @@ function pickFile(): Promise<File | null> {
   });
 }
 
+/** Classic pictures for the converted equations, in order (skipped ones have none). */
+async function renderAll(equations: ConvertedEquation[], progress?: (done: number) => void): Promise<PictureData[]> {
+  const { renderPicture } = await import("./render");
+  const size = useApp.getState().equationSizePt;
+  const out: PictureData[] = [];
+  for (const e of equations) {
+    if (e.status !== "converted" || !e.latex) continue;
+    const p = await renderPicture(e.latex, e.display, size);
+    out.push({ svg: p.svg, png: p.png, widthPt: p.widthPt, heightPt: p.heightPt, depthPt: p.depthPt });
+    if (progress && out.length % 10 === 0) progress(out.length);
+  }
+  return out;
+}
+
 // ------------------------------------------------------------------ in the open Word document
 
 const PAGE = 15;
@@ -135,7 +158,12 @@ async function convertParagraphs(paragraphs: MathTypeParagraph[], equations: Con
   const profile = currentProfile();
   const items: MathTypeParagraph[] = [];
   for (const p of paragraphs) {
-    const r = convertFlatOpc(p.flatOpc, { profile });
+    let r = convertFlatOpc(p.flatOpc, { profile });
+    if (useApp.getState().look === "classic" && r.flatOpc) {
+      const pics = await renderAll(r.equations);
+      let k = 0;
+      r = convertFlatOpc(p.flatOpc, { profile, picture: () => pics[k++] ?? null });
+    }
     for (const e of r.equations) equations.push({ ...e, index: equations.length + 1 });
     if (r.flatOpc) items.push({ ...p, flatOpc: r.flatOpc });
   }

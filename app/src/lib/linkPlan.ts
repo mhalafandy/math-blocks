@@ -1,5 +1,6 @@
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { readOmml, toOmml, type StyleProfile } from "@mathblocks/math-omml";
+import { readEquationXml } from "./readEquation";
 
 /**
  * Pure decisions for linked equations, separated from Word I/O so they can be tested.
@@ -9,9 +10,9 @@ import { readOmml, toOmml, type StyleProfile } from "@mathblocks/math-omml";
  */
 
 /** Normalised content of an equation as it is in Word (null if it cannot be read). */
-export function contentOfWord(flatOpc: string): { latex: string; display: boolean } | null {
-  const r = readOmml(flatOpc);
-  return r ? { latex: serializeLatex(r.root), display: r.display } : null;
+export function contentOfWord(flatOpc: string): { latex: string; display: boolean; kind: "native" | "picture"; numbered?: boolean } | null {
+  const r = readEquationXml(flatOpc);
+  return r ? { latex: serializeLatex(r.root), display: r.display, kind: r.kind, ...(r.numbered ? { numbered: true } : {}) } : null;
 }
 
 /** Normalised content Word would hold after we write `latex` with this profile. */
@@ -28,11 +29,11 @@ export interface InstanceContent {
 
 export interface UpdatePlan {
   /** Copies to replace with the new version, with their own display/inline mode. */
-  update: { tag: string; display: boolean }[];
+  update: { tag: string; display: boolean; kind?: "native" | "picture"; numbered?: boolean }[];
   /** Copies already showing the new version. */
   unchanged: string[];
   /** Copies changed directly in Word (neither the previous nor the new version): ask first. */
-  conflicts: { tag: string; display: boolean }[];
+  conflicts: { tag: string; display: boolean; kind?: "native" | "picture"; numbered?: boolean }[];
 }
 
 /**
@@ -42,14 +43,18 @@ export interface UpdatePlan {
  */
 export function planUpdate(instances: InstanceContent[], previousLatex: string | null, newLatex: string, profiles: StyleProfile[]): UpdatePlan {
   const plan: UpdatePlan = { update: [], unchanged: [], conflicts: [] };
-  const expectNew = new Set(profiles.map((p) => contentOfLatex(newLatex, p)));
-  const expectOld = previousLatex === null ? null : new Set(profiles.map((p) => contentOfLatex(previousLatex, p)));
+  // Pictures keep their LaTeX exactly; native equations go through Word's OMML.
+  const plain = (l: string) => serializeLatex(parseLatex(l).root);
+  const expectNew = new Set([plain(newLatex), ...profiles.map((p) => contentOfLatex(newLatex, p))]);
+  const expectOld = previousLatex === null ? null : new Set([plain(previousLatex), ...profiles.map((p) => contentOfLatex(previousLatex, p))]);
   for (const inst of instances) {
     const now = contentOfWord(inst.flatOpc);
     const display = now?.display ?? true;
+    const kind = now?.kind;
+    const extra = now?.numbered ? { numbered: true } : {};
     if (now && expectNew.has(now.latex)) plan.unchanged.push(inst.tag);
-    else if (!now || expectOld === null || expectOld.has(now.latex)) plan.update.push({ tag: inst.tag, display });
-    else plan.conflicts.push({ tag: inst.tag, display });
+    else if (!now || expectOld === null || expectOld.has(now.latex)) plan.update.push({ tag: inst.tag, display, kind, ...extra });
+    else plan.conflicts.push({ tag: inst.tag, display, kind, ...extra });
   }
   return plan;
 }

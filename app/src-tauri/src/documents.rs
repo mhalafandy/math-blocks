@@ -131,3 +131,33 @@ mod tests {
         assert_eq!(urlencoding_decode("C%3A%5CUsers%5CM.H.%20Al-Afandy%5Cd%C3%A9j%C3%A0.docx"), "C:\\Users\\M.H. Al-Afandy\\déjà.docx");
     }
 }
+
+/// Fonts the typesetting engine may read from Windows (Classic style: MathType's own fonts).
+const SYSTEM_FONTS: &[&str] = &["times.ttf", "timesi.ttf", "timesbd.ttf", "timesbi.ttf", "symbol.ttf", "mtextra.ttf"];
+
+/// Bytes of a system font by file name (whitelisted), from the Windows or per-user font folder.
+#[tauri::command]
+pub fn system_font(name: String) -> Result<tauri::ipc::Response, String> {
+    let lower = name.to_ascii_lowercase();
+    if !SYSTEM_FONTS.contains(&lower.as_str()) {
+        return Err(format!("Font {name} is not available to MathBlocks"));
+    }
+    let mut dirs: Vec<std::path::PathBuf> = Vec::new();
+    if let Ok(w) = std::env::var("WINDIR") {
+        dirs.push(Path::new(&w).join("Fonts"));
+    }
+    if let Ok(l) = std::env::var("LOCALAPPDATA") {
+        dirs.push(Path::new(&l).join("Microsoft").join("Windows").join("Fonts"));
+    }
+    dirs.push("/usr/share/fonts/truetype/msttcorefonts".into());
+    for d in dirs {
+        let Ok(entries) = std::fs::read_dir(&d) else { continue };
+        for e in entries.flatten() {
+            if e.file_name().to_string_lossy().to_ascii_lowercase() == lower {
+                let bytes = std::fs::read(e.path()).map_err(|err| err.to_string())?;
+                return Ok(tauri::ipc::Response::new(bytes));
+            }
+        }
+    }
+    Err(format!("Font {name} is not installed"))
+}

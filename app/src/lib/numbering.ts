@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { NumberedEquation } from "@mathblocks/connector-protocol";
 import { serializeLatex } from "@mathblocks/math-latex";
-import { readOmml } from "@mathblocks/math-omml";
+import { readEquationXml as readOmml } from "./readEquation";
 import { addinSupports, connector } from "./connector";
 import { buildInsertion, currentProfile } from "./equation";
 import { useApp } from "./store";
@@ -23,7 +23,7 @@ function requireAddin(method: string) {
 /** Puts an equation that is already in Word into its own numbered paragraph. */
 export async function numberInWord(tag: string, latex: string) {
   if (!requireAddin("numberEquation")) return null;
-  const { flatOpc } = buildInsertion(latex, false, currentProfile(), tag);
+  const { flatOpc } = await buildInsertion(latex, false, currentProfile(), tag, undefined, true);
   const style = useApp.getState().numberStyle;
   return connector.request("numberEquation", { tag, flatOpc, open: style.open, close: style.close, chapter: style.chapter }, SLOW);
 }
@@ -31,7 +31,7 @@ export async function numberInWord(tag: string, latex: string) {
 /** Removes an equation's number; it becomes a display (or inline) equation. */
 export async function unnumberInWord(tag: string, latex: string, display: boolean) {
   if (!requireAddin("unnumberEquation")) return null;
-  const { flatOpc } = buildInsertion(latex, display, currentProfile(), tag);
+  const { flatOpc } = await buildInsertion(latex, display, currentProfile(), tag);
   return connector.request("unnumberEquation", { tag, flatOpc }, SLOW);
 }
 

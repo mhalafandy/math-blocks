@@ -62,6 +62,16 @@ If something fails, attach `%LOCALAPPDATA%\MathBlocks\connector.log`.
 | F6 | In Word | Open a copy of a chapter in Word, ribbon **Convert MathType equations**: all convert; one Ctrl+Z brings them back | |
 | F7 | Double-click MathType | In an unconverted copy, double-click a MathType equation: choose **Convert and edit**: it opens in MathBlocks; Cancel opens MathType | |
 
+## Part I — Classic equations (build 0.1.32+)
+
+| # | Test | How | Result |
+|---|---|---|---|
+| I1 | Preview | Bottom panel **Word style**: "Classic" is selected; the preview shows your equation with Times New Roman and Symbol (no "stand-in font" note) | |
+| I2 | Insert | Type `f(\vec{\mathbf{r}})=\frac{-\mu}{r^2}\vec{\mathbf{r}}`, Send to Word: it looks like MathType | |
+| I3 | Numbered | Choose **Numbered**, Send: full size, (n) at the right margin | |
+| I4 | Edit | Double-click the equation in Word: it opens in MathBlocks; change it, Update in Word | |
+| I5 | Convert | In a copy of a chapter: ribbon **Convert MathType equations**: they now look like MathType but are MathBlocks equations | |
+
 ## Part G — Numbering and references (build 0.1.26+)
 
 Close Word completely after the update so the new ribbon buttons appear.

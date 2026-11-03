@@ -25,6 +25,11 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added (Classic equations)
+- `packages/math-render` typesetting engine; Classic style from MathType's own preferences
+  (read from MTEF) and fonts; Classic pictures in the app (insert, update, numbering, linked
+  copies, rename, MathType conversion), Word style tab with look, size and live preview.
+
 ### Added (M10)
 - Export: copy as PNG or MathML, save SVG/PNG (MathJax bundled, offline), Word document's
   equations as a LaTeX file.

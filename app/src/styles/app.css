@@ -538,3 +538,7 @@ kbd {
 .sym-uses li { display: flex; align-items: center; gap: 10px; }
 .sym-uses .sym-eq { flex: 1; min-width: 0; overflow-x: auto; }
 .sym-uses button { padding: 1px 8px; border-color: var(--border); font-size: 12px; }
+.classic-preview { padding: 12px; background: #fff; border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; }
+.classic-preview .hint { color: #666; }
+.classic-svg svg { display: block; margin: 0 auto; }
+.status-btn { padding: 0 6px; font: inherit; color: inherit; background: none; }

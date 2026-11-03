@@ -75,7 +75,7 @@ export function App() {
         if (!!editing.numbered !== numbered) {
           await setNumberOf(editing.tag, latex, numbered, display);
         } else {
-          const { flatOpc } = buildInsertion(latex, shape, profile, editing.tag);
+          const { flatOpc } = await buildInsertion(latex, shape, profile, editing.tag, undefined, display);
           const r = await connector.request("replaceEquation", { tag: editing.tag, flatOpc, undoLabel: "Update equation" });
           notify(r.found === 1 ? "Equation updated in Word" : `Updated, but found ${r.found} copies of its tag`);
         }
@@ -84,7 +84,7 @@ export function App() {
         notify(found === 1 ? `Inserted a linked copy of “${libEq.name}”` : `Inserted, but found ${found} copies of its tag`);
         void lib.markUsed(libEq.id);
       } else {
-        const { tag, flatOpc } = buildInsertion(latex, shape, profile);
+        const { tag, flatOpc } = await buildInsertion(latex, shape, profile, undefined, undefined, display);
         const r = await connector.request("insertEquation", { tag, flatOpc, display: shape, undoLabel: "Insert equation" });
         let numberText = "";
         if (numbered) numberText = (await numberInWord(tag, latex))?.number ?? "";
@@ -295,7 +295,9 @@ export function App() {
       <footer className="statusbar">
         <span className={eq.errors > 0 ? "bad" : "good"}>● {status}</span>
         <span>{s.display ? "Display" : "Inline"}</span>
-        <span>{profile.mathFont}</span>
+        <button className="status-btn" title="How equations go into Word (Word style tab)" onClick={() => s.setPrefs({ bottomOpen: true, bottomTab: "style" })}>
+          {s.look === "classic" ? `Classic ${s.equationSizePt} pt` : `Native · ${profile.mathFont}`}
+        </button>
         <div className="spacer" />
         {s.update.status === "downloading" && <span className="muted">Downloading update {s.update.newVersion}…</span>}
         {s.update.addin === "pendingWordClosed" && <span className="warn">Word add-in update waiting: close Word to finish</span>}

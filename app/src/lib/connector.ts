@@ -8,7 +8,7 @@ import {
   type RpcResponse,
 } from "@mathblocks/connector-protocol";
 import { serializeLatex } from "@mathblocks/math-latex";
-import { readOmml } from "@mathblocks/math-omml";
+import { readEquationXml as readOmml } from "./readEquation";
 import { useApp } from "./store";
 
 /** Requests the app relies on; an add-in without them is an old one still loaded in Word. */

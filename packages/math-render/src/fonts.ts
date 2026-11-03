@@ -1,3 +1,4 @@
+/// <reference path="./opentype.d.ts" />
 import * as opentype from "opentype.js";
 import type { Font, Glyph } from "opentype.js";
 

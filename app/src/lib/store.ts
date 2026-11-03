@@ -49,6 +49,10 @@ interface Prefs {
   /** Topic tab shown under the top palette; null = collapsed. */
   paletteTab: string | null;
   numberStyle: NumberStyle;
+  /** How equations go into Word: MathBlocks Classic pictures, or native Word equations. */
+  look: "classic" | "native";
+  /** Size of Classic equations in points (MathType's default: 12). */
+  equationSizePt: number;
 }
 
 export interface UpdateState {
@@ -121,6 +125,8 @@ const DEFAULT_PREFS: Prefs = {
   recents: [],
   paletteTab: "tab-spacecraft",
   numberStyle: { open: "(", close: ")", chapter: false },
+  look: "classic",
+  equationSizePt: 12,
 };
 
 function loadPrefs(): Prefs {

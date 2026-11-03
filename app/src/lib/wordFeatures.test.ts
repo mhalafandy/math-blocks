@@ -54,7 +54,7 @@ beforeEach(() => {
   word.confirm = true;
   const ole = mathTypeObject(mtef(line(ch(tf.vec, "F"), ch(tf.sym, "="), v("ma"))));
   word.paragraphs = Array.from({ length: 20 }, (_, i) => ({ start: i * 100, end: i * 100 + 50, objects: 1, flatOpc: flatOpcOf(numberedParagraph(1, `A.${i + 1}`), ole) }));
-  useApp.setState({ connector: { available: true, connected: true }, notice: null, editing: null, display: true, numbered: false });
+  useApp.setState({ connector: { available: true, connected: true }, notice: null, editing: null, display: true, numbered: false, look: "native" });
   conv.useConversion.setState({ busy: false, progress: null, report: null });
 });
 
@@ -119,7 +119,7 @@ describe("numbering", () => {
 
 describe("symbol index of the document", () => {
   it("renames a symbol in every equation that uses it, keeping each equation's tag and shape", async () => {
-    const { buildInsertion } = await import("./equation");
+    const { buildNativeInsertion: buildInsertion } = await import("./equation");
     const { TUNED_PROFILE } = await import("@mathblocks/math-omml");
     const mk = (latex: string, display: boolean, id: string) => {
       const tag = `mb1|-|${id}`;

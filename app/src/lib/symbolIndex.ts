@@ -1,6 +1,6 @@
 import type { MathNode, Row } from "@mathblocks/math-core";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
-import { readOmml } from "@mathblocks/math-omml";
+import { readEquationXml as readOmml } from "./readEquation";
 import { connector } from "./connector";
 import { buildInsertion, currentProfile } from "./equation";
 import { linkOf } from "./linkPlan";
@@ -20,6 +20,9 @@ export interface IndexedEquation {
   /** As it is in Word (numbered equations are inline math). */
   display: boolean;
   blockId: string | null;
+  /** Classic picture or native Word equation (kept when it is rewritten). */
+  kind?: "native" | "picture";
+  numbered?: boolean;
 }
 
 export interface IndexedSymbol {
@@ -71,7 +74,7 @@ export async function buildDocumentIndex(): Promise<DocumentIndex> {
   for (const i of doc.instances) {
     const read = i.flatOpc ? readOmml(i.flatOpc) : null;
     if (!read || !read.root.children.length) continue;
-    equations.push({ tag: i.tag, page: i.page, context: i.context, latex: serializeLatex(read.root), display: read.display, blockId: linkOf(i.tag)?.blockId ?? null });
+    equations.push({ tag: i.tag, page: i.page, context: i.context, latex: serializeLatex(read.root), display: read.display, blockId: linkOf(i.tag)?.blockId ?? null, kind: read.kind, numbered: read.numbered });
   }
   return { document: doc.fullName, name: doc.name, equations, symbols: indexEquations(equations) };
 }
@@ -89,7 +92,7 @@ export async function renameInDocument(index: DocumentIndex, key: string, to: st
   const blocks = new Set<string>();
   for (const eq of sym.equations) {
     if (eq.blockId) blocks.add(eq.blockId);
-    else items.push({ tag: eq.tag, flatOpc: buildInsertion(renameInLatex(eq.latex, renames), eq.display, profile, eq.tag).flatOpc });
+    else items.push({ tag: eq.tag, flatOpc: (await buildInsertion(renameInLatex(eq.latex, renames), eq.numbered ? false : eq.display, profile, eq.tag, eq.kind === "picture" ? "classic" : "native", eq.display)).flatOpc });
   }
   if (items.length) await connector.request("replaceMany", { document: index.document, items, undoLabel: `Rename ${key}` }, 120_000);
   let libraryEquations = 0;

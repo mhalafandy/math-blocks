@@ -97,7 +97,7 @@ beforeEach(async () => {
   word.confirm = true;
   useLibrary.setState({ store: null, equations: [], folders: [], open: null });
   await useLibrary.getState().init();
-  useApp.setState({ connector: { available: true, connected: true }, notice: null, editing: null, display: true });
+  useApp.setState({ connector: { available: true, connected: true }, notice: null, editing: null, display: true, look: "native" });
 });
 
 describe("linked equations", () => {
