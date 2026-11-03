@@ -25,6 +25,15 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed (user testing of 0.1.23, checklist E2/E3)
+- Equations whose math Word stores inside the content control (or behind bookmarks, tracked
+  changes) are read correctly: double-click opens the right equation; updating no longer fails
+  with "arrived empty".
+- Updating an equation removes the whole old equation, so no empty equation box is left behind.
+- Double-clicking a linked copy opens its library equation even when Word's copy cannot be read.
+- The "Editing from Word" banner moved below the toolbar; the toolbar no longer runs off-screen.
+- The Word add-in logs how the math sits in Word's XML (connector.log) for diagnosis.
+
 ### Added (M9)
 - MathType conversion: `packages/mathtype` reads OLE compound files and MTEF v5 (MathType 4–7),
   translates them to LaTeX/AST and converts a .docx: every MathType object becomes a native

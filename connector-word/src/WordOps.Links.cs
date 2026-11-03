@@ -149,12 +149,7 @@ namespace MathBlocks.WordConnector
                         missing.Add(tag);
                         continue;
                     }
-                    var cc = found[0];
-                    cc.LockContents = false;
-                    cc.LockContentControl = false;
-                    int at = Math.Max(0, cc.Range.Start - 1);
-                    cc.Delete(true);
-                    doc.Range(at, at).InsertXML(flatOpc);
+                    ReplaceControl(doc, found[0], flatOpc);
                     foreach (var c in FindByTag(doc, tag)) TryHide(c);
                     replaced++;
                 }

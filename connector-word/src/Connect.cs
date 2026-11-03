@@ -177,6 +177,7 @@ namespace MathBlocks.WordConnector
                     cancel = true;
                     var xml = cc.Range.WordOpenXML;
                     Log.Info("equationActivated " + tag + " (" + xml.Length + " chars, has math: " + xml.Contains("oMath") + ")");
+                    WordOps.LogMathStructure("equationActivated", xml);
                     SendRequest("equationActivated", new Dictionary<string, object> { ["tag"] = tag, ["flatOpc"] = xml });
                     return;
                 }

@@ -1,6 +1,6 @@
 import type { AccentKind, MathNode, MathVariant, MatrixKind, OperatorClass, Row, SpaceWidth } from "@mathblocks/math-core";
 import { ACCENT_CHARS, INTEGRALS, MATRIX_DELIMS, SPACE_CHARS } from "./writer";
-import { child, elements, findFirst, localName, parseXml, propVal, textContent, type XmlElement } from "./xmlparse";
+import { child, elements, localName, parseXml, propVal, textContent, type XmlElement } from "./xmlparse";
 
 /**
  * OMML → AST reader: turns Word's native equations back into the MathBlocks model, so that
@@ -21,17 +21,30 @@ export interface ReadResult {
 /** Reads the first equation found in an OMML fragment or a full WordprocessingML/Flat OPC document. */
 export function readOmml(xml: string): ReadResult | null {
   const doc = parseXml(xml);
-  const para = findFirst(doc, ["oMathPara"]);
-  const math = para ? undefined : findFirst(doc, ["oMath"]);
-  if (!para && !math) return null;
+  // Word may wrap the math in content controls, tracked changes, bookmarks… in either order
+  // (sdt > oMathPara > oMath, oMathPara > sdt > oMath, …): collect every outermost oMath.
+  const maths: XmlElement[] = [];
+  let display = false;
+  const walk = (el: XmlElement, inPara: boolean) => {
+    for (const c of elements(el)) {
+      const name = localName(c.name);
+      if (name === "oMath") {
+        maths.push(c);
+        if (inPara) display = true;
+      } else if (name !== "del" && name !== "moveFrom") walk(c, inPara || name === "oMathPara");
+    }
+  };
+  walk(doc, false);
+  if (maths.length === 0) return null;
   const r = new Reader();
-  let root: Row;
-  if (para) {
-    const maths = elements(para).filter((e) => localName(e.name) === "oMath");
-    root = row(maths.flatMap((m) => r.children(m)));
-  } else root = row(r.children(math!));
-  return { root, display: !!para, unknown: r.unknown };
+  const root = row(maths.flatMap((m) => r.children(m)));
+  return { root, display, unknown: r.unknown };
 }
+
+/** WordprocessingML wrappers that can appear inside math and are looked through. */
+const TRANSPARENT = new Set(["sdt", "sdtContent", "customXml", "smartTag", "ins", "moveTo", "hyperlink", "fldSimple", "oMathPara", "oMath"]);
+/** Elements without math content. */
+const IGNORED = new Set(["sdtPr", "sdtEndPr", "bookmarkStart", "bookmarkEnd", "proofErr", "permStart", "permEnd", "del", "moveFrom", "commentRangeStart", "commentRangeEnd", "lastRenderedPageBreak"]);
 
 const row = (children: MathNode[]): Row => ({ kind: "row", children });
 
@@ -97,8 +110,9 @@ class Reader {
     const out: MathNode[] = [];
     for (const c of elements(el)) {
       const name = localName(c.name);
-      if (name.endsWith("Pr") || name === "ctrlPr") continue;
-      out.push(...this.node(c));
+      if (name.endsWith("Pr") || name === "ctrlPr" || IGNORED.has(name)) continue;
+      if (TRANSPARENT.has(name)) out.push(...this.children(name === "sdt" ? child(c, "sdtContent") : c));
+      else out.push(...this.node(c));
     }
     return out;
   }

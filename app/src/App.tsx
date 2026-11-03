@@ -167,22 +167,6 @@ export function App() {
         >
           <PanelIcon side="right" />
         </button>
-        {s.editing && (
-          <span
-            className={s.editing.blockId ? "editing-pill linked" : "editing-pill"}
-            title={s.editing.blockId ? "A linked copy: saving updates every copy in your documents" : s.editing.adopted ? "Equation typed in Word, now managed by MathBlocks" : "MathBlocks equation from Word"}
-          >
-            {s.editing.blockId ? "Editing a linked equation" : "Editing equation from Word"}
-            {s.editing.blockId && (
-              <button className="pill-btn" title="Make this copy an ordinary equation that no longer follows the library" onClick={() => void unlinkEditing()}>
-                Unlink this copy
-              </button>
-            )}
-            <button className="icon-btn" title="Stop editing (next Send inserts a new equation)" onClick={() => s.setEditing(null)}>
-              ✕
-            </button>
-          </span>
-        )}
         <button
           className="primary"
           onClick={() => void insertIntoWord()}
@@ -203,6 +187,24 @@ export function App() {
 
         <main className="workspace" style={{ gridTemplateRows: s.bottomOpen ? `auto minmax(140px, 1fr) 4px ${s.bottomHeight}px` : "auto minmax(140px, 1fr) 0 auto" }}>
           <div>
+        {s.editing && (
+          <div
+            className={s.editing.blockId ? "editing-bar linked" : "editing-bar"}
+            title={s.editing.blockId ? "A linked copy: saving updates every copy in your documents" : s.editing.adopted ? "Equation typed in Word, now managed by MathBlocks" : "MathBlocks equation from Word"}
+          >
+            <span className="editing-label">{s.editing.blockId ? "Editing a linked equation from Word" : "Editing an equation from Word"}</span>
+            <span className="muted">{s.editing.blockId ? "Update everywhere (Ctrl+Enter) changes every copy" : "Update in Word (Ctrl+Enter) replaces it"}</span>
+            <div className="spacer" />
+            {s.editing.blockId && (
+              <button title="Make this copy an ordinary equation that no longer follows the library" onClick={() => void unlinkEditing()}>
+                Unlink this copy
+              </button>
+            )}
+            <button title="Stop editing (next Send inserts a new equation)" onClick={() => s.setEditing(null)}>
+              Stop editing
+            </button>
+          </div>
+        )}
             <NoticeBar />
             {s.paletteLocation === "top" && <PaletteTop />}
           </div>

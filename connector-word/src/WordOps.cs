@@ -102,12 +102,7 @@ namespace MathBlocks.WordConnector
             undo.StartCustomRecord(undoLabel);
             try
             {
-                cc.LockContents = false;
-                cc.LockContentControl = false;
-                // The control's start marker sits one character before its content.
-                int at = Math.Max(0, cc.Range.Start - 1);
-                cc.Delete(true);
-                doc.Range(at, at).InsertXML(flatOpc);
+                ReplaceControl(doc, cc, flatOpc);
             }
             catch (COMException ex)
             {
@@ -185,7 +180,9 @@ namespace MathBlocks.WordConnector
             var found = FindByTag(ActiveDocument(), tag);
             if (found.Count == 0) throw new RpcException(Rpc.NotFound, "No equation with tag " + tag);
             var cc = found[0];
-            return new Dictionary<string, object> { ["flatOpc"] = cc.Range.WordOpenXML, ["locked"] = cc.LockContents };
+            var xml = cc.Range.WordOpenXML;
+            LogMathStructure("readEquation " + tag, xml);
+            return new Dictionary<string, object> { ["flatOpc"] = xml, ["locked"] = cc.LockContents };
         }
 
         public Dictionary<string, object> DocumentInfo()
