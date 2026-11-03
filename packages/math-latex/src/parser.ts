@@ -702,10 +702,19 @@ function stopsBody(n: MathNode): boolean {
 }
 
 /** Applies a font variant to identifiers and numbers (recursively through groups). */
-function applyVariant(r: Row, variant: MathVariant) {
+function applyVariant(r: Row, variant: MathVariant, nested = false) {
   for (const c of r.children) {
-    if (c.kind === "ident" || c.kind === "number") c.variant = variant;
-    else if (c.kind === "row") applyVariant(c, variant);
-    else if (c.kind === "scripts") applyVariant(c.base, variant);
+    // Directly styled letters take the style; deeper ones keep a style they already have
+    // (\mathbf{\vec{r}} makes r bold, \mathbf{\mathrm{d}x} keeps d upright).
+    if (c.kind === "ident" || c.kind === "number") {
+      if (!nested || c.variant === undefined) c.variant = variant;
+    } else if (c.kind === "row") applyVariant(c, variant, nested);
+    else if (c.kind === "scripts") applyVariant(c.base, variant, nested);
+    else
+      for (const v of Object.values(c)) {
+        if (v && typeof v === "object" && (v as Row).kind === "row") applyVariant(v as Row, variant, true);
+        else if (Array.isArray(v))
+          for (const x of v.flat()) if (x && typeof x === "object" && (x as Row).kind === "row") applyVariant(x as Row, variant, true);
+      }
   }
 }
