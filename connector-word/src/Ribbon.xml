@@ -2,30 +2,33 @@
 <customUI xmlns="http://schemas.microsoft.com/office/2006/01/customui">
   <ribbon>
     <tabs>
-      <tab id="MathBlocksTab" label="MathBlocks">
+      <tab id="MathBlocksTab" label="MathBlocks" keytip="Q">
         <group id="MathBlocksMain" label="Equations">
-          <button id="mbOpenApp" label="Open MathBlocks" size="large" imageMso="EquationInsertGallery"
-                  screentip="Open the MathBlocks editor" onAction="OnOpenApp" />
-          <button id="mbSample" label="Insert test equation" imageMso="EquationProfessional"
+          <button id="mbOpenApp" keytip="O" label="Open MathBlocks" size="large" imageMso="EquationInsertGallery"
+                  screentip="Open the MathBlocks editor. In a document: Ctrl+Alt+M edits the equation at the cursor (or starts a new one) in the floating editor." onAction="OnOpenApp" />
+          <button id="mbSample" keytip="T" label="Insert test equation" imageMso="EquationProfessional"
                   screentip="Insert a sample equation without the app (connector self-test)" onAction="OnInsertSample" />
-          <toggleButton id="mbHighlight" label="Show linked equations" imageMso="HyperlinkInsert"
+          <toggleButton id="mbHighlight" keytip="K" label="Show linked equations" imageMso="HyperlinkInsert"
                   screentip="Frame equations that are linked to your MathBlocks library"
                   onAction="OnToggleHighlight" getPressed="GetHighlightPressed" />
-          <button id="mbStatus" label="Connection status" imageMso="Info"
+          <button id="mbStatus" keytip="S" label="Connection status" imageMso="Info"
                   screentip="Show whether Word is connected to the MathBlocks app" onAction="OnStatus" />
         </group>
         <group id="MathBlocksNumbering" label="Numbering">
-          <button id="mbNumber" label="Number equation" size="large" imageMso="Numbering"
+          <button id="mbNumber" keytip="N" label="Number equation" size="large" imageMso="Numbering"
                   screentip="Give the selected MathBlocks equation a number (or remove it)" onAction="OnNumberEquation" />
-          <button id="mbReference" label="Insert reference" imageMso="CrossReferenceInsert"
+          <button id="mbReference" keytip="R" label="Insert reference" imageMso="CrossReferenceInsert"
                   screentip="Insert a reference to a numbered equation at the cursor" onAction="OnInsertReference" />
-          <button id="mbUpdateNumbers" label="Update numbers" imageMso="Refresh"
+          <button id="mbUpdateNumbers" keytip="U" label="Update numbers" imageMso="Refresh"
                   screentip="Renumber equations and update references to them" onAction="OnUpdateNumbers" />
         </group>
-        <group id="MathBlocksMathType" label="MathType">
-          <button id="mbConvertMathType" label="Convert MathType equations" size="large" imageMso="EquationProfessional"
+        <group id="MathBlocksMathType" label="Convert">
+          <button id="mbConvertMathType" keytip="C" label="Convert MathType equations" size="large" imageMso="EquationProfessional"
                   screentip="Turn this document's MathType equations into native, editable MathBlocks equations (one undo step)"
                   onAction="OnConvertMathType" />
+          <button id="mbConvertLatex" keytip="L" label="Convert LaTeX" size="large" imageMso="EquationInsertGallery"
+                  screentip="Turn LaTeX written in the text ($…$, $$…$$, \(…\), \[…\]) into MathBlocks equations (one undo step). Ctrl+Alt+L converts just the one at the cursor."
+                  onAction="OnConvertLatex" />
         </group>
       </tab>
     </tabs>

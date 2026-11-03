@@ -53,6 +53,7 @@ export function App() {
   useEffect(() => {
     void connector.start();
     void import("./lib/panel").then((m) => m.initPanelBridge()).catch(() => undefined);
+    void import("./lib/wordShortcuts").then((m) => m.initWordShortcuts()).catch(() => undefined);
     void useLibrary.getState().init();
     void startUpdates();
   }, []);
