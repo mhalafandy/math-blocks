@@ -1,5 +1,7 @@
 import { create } from "zustand";
-import { DEFAULT_FAVORITES, setSpacecraftNotation, type Convention, type VectorStyle as SpacecraftVector } from "./palette";
+import type { BoldScope } from "@mathblocks/math-core";
+import { DEFAULT_ACCENTS, type AccentRules } from "@mathblocks/math-render";
+import { DEFAULT_FAVORITES, setNotationRules, type Convention, type TransposeForm, type VectorStyle as SpacecraftVector } from "./palette";
 
 export type Theme = "system" | "light" | "dark";
 /** Tabs of the bottom panel under the equation canvas. */
@@ -56,6 +58,11 @@ interface Prefs {
   /** Spacecraft palette notation: textbook convention and how physical vectors are drawn. */
   spacecraftConvention: Convention;
   spacecraftVector: SpacecraftVector;
+  /** Style rules (Word style → Style rules): accents, bold, transpose. */
+  accentRules: AccentRules;
+  boldScope: BoldScope;
+  accentsFollowBold: boolean;
+  transposeForm: TransposeForm;
 }
 
 export interface UpdateState {
@@ -132,6 +139,10 @@ const DEFAULT_PREFS: Prefs = {
   equationSizePt: 12,
   spacecraftConvention: "hughes",
   spacecraftVector: "harpoon",
+  accentRules: DEFAULT_ACCENTS,
+  boldScope: "base",
+  accentsFollowBold: false,
+  transposeForm: "upright",
 };
 
 function loadPrefs(): Prefs {
@@ -188,5 +199,6 @@ export const useApp = create<AppState>((set, get) => ({
 }));
 
 // The palette's spacecraft entries follow the notation preference.
-setSpacecraftNotation(useApp.getState().spacecraftConvention, useApp.getState().spacecraftVector);
-useApp.subscribe((s) => setSpacecraftNotation(s.spacecraftConvention, s.spacecraftVector));
+const syncNotation = (s: Prefs) => setNotationRules(s.spacecraftConvention, s.spacecraftVector, s.transposeForm);
+syncNotation(useApp.getState());
+useApp.subscribe(syncNotation);

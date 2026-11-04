@@ -1,4 +1,5 @@
-import { parseLatex } from "@mathblocks/math-latex";
+import { isAllBold, setBold, type BoldScope } from "@mathblocks/math-core";
+import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { useEffect, useRef } from "react";
 import { MathfieldElement } from "mathlive";
 import { setLastEditor } from "../lib/focus";
@@ -134,13 +135,25 @@ function allBold(src: string): boolean {
 }
 
 /** Bold ↔ plain for a piece of LaTeX: all bold → plain; otherwise all becomes bold. */
-export function toggledBold(src: string): string {
-  if (allBold(src)) return stripBold(src);
-  src = stripBold(src);
-  // A vector or accented letter: bold goes on the letter (\vec{\mathbf{r}}), as in MathType.
-  const acc = ACCENT_CMD.exec(src);
-  if (acc && balanced(acc[2]!)) return `\\${acc[1]}{${toggledBold(acc[2]!)}}`;
-  return `\\${GREEK_ONLY.test(src) ? "boldsymbol" : "mathbf"}{${src}}`;
+/** The last toggle, so toggling the result again restores exactly what was there. */
+let lastToggle: { original: string; result: string } | null = null;
+
+/**
+ * Bold on/off (Ctrl+Shift+B), as MathType does it: only the base letters become bold (𝐱₁, not
+ * 𝐱₁ with a bold 1; harpoon and other accents keep their weight); Greek letters use \boldsymbol.
+ * The scope comes from Word style → Style rules. Works on the parsed equation, not on text.
+ */
+export function toggledBold(src: string, scope: BoldScope = useApp.getState().boldScope): string {
+  if (lastToggle && lastToggle.result === src) {
+    const original = lastToggle.original;
+    lastToggle = null;
+    return original;
+  }
+  const root = parseLatex(src).root;
+  setBold(root, !isAllBold(root, scope), scope);
+  const result = serializeLatex(root);
+  lastToggle = { original: src, result };
+  return result;
 }
 
 function balanced(s: string) {

@@ -41,8 +41,38 @@ export interface PaletteGroup {
 import { SHORTCUT_TABLE } from "./editorShortcuts";
 import { DEFAULT_SNIPPETS } from "./snippets";
 
-const sym = (id: string, latex: string, glyph: string, name: string, keys = ""): PaletteItem => ({ id, latex, glyph, name, keys });
-const tpl = (id: string, latex: string, name: string, keys = ""): PaletteItem => ({ id, latex, name, keys });
+// ------------------------------------------------------------------ notation rules (transpose)
+
+/** How the transpose (and −T) is written; a style rule (Word style → Style rules). */
+export type TransposeForm = "upright" | "bold" | "italic" | "top";
+export const TRANSPOSE_FORMS: Record<TransposeForm, string> = {
+  upright: "Upright T (Aᵀ, regular weight)",
+  bold: "Bold T (MathType thesis form)",
+  italic: "Italic T",
+  top: "⊤",
+};
+const TRANSPOSE_MARK: Record<TransposeForm, string> = { upright: "\\mathrm{T}", bold: "\\mathbf{T}", italic: "T", top: "\\top" };
+
+/** Rewrites transpose superscripts (^{T}, ^{\mathbf{T}}, ^{\mathrm{T}}, ^{\top}, and −T) in the chosen form. */
+export function applyTranspose(latex: string, form: TransposeForm): string {
+  const mark = TRANSPOSE_MARK[form];
+  return latex.replace(/\^\{(-?)(?:T|\\mathbf\{T\}|\\mathrm\{T\}|\\mathit\{T\}|\\top)\}/g, (_, minus: string) => `^{${minus}${mark}}`);
+}
+
+/** Current rules; the app sets them from the preferences. */
+export const NOTATION: { transpose: TransposeForm } = { transpose: "upright" };
+
+/** Palette LaTeX after the notation rules. */
+const ruled = (latex: string) => applyTranspose(latex, NOTATION.transpose);
+
+function withRules(item: Omit<PaletteItem, "latex">, raw: string): PaletteItem {
+  const it = item as PaletteItem;
+  Object.defineProperty(it, "latex", { get: () => ruled(raw), enumerable: true });
+  return it;
+}
+
+const sym = (id: string, latex: string, glyph: string, name: string, keys = ""): PaletteItem => withRules({ id, glyph, name, keys }, latex);
+const tpl = (id: string, latex: string, name: string, keys = ""): PaletteItem => withRules({ id, name, keys }, latex);
 
 // ------------------------------------------------------------------ symbol groups (row 1)
 
@@ -427,6 +457,12 @@ export function setSpacecraftNotation(convention: Convention, vector: VectorStyl
   SPACECRAFT.vector = vector;
 }
 
+/** Applies the notation preferences to the palette (spacecraft convention, vector style, transpose). */
+export function setNotationRules(convention: Convention, vector: VectorStyle, transpose: TransposeForm) {
+  setSpacecraftNotation(convention, vector);
+  NOTATION.transpose = transpose;
+}
+
 /** A physical vector in the given style; Greek letters use \boldsymbol. */
 export function vectorLatex(x: string, style: VectorStyle): string {
   const bold = /^\\[a-zA-Z]+$/.test(x) ? `\\boldsymbol{${x}}` : `\\mathbf{${x}}`;
@@ -440,7 +476,7 @@ const expandV = (t: string, style: VectorStyle) => t.replace(/V\{([^{}]*)\}/g, (
 /** The LaTeX of a spacecraft entry for a convention and vector style. */
 export function conventionLatex(item: PaletteItem, convention: Convention, vector: VectorStyle): string {
   const c = item.conventions!;
-  return expandV(c[convention] ?? c.hughes ?? Object.values(c)[0]!, vector);
+  return ruled(expandV(c[convention] ?? c.hughes ?? Object.values(c)[0]!, vector));
 }
 
 /** Spacecraft entry whose LaTeX follows the current convention and vector style. */
@@ -498,7 +534,7 @@ const spacecraft: PaletteItem[] = [
   tpl("vecharp", "\\overrightharpoon{\\mathbf{#0}}", "Bold vector with harpoon", "vector harpoon rightharpoonup bold physical"),
   tpl("vectrixharpT", "\\overrightharpoon{\\mathbf{#0}}^{\\mathbf{T}}", "Vectrix transpose with harpoon", "vectrix frame harpoon transpose"),
   tpl("colmat", "\\mathbf{#0}", "Bold upright (column matrix)", "components bold matrix column mathbf"),
-  tpl("transpose", "#0^{\\mathbf{T}}", "Transpose (bold T)", "transpose T"),
+  tpl("transpose", "#0^{\\mathrm{T}}", "Transpose ᵀ", "transpose T"),
   tpl("colmatsub", "\\mathbf{#0}_{#?}", "Bold with subscript", "components index"),
   tpl("unitbold", "\\hat{\\mathbf{#0}}_{#?}", "Unit vector, bold (b̂₁)", "unit vector basis axis"),
   tpl("unitsub", "\\hat{#0}_{#?}", "Unit vector (ŝ₂)", "unit vector basis axis"),
@@ -573,8 +609,9 @@ const linalg: PaletteItem[] = [
   spacecraft.find((x) => x.id === "transpose")!,
   tpl("la-Tsf", "#0^{\\mathsf{T}}", "Transpose (sans-serif T)", "transpose"),
   tpl("la-inv", "#0^{-1}", "Inverse", "inverse"),
-  tpl("la-H", "#0^{\\mathsf{H}}", "Conjugate transpose", "hermitian adjoint conjugate transpose"),
-  tpl("la-invT", "#0^{-\\mathbf{T}}", "Inverse transpose", "inverse transpose"),
+  tpl("la-H", "#0^{\\mathrm{H}}", "Conjugate transpose", "hermitian adjoint conjugate transpose"),
+  tpl("la-invT", "#0^{-\\mathrm{T}}", "Inverse transpose", "inverse transpose"),
+  tpl("la-conj", "#0^{*}", "Complex conjugate", "conjugate star"),
   tpl("la-det", "\\det\\left(#0\\right)", "Determinant det", "determinant"),
   tpl("la-tr", "\\operatorname{tr}\\left(#0\\right)", "Trace", "trace"),
   tpl("la-rank", "\\operatorname{rank}\\left(#0\\right)", "Rank", "rank"),
