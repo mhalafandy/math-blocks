@@ -6,6 +6,8 @@ import { focusVisualEditor, MathEditor, toggleBold } from "./components/MathEdit
 import { newEquation, setWordUpdater } from "./lib/actions";
 import { handleEditorKey } from "./lib/editorKeys";
 import { openShortcuts, ShortcutsDialog } from "./components/ShortcutsDialog";
+import { onPasteImage, RecognitionDialog } from "./components/RecognitionDialog";
+import { SnippetsDialog } from "./components/SnippetsDialog";
 import { Sidebar } from "./components/Sidebar";
 import { HSplitter, Splitter } from "./components/Splitter";
 import { PaletteTop, SymbolPanel } from "./components/SymbolPalette";
@@ -161,6 +163,12 @@ export function App() {
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
   }, [insertIntoWord, focusLatex]);
+
+  // Pasting a picture of an equation recognises it.
+  useEffect(() => {
+    window.addEventListener("paste", onPasteImage, true);
+    return () => window.removeEventListener("paste", onPasteImage, true);
+  }, []);
 
   const status = eq.errors > 0 ? `${eq.errors} error${eq.errors > 1 ? "s" : ""}` : eq.diagnostics.length > 0 ? `${eq.diagnostics.length} warning(s)` : "Valid";
   const showRight = s.rightOpen && s.paletteLocation === "right";
@@ -342,6 +350,8 @@ export function App() {
       <TemplateDialog onSend={() => void insertIntoWord()} />
       <NotationDialog />
       <ShortcutsDialog />
+      <RecognitionDialog />
+      <SnippetsDialog />
       <ContextMenu />
       {s.toast && <div className={`toast ${s.toast.kind}`} role="status">{s.toast.text}</div>}
     </div>

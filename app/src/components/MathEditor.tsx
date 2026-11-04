@@ -21,7 +21,7 @@ export function focusedMathField(): MathfieldElement | null {
  * ("dx" becomes \mathrm{dx}). Its \differentialD atom is a proper upright differential d, so the
  * editor uses that internally while the rest of the app (and Word) sees standard \mathrm{d}.
  */
-const toMathLive = (latex: string) => latex.replace(/\\mathrm\{d\}/g, "\\differentialD ");
+export const toMathLive = (latex: string) => latex.replace(/\\mathrm\{d\}/g, "\\differentialD ");
 const fromMathLive = (latex: string) => latex.replace(/\\differentialD\b ?/g, "\\mathrm{d}");
 
 /** Empty slot, possibly wrapped in a style command (\bm{\placeholder{}}). */

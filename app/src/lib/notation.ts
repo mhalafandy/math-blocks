@@ -160,3 +160,33 @@ export function changeForm(latex: string, from: string, toTemplate: string, lett
   });
   return changed ? serializeLatex(root) : latex;
 }
+
+export interface Inconsistency {
+  /** The letter (LaTeX). */
+  letter: string;
+  /** Its decorated forms with counts, most used first. */
+  forms: { key: string; count: number }[];
+}
+
+/**
+ * Letters written in more than one decorated form across the equations (e.g. r⃗ ten times and
+ * 𝐫 twice) — usually a slip. Plain letters are not counted: a plain r is often the magnitude.
+ */
+export function findInconsistencies(latexes: string[]): Inconsistency[] {
+  const byLetter = new Map<string, Map<string, number>>();
+  for (const f of findForms(latexes)) {
+    for (const [letter, n] of f.letters) {
+      if (!byLetter.has(letter)) byLetter.set(letter, new Map());
+      byLetter.get(letter)!.set(f.key, (byLetter.get(letter)!.get(f.key) ?? 0) + n);
+    }
+  }
+  const out: Inconsistency[] = [];
+  for (const [letter, forms] of byLetter) {
+    if (forms.size < 2) continue;
+    out.push({ letter, forms: [...forms].map(([key, count]) => ({ key, count })).sort((a, b) => b.count - a.count) });
+  }
+  return out.sort((a, b) => b.forms.reduce((n, f) => n + f.count, 0) - a.forms.reduce((n, f) => n + f.count, 0));
+}
+
+/** The catalogue template of a form (null when it is not in the catalogue). */
+export const templateOf = (key: string) => CATALOG.find((f) => f.key === key)?.template ?? null;

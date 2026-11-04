@@ -199,6 +199,8 @@ export interface InstanceInfo {
   page: number;
   /** Text of the surrounding paragraph. */
   context: string;
+  /** Its equation number, e.g. "(2.3)", when it is numbered (not in light listings). */
+  number?: string | null;
   /** WordprocessingML of the equation, when requested (includeContent). */
   flatOpc?: string;
 }

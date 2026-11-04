@@ -62,6 +62,16 @@ If something fails, attach `%LOCALAPPDATA%\MathBlocks\connector.log`.
 | F6 | In Word | Open a copy of a chapter in Word, ribbon **Convert MathType equations**: all convert; one Ctrl+Z brings them back | |
 | F7 | Double-click MathType | In an unconverted copy, double-click a MathType equation: choose **Convert and edit**: it opens in MathBlocks; Cancel opens MathType | |
 
+## Part M — Recognition, snippets, consistency (build 0.1.43+)
+
+| # | Test | How | Result |
+|---|---|---|---|
+| M1 | API key | Ctrl+K → "Equation recognition settings", paste your Anthropic API key (console.anthropic.com → API keys), Save | |
+| M2 | Screenshot | Win+Shift+S a thesis equation (e.g. from a PDF), click into the editor, Ctrl+V: after a few seconds the LaTeX appears; is it right? Also try in the floating editor | |
+| M3 | Snippets | In the editor type `pdv` Tab, fill, Tab, fill; try `mat3`, `intab`, `skew`; Ctrl+K → Snippets: add your own | |
+| M4 | Consistency | In a test document write one vector as r⃗ and another as bold r; Ctrl+K → Change notation: "Written in more than one way" shows r; click "Make all …" | |
+| M5 | Numbers | Library tab → an equation with linked copies, and the Symbols tab → Index Word document: numbered equations show their number | |
+
 ## Part L — Writing faster (build 0.1.42+)
 
 | # | Test | How | Result |

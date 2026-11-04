@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CATALOG, changeForm, findForms, formLabel } from "./notation";
+import { CATALOG, changeForm, findForms, findInconsistencies, formLabel } from "./notation";
 
 const key = (label: string) => CATALOG.find((f) => f.label.startsWith(label))!.key;
 
@@ -29,5 +29,10 @@ describe("notation forms", () => {
   it("only the chosen letters; Greek letters get bold italic", () => {
     expect(changeForm("\\mathbf{r}+\\mathbf{A}", key("Bold  𝐫"), "\\vec{X}", new Set(["r"]))).toBe("\\vec{r}+\\mathbf{A}");
     expect(changeForm("\\vec{\\omega}", key("Arrow"), "\\mathbf{X}")).toBe("\\boldsymbol{\\omega}");
+  });
+
+  it("finds letters written in two notations", () => {
+    const inc = findInconsistencies(["\\vec{r}+\\vec{r}_i", "\\mathbf{r}\\cdot\\vec{v}", "r=|\\vec{r}|"]);
+    expect(inc).toEqual([{ letter: "r", forms: [{ key: "vec|", count: 3 }, { key: "bold", count: 1 }] }]);
   });
 });

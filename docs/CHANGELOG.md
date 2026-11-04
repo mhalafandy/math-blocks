@@ -25,6 +25,13 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added (recognition, snippets, consistency)
+- Equation from a screenshot: paste an image (main window or floating editor) or pick a file;
+  Claude turns it into LaTeX (your own Anthropic API key, kept locally).
+- Snippets: trigger + Tab (ddt, pdv, intab, mat3, skew, dyad, cases…), editable.
+- Notation consistency check with "Make all …" in the Change notation dialog.
+- Equation numbers shown in the linked-copies and symbol lists.
+
 ### Added (ease of writing)
 - MathType-style shortcuts in the equation editor (fraction, root, scripts, integral, sum,
   brackets, vector, hat, dots, bar, matrix, thin space, Ctrl+G Greek), autocorrect for arrows,

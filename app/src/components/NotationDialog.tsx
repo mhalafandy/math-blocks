@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { create } from "zustand";
 import { Modal } from "./Dialogs";
 import { MathPreview } from "./MathPreview";
-import { CATALOG, changeForm, findForms, formLabel, formLatex, type FormUse } from "../lib/notation";
+import { CATALOG, changeForm, findForms, findInconsistencies, formLabel, formLatex, templateOf, type FormUse, type Inconsistency } from "../lib/notation";
 import { buildDocumentIndex, rewriteDocument, type DocumentIndex } from "../lib/symbolIndex";
 import { useApp } from "../lib/store";
 
@@ -40,6 +40,7 @@ export function NotationDialog() {
 
   const latexes = useMemo(() => (index ? index.equations.map((e) => e.latex) : [useApp.getState().latex]), [index, open]);
   const forms = useMemo(() => findForms(latexes), [latexes]);
+  const inconsistent = useMemo(() => findInconsistencies(latexes), [latexes]);
   const current: FormUse | undefined = forms.find((f) => f.key === from) ?? forms[0];
   useEffect(() => {
     if (current && current.key !== from) {
@@ -81,6 +82,30 @@ export function NotationDialog() {
     }
   };
 
+  /** One letter, all its forms → the most used one. */
+  const fixLetter = async (inc: Inconsistency) => {
+    const target = templateOf(inc.forms[0]!.key);
+    if (!target) return;
+    const only = new Set([inc.letter]);
+    const transform = (l: string) => inc.forms.slice(1).reduce((acc, f) => changeForm(acc, f.key, target, only), l);
+    const notify = useApp.getState().notify;
+    setBusy(true);
+    try {
+      if (index) {
+        const r = await rewriteDocument(index, index.equations, transform, `Consistent ${inc.letter}`);
+        notify(`${inc.letter} is now written one way in ${r.equations} equation(s)${r.libraryEquations ? ` and ${r.libraryEquations} library equation(s)` : ""}`);
+        setIndex(await buildDocumentIndex());
+      } else {
+        const app = useApp.getState();
+        app.setLatex(transform(app.latex), "external");
+      }
+    } catch (e) {
+      notify(e instanceof Error ? e.message : String(e), "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const groups = [...new Set(CATALOG.map((f) => f.group))];
   return (
     <Modal title={index ? `Change notation in “${index.name}”` : "Change notation"} onClose={close} width={760}>
@@ -88,6 +113,32 @@ export function NotationDialog() {
         {loading && <p className="empty">Reading the document…</p>}
         {!loading && forms.length === 0 && (
           <p className="empty">{index ? "No vectors, dyadics or other decorated symbols found in this document's MathBlocks equations." : "The current equation has no decorated symbols. Start Word to change a whole document."}</p>
+        )}
+        {!loading && inconsistent.length > 0 && (
+          <div className="notation-inconsistent">
+            <h4>Written in more than one way</h4>
+            {inconsistent.map((inc) => {
+              const target = templateOf(inc.forms[0]!.key);
+              return (
+                <div key={inc.letter} className="notation-inc-row">
+                  {inc.forms.map((f) => (
+                    <span key={f.key} className="notation-inc-form">
+                      <MathPreview latex={templateOf(f.key) ? formLatex(templateOf(f.key)!, inc.letter, GREEK_CMD.test(inc.letter)) : inc.letter} />
+                      <span className="muted">
+                        {formLabel(f.key)} ×{f.count}
+                      </span>
+                    </span>
+                  ))}
+                  <div className="spacer" />
+                  {target && (
+                    <button disabled={busy} onClick={() => void fixLetter(inc)} title={`Write every ${inc.letter} as ${formLabel(inc.forms[0]!.key)}`}>
+                      Make all {formLabel(inc.forms[0]!.key).toLowerCase()}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
         {!loading && current && (
           <div className="notation-grid">

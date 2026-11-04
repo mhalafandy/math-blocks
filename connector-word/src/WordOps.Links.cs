@@ -92,7 +92,7 @@ namespace MathBlocks.WordConnector
                         if (blockFilter != null && tag.Split('|')[1] != blockFilter) continue;
                         var item = light
                             ? new Dictionary<string, object> { ["tag"] = tag, ["page"] = 0, ["context"] = "" }
-                            : new Dictionary<string, object> { ["tag"] = tag, ["page"] = PageOf(cc), ["context"] = ContextOf(cc) };
+                            : new Dictionary<string, object> { ["tag"] = tag, ["page"] = PageOf(cc), ["context"] = ContextOf(cc), ["number"] = NumberInfo(cc)?["number"] };
                         if (includeContent) item["flatOpc"] = cc.Range.WordOpenXML;
                         items.Add(item);
                     }

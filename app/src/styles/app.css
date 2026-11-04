@@ -611,3 +611,15 @@ html.panel-window, html.panel-window body, html.panel-window #root { height: aut
 .panel-quick .glyph { font-family: "Latin Modern Math", "Cambria Math", serif; }
 .panel-quick .math-preview { font-size: 12px; }
 .panel-latex-hint { display: flex; gap: 10px; align-items: center; padding: 6px 10px; font-size: 12px; color: var(--text-2); }
+
+/* Snippets editor */
+.snippets { display: flex; flex-direction: column; gap: 4px; max-height: 55vh; overflow: auto; }
+.snippet-row { display: grid; grid-template-columns: 110px 1fr 160px 28px; gap: 8px; align-items: center; }
+.snippet-row input { font-family: var(--font-mono); font-size: 12.5px; }
+.snippet-preview { overflow: hidden; white-space: nowrap; font-size: 14px; }
+.notation-inconsistent { border: 1px solid color-mix(in srgb, var(--warn) 50%, var(--border)); background: color-mix(in srgb, var(--warn) 7%, transparent); border-radius: 8px; padding: 8px 10px; }
+.notation-inc-row { display: flex; align-items: center; gap: 14px; padding: 3px 0; font-size: 12.5px; }
+.notation-inc-form { display: inline-flex; align-items: center; gap: 6px; }
+.notation-inc-form .math-preview { font-size: 16px; }
+.notation-inc-row button { padding: 2px 10px; border-color: var(--border); }
+.eq-number { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 600; margin-right: 6px; white-space: nowrap; }
