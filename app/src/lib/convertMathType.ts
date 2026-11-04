@@ -1,3 +1,4 @@
+import { backupIfMany } from "./docOps";
 import { create } from "zustand";
 import type { ConvertResult } from "@mathblocks/mathtype";
 import type { ConvertedEquation, PictureData } from "@mathblocks/mathtype";
@@ -211,6 +212,7 @@ export async function convertOpenDocument(document?: string) {
       page = await connector.request("listMathTypeParagraphs", { document: first.fullName, from, limit: PAGE }, SLOW);
     }
     ui.set({ progress: `Writing ${items.length} paragraph(s) into Word…` });
+    await backupIfMany(first.fullName, items.length);
     const r = items.length ? await connector.request("replaceParagraphs", { document: first.fullName, items, undoLabel: "Convert MathType equations" }, 600_000) : { replaced: 0, skipped: 0 };
     if (r.skipped) {
       app.notify(`${r.skipped} paragraph(s) changed while converting and were left as they were`, "error");

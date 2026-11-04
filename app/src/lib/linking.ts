@@ -18,9 +18,13 @@ import { useApp } from "./store";
 const wordReady = () => useApp.getState().connector.connected;
 const profilesFor = () => [currentProfile(), TUNED_PROFILE, WORD_DEFAULT_PROFILE];
 
-async function readRegistry(document: string): Promise<Registry> {
-  const r = await connector.request("getRegistry", { document });
+export async function readRegistry(document?: string): Promise<Registry> {
+  const r = await connector.request("getRegistry", document ? { document } : {});
   return parseRegistry(r.xml);
+}
+
+export async function writeRegistry(document: string | undefined, registry: Registry) {
+  await connector.request("setRegistry", { ...(document ? { document } : {}), xml: serializeRegistry(registry) });
 }
 
 async function writeBlock(document: string, q: Equation, reg?: Registry) {

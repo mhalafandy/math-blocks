@@ -42,7 +42,7 @@ export function useCompiledEquation(): CompiledEquation {
       diagnostics,
       errors: diagnostics.filter((d) => d.severity === "error").length,
       nodeCount: countNodes(root) - 1,
-      omml: toOmml(root, { display, profile, standalone: true }),
+      omml: toOmml(root, { display, profile, standalone: true, notation: useApp.getState().notationProfile }),
     };
   }, [latex, display, profile]);
 }
@@ -51,7 +51,7 @@ export function useCompiledEquation(): CompiledEquation {
 export function buildNativeInsertion(latex: string, display: boolean, profile: StyleProfile, existingTag?: string) {
   const { root } = parseLatex(latex);
   const tag = existingTag ?? formatTag({ blockId: null, instanceId: newInstanceId() });
-  const omml = toOmml(root, { display, profile });
+  const omml = toOmml(root, { display, profile, notation: useApp.getState().notationProfile });
   return { tag, flatOpc: flatOpc([paragraph(contentControl(omml, { tag, title: "MathBlocks equation" }))]) };
 }
 

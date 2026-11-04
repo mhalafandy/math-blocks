@@ -21,9 +21,21 @@ export interface RegistryBlock {
   display: boolean;
 }
 
+/**
+ * Source of a native Word equation that uses notation kinds (Word's equations cannot hold
+ * \pvec): its LaTeX and a hash of its content as written, to notice edits made in Word.
+ */
+export interface RegistrySource {
+  /** Instance id (from the content-control tag). */
+  id: string;
+  latex: string;
+  hash: string;
+}
+
 export interface Registry {
   docId: string;
   blocks: Record<string, RegistryBlock>;
+  sources?: Record<string, RegistrySource>;
 }
 
 const local = (n: string) => n.slice(n.indexOf(":") + 1);
@@ -52,6 +64,10 @@ export function parseRegistry(xml: string | null | undefined): Registry {
 }
 
 function readBlock(b: XmlElement, reg: Registry) {
+  if (local(b.name) === "source" && b.attrs.id) {
+    (reg.sources ??= {})[b.attrs.id] = { id: b.attrs.id, latex: text(b), hash: b.attrs.hash ?? "" };
+    return;
+  }
   if (local(b.name) !== "block" || !b.attrs.id) return;
   const latexEl = kids(b).find((e) => local(e.name) === "latex");
   reg.blocks[b.attrs.id] = {
@@ -72,5 +88,9 @@ export function serializeRegistry(reg: Registry): string {
         `<mb:latex>${escapeXml(b.latex)}</mb:latex></mb:block>`,
     )
     .join("");
-  return `<?xml version="1.0" encoding="UTF-8"?><mb:registry xmlns:mb="${REGISTRY_NS}" schemaVersion="1" docId="${escapeXml(reg.docId)}">${blocks}</mb:registry>`;
+  const sources = Object.values(reg.sources ?? {})
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .map((s) => `<mb:source id="${escapeXml(s.id)}" hash="${escapeXml(s.hash)}">${escapeXml(s.latex)}</mb:source>`)
+    .join("");
+  return `<?xml version="1.0" encoding="UTF-8"?><mb:registry xmlns:mb="${REGISTRY_NS}" schemaVersion="1" docId="${escapeXml(reg.docId)}">${blocks}${sources}</mb:registry>`;
 }

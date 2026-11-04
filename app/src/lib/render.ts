@@ -1,5 +1,6 @@
 import { parseLatex } from "@mathblocks/math-latex";
-import { CLASSIC, loadFont, renderEmf, renderSvg, type FontSet, type RenderResult } from "@mathblocks/math-render";
+import { CLASSIC, loadFont, renderEmf, renderSvg, type FontSet, type RenderResult, type RenderStyle } from "@mathblocks/math-render";
+import { useApp } from "./store";
 import stixUrl from "@fontsource/stix-two-math/files/stix-two-math-latin-400-normal.woff?url";
 import { isDesktop } from "./connector";
 
@@ -83,9 +84,17 @@ async function rasterise(r: RenderResult): Promise<Uint8Array> {
   return new Uint8Array(await blob.arrayBuffer());
 }
 
+/** Classic style with the user's accent rules (Word style → Accents). */
+export function classicStyle(): RenderStyle {
+  return { ...CLASSIC, accents: useApp.getState().accentRules ?? CLASSIC.accents };
+}
+
+/** Notation profile of the current document/thesis. */
+export const notationProfile = () => useApp.getState().notationProfile;
+
 export async function renderPicture(latex: string, display: boolean, sizePt: number, mode: PictureMode = display ? "display" : "inline", withPng = false): Promise<Picture> {
   const fonts = await loadFonts();
-  const r = renderSvg(parseLatex(latex).root, { fonts, style: CLASSIC, display, sizePt });
+  const r = renderSvg(parseLatex(latex).root, { fonts, style: classicStyle(), display, sizePt, notation: notationProfile() });
   const source: PictureSource = { latex, mode, style: CLASSIC.id, sizePt };
   const emf = renderEmf(r, { comment: JSON.stringify(source) });
   const png = withPng ? await rasterise(r) : new Uint8Array();

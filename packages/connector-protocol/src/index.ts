@@ -220,6 +220,12 @@ export interface AppToConnector {
   };
   /** Replaces several equations (by tag) in one undo step. */
   replaceMany: { params: DocTarget & { items: { tag: string; flatOpc: string }[]; undoLabel: string }; result: { replaced: number; missing: string[] } };
+  /** Whole-document backup (Flat OPC .xml in %LOCALAPPDATA%\MathBlocks\backups). */
+  backupDocument: { params: DocTarget; result: { path: string } };
+  /** Opens one undo record and a progress window owned by Word (document blocked). */
+  beginOperation: { params: DocTarget & { title: string; total: number; undoLabel: string }; result: { ok: true } };
+  operationProgress: { params: { done: number; text?: string }; result: { cancelled: boolean } };
+  endOperation: { params: { done: number }; result: { ms: number } };
   retag: { params: DocTarget & { tag: string; newTag: string }; result: { found: number } };
   selectInstance: { params: DocTarget & { tag: string }; result: { found: number } };
   /** The document's MathBlocks registry (Custom XML Part), or null. */

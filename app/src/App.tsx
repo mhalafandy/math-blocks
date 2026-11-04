@@ -86,6 +86,7 @@ export function App() {
         } else {
           const { flatOpc } = await buildInsertion(latex, shape, profile, editing.tag, undefined, display);
           const r = await connector.request("replaceEquation", { tag: editing.tag, flatOpc, undoLabel: "Update equation" });
+          if (useApp.getState().look === "native") void import("./lib/nativeSources").then((m) => m.recordNativeSources(undefined, [{ tag: editing.tag, latex }]));
           notify(r.found === 1 ? "Equation updated in Word" : `Updated, but found ${r.found} copies of its tag`);
         }
       } else if (libEq && !dirty) {
@@ -95,6 +96,7 @@ export function App() {
       } else {
         const { tag, flatOpc } = await buildInsertion(latex, shape, profile, undefined, undefined, display);
         const r = await connector.request("insertEquation", { tag, flatOpc, display: shape, undoLabel: "Insert equation" });
+        if (useApp.getState().look === "native") void import("./lib/nativeSources").then((m) => m.recordNativeSources(undefined, [{ tag, latex }]));
         let numberText = "";
         if (numbered) numberText = (await numberInWord(tag, latex))?.number ?? "";
         notify(

@@ -1,5 +1,5 @@
-import { DEFAULT_PROFILE, kindNewcommand, KINDS, macroClashes, MBBOLD_DEFINITION, styleOf, type NotationProfile } from "@mathblocks/math-core";
-import { serializeLatex } from "@mathblocks/math-latex";
+import { DEFAULT_PROFILE, expandNotation, kindNewcommand, KINDS, macroClashes, MBBOLD_DEFINITION, styleOf, type NotationProfile } from "@mathblocks/math-core";
+import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { convertLatexToMathMl } from "mathlive/ssr";
 import { isDesktop } from "./connector";
 import { useApp } from "./store";
@@ -12,6 +12,17 @@ import { useApp } from "./store";
 
 /** LaTeX as MathJax understands it (MathBlocks dialect → standard LaTeX). */
 export function toStandardLatex(latex: string) {
+  return standardDialect(latex);
+}
+
+/** For MathJax/MathML: also draws notation kinds in the profile's style (MathJax has no \\pvec). */
+function forMathJax(latex: string) {
+  const std = standardDialect(latex);
+  if (!/\\(pvec|uvec|bvec|vectrix|cmat|mat|dcm|crossmat|dyadic|tens|quat|frm|body|T|diff)(?![a-zA-Z])/.test(std)) return std;
+  return serializeLatex(expandNotation(parseLatex(std).root, useApp.getState().notationProfile));
+}
+
+function standardDialect(latex: string) {
   return latex.replace(/\\placeholder(\[[^\]]*\])?\{\}/g, "\\square").replace(/\\differentialD/g, "\\mathrm{d}").replace(/\\exponentialE/g, "\\mathrm{e}").replace(/\\imaginaryI/g, "\\mathrm{i}").replace(/\\imaginaryJ/g, "\\mathrm{j}");
 }
 
@@ -62,7 +73,7 @@ function loadMathJax(): Promise<MathJaxApi> {
 /** Self-contained SVG of the equation (black, transparent background). */
 export async function equationSvg(latex: string, display: boolean): Promise<string> {
   const mj = await loadMathJax();
-  const node = await mj.tex2svgPromise(toStandardLatex(latex), { display });
+  const node = await mj.tex2svgPromise(forMathJax(latex), { display });
   const svg = node.querySelector("svg");
   if (!svg) throw new Error("MathJax produced no SVG");
   svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
@@ -101,7 +112,7 @@ export async function equationPng(latex: string, display: boolean, scale = 4): P
 }
 
 export function equationMathMl(latex: string, display: boolean) {
-  const inner = convertLatexToMathMl(toStandardLatex(latex));
+  const inner = convertLatexToMathMl(forMathJax(latex));
   return `<math xmlns="http://www.w3.org/1998/Math/MathML"${display ? ' display="block"' : ""}>${inner}</math>`;
 }
 

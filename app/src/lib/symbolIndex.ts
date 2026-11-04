@@ -2,6 +2,10 @@ import type { MathNode, Row } from "@mathblocks/math-core";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { readEquationXml as readOmml } from "./readEquation";
 import { connector } from "./connector";
+import { parseTag } from "@mathblocks/ooxml";
+import { readRegistry } from "./linking";
+import { recordNativeSources, wordHash } from "./nativeSources";
+import { BACKUP_ABOVE, describeOperation, replaceInDocument, type ReplaceItem } from "./docOps";
 import { buildInsertion, currentProfile } from "./equation";
 import { linkOf } from "./linkPlan";
 import { listSymbols, renameInLatex } from "./symbols";
@@ -25,6 +29,10 @@ export interface IndexedEquation {
   numbered?: boolean;
   /** Its number in the document, e.g. "(2.3)". */
   number?: string | null;
+  /** Its XML as read (restored if a document-wide change is cancelled). */
+  flatOpc?: string;
+  /** Native equation edited in Word since MathBlocks wrote it (its kinds are not in Word's version). */
+  editedInWord?: boolean;
 }
 
 export interface IndexedSymbol {
@@ -73,10 +81,19 @@ export async function buildDocumentIndex(): Promise<DocumentIndex> {
   const doc = r.documents[0];
   if (!doc) throw new Error("No document is open in Word");
   const equations: IndexedEquation[] = [];
+  const sources = await readRegistry(doc.fullName).then((r) => r.sources).catch(() => undefined);
   for (const i of doc.instances) {
     const read = i.flatOpc ? readOmml(i.flatOpc) : null;
     if (!read || !read.root.children.length) continue;
-    equations.push({ tag: i.tag, page: i.page, context: i.context, latex: serializeLatex(read.root), display: read.display, blockId: linkOf(i.tag)?.blockId ?? null, kind: read.kind, numbered: read.numbered, number: i.number ?? null });
+    let latex = serializeLatex(read.root);
+    let editedInWord = false;
+    const id = parseTag(i.tag)?.instanceId;
+    const src = id ? sources?.[id] : undefined;
+    if (src && read.kind === "native") {
+      if (wordHash(i.flatOpc!) === src.hash) latex = src.latex;
+      else editedInWord = true;
+    }
+    equations.push({ tag: i.tag, page: i.page, context: i.context, latex, display: read.display, blockId: linkOf(i.tag)?.blockId ?? null, kind: read.kind, numbered: read.numbered, number: i.number ?? null, flatOpc: i.flatOpc ?? undefined, editedInWord });
   }
   return { document: doc.fullName, name: doc.name, equations, symbols: indexEquations(equations) };
 }
@@ -102,20 +119,31 @@ export async function rewriteDocument(
   equations: IndexedEquation[],
   transform: (latex: string) => string,
   undoLabel: string,
-): Promise<{ equations: number; libraryEquations: number }> {
+): Promise<{ equations: number; libraryEquations: number; note: string }> {
   const profile = currentProfile();
-  const items: { tag: string; flatOpc: string }[] = [];
+  const items: ReplaceItem[] = [];
   const blocks = new Set<string>();
+  const skipped = equations.filter((e) => e.editedInWord && !e.blockId).length;
   for (const eq of equations) {
+    // Edited in Word: its kinds would be lost; listed, left alone until the user decides.
+    if (eq.editedInWord && !eq.blockId) continue;
     if (eq.blockId) {
       blocks.add(eq.blockId);
       continue;
     }
     const next = transform(eq.latex);
     if (next === eq.latex) continue;
-    items.push({ tag: eq.tag, flatOpc: (await buildInsertion(next, eq.numbered ? false : eq.display, profile, eq.tag, eq.kind === "picture" ? "classic" : "native", eq.display)).flatOpc });
+    items.push({ tag: eq.tag, flatOpc: (await buildInsertion(next, eq.numbered ? false : eq.display, profile, eq.tag, eq.kind === "picture" ? "classic" : "native", eq.display)).flatOpc, previous: eq.flatOpc });
   }
-  if (items.length) await connector.request("replaceMany", { document: index.document, items, undoLabel }, 300_000);
+  let note = "";
+  if (items.length) {
+    const op = await replaceInDocument({ document: index.document, title: undoLabel, undoLabel, items });
+    if (op.cancelled) throw new Error(describeOperation(op, undoLabel));
+    note = op.replaced > BACKUP_ABOVE ? ` ${describeOperation(op, "Done")}` : "";
+    const natives = items.map((it) => equations.find((e) => e.tag === it.tag)!).filter((e) => e.kind === "native");
+    if (natives.length) await recordNativeSources(index.document, natives.map((e) => ({ tag: e.tag, latex: transform(e.latex) })));
+  }
+  if (skipped) note += ` ${skipped} equation(s) edited directly in Word were left unchanged (double-click one to decide).`;
   let libraryEquations = 0;
   if (blocks.size) {
     const { useLibrary } = await import("./library/useLibrary");
@@ -132,7 +160,7 @@ export async function rewriteDocument(
     }
     await lib.refresh();
   }
-  return { equations: items.length, libraryEquations };
+  return { equations: items.length, libraryEquations, note };
 }
 
 export type DefinitionStatus = "defined" | "undefined" | "usedBefore";
