@@ -35,5 +35,5 @@ export const SHORTCUT_TABLE: ShortcutDef[] = [
   { keys: "Ctrl+Space", label: "Thin space", insert: "\\," },
   { keys: "Ctrl+Shift+Enter", label: "New derivation line (aligned at =, starts from the last right-hand side)" },
   { keys: "Ctrl+G, letter", label: "Greek letter (a α, b β, q θ, f φ, w ω, D Δ…)" },
-  { keys: "trigger + Tab", label: "Snippet: ddt, pdv, intab, mat3, col3, norm, inv, trans… (Ctrl+K → Snippets)" },
+  { keys: "trigger + Tab", label: "Snippet: ddt, pdv, intab, mat3, col3, norm, inv, trans…; notation kinds with a prefix: ;pv ;uv ;bv ;dc ;tp… (Ctrl+K → Snippets)" },
 ];

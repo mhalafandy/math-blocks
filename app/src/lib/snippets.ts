@@ -12,15 +12,48 @@ export interface Snippet {
   name: string;
 }
 
-/** One snippet per notation kind (pv, uv, dc…): inserts the kind, drawn in the profile's style. */
-export const KIND_SNIPPETS: Snippet[] = KINDS.map((k) => ({
-  trigger: k.snippet,
-  latex: k.id === "T" ? "^{\\T}" : `\\${k.macro}${"{#?}".repeat(k.args)}`,
-  name: k.name,
-}));
+const PREFIX_KEY = "mathblocks.kindSnippetPrefix";
+/** Characters allowed as the kind-snippet prefix: never typed inside a product of variables. */
+export const PREFIX_CHARS = [";", ":", "'", "!", "."];
 
-export const DEFAULT_SNIPPETS: Snippet[] = [
-  ...KIND_SNIPPETS,
+/**
+ * Prefix of the notation-kind snippets (";pv", ";dc"…), so typing a product such as uv and
+ * pressing Tab to move to the next slot never turns it into a kind. A setting (Snippets dialog).
+ */
+export function kindSnippetPrefix(): string {
+  try {
+    const p = localStorage.getItem(PREFIX_KEY);
+    if (p !== null && (p === "" || PREFIX_CHARS.includes(p))) return p;
+  } catch {
+    // Default below.
+  }
+  return ";";
+}
+
+export function setKindSnippetPrefix(p: string) {
+  try {
+    localStorage.setItem(PREFIX_KEY, p);
+  } catch {
+    // Not saved.
+  }
+}
+
+/** One snippet per notation kind (;pv, ;uv, ;dc…): inserts the kind, drawn in the profile's style. */
+export function kindSnippets(prefix = kindSnippetPrefix()): Snippet[] {
+  return KINDS.map((k) => ({
+    trigger: prefix + k.snippet,
+    latex: k.id === "T" ? "^{\\T}" : `\\${k.macro}${"{#?}".repeat(k.args)}`,
+    name: k.name,
+  }));
+}
+
+const KIND_LATEX = new Set(kindSnippets("").map((s) => s.latex));
+const isKindSnippet = (s: Snippet) => KIND_LATEX.has(s.latex) && KINDS.some((k) => s.trigger.endsWith(k.snippet) && s.trigger.length <= k.snippet.length + 1);
+
+/** Triggers: letters and digits, optionally after one prefix character. */
+export const TRIGGER_RE = /^[;:'!.]?[A-Za-z0-9]+$/;
+
+export const BASE_SNIPPETS: Snippet[] = [
   { trigger: "ddt", latex: "\\frac{\\mathrm{d}#?}{\\mathrm{d}t}", name: "Time derivative d/dt" },
   { trigger: "d2dt", latex: "\\frac{\\mathrm{d}^{2}#?}{\\mathrm{d}t^{2}}", name: "Second time derivative" },
   { trigger: "dd", latex: "\\frac{\\mathrm{d}#?}{\\mathrm{d}#?}", name: "Derivative d/dx" },
@@ -45,22 +78,24 @@ export const DEFAULT_SNIPPETS: Snippet[] = [
 
 const KEY = "mathblocks.snippets.v1";
 
+export const DEFAULT_SNIPPETS: Snippet[] = [...kindSnippets(";"), ...BASE_SNIPPETS];
+
 export function loadSnippets(): Snippet[] {
+  const kinds = kindSnippets();
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const list = JSON.parse(raw) as Snippet[];
       if (Array.isArray(list)) {
-        const saved = list.filter((s) => s && typeof s.trigger === "string" && typeof s.latex === "string");
-        // Kind snippets added after the list was saved join it (the user's own entries win).
-        const have = new Set(saved.map((s) => s.trigger));
-        return [...saved, ...KIND_SNIPPETS.filter((k) => !have.has(k.trigger))];
+        // Kind snippets always follow the current prefix (saved copies, with or without a prefix, are replaced).
+        const saved = list.filter((s) => s && typeof s.trigger === "string" && typeof s.latex === "string" && !isKindSnippet(s));
+        return [...kinds, ...saved];
       }
     }
   } catch {
     // Defaults below.
   }
-  return DEFAULT_SNIPPETS;
+  return [...kinds, ...BASE_SNIPPETS];
 }
 
 export function saveSnippets(list: Snippet[]) {
@@ -76,7 +111,7 @@ export function saveSnippets(list: Snippet[]) {
  * `before(n)` returns the LaTeX of the last n characters before the cursor.
  */
 export function matchSnippet(before: (n: number) => string, list = loadSnippets()): Snippet | null {
-  const sorted = [...list].filter((s) => /^[A-Za-z0-9]+$/.test(s.trigger)).sort((a, b) => b.trigger.length - a.trigger.length);
+  const sorted = [...list].filter((s) => TRIGGER_RE.test(s.trigger)).sort((a, b) => b.trigger.length - a.trigger.length);
   for (const s of sorted) {
     if (before(s.trigger.length).replace(/\s+/g, "") === s.trigger) return s;
   }
