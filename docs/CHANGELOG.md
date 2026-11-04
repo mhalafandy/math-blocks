@@ -28,6 +28,8 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 ### Added (thesis tools, M11)
 - List of symbols (nomenclature) inserted into Word and regenerated in place, keeping descriptions.
 - Definition check (used before defined, never defined) and equation dependencies in the Symbols tab.
+- Thesis check across all chapter files (read from disk): notation, definitions, outdated linked
+  copies, unconverted MathType; list of symbols for the whole thesis.
 
 ### Added (recognition, snippets, consistency)
 - Equation from a screenshot: paste an image (main window or floating editor) or pick a file;

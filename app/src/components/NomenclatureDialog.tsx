@@ -4,7 +4,7 @@ import { Modal } from "./Dialogs";
 import { MathPreview } from "./MathPreview";
 import { connector } from "../lib/connector";
 import { currentProfile } from "../lib/equation";
-import { buildDocumentIndex, type DocumentIndex } from "../lib/symbolIndex";
+import { buildDocumentIndex, type DocumentIndex, type IndexedEquation, type IndexedSymbol } from "../lib/symbolIndex";
 import { buildNomenclaturePackage, loadExcluded, nomenclatureEntries, NOMENCLATURE_TAG, parseNomenclature, saveExcluded, type KeptDescription } from "../lib/nomenclature";
 import { useApp } from "../lib/store";
 
@@ -13,13 +13,25 @@ import { useApp } from "../lib/store";
  * cursor as a table, and regenerated in place later. Descriptions can be typed here or in Word;
  * both are kept when the list is updated.
  */
-export const useNomenclature = create<{ open: boolean; set: (o: boolean) => void }>((set) => ({ open: false, set: (open) => set({ open }) }));
-export const openNomenclature = () => useNomenclature.getState().set(true);
+/** A list made from several chapter files instead of the active document. */
+export interface ThesisSource {
+  name: string;
+  symbols: IndexedSymbol[];
+  where: (e: IndexedEquation) => string;
+}
+
+export const useNomenclature = create<{ open: boolean; thesis: ThesisSource | null; set: (o: boolean, thesis?: ThesisSource | null) => void }>((set) => ({
+  open: false,
+  thesis: null,
+  set: (open, thesis = null) => set({ open, thesis }),
+}));
+export const openNomenclature = (thesis?: ThesisSource) => useNomenclature.getState().set(true, thesis ?? null);
 
 const WHERE_PREF = "mathblocks.nomenclature.showWhere";
 
 export function NomenclatureDialog() {
   const open = useNomenclature((s) => s.open);
+  const thesis = useNomenclature((s) => s.thesis);
   const setOpen = useNomenclature((s) => s.set);
   const connected = useApp((s) => s.connector.connected);
   const [index, setIndex] = useState<DocumentIndex | null>(null);
@@ -45,8 +57,8 @@ export function NomenclatureDialog() {
     setLoading(true);
     (async () => {
       const idx = await buildDocumentIndex();
-      setIndex(idx);
-      setExcluded(loadExcluded(idx.document));
+      setIndex(thesis ? { ...idx, symbols: thesis.symbols, name: `${thesis.name} → ${idx.name}` } : idx);
+      setExcluded(loadExcluded(thesis ? `thesis:${thesis.name}` : idx.document));
       try {
         const r = await connector.request("readEquation", { tag: NOMENCLATURE_TAG });
         setKept(parseNomenclature(r.flatOpc));
@@ -58,9 +70,9 @@ export function NomenclatureDialog() {
     })()
       .catch((e: unknown) => useApp.getState().notify(e instanceof Error ? e.message : String(e), "error"))
       .finally(() => setLoading(false));
-  }, [open, connected]);
+  }, [open, connected, thesis]);
 
-  const entries = useMemo(() => (index ? nomenclatureEntries(index) : []), [index]);
+  const entries = useMemo(() => (index ? nomenclatureEntries(index, thesis?.where) : []), [index, thesis]);
   const shown = query.trim() ? entries.filter((e) => e.key.toLowerCase().includes(query.trim().toLowerCase()) || (edits[e.key] ?? kept.get(e.key)?.text ?? "").toLowerCase().includes(query.trim().toLowerCase())) : entries;
   const included = entries.filter((e) => !excluded.has(e.key));
   const described = included.filter((e) => (edits[e.key] ?? kept.get(e.key)?.text ?? "").trim()).length;
@@ -84,7 +96,7 @@ export function NomenclatureDialog() {
       const pkg = await buildNomenclaturePackage(included, descriptions, { look: app.look, profile: currentProfile(), sizePt: app.equationSizePt, showWhere });
       if (exists) await connector.request("replaceEquation", { tag: NOMENCLATURE_TAG, flatOpc: pkg, undoLabel: "Update list of symbols" }, 120_000);
       else await connector.request("insertEquation", { tag: NOMENCLATURE_TAG, flatOpc: pkg, display: true, undoLabel: "Insert list of symbols" }, 120_000);
-      saveExcluded(index.document, excluded);
+      saveExcluded(thesis ? `thesis:${thesis.name}` : index.document, excluded);
       notify(`${exists ? "Updated" : "Inserted"} the list of symbols: ${included.length} symbols${included.length - described ? `, ${included.length - described} still without a description` : ""}. One Ctrl+Z in Word undoes it.`);
       close();
     } catch (e) {
@@ -109,6 +121,7 @@ export function NomenclatureDialog() {
         {index && !loading && (
           <>
             <p className="hint">
+              {thesis ? `Symbols of all chapters of “${thesis.name}”, inserted into the active Word document. ` : ""}
               {exists ? "The document already has a list: it will be regenerated in place. " : "The list is inserted as a table at Word's cursor. "}
               Descriptions can be typed here or later in Word (they are kept when you update the list). Untick symbols that should not be listed (indices, dummy variables).
             </p>

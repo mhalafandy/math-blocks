@@ -72,6 +72,7 @@ Restart Word once after updating (new ribbon button).
 | N2 | Describe in Word | Type descriptions directly in the table in Word (try italic or a unit) | |
 | N3 | Update | Add an equation with a new symbol, press **List of symbols** again → **Update list in Word**: the new symbol appears, all descriptions (and their formatting) are still there; one Ctrl+Z undoes it | |
 | N4 | Definition check | Symbols tab → Index Word document: try the filters "Used before defined" / "Not defined by an equation" | |
+| N6 | Thesis check | Ctrl+K → "Thesis check…" → Add chapter files… (copies of 2–3 converted chapters) → Check all chapters: equation counts per chapter; any notation / definition differences listed with chapters; then "List of symbols for the whole thesis…" with the cursor in another document | |
 | N5 | Dependencies | Double-click an equation that uses a symbol defined earlier (e.g. v = …): the Symbols tab shows "This equation uses … from (2.3)" and Go to works | |
 
 ## Part M — Recognition, snippets, consistency (build 0.1.43+)
