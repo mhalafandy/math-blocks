@@ -1907,7 +1907,7 @@
   "omml": "full",
   "roundtrip": "full",
   "notes": [
-   "Classic: from STIX Two (not Times/Symbol): C (double-struck)"
+   "Classic: from STIX Two (not Times/Symbol): C[double-struck]"
   ]
  },
  "sets.cap": {
@@ -1946,7 +1946,7 @@
   "omml": "full",
   "roundtrip": "full",
   "notes": [
-   "Classic: from STIX Two (not Times/Symbol): H (double-struck)"
+   "Classic: from STIX Two (not Times/Symbol): H[double-struck]"
   ]
  },
  "sets.in": {
@@ -1961,7 +1961,7 @@
   "omml": "full",
   "roundtrip": "full",
   "notes": [
-   "Classic: from STIX Two (not Times/Symbol): N (double-struck)"
+   "Classic: from STIX Two (not Times/Symbol): N[double-struck]"
   ]
  },
  "sets.ni": {
@@ -1991,7 +1991,7 @@
   "omml": "full",
   "roundtrip": "full",
   "notes": [
-   "Classic: from STIX Two (not Times/Symbol): Q (double-struck)"
+   "Classic: from STIX Two (not Times/Symbol): Q[double-struck]"
   ]
  },
  "sets.R": {
@@ -2000,7 +2000,7 @@
   "omml": "full",
   "roundtrip": "full",
   "notes": [
-   "Classic: from STIX Two (not Times/Symbol): R (double-struck)"
+   "Classic: from STIX Two (not Times/Symbol): R[double-struck]"
   ]
  },
  "sets.subset": {
@@ -2042,7 +2042,7 @@
   "omml": "full",
   "roundtrip": "full",
   "notes": [
-   "Classic: from STIX Two (not Times/Symbol): Z (double-struck)"
+   "Classic: from STIX Two (not Times/Symbol): Z[double-struck]"
   ]
  },
  "spaces.cdots": {
@@ -2387,7 +2387,7 @@
   "omml": "full",
   "roundtrip": "full",
   "notes": [
-   "Classic: from STIX Two (not Times/Symbol): H (sans-serif)"
+   "Classic: from STIX Two (not Times/Symbol): H[sans-serif]"
   ]
  },
  "tab-linalg.la-identity3": {
@@ -2447,7 +2447,7 @@
   "omml": "full",
   "roundtrip": "full",
   "notes": [
-   "Classic: from STIX Two (not Times/Symbol): T (sans-serif)"
+   "Classic: from STIX Two (not Times/Symbol): T[sans-serif]"
   ]
  },
  "tab-orbital.conic": {
