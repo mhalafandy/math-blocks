@@ -34,3 +34,32 @@ describe("kind snippets with a prefix", async () => {
     expect(matchSnippet(before("pdv"), list)?.trigger).toBe("pdv");
   });
 });
+
+describe("snippet triggers as the editor reports them", async () => {
+  const { kindSnippets, findTrigger, BASE_SNIPPETS, loadSnippets, saveSnippets } = await import("./snippets");
+  /** Editor positions → LaTeX, one array entry per position (a prime takes one superscript group). */
+  const editor = (atoms: string[]) => (k: number) => atoms.slice(-k).join("");
+  it("replaces the whole trigger, prefix included, for every prefix", () => {
+    for (const p of [";", ":", "!", "."]) {
+      const r = findTrigger(editor(["x", "+", p, "p", "v"]), [...kindSnippets(p), ...BASE_SNIPPETS]);
+      expect(r).toMatchObject({ positions: 3, snippet: { latex: "\\pvec{#?}" } });
+    }
+  });
+  it("a prime prefix (a superscript in the editor) and \; spellings are read as typed", () => {
+    expect(findTrigger(editor(["x", "^{\\prime}", "p", "v"]), kindSnippets("'"))).toMatchObject({ positions: 3 });
+    expect(findTrigger(editor(["x", "\;", "p", "v"]), kindSnippets(";"))).toMatchObject({ positions: 3 });
+  });
+  it("autocorrected letters (in → ∈) still trigger", () => {
+    expect(findTrigger(editor(["x", "\\in", "v"]), BASE_SNIPPETS)).toMatchObject({ positions: 2, snippet: { trigger: "inv" } });
+  });
+  it("an old saved kind snippet without prefix never beats the prefixed one", () => {
+    const store = new Map<string, string>();
+    (globalThis as unknown as { localStorage: unknown }).localStorage = { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => store.set(k, v) };
+    saveSnippets([{ trigger: "pv", latex: "\\pvec{#?}", name: "old" }, { trigger: ";pv", latex: "\\pvec[#?]{#?}", name: "old 2" }, { trigger: "myv", latex: "\\pvec{v}", name: "mine" }]);
+    const list = loadSnippets();
+    // Old kind snippets are replaced by the current ones; the user's own snippet stays.
+    expect(list.filter((s) => s.trigger.endsWith("pv")).map((s) => s.trigger)).toEqual([";pv"]);
+    expect(list.some((s) => s.trigger === "myv")).toBe(true);
+    expect(findTrigger(editor(["x", ";", "p", "v"]), list)).toMatchObject({ positions: 3 });
+  });
+});

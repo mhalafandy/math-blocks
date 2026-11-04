@@ -1,6 +1,8 @@
 import { focusedMathField, fromMathLive, insertIntoVisual, toggleBold, toMathLive } from "../components/MathEditor";
 import { breakLineAt, CARET, setAlignmentAt, type LineResult } from "./multiline";
-import { matchSnippet } from "./snippets";
+import { findTrigger } from "./snippets";
+import { applySnippet, type SnippetField } from "./snippetApply";
+import { exitKind, type KindField } from "./kindExit";
 import { SHORTCUT_TABLE } from "./editorShortcuts";
 import { addDerivationLine } from "./derivation";
 import { useApp } from "./store";
@@ -163,15 +165,28 @@ export function handleEditorKey(e: KeyboardEvent): boolean {
       return true;
     }
   }
+  // Space inside a notation kind leaves it (caret right after the kind, the kind unchanged).
+  if (e.key === " " && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && mf.selectionIsCollapsed && exitKind(mf as unknown as KindField, "Space")) {
+    e.preventDefault();
+    e.stopPropagation();
+    return true;
+  }
   // Tab after a snippet trigger ("ddt", "mat3"…) expands it; otherwise Tab moves between slots.
   if (e.key === "Tab" && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && mf.selectionIsCollapsed) {
     const pos = mf.position;
-    const snippet = matchSnippet((n) => (pos >= n ? mf.getValue(pos - n, pos, "latex") : ""));
-    if (snippet) {
+    const found = findTrigger((k) => (pos >= k ? mf.getValue(pos - k, pos, "latex") : ""));
+    if (found) {
+      const snippet = found.snippet;
       e.preventDefault();
       e.stopPropagation();
-      mf.selection = { ranges: [[pos - snippet.trigger.length, pos]], direction: "forward" };
-      mf.executeCommand(["insert", toMathLive(applyTranspose(snippet.latex, useApp.getState().transposeForm)), { insertionMode: "replaceSelection", selectionMode: "placeholder" }]);
+      // The whole trigger, prefix included (";pv" leaves no ";").
+      applySnippet(mf as unknown as SnippetField, found.positions, toMathLive(applyTranspose(snippet.latex, useApp.getState().transposeForm)));
+      return true;
+    }
+    // Tab at the end of a kind (no empty slot left in it) leaves the kind.
+    if (exitKind(mf as unknown as KindField, "Tab")) {
+      e.preventDefault();
+      e.stopPropagation();
       return true;
     }
     return false;

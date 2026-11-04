@@ -426,7 +426,7 @@ export function peelKind(kind: string, body: Row, st: KindStyle): MathNode | nul
     // Upright labels come back as one word (\mathrm{ba}): one label per letter.
     const parts = labels
       .flatMap((l): MathNode[] => (l.kind === "ident" && [...l.text].length > 1 ? [...l.text].map((ch) => ({ kind: "ident", text: ch }) as MathNode) : [l]))
-      .filter((l) => !(l.kind === "operator" && (l.text === "/" || l.text === ",")));
+      .filter((l) => !(l.kind === "operator" && (l.text === "/" || l.text === ",")) && l.kind !== "space");
     if (kind === "dcm") {
       if (parts.length < 2) return null;
       node = { kind: "notation", name: "dcm", args: [row([parts[0]!]), row(parts.slice(1))] };

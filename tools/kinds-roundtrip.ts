@@ -15,6 +15,7 @@ import { KINDS, PRESETS, type KindStyle, type NotationProfile, type PresetId } f
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { fromEditorLatex, toEditorLatex } from "../app/src/lib/kinds";
 import { multlineFromEditor, multlineToEditor } from "../app/src/lib/multiline";
+import { exitKind } from "../app/src/lib/kindExit";
 
 const norm = (l: string) => serializeLatex(parseLatex(l).root);
 
@@ -182,7 +183,54 @@ const deletion = await page.evaluate(async (forms) => {
   }
   return out;
 }, [...new Set(cases.filter((c) => !c.changeBase && !/[_'^]\{?2?\}?$|^\\dot/.test(c.editor) && c.id.includes("hughes/harpoon") && !/\}_1$/.test(c.editor)).map((c) => c.editor))].slice(0, 40));
+// Space / Tab inside a kind: the caret leaves it, the kind unchanged, what is typed next goes after it.
+await page.evaluate(`window.exitKind = ${exitKind.toString()}`);
+const exitCases = [...new Set(cases.filter((c) => !c.changeBase && c.id.includes("/harpoon") && !/[_'^]\{?2?\}?$|^\\dot/.test(c.editor) && !c.id.includes(" aligned ") && !c.id.includes(" gathered ") && !c.id.includes(" multline ")).map((c) => JSON.stringify([c.editor, c.expected, c.profile]))) ].map((x) => JSON.parse(x) as [string, string, NotationProfile]);
+const exits: { editor: string; key: string; pos: number; value: string }[] = await page.evaluate(async (list) => {
+  const mf = document.getElementById("mf") as unknown as { value: string; position: number; lastOffset: number; getValue: (a: number, b: number, f: string) => string; executeCommand: (c: unknown) => boolean };
+  const exit = (window as unknown as { exitKind: (m: unknown, k: string) => boolean }).exitKind;
+  const out: { editor: string; key: string; pos: number; value: string }[] = [];
+  for (const editor of list) {
+    mf.value = `y+${editor}`;
+    const last = mf.lastOffset;
+    // The kind (with any scripts of its own) starts after "y+" and ends the field.
+    if (!mf.getValue(2, last, "latex").startsWith("\\class{nk-")) continue;
+    for (const key of ["Space", "Tab"]) {
+      // Every caret position inside the kind's wrapper (it starts after "y+", at offset 2).
+      let kindEnd = last;
+      for (let k = 3; k <= last; k++) {
+        const v = mf.getValue(2, k, "latex");
+        let d = 0;
+        for (let i = 0; i < v.length; i++) {
+          if (v[i] === "\\") { i++; continue; }
+          if (v[i] === "{") d++;
+          else if (v[i] === "}") d--;
+        }
+        if (d === 0 && v.startsWith("\\class{nk-") && v.endsWith("}")) { kindEnd = k; break; }
+      }
+      for (let p = 3; p < kindEnd; p++) {
+        mf.value = `y+${editor}`;
+        mf.position = p;
+        const moved = exit(mf, key);
+        if (!moved) {
+          if (key === "Tab") continue; // an empty slot is still ahead: Tab goes there
+          out.push({ editor, key, pos: p, value: "!not moved" });
+          continue;
+        }
+        mf.executeCommand(["insert", "+x"]);
+        out.push({ editor, key, pos: p, value: mf.value });
+      }
+    }
+  }
+  return out;
+}, exitCases.map((c) => c[0]));
 await browser.close();
+const exitFailures: string[] = [];
+for (const e of exits) {
+  const c = exitCases.find((x) => x[0] === e.editor)!;
+  const back = e.value.startsWith("!") ? e.value : fromEditorLatex(e.value, c[2]).latex;
+  if (back !== norm(`y+${c[1]}+x`)) exitFailures.push(`${e.key} at ${e.pos} in ${c[1]}: ${back}   [MathLive: ${e.value}]`);
+}
 const deletionFailures = deletion.filter((d) => d.backspace !== "y++x" || d.del !== "y++x").map((d) => `${d.form}: backspace → ${d.backspace}, delete → ${d.del}`);
 const crossingBroken = deletion.filter((d) => (d.crossing.match(/\\class\{nk-/g) ?? []).length && !d.crossing.includes("}{")).map((d) => `${d.form}: ${d.crossing}`);
 
@@ -206,7 +254,9 @@ const report = [
   "",
   `- Deletion (Backspace after / Delete before a kind, ${deletion.length} kinds): ${deletion.length - deletionFailures.length} removed whole${deletionFailures.length ? `, ${deletionFailures.length} not` : ""}`,
   `- Selection crossing a kind's edge then Delete: ${crossingBroken.length ? `${crossingBroken.length} left a broken wrapper` : "all well-formed"} (e.g. ${deletion[0] ? `y+${deletion[0].form}+x → ${deletion[0].crossing}` : "—"})`,
+  `- Space / Tab inside a kind (${exits.length} caret positions): ${exits.length - exitFailures.length} left the kind unchanged${exitFailures.length ? `, ${exitFailures.length} not` : ""}`,
   "",
+  ...(exitFailures.length ? ["## Space / Tab exit failures", "", ...exitFailures.slice(0, 40).map((d) => `- ${d}`), ""] : []),
   ...(deletionFailures.length ? ["## Deletion failures", "", ...deletionFailures.map((d) => `- ${d}`), ""] : []),
   ...(failures.length ? ["## Failures", "", "```", ...failures.slice(0, 80), "```", ""] : []),
   ...(handStyled.length ? ["## Hand-styled fallbacks", "", ...handStyled.slice(0, 80).map((h) => `- ${h}`), ""] : []),
@@ -214,7 +264,8 @@ const report = [
 writeFileSync(new URL("../docs/KINDS-ROUNDTRIP.md", import.meta.url), report.join("\n"));
 console.log(`${cases.length} cases: ${failures.length} failed, ${handStyled.length} hand-styled`);
 if (deletionFailures.length) console.log("deletion:", deletionFailures.slice(0, 10).join("\n"));
-if (failures.length || deletionFailures.length || crossingBroken.length) {
+if (exitFailures.length) console.log("space/tab exit:", exitFailures.length, "failed\n" + exitFailures.slice(0, 10).join("\n"));
+if (failures.length || deletionFailures.length || crossingBroken.length || exitFailures.length) {
   console.log(failures.slice(0, 15).join("\n"));
   process.exit(1);
 }

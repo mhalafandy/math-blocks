@@ -8,5 +8,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../src/NumberFields.cs" />
+    <Compile Include="../src/LatexText.cs" />
   </ItemGroup>
 </Project>

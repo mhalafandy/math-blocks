@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { create } from "zustand";
+import { restoreEditorFocus } from "../lib/editorFocus";
 
 /** Generic modal frame: Escape or clicking outside cancels. */
 export function Modal({ title, onClose, children, width = 440 }: { title: string; onClose: () => void; children: ReactNode; width?: number }) {
@@ -8,11 +9,14 @@ export function Modal({ title, onClose, children, width = 440 }: { title: string
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, [onClose]);
+  // Closing a dialog returns the keyboard to the equation editor, caret where it was.
+  useEffect(() => () => restoreEditorFocus(), []);
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
+      {/* Never taller than the window: the title and the button row stay visible, the body scrolls. */}
       <div className="modal" role="dialog" aria-modal="true" aria-label={title} style={{ width }} onMouseDown={(e) => e.stopPropagation()}>
         <h2>{title}</h2>
-        {children}
+        <div className="modal-body">{children}</div>
       </div>
     </div>
   );

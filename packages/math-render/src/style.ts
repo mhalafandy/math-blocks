@@ -91,8 +91,11 @@ export const MATHTYPE_HARPOON = { length: 0.41, stroke: 0.029, barbLength: 0.08,
 /** MathType's \vec arrow (two barbs), em. */
 export const MATHTYPE_ARROW = { barbLength: 0.0975, barbAngle: 26, gap: 0.145 };
 
-/** Defaults: MathType's harpoon a little heavier (×1.2 stroke) so it stays clear at 10 pt. */
-export const DEFAULT_ACCENTS: AccentRules = { size: 1, stroke: 1.2, gap: MATHTYPE_HARPOON.gap, barbAngle: MATHTYPE_HARPOON.barbAngle, minGap: 0.05, length: "adaptive" };
+/**
+ * Defaults: a print-safe harpoon — stroke ×1.5 of MathType's (0.0435 em: 0.52 pt at 12 pt,
+ * 0.44 pt at 10 pt), tapered pointed barb, adaptive length.
+ */
+export const DEFAULT_ACCENTS: AccentRules = { size: 1, stroke: 1.5, gap: MATHTYPE_HARPOON.gap, barbAngle: MATHTYPE_HARPOON.barbAngle, minGap: 0.05, length: "adaptive" };
 /** "Reset to MathType-like". */
 export const MATHTYPE_ACCENTS: AccentRules = { size: 1, stroke: 1, gap: MATHTYPE_HARPOON.gap, barbAngle: MATHTYPE_HARPOON.barbAngle, minGap: 0.05 };
 

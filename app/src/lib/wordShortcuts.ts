@@ -112,7 +112,9 @@ export async function convertAllLatex(document?: string) {
   if (!ready("findLatex")) return;
   try {
     const found = await connector.request("findLatex", document ? { document } : {}, 120_000);
-    if (!found.items.length) return notify(`No LaTeX found in “${found.name}” (expressions between dollar signs, \\( \\) or \\[ \\]).`);
+    const why = [found.skippedInside ? `${found.skippedInside} inside equations or fields` : "", found.notLocated ? `${found.notLocated} that Word could not locate (see connector.log)` : ""].filter(Boolean).join(", ");
+    console.info("convert LaTeX:", found.items.length, "span(s)", why);
+    if (!found.items.length) return notify(`No LaTeX found in “${found.name}” to convert (expressions between dollar signs, \\( \\) or \\[ \\])${why ? `; skipped: ${why}` : ""}.`, why ? "error" : "info");
     const ok = await askConfirm(
       "Convert LaTeX to equations",
       `Turn the ${found.items.length} LaTeX expression(s) in “${found.name}” into MathBlocks equations? One Ctrl+Z in Word undoes it.`,

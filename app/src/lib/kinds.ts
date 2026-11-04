@@ -11,6 +11,9 @@ import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 
 export const CLASS_PREFIX = "nk-";
 
+/** Stand-in letter for an empty slot while a kind is recognised (the parser drops \placeholder{}). */
+const SLOT = "\u24C8";
+
 /** Source (with \pvec…) → what the visual editor holds. */
 export function toEditorLatex(latex: string, profile: NotationProfile = DEFAULT_PROFILE): string {
   if (!/\\[a-zA-Z]+/.test(latex)) return latex;
@@ -46,8 +49,12 @@ function eachRow(n: MathNode, f: (r: Row) => void) {
 function wrapKinds(r: Row, profile: NotationProfile): Row {
   const out: MathNode[] = r.children.map((n) => {
     if (n.kind === "notation") {
-      const expanded: Row = { kind: "row", children: expandKind(n, styleOf(profile, n.name)) };
-      const inner = serializeLatex(wrapKinds(expanded, profile));
+      // Empty arguments become slots to fill (\dcm{}{} → C with two empty frame slots).
+      const filled = { ...n, args: n.args.map((a) => (a.children.length ? a : { kind: "row", children: [{ kind: "ident", text: SLOT } as MathNode] } as Row)) };
+      const expanded: Row = { kind: "row", children: expandKind(filled, styleOf(profile, n.name)) };
+      // Adjacent empty slots get a thin space between them: the editor would otherwise empty both
+      // when the first is typed into (C_{□□} → C_{b}).
+      const inner = serializeLatex(wrapKinds(expanded, profile)).replaceAll(`${SLOT}${SLOT}`, `${SLOT}\\,${SLOT}`).replaceAll(SLOT, "\\placeholder{}");
       return { kind: "raw", latex: `\\class{${CLASS_PREFIX}${n.name}}{${inner}}` } as MathNode;
     }
     const copy = { ...n } as MathNode;
@@ -95,13 +102,13 @@ export function fromEditorLatex(latex: string, profile: NotationProfile = DEFAUL
   };
   const recognise = (kind: string, body: string): string => {
     const def = KIND_BY_ID.get(kind);
-    const parsed = parseLatex(body);
+    const parsed = parseLatex(body.replace(/\\placeholder(?:\[[^\]]*\])?\{\}/g, SLOT));
     const node = def && !parsed.diagnostics.some((d) => d.severity === "error") ? peelKind(kind, parsed.root, styleOf(profile, kind)) : null;
     if (!node) {
       handStyled.push({ kind, latex: body });
       return `{${body}}`;
     }
-    const s = serializeLatex({ kind: "row", children: [node] });
+    const s = serializeLatex({ kind: "row", children: [node] }).replaceAll(SLOT, "");
     // Keep a following script attached to the kind, not to its last argument.
     return node.kind === "notation" ? `{${s}}` : s;
   };

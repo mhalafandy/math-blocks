@@ -4,6 +4,8 @@ import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { useEffect, useRef } from "react";
 import { MathfieldElement } from "mathlive";
 import { setLastEditor } from "../lib/focus";
+import { registerEditor, saveEditorCaret } from "../lib/editorFocus";
+export { restoreEditorFocus } from "../lib/editorFocus";
 import { multlineFromEditor, multlineToEditor } from "../lib/multiline";
 import { useApp } from "../lib/store";
 
@@ -12,6 +14,7 @@ MathfieldElement.fontsDirectory = "/mathlive/fonts";
 MathfieldElement.soundsDirectory = null;
 
 let activeField: MathfieldElement | null = null;
+registerEditor(() => activeField);
 
 /** The equation editor, when it has the keyboard focus. */
 export function focusedMathField(): MathfieldElement | null {
@@ -35,7 +38,8 @@ const KIND_MACRO = new RegExp(`\\\\(${KINDS.map((k) => k.macro).join("|")})(?![a
 function toEditorKinds(latex: string): string {
   if (!KIND_MACRO.test(latex)) return latex;
   const marked = latex.replace(/#\?/g, SLOT_MARK["#?"]).replace(/#0/g, SLOT_MARK["#0"]);
-  return toEditorLatex(marked, useApp.getState().notationProfile).replaceAll(SLOT_MARK["#?"], "#?").replaceAll(SLOT_MARK["#0"], "#0");
+  // Adjacent slots inside a kind get a thin space (MathLive empties both when the first is typed into).
+  return toEditorLatex(marked, useApp.getState().notationProfile).replaceAll(`${SLOT_MARK["#?"]}${SLOT_MARK["#?"]}`, `${SLOT_MARK["#?"]}\\,${SLOT_MARK["#?"]}`).replaceAll(SLOT_MARK["#?"], "#?").replaceAll(SLOT_MARK["#0"], "#0");
 }
 
 function fromEditorKinds(latex: string): string {
@@ -318,6 +322,7 @@ export function MathEditor() {
       setLatex(fromMathLive(mf.value), "visual");
     });
     mf.addEventListener("pointerdown", () => setLastEditor("visual"));
+    mf.addEventListener("focusout", () => saveEditorCaret(mf));
     mf.addEventListener("beforeinput", (e) => onBeforeInput(mf, e as InputEvent));
     mf.addEventListener("pointerup", (e) => {
       const { clientX, clientY } = e;

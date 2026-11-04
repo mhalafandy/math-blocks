@@ -444,12 +444,20 @@ kbd {
 .context-menu button { width: 100%; display: flex; justify-content: space-between; gap: 16px; text-align: left; padding: 5px 10px; }
 .context-menu button.danger { color: var(--bad); }
 .context-menu .sep { height: 1px; background: var(--border); margin: 4px 2px; }
-.modal-backdrop { position: fixed; inset: 0; z-index: 30; background: rgb(0 0 0 / 0.3); display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh; }
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 30; background: rgb(0 0 0 / 0.3); display: flex; align-items: flex-start; justify-content: center;
+  padding: min(12vh, 72px) 16px 16px;
+}
+/* Never taller than the window (any size or Windows scaling): title and buttons stay, the body scrolls. */
 .modal {
-  max-width: 92vw; padding: 18px 20px; background: var(--surface); color: var(--text);
+  max-width: min(92vw, calc(100vw - 32px)); max-height: calc(100vh - min(12vh, 72px) - 16px);
+  display: flex; flex-direction: column; overflow: hidden;
+  padding: 18px 20px 14px; background: var(--surface); color: var(--text);
   border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); animation: pop 0.12s ease-out;
 }
-.modal h2 { margin: 0 0 14px; font-size: 15px; }
+.modal h2 { margin: 0 0 14px; font-size: 15px; flex: none; }
+.modal-body { flex: 1 1 auto; min-height: 0; overflow: auto; margin: 0 -20px; padding: 0 20px 2px; }
+.modal-body .modal-actions { position: sticky; bottom: 0; z-index: 2; background: var(--surface); padding-top: 10px; margin-top: 6px; box-shadow: 0 -8px 8px -8px rgb(0 0 0 / 0.12); }
 .modal-text { margin: 0; color: var(--text-2); }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
 .form input:not([type="checkbox"]), .form textarea {

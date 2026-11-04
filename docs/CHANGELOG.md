@@ -25,6 +25,30 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed (testing round 2, priority 1)
+- **Convert LaTeX:** spans whose Word position does not match the paragraph text are found again
+  by searching; each LaTeX span is replaced like a normal insertion (text removed, equation
+  inserted at the empty point); every skipped span is counted and explained, and connector.log
+  records what was found, relocated, skipped and replaced. Tests for each delimiter ($, $$, \( \),
+  \[ \]), several in one paragraph, inline and alone (C# and app).
+- **Kind snippets:** the whole trigger, prefix included, is replaced (matched by editor
+  positions, so a prime prefix or a keyboard that reports ";" as "\;" still works); kind
+  snippets saved by older versions can no longer shadow the prefixed ones; "inv" and "intab"
+  trigger although the editor autocorrects "in"; ;tp / trans / inv attach to the symbol before
+  them (xᵀ, not {}ᵀ); a DCM's two empty frames are filled one at a time (b, Tab, a). CI types
+  every kind snippet under every prefix in the real editor.
+- **Space / Tab inside a kind** leave it: the caret lands right after the kind (and its own
+  scripts), the kind unchanged; Tab first visits empty slots. Checked at every caret position of
+  every kind under every preset in CI.
+- **Focus:** after a command (Ctrl+K), the floating editor's command line, a snippet or a dialog,
+  the keyboard is back in the equation editor, caret where it was or in the first slot of what was
+  inserted.
+- **Dialogs** are never taller than the window: the title and buttons stay visible and the body
+  scrolls (checked at 1366×768 and at 125 % / 150 % scaling).
+- **Harpoon:** thicker (0.0435 em: 0.52 pt at 12 pt, 0.44 pt at 10 pt), sharp tip, tapered barb
+  with a mitred end, a little longer (adaptive: ink width + 0.14 em, at least 0.48 em). The arrow
+  uses the same shape. Review sheet and print page: tools/harpoon-sheet.ts.
+
 ### Fixed (real-Word testing: copy/paste, numbering, multi-line)
 - **Pasted equations keep their identity.** A Classic picture that lost its content control
   (picture-only copies, some paste modes) is recognised by the source in its EMF (alt text as a
