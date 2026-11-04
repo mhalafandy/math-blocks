@@ -50,6 +50,9 @@ export interface RenderStyle {
   obliqueSlant: number;
   /** Use MT Extra (when installed) before STIX for symbols Times and Symbol lack. */
   useExtraFont: boolean;
+  /** STIX fallback glyphs: size factor (STIX is ~6 % larger than Times) and inward offset of their outlines (em) to match Times' weight. */
+  fallbackScale: number;
+  fallbackThin: number;
   /** MathType fractions: numerator baseline above / denominator baseline below the bar. */
   fracNumHeight: number;
   fracDenDepth: number;
@@ -112,6 +115,8 @@ export const CLASSIC: RenderStyle = {
   useSymbolFont: true,
   obliqueSlant: 0.2,
   useExtraFont: true,
+  fallbackScale: 0.94,
+  fallbackThin: 0,
   fracNumHeight: 0.35,
   fracDenDepth: 1.0,
   accents: DEFAULT_ACCENTS,

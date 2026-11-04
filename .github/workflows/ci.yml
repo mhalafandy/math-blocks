@@ -121,6 +121,14 @@ jobs:
           Compress-Archive -Path out/connector/* -DestinationPath dl/MathBlocks-Word-connector.zip
           Compress-Archive -Path fixtures/spike/*.docx -DestinationPath dl/MathBlocks-M1-test-documents.zip
 
+      - name: Review sheets (palette tiles, symbol fonts, accents) with the real Windows fonts
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          pnpm exec playwright install chromium
+          pnpm tsx tools/review-sheets.ts review-sheets
+          Compress-Archive -Path review-sheets/* -DestinationPath dl/MathBlocks-review-sheets.zip
+
       - name: Publish "Latest test build" release
         if: github.ref == 'refs/heads/main'
         shell: bash

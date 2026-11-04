@@ -10,7 +10,7 @@ import type { RenderStyle } from "./style";
 // ------------------------------------------------------------------ boxes
 
 export type Item =
-  | { k: "g"; g: GlyphInfo; x: number; y: number; s: number; sx?: number; sy?: number; color?: string; slant?: number }
+  | { k: "g"; g: GlyphInfo; x: number; y: number; s: number; sx?: number; sy?: number; color?: string; slant?: number; thin?: number }
   | { k: "r"; x: number; y: number; w: number; h: number; color?: string }
   /** A filled shape drawn by the engine (accents), in em, y up, relative to (x, y). */
   | { k: "p"; x: number; y: number; pts: [number, number][]; color?: string };
@@ -219,10 +219,42 @@ export function glyphSource(ch: string, kind: "ident" | "number" | "operator" | 
   return resolveGlyph(ch, faceFor(ch, variant, kind, c), fonts, st, variant).source;
 }
 
+/** An empty slot: a small dotted square (one placeholder look everywhere: palette tiles, previews). */
+export const PLACEHOLDER = "\u2B1A";
+
+function placeholderBox(c: Ctx): Box {
+  const s = c.s;
+  const w = 0.5 * s;
+  const h = 0.58 * s;
+  const y0 = -0.02 * s;
+  const dot = 0.045 * s;
+  const items: Item[] = [];
+  const n = 5;
+  const sq = (x: number, y: number) => items.push({ k: "p", x, y, pts: [[0, 0], [dot, 0], [dot, dot], [0, dot]] });
+  for (let i = 0; i < n; i++) {
+    const t = i / (n - 1);
+    sq(0.04 * s + t * (w - 0.08 * s - dot), y0);
+    sq(0.04 * s + t * (w - 0.08 * s - dot), y0 + h - dot);
+    if (i > 0 && i < n - 1) {
+      sq(0.04 * s, y0 + t * (h - dot));
+      sq(w - 0.04 * s - dot, y0 + t * (h - dot));
+    }
+  }
+  return { w: w + 0.04 * s, h: y0 + h, d: Math.max(0, -y0), items, char: { italic: false } };
+}
+
 function charBox(ch: string, face: FaceName, c: Ctx, variant?: MathVariant): Box {
+  if (ch === PLACEHOLDER) return placeholderBox(c);
   const r = resolveGlyph(ch, face, c.fonts, c.st, variant);
   c.used?.add(r.source);
   if (!r.g) return empty(0.5 * c.s);
+  if (r.source === "math" && (c.st.fallbackScale !== 1 || c.st.fallbackThin)) {
+    // STIX next to Times: a little smaller and, optionally, thinned to Times' stroke weight.
+    const b = glyphBox(r.g, c.s * c.st.fallbackScale);
+    if (c.st.fallbackThin) b.items[0] = { ...(b.items[0] as Extract<Item, { k: "g" }>), thin: c.st.fallbackThin * c.s };
+    b.char = { italic: face === "italic" || face === "boldItalic" };
+    return b;
+  }
   const b = glyphBox(r.g, c.s);
   if (r.source === "symbol") {
     if (r.slanted) {
