@@ -1,6 +1,8 @@
 import type { MathNode, MathVariant, Row } from "@mathblocks/math-core";
 import {
   CHAR_TO_COMMAND,
+  CLASS_CHAR_TO_COMMAND,
+  SYMBOLS,
   DELIMITER_LATEX,
   FONT_COMMAND,
   FUNCTIONS,
@@ -74,6 +76,13 @@ function rowLatex(r: Row): string {
   return join(pieces);
 }
 
+/** The command for an operator character: the preferred spelling when its class matches, else one of the right class (⊥ relation → \perp, ordinary → \bot). */
+function operatorCommand(char: string, opClass: string): string | undefined {
+  const preferred = CHAR_TO_COMMAND.get(char);
+  if (preferred && (SYMBOLS[preferred]?.type ?? opClass) === opClass) return preferred;
+  return CLASS_CHAR_TO_COMMAND.get(`${char}|${opClass}`) ?? preferred;
+}
+
 function identChar(text: string): string {
   const cmd = CHAR_TO_COMMAND.get(text);
   return cmd ? `\\${cmd} ` : text;
@@ -124,7 +133,7 @@ function nodeLatex(n: MathNode): string {
     case "operator": {
       const mapped = OPERATOR_LATEX[n.text];
       if (mapped) return mapped;
-      const cmd = CHAR_TO_COMMAND.get(n.text);
+      const cmd = operatorCommand(n.text, n.opClass);
       return cmd ? `\\${cmd}` : n.text;
     }
     case "text":
@@ -193,6 +202,12 @@ function nodeLatex(n: MathNode): string {
 }
 
 function env(name: string, rows: Row[][]): string {
-  const body = rows.map((cells) => cells.map(rowLatex).join(" & ")).join(" \\\\ ");
+  const body = rows
+    .map((cells, i) => {
+      const text = cells.map(rowLatex).join(" & ");
+      // An empty last row would read as a trailing \\\\ and be dropped: mark it with {}.
+      return i > 0 && i === rows.length - 1 && !text.trim() ? "{}" : text;
+    })
+    .join(" \\\\ ");
   return `\\begin{${name}} ${body} \\end{${name}}`;
 }

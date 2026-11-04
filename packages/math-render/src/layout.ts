@@ -135,41 +135,60 @@ function faceFor(ch: string, variant: MathVariant | undefined, kind: "ident" | "
 /** Characters MathType takes from the Symbol font (its "Symbol" and Greek styles). */
 const SYMBOL_STYLE = new Set([..."+−=<>±×÷≤≥≠≈≡∼≅∝∂∞∇∈∉∋⊂⊃⊆⊇∩∪→←↔⇒⇔⇐↑↓⋅•…′″∀∃¬∧∨⊥∠∅⊗⊕"]);
 
-function charBox(ch: string, face: FaceName, c: Ctx, variant?: MathVariant): Box {
+/** Which font a character is drawn from: Symbol (Classic), the text face, the math font, or the regular face as a last resort. */
+export type GlyphSource = "symbol" | "text" | "math" | "regular" | "none";
+
+interface Resolved {
+  g: GlyphInfo | null;
+  source: GlyphSource;
+  /** Greek from the Symbol font drawn oblique (italic). */
+  slanted?: boolean;
+}
+
+/** The font decision for one character; charBox draws what this returns (one source of truth for drawing and audits). */
+function resolveGlyph(ch: string, face: FaceName, fonts: FontSet, st: RenderStyle, variant?: MathVariant): Resolved {
   // Classic: Greek and operators from the Symbol font, like MathType.
-  const sym = c.fonts.symbol;
-  if (sym && c.st.useSymbolFont && !variant?.match(/double-struck|script|fraktur|sans-serif|monospace/)) {
+  const sym = fonts.symbol;
+  if (sym && st.useSymbolFont && !variant?.match(/double-struck|script|fraktur|sans-serif|monospace/)) {
     const greek = isLowerGreek(ch) || isUpperGreek(ch) || ch === "ϕ" || ch === "φ";
     if (greek || SYMBOL_STYLE.has(ch)) {
       const g = symbolGlyph(sym, ch);
-      if (g) {
-        const italic = greek && (face === "italic" || face === "boldItalic");
-        const b = glyphBox(g, c.s);
-        if (italic) {
-          const k = c.st.obliqueSlant;
-          b.items[0] = { ...(b.items[0] as Extract<Item, { k: "g" }>), slant: k };
-          b.overhang = Math.max(0, (g.xMax + k * g.h - g.w) * c.s);
-        }
-        b.char = { italic };
-        return b;
-      }
+      if (g) return { g, source: "symbol", slanted: greek && (face === "italic" || face === "boldItalic") };
     }
   }
   const alpha = variant ? mathAlpha(ch, variant) : null;
-  const tries: GlyphInfo[] = [];
   if (alpha) {
-    const g = charGlyph(c.fonts.math, alpha);
-    if (g) tries.push(g);
+    const g = charGlyph(fonts.math, alpha);
+    if (g) return { g, source: "math" };
   }
-  const fromFace = charGlyph(c.fonts[face], ch);
-  if (fromFace) tries.push(fromFace);
-  const fromMath = charGlyph(c.fonts.math, ch);
-  if (fromMath) tries.push(fromMath);
-  const fromRegular = charGlyph(c.fonts.regular, ch);
-  if (fromRegular) tries.push(fromRegular);
-  const g = tries[0];
-  if (!g) return empty(0.5 * c.s);
-  const b = glyphBox(g, c.s);
+  const fromFace = charGlyph(fonts[face], ch);
+  if (fromFace) return { g: fromFace, source: "text" };
+  const fromMath = charGlyph(fonts.math, ch);
+  if (fromMath) return { g: fromMath, source: "math" };
+  const fromRegular = charGlyph(fonts.regular, ch);
+  if (fromRegular) return { g: fromRegular, source: "regular" };
+  return { g: null, source: "none" };
+}
+
+/** Where a character of an identifier/operator with this variant would be drawn from (for audits). */
+export function glyphSource(ch: string, kind: "ident" | "number" | "operator" | "text", fonts: FontSet, st: RenderStyle, variant?: MathVariant): GlyphSource {
+  const c = { fonts, st, s: 1, display: false, level: 0 } as Ctx;
+  return resolveGlyph(ch, faceFor(ch, variant, kind, c), fonts, st, variant).source;
+}
+
+function charBox(ch: string, face: FaceName, c: Ctx, variant?: MathVariant): Box {
+  const r = resolveGlyph(ch, face, c.fonts, c.st, variant);
+  if (!r.g) return empty(0.5 * c.s);
+  const b = glyphBox(r.g, c.s);
+  if (r.source === "symbol") {
+    if (r.slanted) {
+      const k = c.st.obliqueSlant;
+      b.items[0] = { ...(b.items[0] as Extract<Item, { k: "g" }>), slant: k };
+      b.overhang = Math.max(0, (r.g.xMax + k * r.g.h - r.g.w) * c.s);
+    }
+    b.char = { italic: !!r.slanted };
+    return b;
+  }
   b.char = { italic: face === "italic" || face === "boldItalic" };
   return b;
 }

@@ -488,4 +488,4 @@ export function searchPalette(query: string, limit = 60): IndexedItem[] {
 export const previewLatex = (latex: string) => latex.replace(/#0/g, "x").replace(/#\?/g, "{\\color{#9a9aa6}\\square}");
 
 /** LaTeX inserted into the plain-text LaTeX editor: slots become empty (\mathbf{#0} → \mathbf{}). */
-export const plainLatex = (latex: string) => latex.replace(/\{(#0|#\?)\}/g, "{}").replace(/#0|#\?/g, "");
+export const plainLatex = (latex: string) => latex.replace(/\{(#0|#\?)\}/g, "{}").replace(/#0|#\?/g, "{}");

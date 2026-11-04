@@ -569,9 +569,14 @@ class Parser {
     if (name === "array" || name === "alignat" || name === "alignat*") this.readRawGroup(); // column spec / count
 
     const rows: Row[][] = [[]];
+    // Whether the current row has any input (an explicit {} keeps an empty last row).
+    let rowHasInput = false;
     for (;;) {
+      this.peek();
+      const start = this.pos;
       const cell = this.parseRow({ inEnv: true });
       rows[rows.length - 1]!.push(cell);
+      if (this.pos > start) rowHasInput = true;
       const t = this.peek();
       if (t.type === "amp") {
         this.next();
@@ -586,6 +591,7 @@ class Parser {
           this.next();
         }
         rows.push([]);
+        rowHasInput = false;
         continue;
       }
       if (t.type === "command" && t.value === "end") {

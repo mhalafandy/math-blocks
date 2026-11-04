@@ -12,45 +12,52 @@
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import type { MathNode, Row } from "@mathblocks/math-core";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { toOmml } from "@mathblocks/math-omml";
 import { SPACE_CHARS } from "../packages/math-omml/src/writer";
-import { loadFont, renderSvg, type FontSet } from "@mathblocks/math-render";
-import { charGlyph, SYMBOL_CODES } from "../packages/math-render/src/fonts";
+import { charGlyph, CLASSIC, glyphSource, loadFont, renderSvg, SYMBOL_CODES, type FontSet } from "@mathblocks/math-render";
 import { ALL_ITEMS, plainLatex } from "../app/src/lib/palette";
 
 const require = createRequire(new URL("../app/package.json", import.meta.url));
 const { validateLatex } = (await import(new URL("../app/node_modules/mathlive/mathlive-ssr.min.mjs", import.meta.url).href)) as { validateLatex: (s: string) => { code: string; arg?: string }[] };
 
-const L = "/usr/share/fonts/truetype/liberation/LiberationSerif-";
-const STIX = require.resolve("@fontsource/stix-two-math/files/stix-two-math-latin-400-normal.woff", { paths: [new URL("../packages/math-render/", import.meta.url).pathname] });
-if (!existsSync(L + "Regular.ttf")) throw new Error("Liberation Serif not installed");
-const fonts: FontSet = {
-  regular: loadFont(readFileSync(L + "Regular.ttf")),
-  italic: loadFont(readFileSync(L + "Italic.ttf")),
-  bold: loadFont(readFileSync(L + "Bold.ttf")),
-  boldItalic: loadFont(readFileSync(L + "BoldItalic.ttf")),
-  math: loadFont(readFileSync(STIX)),
-};
+const STIX = require.resolve("@fontsource/stix-two-math/files/stix-two-math-latin-400-normal.woff", { paths: [fileURLToPath(new URL("../packages/math-render/", import.meta.url))] });
 
-// Same set as math-render's layout.ts: characters MathType takes from the Symbol font.
-const SYMBOL_STYLE = new Set([..."+−=<>±×÷≤≥≠≈≡∼≅∝∂∞∇∈∉∋⊂⊃⊆⊇∩∪→←↔⇒⇔⇐↑↓⋅•…′″∀∃¬∧∨⊥∠∅⊗⊕"]);
-const GREEK = /[\u0391-\u03a9\u03b1-\u03c9ϑϕϖϰϱϵς]/;
+// Real Windows fonts when present (Windows CI job, the owner's PC); Liberation Serif otherwise.
+const WIN = "C:/Windows/Fonts/";
+const windows = existsSync(WIN + "times.ttf") && existsSync(WIN + "symbol.ttf");
+const L = "/usr/share/fonts/truetype/liberation/LiberationSerif-";
+const textFiles = windows ? ["times.ttf", "timesi.ttf", "timesbd.ttf", "timesbi.ttf"].map((f) => WIN + f) : ["Regular", "Italic", "Bold", "BoldItalic"].map((f) => `${L}${f}.ttf`);
+if (!existsSync(textFiles[0]!)) throw new Error("Neither Times New Roman nor Liberation Serif is installed");
+const fonts: FontSet = {
+  regular: loadFont(readFileSync(textFiles[0]!)),
+  italic: loadFont(readFileSync(textFiles[1]!)),
+  bold: loadFont(readFileSync(textFiles[2]!)),
+  boldItalic: loadFont(readFileSync(textFiles[3]!)),
+  math: loadFont(readFileSync(STIX)),
+  ...(windows ? { symbol: loadFont(readFileSync(WIN + "symbol.ttf")) } : {}),
+};
+const FONT_NOTE = windows
+  ? "Fonts: the real Times New Roman and Symbol of a Windows machine (CI windows-latest)."
+  : "Fonts: Liberation Serif stands in for Times New Roman (same metrics, similar but not identical coverage); the Symbol font's repertoire is taken from the renderer's Adobe Symbol table.";
+const OUT = windows ? "PALETTE-AUDIT-windows" : "PALETTE-AUDIT";
+
 const STIX_VARIANTS = /double-struck|script|fraktur|sans-serif|monospace|calligraphic/;
 
 type Support = "full" | "converted" | "workaround" | "unsupported";
-
-function chars(root: Row): { ch: string; variant?: string }[] {
-  const out: { ch: string; variant?: string }[] = [];
+type CharKind = "ident" | "number" | "operator" | "text";
+function chars(root: Row): { ch: string; variant?: string; kind: CharKind }[] {
+  const out: { ch: string; variant?: string; kind: CharKind }[] = [];
   const visit = (v: unknown) => {
     if (!v || typeof v !== "object") return;
     if (Array.isArray(v)) return v.forEach(visit);
     const n = v as MathNode & Record<string, unknown>;
     if ((n.kind === "ident" || n.kind === "number" || n.kind === "operator" || n.kind === "text") && typeof n.text === "string")
-      for (const ch of n.text) out.push({ ch, variant: (n as { variant?: string }).variant });
-    if (n.kind === "nary" && typeof n.op === "string") for (const ch of n.op) out.push({ ch });
-    for (const k of ["open", "close", "middle"]) if (typeof n[k] === "string") for (const ch of n[k] as string) out.push({ ch });
+      for (const ch of n.text) out.push({ ch, variant: (n as { variant?: string }).variant, kind: n.kind as CharKind });
+    if (n.kind === "nary" && typeof n.op === "string") for (const ch of n.op) out.push({ ch, kind: "operator" });
+    for (const k of ["open", "close", "middle"]) if (typeof n[k] === "string") for (const ch of n[k] as string) out.push({ ch, kind: "operator" });
     for (const [k, x] of Object.entries(n)) if (k !== "meta" && typeof x === "object") visit(x);
   };
   visit(root);
@@ -60,22 +67,25 @@ function chars(root: Row): { ch: string; variant?: string }[] {
 function classicSupport(root: Row): { s: Support; note: string } {
   const stix: string[] = [];
   const none: string[] = [];
-  for (const { ch, variant } of chars(root)) {
-    if (variant && STIX_VARIANTS.test(variant)) {
-      stix.push(`${ch}(${variant})`);
-      continue;
-    }
-    if ((GREEK.test(ch) || SYMBOL_STYLE.has(ch)) && SYMBOL_CODES[ch] !== undefined) continue;
-    if (charGlyph(fonts.regular, ch)) continue;
-    if (charGlyph(fonts.math, ch)) stix.push(ch);
-    else none.push(ch);
+  for (const { ch, variant, kind } of chars(root)) {
+    // Symbol-font repertoire without the font file (Linux): the renderer's own table.
+    if (!fonts.symbol && SYMBOL_CODES[ch] !== undefined && (/[\u0391-\u03c9ϑϕϖϰϱϵς]/.test(ch) || kind === "operator")) continue;
+    const src = glyphSource(ch, kind, fonts, CLASSIC, variant as never);
+    if (src === "math") stix.push(variant && STIX_VARIANTS.test(variant) ? `${ch}(${variant})` : ch);
+    else if (src === "none") none.push(ch);
   }
   if (none.length) return { s: "unsupported", note: `missing glyph: ${[...new Set(none)].join(" ")}` };
   if (stix.length) return { s: "converted", note: `STIX fallback (not Times/Symbol): ${[...new Set(stix)].join(" ")}` };
   return { s: "full", note: "" };
 }
 
-const strip = (x: unknown): unknown => JSON.parse(JSON.stringify(x, (k, v) => (k === "meta" ? undefined : v)));
+/** Tree without positions, keys sorted (only the structure matters). */
+const strip = (x: unknown): unknown =>
+  JSON.parse(
+    JSON.stringify(x, (k, v) =>
+      k === "meta" ? undefined : v && typeof v === "object" && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b))) : v,
+    ),
+  );
 
 function nodes(root: Row): MathNode[] {
   const out: MathNode[] = [];
@@ -132,7 +142,7 @@ for (const { key, group, item } of ALL_ITEMS) {
 
   let classic = classicSupport(root);
   try {
-    const r = renderSvg(root, { fonts, display: true });
+    const r = renderSvg(root, { fonts, display: true, style: CLASSIC });
     if (!Number.isFinite(r.widthPt) || r.svg.includes("NaN")) classic = { s: "unsupported", note: "renderer produced NaN" };
     else if (all.length && r.widthPt <= 0) classic = { s: "unsupported", note: "renderer produced an empty picture" };
   } catch (e) {
@@ -177,7 +187,7 @@ const missing = REQUIRED.map(([cat, list]) => [cat, list.filter((c) => !has(c))]
 // ------------------------------------------------------------------ output
 const csv = (s: string) => `"${s.replace(/"/g, '""')}"`;
 writeFileSync(
-  new URL("../docs/palette-audit.csv", import.meta.url),
+  new URL(`../docs/${OUT.toLowerCase()}.csv`, import.meta.url),
   ["key,group,name,latex,mathlive,classic,omml,roundtrip,notes", ...rows.map((r) => [r.key, r.group, r.name, r.latex, r.mathlive, r.classic, r.omml, r.roundtrip, r.notes.join(" | ")].map(csv).join(","))].join("\n") + "\n",
 );
 
@@ -186,9 +196,9 @@ const failures = rows.filter((r) => r.mathlive !== "full" || r.classic !== "full
 const md = [
   "# Palette audit",
   "",
-  `Generated by \`pnpm tsx tools/palette-audit.ts\` over ${rows.length} palette entries (${new Set(rows.map((r) => r.latex)).size} distinct LaTeX). Full data: [palette-audit.csv](palette-audit.csv).`,
+  `Generated by \`pnpm tsx tools/palette-audit.ts\` over ${rows.length} palette entries (${new Set(rows.map((r) => r.latex)).size} distinct LaTeX). Full data: [${OUT.toLowerCase()}.csv](${OUT.toLowerCase()}.csv).`,
   "",
-  "Classic is checked with Liberation Serif standing in for Times New Roman (same metrics, similar coverage) and the Adobe Symbol repertoire; *converted* = drawn from the STIX Two Math fallback, so it looks different from Times/Symbol.",
+  `${FONT_NOTE} *converted* = drawn from the STIX Two Math fallback, so it looks different from Times/Symbol.`,
   "",
   "| Check | full | converted | workaround | unsupported |",
   "|---|---|---|---|---|",
@@ -205,5 +215,43 @@ const md = [
   ...missing.map(([cat, l]) => `- **${cat}** (${l.length}): ${l.map((c) => `\`${c}\``).join(" ")}`),
   "",
 ];
-writeFileSync(new URL("../docs/PALETTE-AUDIT.md", import.meta.url), md.join("\n"));
+md.push(...metricsReport());
+writeFileSync(new URL(`../docs/${OUT}.md`, import.meta.url), md.join("\n"));
 console.log(`${rows.length} entries, ${failures.length} not fully supported, ${missing.reduce((n, [, l]) => n + l.length, 0)} required items missing`);
+
+/** STIX Two Math next to the text font: size (x-height, cap height) and stroke weight (minus bar, vertical bar). */
+function metricsReport(): string[] {
+  const m = (f: FontSet["regular"]) => {
+    const upm = f.unitsPerEm;
+    const os2 = ((f as unknown as { tables: unknown }).tables as { os2?: { sxHeight?: number; sCapHeight?: number } }).os2 ?? {};
+    const bbox = (ch: string) => charGlyph(f, ch);
+    const minus = bbox("−") ?? bbox("-");
+    const bar = bbox("|");
+    const plus = bbox("+");
+    return {
+      xHeight: os2.sxHeight ? os2.sxHeight / upm : (bbox("x")?.h ?? NaN),
+      capHeight: os2.sCapHeight ? os2.sCapHeight / upm : (bbox("H")?.h ?? NaN),
+      minusThickness: minus ? minus.h + minus.d : NaN,
+      barWidth: bar ? bar.xMax - bar.xMin : NaN,
+      plusWidth: plus ? plus.w : NaN,
+    };
+  };
+  const t = m(fonts.regular);
+  const x = m(fonts.math);
+  const row = (name: string, a: number, b: number) => `| ${name} | ${a.toFixed(3)} | ${b.toFixed(3)} | ${(b / a).toFixed(2)} |`;
+  return [
+    "",
+    "## STIX Two Math next to the text font",
+    "",
+    `Text font: ${windows ? "Times New Roman" : "Liberation Serif"}. Values in em. Ratio > 1: STIX is bigger / heavier.`,
+    "",
+    "| Measure | Text font | STIX Two Math | Ratio |",
+    "|---|---|---|---|",
+    row("x-height", t.xHeight, x.xHeight),
+    row("Cap height", t.capHeight, x.capHeight),
+    row("Minus bar thickness (weight)", t.minusThickness, x.minusThickness),
+    row("Vertical bar width (weight)", t.barWidth, x.barWidth),
+    row("Plus advance", t.plusWidth, x.plusWidth),
+    "",
+  ];
+}

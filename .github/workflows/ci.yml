@@ -47,6 +47,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
 
+      - name: Palette font audit with the real Times New Roman and Symbol
+        run: pnpm tsx tools/palette-audit.ts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: palette-audit-windows
+          path: |
+            docs/palette-audit-windows.csv
+            docs/PALETTE-AUDIT-windows.md
+
       - name: Set build version and updater signing
         shell: pwsh
         env:

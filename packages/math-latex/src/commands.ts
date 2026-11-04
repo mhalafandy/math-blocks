@@ -137,6 +137,19 @@ export const IGNORED = new Set([
 export const MATRIX_ENVS = new Set(["matrix", "pmatrix", "bmatrix", "Bmatrix", "vmatrix", "Vmatrix", "smallmatrix"]);
 export const ALIGNED_ENVS = new Set(["aligned", "align", "align*", "gathered", "gather", "gather*", "split", "alignat", "alignat*"]);
 
+/**
+ * Reverse lookup for operators by character and class: ⊥ as a relation is \perp, as an ordinary
+ * symbol \bot (the class decides the spacing, so it must survive a round trip).
+ */
+export const CLASS_CHAR_TO_COMMAND: Map<string, string> = (() => {
+  const m = new Map<string, string>();
+  for (const [cmd, def] of Object.entries(SYMBOLS)) {
+    const k = `${def.char}|${def.type}`;
+    if (!m.has(k)) m.set(k, cmd);
+  }
+  return m;
+})();
+
 /** Reverse lookup Unicode char → command, built once. First definition wins. */
 export const CHAR_TO_COMMAND: Map<string, string> = (() => {
   const m = new Map<string, string>();
