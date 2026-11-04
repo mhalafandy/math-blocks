@@ -60,6 +60,8 @@ export interface PictureSource {
   sizePt: number;
   /** Font used for symbols Times/Symbol lack: MathType's MT Extra or the STIX fallback (consistency check). */
   fallback?: "mtextra" | "stix" | "both";
+  /** Library block of a linked copy: a pasted picture that lost its wrapper stays linked. */
+  block?: string;
 }
 
 /** Which fallback font a drawing used. */
@@ -121,12 +123,12 @@ export function classicStyle(): RenderStyle {
 /** Notation profile of the current document/thesis. */
 export const notationProfile = () => useApp.getState().notationProfile;
 
-export async function renderPicture(latex: string, display: boolean, sizePt: number, mode: PictureMode = display ? "display" : "inline", withPng = false): Promise<Picture> {
+export async function renderPicture(latex: string, display: boolean, sizePt: number, mode: PictureMode = display ? "display" : "inline", withPng = false, extra: { block?: string | null } = {}): Promise<Picture> {
   const fonts = await loadFonts();
   const r = renderSvg(parseLatex(latex).root, { fonts, style: classicStyle(), display, sizePt, notation: notationProfile() });
   const fallback = fallbackOf(r.sources);
   if (fallback === "stix" && !fonts.extra && fonts.symbol) warnNoExtra();
-  const source: PictureSource = { latex, mode, style: CLASSIC.id, sizePt, ...(fallback ? { fallback } : {}) };
+  const source: PictureSource = { latex, mode, style: CLASSIC.id, sizePt, ...(fallback ? { fallback } : {}), ...(extra.block ? { block: extra.block } : {}) };
   const emf = renderEmf(r, { comment: JSON.stringify(source) });
   const png = withPng ? await rasterise(r) : new Uint8Array();
   return { ...r, png, emf };

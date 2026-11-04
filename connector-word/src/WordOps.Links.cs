@@ -42,9 +42,10 @@ namespace MathBlocks.WordConnector
         /// Copying an equation in Word copies its tag. Give every duplicate (all but the first) a new
         /// instance id; the block id stays, so the copy remains linked.
         /// </summary>
-        private int Dedupe(Word.Document doc)
+        private List<Dictionary<string, object>> Dedupe(Word.Document doc, bool collect = false)
         {
             var seen = new HashSet<string>(StringComparer.Ordinal);
+            var pairs = new List<Dictionary<string, object>>();
             int fixedCount = 0;
             foreach (var cc in MathBlocksControls(doc))
             {
@@ -56,9 +57,10 @@ namespace MathBlocks.WordConnector
                 cc.Tag = newTag;
                 seen.Add(newTag);
                 fixedCount++;
+                pairs.Add(new Dictionary<string, object> { ["from"] = tag, ["to"] = newTag });
             }
             if (fixedCount > 0) Log.Info("gave " + fixedCount + " copied equation(s) new instance ids in " + doc.Name);
-            return fixedCount;
+            return pairs;
         }
 
         private IEnumerable<Word.Document> TargetDocuments(Dictionary<string, object> p)

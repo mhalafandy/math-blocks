@@ -103,7 +103,7 @@ namespace MathBlocks.WordConnector
             "listMathTypeParagraphs", "replaceParagraphs", "activateObject",
             "numberEquation", "unnumberEquation", "listNumbered", "insertReference", "updateNumbers",
             "showWordMenu", "selectionInfo", "findLatex", "replaceRanges", "equationToText",
-            "backupDocument", "beginOperation", "operationProgress", "endOperation",
+            "backupDocument", "beginOperation", "operationProgress", "endOperation", "repairEquations",
         };
 
         // ------------------------------------------------------------ ribbon
@@ -237,7 +237,13 @@ namespace MathBlocks.WordConnector
                 if (cc == null)
                     foreach (Word.ContentControl c in sel.Range.ContentControls) { cc = c; break; }
                 var tag = cc?.Tag;
-                if (tag == null || !tag.StartsWith(WordOps.TagPrefix, StringComparison.Ordinal)) return;
+                if (tag == null || !tag.StartsWith(WordOps.TagPrefix, StringComparison.Ordinal))
+                {
+                    // A pasted MathBlocks picture that lost its wrapper: wrap it again (new identity).
+                    cc = AdoptPastedPicture(sel);
+                    tag = cc?.Tag;
+                    if (tag == null) return;
+                }
                 cancel = true;
                 var xml = cc.Range.WordOpenXML;
                 WordOps.LogMathStructure("panel", xml);
@@ -255,6 +261,27 @@ namespace MathBlocks.WordConnector
             {
                 Log.Error("right-click handler failed", ex);
             }
+        }
+
+        /// <summary>Wraps the MathBlocks picture under the selection if it lost its content control; null otherwise.</summary>
+        private Word.ContentControl AdoptPastedPicture(Word.Selection sel)
+        {
+            try
+            {
+                var doc = _app.ActiveDocument;
+                var shape = _ops.UnwrappedPictureAt(doc, sel.Range, out var how);
+                if (shape == null) return null;
+                WordOps.MathBlocksData(shape.Range.WordOpenXML, out var json);
+                var block = json != null ? System.Text.RegularExpressions.Regex.Match(json, "\"block\"\\s*:\\s*\"([0-9A-Za-z]{16})\"").Groups[1].Value : null;
+                var tag = _ops.AdoptPicture(doc, shape, block);
+                Log.Info("pasted picture (" + how + ") adopted as " + tag);
+                foreach (Word.ContentControl c in doc.SelectContentControlsByTag(tag)) return c;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("adopting a pasted picture failed", ex);
+            }
+            return null;
         }
 
         /// <summary>Screen rectangle of a range in pixels (null when Word cannot tell).</summary>
@@ -285,6 +312,14 @@ namespace MathBlocks.WordConnector
                     Log.Info("equationActivated " + tag + " (" + xml.Length + " chars, has math: " + xml.Contains("oMath") + ")");
                     WordOps.LogMathStructure("equationActivated", xml);
                     SendRequest("equationActivated", new Dictionary<string, object> { ["tag"] = tag, ["flatOpc"] = xml, ["number"] = WordOps.NumberInfo(cc) });
+                    return;
+                }
+                // A pasted MathBlocks picture that lost its wrapper: wrap it again (new identity).
+                var adopted = AdoptPastedPicture(sel);
+                if (adopted != null)
+                {
+                    cancel = true;
+                    SendRequest("equationActivated", new Dictionary<string, object> { ["tag"] = adopted.Tag, ["flatOpc"] = adopted.Range.WordOpenXML, ["number"] = WordOps.NumberInfo(adopted), ["repaired"] = true });
                     return;
                 }
                 // A MathType equation: offer to convert it and edit it in MathBlocks.
@@ -451,6 +486,7 @@ namespace MathBlocks.WordConnector
                     case "listInstances": result = _ops.ListInstances(p); break;
                     case "replaceMany": result = _ops.ReplaceMany(p); break;
                     case "backupDocument": result = _ops.BackupDocument(p); break;
+                    case "repairEquations": result = _ops.RepairEquations(p); break;
                     case "beginOperation": result = _ops.BeginOperation(p); break;
                     case "operationProgress": result = _ops.OperationProgress(p); break;
                     case "endOperation": result = _ops.EndOperation(p); break;

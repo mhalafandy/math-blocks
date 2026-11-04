@@ -220,6 +220,14 @@ export interface AppToConnector {
   };
   /** Replaces several equations (by tag) in one undo step. */
   replaceMany: { params: DocTarget & { items: { tag: string; flatOpc: string }[]; undoLabel: string }; result: { replaced: number; missing: string[] } };
+  /**
+   * Repairs identities: duplicated instance ids get new ones, MathBlocks pictures that lost their
+   * content control are wrapped again, numbered copies get a number bookmark.
+   */
+  repairEquations: {
+    params: DocTarget & { dryRun?: boolean };
+    result: { document: string; renamed: { from: string; to: string }[]; wrapped: { tag: string; source: "emf" | "alt" }[]; wrappedOk: number; bookmarks: number; otherPictures: number };
+  };
   /** Whole-document backup (Flat OPC .xml in %LOCALAPPDATA%\MathBlocks\backups). */
   backupDocument: { params: DocTarget; result: { path: string } };
   /** Opens one undo record and a progress window owned by Word (document blocked). */
