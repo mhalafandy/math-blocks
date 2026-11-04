@@ -190,3 +190,83 @@ export function findInconsistencies(latexes: string[]): Inconsistency[] {
 
 /** The catalogue template of a form (null when it is not in the catalogue). */
 export const templateOf = (key: string) => CATALOG.find((f) => f.key === key)?.template ?? null;
+
+// ------------------------------------------------------------------ transposes and style mixes
+
+export type TransposeStyle = "upright" | "bold" | "italic" | "top" | "sans";
+export const TRANSPOSE_STYLE_LABEL: Record<TransposeStyle, string> = { upright: "upright T", bold: "bold T", italic: "italic T", top: "⊤", sans: "sans-serif T" };
+
+const TRANSPOSE_RE = /\^(?:\{(-?)(T|\\mathbf\{T\}|\\mathrm\{T\}|\\mathit\{T\}|\\mathsf\{T\}|\\top)\}|(T|\\top(?![a-zA-Z])))/g;
+const styleOf = (mark: string): TransposeStyle =>
+  mark === "\\mathbf{T}" ? "bold" : mark === "\\mathrm{T}" ? "upright" : mark === "\\mathsf{T}" ? "sans" : mark.startsWith("\\top") ? "top" : "italic";
+
+/** How often each transpose form appears (A^T, A^{\mathbf{T}}, A^{\mathrm{T}}, A^{\top}…). */
+export function transposeForms(latexes: string[]): Map<TransposeStyle, number> {
+  const out = new Map<TransposeStyle, number>();
+  for (const l of latexes) for (const m of l.matchAll(TRANSPOSE_RE)) {
+    const st = styleOf(m[2] ?? m[3]!);
+    out.set(st, (out.get(st) ?? 0) + 1);
+  }
+  return out;
+}
+
+const MARK: Record<Exclude<TransposeStyle, "sans">, string> = { upright: "\\mathrm{T}", bold: "\\mathbf{T}", italic: "T", top: "\\top" };
+
+/** Writes every transpose superscript in one form; unchanged LaTeX when there is none. */
+export function changeTranspose(latex: string, to: Exclude<TransposeStyle, "sans">): string {
+  let changed = false;
+  const out = latex.replace(TRANSPOSE_RE, (all, minus: string | undefined, braced: string | undefined) => {
+    const next = `^{${minus ?? ""}${MARK[to]}}`;
+    if (styleOf(braced ?? "") !== to || all !== next) changed = true;
+    return next;
+  });
+  return changed && out !== latex ? out : latex;
+}
+
+export interface StyleMix {
+  /** What is written in several styles, e.g. "Unit vectors (hat)". */
+  what: string;
+  /** Each style with its count and letters. */
+  styles: { label: string; count: number; letters: string[] }[];
+}
+
+const FAMILY_NAME: Record<string, string> = {
+  hat: "Unit vectors (hat)",
+  "over:⇀": "Harpoon vectors",
+  "overrightharpoon": "Harpoon vectors",
+  vec: "Arrow vectors",
+  bar: "Barred symbols",
+  "vec|vec": "Dyadics (double arrow)",
+  "bar|bar": "Dyadics (double bar)",
+};
+
+/**
+ * Notation families written in more than one style across different letters — plain ŝᵢ next to
+ * bold b̂ᵢ, bold-T transposes next to a plain T. Reported, never changed automatically: the mix
+ * may be deliberate (different kinds of quantity).
+ */
+export function findStyleMixes(latexes: string[]): StyleMix[] {
+  const out: StyleMix[] = [];
+  const families = new Map<string, Map<string, { count: number; letters: string[] }>>();
+  for (const f of findForms(latexes)) {
+    const parts = f.key.split("|");
+    const font = parts[parts.length - 1] === "bold" || parts[parts.length - 1] === "bold-italic" ? parts.pop()! : (parts.pop(), "");
+    const marks = parts.join("|");
+    if (!marks) continue;
+    if (!families.has(marks)) families.set(marks, new Map());
+    const fam = families.get(marks)!;
+    const label = font ? "bold" : "plain";
+    const e = fam.get(label) ?? { count: 0, letters: [] };
+    e.count += f.count;
+    e.letters.push(...f.letters.keys());
+    fam.set(label, e);
+  }
+  for (const [marks, fam] of families) {
+    if (fam.size < 2) continue;
+    out.push({ what: FAMILY_NAME[marks] ?? `Symbols with ${marks.replace(/\|/g, " + ")}`, styles: [...fam].map(([label, v]) => ({ label, count: v.count, letters: [...new Set(v.letters)] })).sort((a, b) => b.count - a.count) });
+  }
+  const t = transposeForms(latexes);
+  if (t.size > 1)
+    out.push({ what: "Transpose", styles: [...t].map(([st, count]) => ({ label: TRANSPOSE_STYLE_LABEL[st], count, letters: [] })).sort((a, b) => b.count - a.count) });
+  return out;
+}

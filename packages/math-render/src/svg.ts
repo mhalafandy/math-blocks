@@ -79,6 +79,14 @@ export function renderSvg(root: Row, o: RenderOptions): RenderResult {
     byColor.get(k)!.push(el);
   };
   for (const it of box.items) {
+    if (it.k === "p") {
+      const cmds: PathCmd[] = it.pts.map(([px, py], i) => ({ type: i ? "L" : "M", x: (it.x + px + m) * U, y: (h - it.y - py) * U }));
+      cmds.push({ type: "Z" });
+      const p = pathData(cmds);
+      add(it.color, `<path d="${p}"/>`);
+      ops.push({ kind: "path", d: p, cmds, m: [1, 0, 0, 1, 0, 0], color: it.color ?? style.color });
+      continue;
+    }
     if (it.k === "r") {
       add(it.color, `<rect x="${f((it.x + m) * U)}" y="${f((h - it.y - it.h) * U)}" width="${f(it.w * U)}" height="${f(it.h * U)}"/>`);
       ops.push({ kind: "rect", x: (it.x + m) * U, y: (h - it.y - it.h) * U, w: it.w * U, h: it.h * U, color: it.color ?? style.color });

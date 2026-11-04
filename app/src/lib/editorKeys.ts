@@ -3,6 +3,7 @@ import { matchSnippet } from "./snippets";
 import { SHORTCUT_TABLE } from "./editorShortcuts";
 import { addDerivationLine } from "./derivation";
 import { useApp } from "./store";
+import { applyTranspose } from "./palette";
 
 /** Ctrl+Shift+Enter: a new derivation line starting from the previous right-hand side. */
 function newDerivationLine() {
@@ -92,7 +93,7 @@ export function handleEditorKey(e: KeyboardEvent): boolean {
       e.preventDefault();
       e.stopPropagation();
       mf.selection = { ranges: [[pos - snippet.trigger.length, pos]], direction: "forward" };
-      mf.executeCommand(["insert", toMathLive(snippet.latex), { insertionMode: "replaceSelection", selectionMode: "placeholder" }]);
+      mf.executeCommand(["insert", toMathLive(applyTranspose(snippet.latex, useApp.getState().transposeForm)), { insertionMode: "replaceSelection", selectionMode: "placeholder" }]);
       return true;
     }
     return false;

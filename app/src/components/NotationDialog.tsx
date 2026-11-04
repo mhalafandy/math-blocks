@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { create } from "zustand";
 import { Modal } from "./Dialogs";
 import { MathPreview } from "./MathPreview";
-import { CATALOG, changeForm, findForms, findInconsistencies, formLabel, formLatex, templateOf, type FormUse, type Inconsistency } from "../lib/notation";
+import { CATALOG, changeForm, changeTranspose, findForms, findInconsistencies, findStyleMixes, formLabel, formLatex, templateOf, transposeForms, TRANSPOSE_STYLE_LABEL, type FormUse, type Inconsistency, type TransposeStyle } from "../lib/notation";
 import { buildDocumentIndex, rewriteDocument, type DocumentIndex } from "../lib/symbolIndex";
 import { useApp } from "../lib/store";
 
@@ -41,6 +41,10 @@ export function NotationDialog() {
   const latexes = useMemo(() => (index ? index.equations.map((e) => e.latex) : [useApp.getState().latex]), [index, open]);
   const forms = useMemo(() => findForms(latexes), [latexes]);
   const inconsistent = useMemo(() => findInconsistencies(latexes), [latexes]);
+  const mixes = useMemo(() => findStyleMixes(latexes).filter((m) => m.what !== "Transpose"), [latexes]);
+  const transposes = useMemo(() => [...transposeForms(latexes)], [latexes]);
+  const prefTranspose = useApp((s) => s.transposeForm);
+  const [tTo, setTTo] = useState<Exclude<TransposeStyle, "sans">>(prefTranspose);
   const current: FormUse | undefined = forms.find((f) => f.key === from) ?? forms[0];
   useEffect(() => {
     if (current && current.key !== from) {
@@ -106,6 +110,27 @@ export function NotationDialog() {
     }
   };
 
+  /** Every transpose in one form (one undo step). */
+  const fixTranspose = async () => {
+    const transform = (l: string) => changeTranspose(l, tTo);
+    const notify = useApp.getState().notify;
+    setBusy(true);
+    try {
+      if (index) {
+        const r = await rewriteDocument(index, index.equations, transform, "Transpose form");
+        notify(`Transposes written as ${TRANSPOSE_STYLE_LABEL[tTo]} in ${r.equations} equation(s)${r.libraryEquations ? ` and ${r.libraryEquations} library equation(s)` : ""}`);
+        setIndex(await buildDocumentIndex());
+      } else {
+        const app = useApp.getState();
+        app.setLatex(transform(app.latex), "external");
+      }
+    } catch (e) {
+      notify(e instanceof Error ? e.message : String(e), "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const groups = [...new Set(CATALOG.map((f) => f.group))];
   return (
     <Modal title={index ? `Change notation in “${index.name}”` : "Change notation"} onClose={close} width={760}>
@@ -138,6 +163,37 @@ export function NotationDialog() {
                 </div>
               );
             })}
+          </div>
+        )}
+        {!loading && transposes.length > 0 && (
+          <div className="notation-inconsistent">
+            <h4>Transpose</h4>
+            <div className="notation-inc-row">
+              <span>{transposes.map(([st, n]) => `${TRANSPOSE_STYLE_LABEL[st]} ×${n}`).join(" · ")}</span>
+              <div className="spacer" />
+              <span className="muted">write all as</span>
+              <select value={tTo} onChange={(e) => setTTo(e.target.value as typeof tTo)}>
+                {(["upright", "bold", "italic", "top"] as const).map((k) => (
+                  <option key={k} value={k}>
+                    {TRANSPOSE_STYLE_LABEL[k]}
+                  </option>
+                ))}
+              </select>
+              <button disabled={busy || (transposes.length === 1 && transposes[0]![0] === tTo)} onClick={() => void fixTranspose()}>
+                Convert
+              </button>
+            </div>
+          </div>
+        )}
+        {!loading && mixes.length > 0 && (
+          <div className="notation-inconsistent">
+            <h4>Same notation in different styles (check whether deliberate)</h4>
+            {mixes.map((m) => (
+              <div key={m.what} className="notation-inc-row">
+                <strong>{m.what}:</strong>
+                <span>{m.styles.map((st) => `${st.label} ×${st.count} (${st.letters.join(", ")})`).join(" · ")}</span>
+              </div>
+            ))}
           </div>
         )}
         {!loading && current && (

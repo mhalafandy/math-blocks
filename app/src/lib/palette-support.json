@@ -2357,6 +2357,12 @@
   "omml": "full",
   "roundtrip": "full"
  },
+ "tab-linalg.la-conj": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
  "tab-linalg.la-det": {
   "mathlive": "full",
   "classic": "full",
@@ -2383,12 +2389,9 @@
  },
  "tab-linalg.la-H": {
   "mathlive": "full",
-  "classic": "converted",
+  "classic": "full",
   "omml": "full",
-  "roundtrip": "full",
-  "notes": [
-   "Classic: from STIX Two (not Times/Symbol): H[sans-serif]"
-  ]
+  "roundtrip": "full"
  },
  "tab-linalg.la-identity3": {
   "mathlive": "full",

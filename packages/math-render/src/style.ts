@@ -51,8 +51,38 @@ export interface RenderStyle {
   /** MathType fractions: numerator baseline above / denominator baseline below the bar. */
   fracNumHeight: number;
   fracDenDepth: number;
+  /** Harpoons and arrows over letters (drawn as paths) and placement of all top accents. */
+  accents: AccentRules;
   color: string;
 }
+
+/**
+ * Accent rules. Harpoon/arrow sizes are relative to MathType's, measured from the thesis
+ * appendix (12 pt, docs/ACCENT-MEASUREMENTS.md): length 0.41 em, stroke 0.029 em, barb 0.08 em
+ * long at about 32°, ink gap 0.11–0.13 em above the letter.
+ */
+export interface AccentRules {
+  /** Harpoon/arrow length and barb size, × MathType's. */
+  size: number;
+  /** Stroke weight, × MathType's. */
+  stroke: number;
+  /** Gap between the letter's ink top and the accent's ink, em. */
+  gap: number;
+  /** Barb angle, degrees from the shaft. */
+  barbAngle: number;
+  /** Smallest gap any accent keeps above the ink, em. */
+  minGap: number;
+}
+
+/** MathType's harpoon at 12 pt (thesis appendix), em. */
+export const MATHTYPE_HARPOON = { length: 0.41, stroke: 0.029, barbLength: 0.08, barbAngle: 32, gap: 0.115 };
+/** MathType's \vec arrow (two barbs), em. */
+export const MATHTYPE_ARROW = { barbLength: 0.0975, barbAngle: 26, gap: 0.145 };
+
+/** Defaults: MathType's harpoon a little heavier (×1.2 stroke) so it stays clear at 10 pt. */
+export const DEFAULT_ACCENTS: AccentRules = { size: 1, stroke: 1.2, gap: MATHTYPE_HARPOON.gap, barbAngle: MATHTYPE_HARPOON.barbAngle, minGap: 0.05 };
+/** "Reset to MathType-like". */
+export const MATHTYPE_ACCENTS: AccentRules = { size: 1, stroke: 1, gap: MATHTYPE_HARPOON.gap, barbAngle: MATHTYPE_HARPOON.barbAngle, minGap: 0.05 };
 
 export const CLASSIC: RenderStyle = {
   id: "classic",
@@ -81,5 +111,6 @@ export const CLASSIC: RenderStyle = {
   obliqueSlant: 0.2,
   fracNumHeight: 0.35,
   fracDenDepth: 1.0,
+  accents: DEFAULT_ACCENTS,
   color: "#000000",
 };

@@ -10,7 +10,9 @@ import type { RenderStyle } from "./style";
 
 export type Item =
   | { k: "g"; g: GlyphInfo; x: number; y: number; s: number; sx?: number; sy?: number; color?: string; slant?: number }
-  | { k: "r"; x: number; y: number; w: number; h: number; color?: string };
+  | { k: "r"; x: number; y: number; w: number; h: number; color?: string }
+  /** A filled shape drawn by the engine (accents), in em, y up, relative to (x, y). */
+  | { k: "p"; x: number; y: number; pts: [number, number][]; color?: string };
 
 export interface Box {
   w: number;
@@ -54,6 +56,39 @@ function glyphBox(g: GlyphInfo, s: number, color?: string, sy = 1): Box {
     items: [{ k: "g", g, x: 0, y: 0, s, sy: sy !== 1 ? sy : undefined, color }],
     overhang: Math.max(0, (g.xMax - g.w) * s),
   };
+}
+
+/** Visible ink of a box: left/right edges and top (em), and the slope of its letters (italic). */
+export function inkOf(box: Box): { x0: number; x1: number; top: number; slope: number } {
+  let x0 = Infinity;
+  let x1 = -Infinity;
+  let top = -Infinity;
+  let slope = 0;
+  for (const it of box.items) {
+    if (it.k === "g") {
+      const sx = it.sx ?? 1;
+      const sy = it.sy ?? 1;
+      const k = it.slant ?? 0;
+      const h = it.g.h * it.s * sy;
+      x0 = Math.min(x0, it.x + it.g.xMin * it.s * sx);
+      x1 = Math.max(x1, it.x + it.g.xMax * it.s * sx + k * h);
+      top = Math.max(top, it.y + h);
+      const angle = (it.g.font as unknown as { tables: { post?: { italicAngle?: number } } }).tables.post?.italicAngle ?? 0;
+      slope = Math.max(slope, k || Math.tan((-angle * Math.PI) / 180));
+    } else if (it.k === "r") {
+      x0 = Math.min(x0, it.x);
+      x1 = Math.max(x1, it.x + it.w);
+      top = Math.max(top, it.y + it.h);
+    } else {
+      for (const [px, py] of it.pts) {
+        x0 = Math.min(x0, it.x + px);
+        x1 = Math.max(x1, it.x + px);
+        top = Math.max(top, it.y + py);
+      }
+    }
+  }
+  if (!Number.isFinite(x0)) return { x0: 0, x1: box.w, top: box.h, slope: 0 };
+  return { x0, x1, top, slope };
 }
 
 function rule(x: number, y: number, w: number, h: number): Item {
@@ -645,80 +680,153 @@ function radical(bodyRow: Row, index: Row | undefined, c: Ctx): Box {
   return box;
 }
 
+/** Combining accents (math font): fallback when the text font has no spacing accent. */
 const ACCENT_CHAR: Record<string, string> = {
-  hat: "̂",
-  widehat: "̂",
-  check: "̌",
-  tilde: "̃",
-  widetilde: "̃",
-  breve: "̆",
-  dot: "̇",
-  ddot: "̈",
-  dddot: "⃛",
-  ddddot: "\u20DC",
-  acute: "\u0301",
-  grave: "\u0300",
-  mathring: "\u030A",
-  vec: "⃗",
-  overrightharpoon: "⃑",
-  overleftharpoon: "⃐",
-  overrightarrow: "⃗",
-  overleftarrow: "⃖",
+  hat: "\u0302", widehat: "\u0302", check: "\u030C", tilde: "\u0303", widetilde: "\u0303", breve: "\u0306",
+  dot: "\u0307", ddot: "\u0308", dddot: "\u20DB", ddddot: "\u20DC", acute: "\u0301", grave: "\u0300", mathring: "\u030A",
 };
+
+/** Spacing accents of the text font (Times), as MathType uses them; drawn in regular weight. */
+const TEXT_ACCENT: Record<string, string> = {
+  hat: "\u02C6", check: "\u02C7", tilde: "\u02DC", breve: "\u02D8", dot: "\u02D9", ddot: "\u00A8",
+  acute: "\u00B4", grave: "`", mathring: "\u02DA",
+};
+
+/** Arrow-like accents drawn as paths: direction and barbs. */
+const ARROWS: Record<string, { left: boolean; barbs: "up" | "both" | "down" }> = {
+  overrightharpoon: { left: false, barbs: "up" },
+  overleftharpoon: { left: true, barbs: "up" },
+  vec: { left: false, barbs: "both" },
+  overrightarrow: { left: false, barbs: "both" },
+  overleftarrow: { left: true, barbs: "both" },
+};
+
+/**
+ * Where an accent goes over its base: centred on the visible ink (not the advance box), shifted
+ * right on slanted letters by the slant at the ink top, and at least `minGap` above the ink.
+ */
+function attach(body: Box): { cx: number; top: number; inkW: number; single: boolean } {
+  const ink = inkOf(body);
+  const single = !!body.char;
+  const mid = (ink.x0 + ink.x1) / 2;
+  // An italic letter's bounding box centre is at mid-height; its top is further right.
+  const cx = single ? mid + (ink.slope * ink.top) / 2 : mid;
+  return { cx, top: ink.top, inkW: ink.x1 - ink.x0, single };
+}
 
 function accent(kind: string, bodyRow: Row, c: Ctx): Box {
   const body = layoutRow(bodyRow, c);
   const t = c.st.rule * c.s;
-  const gap = c.st.accentGap * c.s;
-  if (kind === "overline" || kind === "bar") {
-    if (kind === "bar" && body.char) {
-      const g = charGlyph(c.fonts.math, "̄");
-      if (g) return placeAccent(body, g, c, gap);
-    }
-    const y = body.h + gap * 2;
-    return { ...body, h: y + t, items: [...body.items, rule(0.02 * c.s, y, body.w - 0.04 * c.s, t)] };
-  }
+  const rules = c.st.accents;
   if (kind === "underline") {
-    const y = -body.d - gap * 2 - t;
+    const y = -body.d - c.st.accentGap * c.s * 2 - t;
     return { ...body, d: -y, items: [...body.items, rule(0, y, body.w, t)] };
   }
-  const ch = ACCENT_CHAR[kind];
-  const g = ch ? charGlyph(c.fonts.math, ch) : null;
-  if (!g) return body;
-  const wide = !body.char && (kind.startsWith("over") || kind === "vec") && body.w > (g.xMax - g.xMin) * c.s * 1.3;
-  if (wide) return wideArrow(body, g, c, gap);
-  if (!body.char && (kind === "widehat" || kind === "widetilde")) {
-    const sx = body.w / ((g.xMax - g.xMin) * c.s);
-    return placeAccent(body, g, c, gap, Math.max(1, sx));
+  const at = attach(body);
+  if (kind === "overline" || (kind === "bar" && !at.single)) {
+    const ink = inkOf(body);
+    const y = at.top + Math.max(rules.minGap, c.st.accentGap * 2) * c.s;
+    return { ...body, h: Math.max(body.h, y + t), items: [...body.items, rule(ink.x0, y, ink.x1 - ink.x0, t)], scriptH: body.scriptH ?? body.h };
   }
-  return placeAccent(body, g, c, gap);
+  const arrow = ARROWS[kind];
+  if (arrow) return arrowAccent(body, at, arrow, c);
+  if (kind === "bar") {
+    // A bar over a single letter: about the letter's width, centred on its ink.
+    const w = Math.max(at.inkW * 0.9, 0.3 * c.s);
+    const y = at.top + Math.max(rules.minGap, 0.08) * c.s;
+    return { ...body, h: Math.max(body.h, y + t), items: [...body.items, rule(at.cx - w / 2, y, w, t)], scriptH: body.scriptH ?? body.h };
+  }
+  const wide = kind === "widehat" || kind === "widetilde";
+  const text = !wide || at.single ? TEXT_ACCENT[kind] : undefined;
+  const g = (text && charGlyph(c.fonts.regular, text)) || (ACCENT_CHAR[kind] ? charGlyph(c.fonts.math, ACCENT_CHAR[kind]!) : null);
+  if (kind === "dddot" || kind === "ddddot") {
+    const dot = charGlyph(c.fonts.regular, "\u02D9");
+    if (dot) return dots(body, at, dot, kind === "dddot" ? 3 : 4, c);
+  }
+  if (!g) return body;
+  let sx = 1;
+  if (wide && !at.single) sx = Math.max(1, at.inkW / ((g.xMax - g.xMin) * c.s));
+  return placeAccent(body, g, at, c, sx);
 }
 
-/** Centres an accent glyph over the base's ink (shifted right for italic letters). */
-function placeAccent(body: Box, g: GlyphInfo, c: Ctx, gap: number, sx = 1): Box {
+/** Puts an accent glyph's ink centred at `at.cx`, its ink bottom a gap above the base's ink. */
+function placeAccent(body: Box, g: GlyphInfo, at: { cx: number; top: number }, c: Ctx, sx = 1): Box {
   const s = c.s;
   const inkW = (g.xMax - g.xMin) * s * sx;
-  const skew = body.char?.italic ? 0.08 * body.h : 0;
-  const x = body.w / 2 + skew - inkW / 2 - g.xMin * s * sx;
-  // Accent ink bottom sits `gap` above the base ink top.
-  const y = body.h + gap + g.d * s;
+  const x = at.cx - inkW / 2 - g.xMin * s * sx;
+  const gap = Math.max(c.st.accents.minGap, c.st.accentGap) * s;
+  // Glyph ink bottom (−d below its baseline) sits `gap` above the base's ink top.
+  const y = at.top + gap + g.d * s;
   const item: Item = { k: "g", g, x, y, s, sx: sx !== 1 ? sx : undefined };
   return { ...body, h: Math.max(body.h, y + g.h * s), items: [...body.items, item], scriptH: body.scriptH ?? body.h };
 }
 
-/** Arrow over a wide base: a rule with the arrow's head at the end. */
-function wideArrow(body: Box, head: GlyphInfo, c: Ctx, gap: number): Box {
+/** Three or four dots (\dddot, \ddddot) from the text font's dot accent. */
+function dots(body: Box, at: { cx: number; top: number }, dot: GlyphInfo, n: number, c: Ctx): Box {
   const s = c.s;
-  const t = c.st.rule * s * 0.9;
-  const inkH = (head.h + head.d) * s;
-  const yMid = body.h + gap + inkH / 2;
-  const y = yMid - ((head.h - head.d) / 2) * s;
-  const headW = (head.xMax - head.xMin) * s;
-  const left = head.glyph.unicode === 0x20d6 || head.glyph.unicode === 0x20d0;
-  const inkLeft = left ? 0 : body.w - headW;
-  const items: Item[] = [...body.items, { k: "g", g: head, x: inkLeft - head.xMin * s, y, s }];
-  items.push(left ? rule(headW * 0.5, yMid - t / 2, body.w - headW * 0.5, t) : rule(0, yMid - t / 2, body.w - headW * 0.5, t));
-  return { ...body, h: Math.max(body.h, yMid + inkH / 2), items };
+  const w = (dot.xMax - dot.xMin) * s;
+  const step = w * 1.45;
+  const total = step * (n - 1) + w;
+  const gap = Math.max(c.st.accents.minGap, c.st.accentGap) * s;
+  const y = at.top + gap + dot.d * s;
+  const items: Item[] = [...body.items];
+  for (let i = 0; i < n; i++) items.push({ k: "g", g: dot, x: at.cx - total / 2 + i * step - dot.xMin * s, y, s });
+  return { ...body, h: Math.max(body.h, y + dot.h * s), items, scriptH: body.scriptH ?? body.h };
+}
+
+/**
+ * Harpoons and arrows as paths (every dimension controlled): MathType's proportions × the style's
+ * size and stroke; over one letter a fixed length centred on its ink, over several the ink width.
+ */
+function arrowAccent(body: Box, at: { cx: number; top: number; inkW: number; single: boolean }, a: { left: boolean; barbs: "up" | "both" | "down" }, c: Ctx): Box {
+  const s = c.s;
+  const r = c.st.accents;
+  const harpoon = a.barbs !== "both";
+  const t = 0.029 * r.stroke * s;
+  const barb = (harpoon ? 0.08 : 0.0975) * r.size * s;
+  const angle = ((harpoon ? r.barbAngle : r.barbAngle - 6) * Math.PI) / 180;
+  const len = at.single ? Math.max(0.41 * r.size * s, at.inkW) : Math.max(at.inkW, 0.41 * r.size * s);
+  const gap = Math.max(r.minGap, harpoon ? r.gap : r.gap + 0.03) * s;
+  const x0 = at.cx - len / 2;
+  const x1 = at.cx + len / 2;
+  const raw = arrowOutline(x0, x1, 0, t, barb, angle, a.barbs);
+  // The lowest ink (the shaft, or a lower barb) sits `gap` above the base's ink.
+  const dy = at.top + gap - Math.min(...raw.map((p) => p[1]));
+  const pts = raw.map(([x, y]) => [x, y + dy] as [number, number]);
+  const out = a.left ? pts.map(([x, y]) => [x0 + x1 - x, y] as [number, number]).reverse() : pts;
+  const top = Math.max(...out.map((p) => p[1]));
+  return { ...body, h: Math.max(body.h, top), items: [...body.items, { k: "p", x: 0, y: 0, pts: out }], scriptH: body.scriptH ?? body.h };
+}
+
+/**
+ * Outline of a right-pointing arrow (counter-clockwise, y up): shaft [yb, yb + t] from x0 to the
+ * tip at x1, barbs of length `barb` (along the shaft) at `angle`, as thick as the shaft.
+ */
+export function arrowOutline(x0: number, x1: number, yb: number, t: number, barb: number, angle: number, barbs: "up" | "both" | "down"): [number, number][] {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const L = barb / cos;
+  /** Upper barb: outer edge from the tip corner (x1, yTip) up-left; inner edge back to the shaft top. */
+  const upper = (yTip: number, yShaftTop: number): [number, number][] => {
+    const ex = x1 - L * cos;
+    const ey = yTip + L * sin;
+    // Inner edge: the outer edge moved by t towards the shaft (normal pointing down-left).
+    const fx = ex - t * sin;
+    const fy = ey - t * cos;
+    const k = Math.max(0, (fy - yShaftTop) / sin);
+    const gx = Math.min(x1 - t * 0.5, fx + k * cos);
+    return [[x1, yTip], [ex, ey], [fx, fy], [gx, yShaftTop]];
+  };
+  if (barbs === "up") {
+    const u = upper(yb + t, yb + t);
+    // Tip: the shaft's top-right corner carries the barb; bottom-right is the point.
+    return [[x0, yb], [x1, yb], ...u, [x0, yb + t]];
+  }
+  // Both barbs: symmetric about the shaft centre line.
+  const ym = yb + t / 2;
+  const u = upper(ym, yb + t);
+  const lower = u.map(([x, y]) => [x, 2 * ym - y] as [number, number]).reverse();
+  return [[x0, yb], ...lower, ...u, [x0, yb + t]];
 }
 
 function stack(body: Box, annotation: Row | undefined, position: "over" | "under", brace: boolean, c: Ctx): Box {

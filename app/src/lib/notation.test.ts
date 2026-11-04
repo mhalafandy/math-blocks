@@ -36,3 +36,26 @@ describe("notation forms", () => {
     expect(inc).toEqual([{ letter: "r", forms: [{ key: "vec|", count: 3 }, { key: "bold", count: 1 }] }]);
   });
 });
+
+describe("transposes and style mixes", async () => {
+  const { transposeForms, changeTranspose, findStyleMixes } = await import("./notation");
+  const thesis = ["\\vec{\\mathbf{S}}^{\\mathbf{T}}\\mathbf{c}_1", "\\begin{bmatrix}0&0&0\\end{bmatrix}^{T}", "\\hat{s}_{2}", "\\hat{s}_{3}", "\\hat{\\mathbf{b}}_{1}", "\\mathbf{r}^{\\mathbf{T}}"];
+
+  it("counts the transpose forms (Appendix A: bold T, one plain T)", () => {
+    expect(Object.fromEntries(transposeForms(thesis))).toEqual({ bold: 2, italic: 1 });
+  });
+
+  it("converts every transpose to one form", () => {
+    expect(changeTranspose("\\mathbf{A}^{\\mathbf{T}}\\mathbf{x}^T", "upright")).toBe("\\mathbf{A}^{\\mathrm{T}}\\mathbf{x}^{\\mathrm{T}}");
+    expect(changeTranspose("\\mathbf{A}^{-\\mathbf{T}}", "upright")).toBe("\\mathbf{A}^{-\\mathrm{T}}");
+    expect(changeTranspose("\\mathbf{A}^{\\mathrm{T}}", "upright")).toBe("\\mathbf{A}^{\\mathrm{T}}");
+    expect(changeTranspose("x^2", "bold")).toBe("x^2");
+  });
+
+  it("reports plain and bold unit vectors, and mixed transposes, without changing anything", () => {
+    const mixes = findStyleMixes(thesis);
+    const hat = mixes.find((m) => m.what.startsWith("Unit vectors"))!;
+    expect(hat.styles.map((s) => [s.label, s.count, s.letters.join("")])).toEqual([["plain", 2, "s"], ["bold", 1, "b"]]);
+    expect(mixes.find((m) => m.what === "Transpose")?.styles.map((s) => s.label)).toEqual(["bold T", "italic T"]);
+  });
+});
