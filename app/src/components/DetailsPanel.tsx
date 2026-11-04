@@ -143,6 +143,7 @@ function LinkedCopies({ blockId, version }: { blockId: string; version: number }
               <li key={i.tag}>
                 <button title="Show this copy in Word" onClick={() => void goToCopy(d.fullName, i.tag)}>
                   <span className="page">{i.page ? `p. ${i.page}` : ""}</span>
+                  {i.number && <span className="eq-number" title="Its equation number in the document">{i.number}</span>}
                   <span className="ctx">{i.context || "(equation on its own line)"}</span>
                   <span className="go">Go to</span>
                 </button>

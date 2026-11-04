@@ -1,4 +1,5 @@
-import { focusedMathField, insertIntoVisual, toggleBold } from "../components/MathEditor";
+import { focusedMathField, insertIntoVisual, toggleBold, toMathLive } from "../components/MathEditor";
+import { matchSnippet } from "./snippets";
 
 /**
  * MathType-style keyboard shortcuts in the equation editor, so MathType habits carry over.
@@ -48,6 +49,7 @@ export const EDITOR_SHORTCUTS: EditorShortcut[] = [
   { keys: "Ctrl+Shift+B", label: "Bold (vector style) on/off", run: () => toggleBold() },
   { keys: "Ctrl+Space", label: "Thin space", insert: "\\," },
   { keys: "Ctrl+G, letter", label: "Greek letter (a α, b β, q θ, f φ, w ω, D Δ…)", run: () => (greekNext = true) },
+  { keys: "trigger + Tab", label: "Snippet: ddt, pdv, intab, mat3, col3, norm, inv, trans… (Ctrl+K → Snippets)" },
 ];
 
 function comboOf(e: KeyboardEvent): string {
@@ -77,6 +79,19 @@ export function handleEditorKey(e: KeyboardEvent): boolean {
       e.preventDefault();
       e.stopPropagation();
       mf.executeCommand(["insert", `\\${name}`]);
+      return true;
+    }
+    return false;
+  }
+  // Tab after a snippet trigger ("ddt", "mat3"…) expands it; otherwise Tab moves between slots.
+  if (e.key === "Tab" && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && mf.selectionIsCollapsed) {
+    const pos = mf.position;
+    const snippet = matchSnippet((n) => (pos >= n ? mf.getValue(pos - n, pos, "latex") : ""));
+    if (snippet) {
+      e.preventDefault();
+      e.stopPropagation();
+      mf.selection = { ranges: [[pos - snippet.trigger.length, pos]], direction: "forward" };
+      mf.executeCommand(["insert", toMathLive(snippet.latex), { insertionMode: "replaceSelection", selectionMode: "placeholder" }]);
       return true;
     }
     return false;

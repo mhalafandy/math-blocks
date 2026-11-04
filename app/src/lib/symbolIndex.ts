@@ -23,6 +23,8 @@ export interface IndexedEquation {
   /** Classic picture or native Word equation (kept when it is rewritten). */
   kind?: "native" | "picture";
   numbered?: boolean;
+  /** Its number in the document, e.g. "(2.3)". */
+  number?: string | null;
 }
 
 export interface IndexedSymbol {
@@ -74,7 +76,7 @@ export async function buildDocumentIndex(): Promise<DocumentIndex> {
   for (const i of doc.instances) {
     const read = i.flatOpc ? readOmml(i.flatOpc) : null;
     if (!read || !read.root.children.length) continue;
-    equations.push({ tag: i.tag, page: i.page, context: i.context, latex: serializeLatex(read.root), display: read.display, blockId: linkOf(i.tag)?.blockId ?? null, kind: read.kind, numbered: read.numbered });
+    equations.push({ tag: i.tag, page: i.page, context: i.context, latex: serializeLatex(read.root), display: read.display, blockId: linkOf(i.tag)?.blockId ?? null, kind: read.kind, numbered: read.numbered, number: i.number ?? null });
   }
   return { document: doc.fullName, name: doc.name, equations, symbols: indexEquations(equations) };
 }

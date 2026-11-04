@@ -83,6 +83,13 @@ export function PanelApp() {
     return () => off?.();
   }, []);
 
+  // Pasting a picture of an equation recognises it (same as in the main window).
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => void import("./RecognitionDialog").then((m) => m.onPasteImage(e));
+    window.addEventListener("paste", onPaste, true);
+    return () => window.removeEventListener("paste", onPaste, true);
+  }, []);
+
   // Enter applies, Esc cancels (capture: also while the equation editor has focus).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

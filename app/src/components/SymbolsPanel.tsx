@@ -129,6 +129,7 @@ function SymbolRow({ s, index, expanded, onToggle, onRenamed }: { s: IndexedSymb
               {s.equations.map((e) => (
                 <li key={e.tag}>
                   <span className="muted">p. {e.page || "?"}</span>
+                  {e.number && <span className="eq-number">{e.number}</span>}
                   <span className="sym-eq">
                     <MathPreview latex={e.latex} />
                   </span>
