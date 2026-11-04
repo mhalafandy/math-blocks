@@ -19,9 +19,11 @@ export interface FontSet {
   math: Font;
   /** Symbol-encoded font for Greek and operators (MathType's "Symbol" style), optional. */
   symbol?: Font;
+  /** MathType's MT Extra (installed with MathType): preferred over STIX for what Times lacks. */
+  extra?: Font;
 }
 
-export type Face = Exclude<keyof FontSet, "symbol">;
+export type Face = Exclude<keyof FontSet, "symbol" | "extra">;
 
 export const loadFont = (bytes: ArrayBuffer | Uint8Array): Font =>
   parse(bytes instanceof Uint8Array ? (bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer) : bytes);

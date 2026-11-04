@@ -48,6 +48,8 @@ export interface RenderStyle {
   useSymbolFont: boolean;
   /** Slant of synthetic italic (Symbol has no italic face), as a shear factor. */
   obliqueSlant: number;
+  /** Use MT Extra (when installed) before STIX for symbols Times and Symbol lack. */
+  useExtraFont: boolean;
   /** MathType fractions: numerator baseline above / denominator baseline below the bar. */
   fracNumHeight: number;
   fracDenDepth: number;
@@ -109,6 +111,7 @@ export const CLASSIC: RenderStyle = {
   bigOpScale: 1.5,
   useSymbolFont: true,
   obliqueSlant: 0.2,
+  useExtraFont: true,
   fracNumHeight: 0.35,
   fracDenDepth: 1.0,
   accents: DEFAULT_ACCENTS,

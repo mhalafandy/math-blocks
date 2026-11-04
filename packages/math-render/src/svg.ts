@@ -1,5 +1,5 @@
 import type { NotationProfile, Row } from "@mathblocks/math-core";
-import { layout, type Box } from "./layout";
+import { layout, type Box, type GlyphSource } from "./layout";
 import type { FontSet } from "./fonts";
 import { CLASSIC, type RenderStyle } from "./style";
 
@@ -42,6 +42,8 @@ export interface RenderResult {
   heightPt: number;
   depthPt: number;
   box: Box;
+  /** Fonts the drawing used ("math" = the STIX fallback, "extra" = MT Extra). */
+  sources: GlyphSource[];
 }
 
 const U = 1000; // SVG units per em
@@ -66,7 +68,8 @@ function pathData(commands: { type: string; x?: number; y?: number; x1?: number;
 /** Typesets an equation into a standalone SVG of glyph outlines (no fonts needed to view it). */
 export function renderSvg(root: Row, o: RenderOptions): RenderResult {
   const style = o.style ?? CLASSIC;
-  const box = layout(root, { fonts: o.fonts, style, display: o.display ?? true, notation: o.notation });
+  const used = new Set<GlyphSource>();
+  const box = layout(root, { fonts: o.fonts, style, display: o.display ?? true, notation: o.notation, used });
   const m = o.margin ?? 0.04;
   const sizePt = o.sizePt ?? 12;
   const w = box.w + 2 * m;
@@ -116,5 +119,5 @@ export function renderSvg(root: Row, o: RenderOptions): RenderResult {
     `<svg xmlns="http://www.w3.org/2000/svg" width="${f(w * sizePt)}pt" height="${f((h + d) * sizePt)}pt" viewBox="0 0 ${f(w * U)} ${f((h + d) * U)}">` +
     paths.join("") +
     `</svg>`;
-  return { svg, ops, viewW: w * U, viewH: (h + d) * U, widthPt: w * sizePt, heightPt: (h + d) * sizePt, depthPt: d * sizePt, box };
+  return { svg, ops, viewW: w * U, viewH: (h + d) * U, widthPt: w * sizePt, heightPt: (h + d) * sizePt, depthPt: d * sizePt, box, sources: [...used] };
 }

@@ -26,9 +26,13 @@ export function loadFonts(): Promise<FontSet> {
   if (fontsPromise) return fontsPromise;
   fontsPromise = (async () => {
     const stix = loadFont(await (await fetch(stixUrl)).arrayBuffer());
-    const [r, i, b, bi, sym] = await Promise.all(["times.ttf", "timesi.ttf", "timesbd.ttf", "timesbi.ttf", "symbol.ttf"].map(systemFont));
+    const [r, i, b, bi, sym, extra] = await Promise.all(["times.ttf", "timesi.ttf", "timesbd.ttf", "timesbi.ttf", "symbol.ttf", "mtextra.ttf"].map(systemFont));
     const f = (x: ArrayBuffer | null) => (x ? loadFont(x) : stix);
-    return { regular: f(r ?? null), italic: f(i ?? null), bold: f(b ?? null), boldItalic: f(bi ?? null), math: stix, symbol: sym ? loadFont(sym) : undefined };
+    return {
+      regular: f(r ?? null), italic: f(i ?? null), bold: f(b ?? null), boldItalic: f(bi ?? null), math: stix,
+      symbol: sym ? loadFont(sym) : undefined,
+      extra: extra ? loadFont(extra) : undefined,
+    };
   })();
   fontsPromise.catch(() => (fontsPromise = null));
   return fontsPromise;
@@ -54,6 +58,31 @@ export interface PictureSource {
   mode: PictureMode;
   style: string;
   sizePt: number;
+  /** Font used for symbols Times/Symbol lack: MathType's MT Extra or the STIX fallback (consistency check). */
+  fallback?: "mtextra" | "stix" | "both";
+}
+
+/** Which fallback font a drawing used. */
+function fallbackOf(sources: string[]): PictureSource["fallback"] {
+  const extra = sources.includes("extra");
+  const stix = sources.includes("math");
+  return extra && stix ? "both" : extra ? "mtextra" : stix ? "stix" : undefined;
+}
+
+let warnedNoExtra = false;
+/** Once: symbols are drawn from STIX because MT Extra is not installed (equations may differ from older ones). */
+function warnNoExtra() {
+  if (warnedNoExtra) return;
+  warnedNoExtra = true;
+  try {
+    if (localStorage.getItem("mathblocks.warned.mtextra")) return;
+    localStorage.setItem("mathblocks.warned.mtextra", "1");
+  } catch {
+    // Warn this session only.
+  }
+  useApp.getState().notify(
+    "MT Extra (installed with MathType) was not found, so a few symbols are drawn from STIX Two instead. Equations made on a PC with MT Extra may look slightly different; the consistency check lists them.",
+  );
 }
 
 const PX_PER_PT = 4 * (96 / 72);
@@ -95,7 +124,9 @@ export const notationProfile = () => useApp.getState().notationProfile;
 export async function renderPicture(latex: string, display: boolean, sizePt: number, mode: PictureMode = display ? "display" : "inline", withPng = false): Promise<Picture> {
   const fonts = await loadFonts();
   const r = renderSvg(parseLatex(latex).root, { fonts, style: classicStyle(), display, sizePt, notation: notationProfile() });
-  const source: PictureSource = { latex, mode, style: CLASSIC.id, sizePt };
+  const fallback = fallbackOf(r.sources);
+  if (fallback === "stix" && !fonts.extra && fonts.symbol) warnNoExtra();
+  const source: PictureSource = { latex, mode, style: CLASSIC.id, sizePt, ...(fallback ? { fallback } : {}) };
   const emf = renderEmf(r, { comment: JSON.stringify(source) });
   const png = withPng ? await rasterise(r) : new Uint8Array();
   return { ...r, png, emf };

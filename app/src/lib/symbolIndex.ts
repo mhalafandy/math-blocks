@@ -33,6 +33,8 @@ export interface IndexedEquation {
   flatOpc?: string;
   /** Native equation edited in Word since MathBlocks wrote it (its kinds are not in Word's version). */
   editedInWord?: boolean;
+  /** Classic picture: fallback symbol font it was drawn with (mtextra / stix / both). */
+  fallback?: string;
 }
 
 export interface IndexedSymbol {
@@ -93,7 +95,7 @@ export async function buildDocumentIndex(): Promise<DocumentIndex> {
       if (wordHash(i.flatOpc!) === src.hash) latex = src.latex;
       else editedInWord = true;
     }
-    equations.push({ tag: i.tag, page: i.page, context: i.context, latex, display: read.display, blockId: linkOf(i.tag)?.blockId ?? null, kind: read.kind, numbered: read.numbered, number: i.number ?? null, flatOpc: i.flatOpc ?? undefined, editedInWord });
+    equations.push({ tag: i.tag, page: i.page, context: i.context, latex, display: read.display, blockId: linkOf(i.tag)?.blockId ?? null, kind: read.kind, numbered: read.numbered, number: i.number ?? null, flatOpc: i.flatOpc ?? undefined, editedInWord, ...(read.fallback ? { fallback: read.fallback } : {}) });
   }
   return { document: doc.fullName, name: doc.name, equations, symbols: indexEquations(equations) };
 }

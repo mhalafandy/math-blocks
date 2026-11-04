@@ -83,6 +83,13 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => import("../components/NomenclatureDialog").then((m) => m.openNomenclature()),
     },
     {
+      id: "word.normalizeBold",
+      title: "Normalize bold: keep bold off subscripts and superscripts in the document…",
+      group: "Word",
+      keywords: "bold scripts subscript superscript index normalize fix weight",
+      run: () => import("../components/NormalizeBoldDialog").then((m) => m.openNormalizeBold()),
+    },
+    {
       id: "word.thesis",
       title: "Thesis check: notation, definitions and linked equations across all chapter files…",
       group: "Word",

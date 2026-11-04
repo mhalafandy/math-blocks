@@ -106,6 +106,8 @@ interface Ctx {
   display: boolean;
   /** 0 base, 1 script, 2 script-script. */
   level: number;
+  /** Fonts the drawing used (recorded with the picture). */
+  used?: Set<GlyphSource>;
 }
 
 const script = (c: Ctx): Ctx => ({
@@ -172,7 +174,7 @@ function faceFor(ch: string, variant: MathVariant | undefined, kind: "ident" | "
 const SYMBOL_STYLE = new Set([..."+−=<>±×÷≤≥≠≈≡∼≅∝∂∞∇∈∉∋⊂⊃⊆⊇∩∪→←↔⇒⇔⇐↑↓⋅•…′″∀∃¬∧∨⊥∠∅⊗⊕"]);
 
 /** Which font a character is drawn from: Symbol (Classic), the text face, the math font, or the regular face as a last resort. */
-export type GlyphSource = "symbol" | "text" | "math" | "regular" | "none";
+export type GlyphSource = "symbol" | "text" | "extra" | "math" | "regular" | "none";
 
 interface Resolved {
   g: GlyphInfo | null;
@@ -199,6 +201,11 @@ function resolveGlyph(ch: string, face: FaceName, fonts: FontSet, st: RenderStyl
   }
   const fromFace = charGlyph(fonts[face], ch);
   if (fromFace) return { g: fromFace, source: "text" };
+  // MT Extra (as MathType uses it) for symbols Times lacks; only its Unicode symbol range, never letters.
+  if (fonts.extra && st.useExtraFont && (ch.codePointAt(0) ?? 0) >= 0x2000) {
+    const g = charGlyph(fonts.extra, ch);
+    if (g) return { g, source: "extra" };
+  }
   const fromMath = charGlyph(fonts.math, ch);
   if (fromMath) return { g: fromMath, source: "math" };
   const fromRegular = charGlyph(fonts.regular, ch);
@@ -214,6 +221,7 @@ export function glyphSource(ch: string, kind: "ident" | "number" | "operator" | 
 
 function charBox(ch: string, face: FaceName, c: Ctx, variant?: MathVariant): Box {
   const r = resolveGlyph(ch, face, c.fonts, c.st, variant);
+  c.used?.add(r.source);
   if (!r.g) return empty(0.5 * c.s);
   const b = glyphBox(r.g, c.s);
   if (r.source === "symbol") {
@@ -974,11 +982,13 @@ export interface LayoutOptions {
   display: boolean;
   /** Notation profile for kind objects; default: Hughes. */
   notation?: NotationProfile;
+  /** Collects the fonts the drawing used. */
+  used?: Set<GlyphSource>;
 }
 
 export function layout(root: Row, o: LayoutOptions): Box {
   root = expandNotation(root, o.notation);
-  return layoutRow(root, { fonts: o.fonts, st: o.style, s: 1, display: o.display, level: 0 });
+  return layoutRow(root, { fonts: o.fonts, st: o.style, s: 1, display: o.display, level: 0, used: o.used });
 }
 
 // Re-exported for tests.
