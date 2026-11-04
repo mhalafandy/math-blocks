@@ -174,12 +174,31 @@ function casesPage(): string {
   return `<!doctype html><html><head><meta charset="utf-8"><style>body{margin:8px;background:#fff;color:#000}.case{display:inline-block;padding:6px 10px;margin:4px;background:#fff}</style></head><body>${items.join("")}</body></html>`;
 }
 
+// ------------------------------------------------------------------ harpoon length: (a) fixed vs (b) adaptive
+
+function harpoonPage(): string {
+  const bases = ["\\ell", "I", "i", "j", "r", "\\omega", "F", "M", "W"];
+  const eq = (bold: boolean) => bases.map((b) => `\\overrightharpoon{${bold ? (b.startsWith("\\") ? `\\boldsymbol{${b}}` : `\\mathbf{${b}}`) : b}}`).join("\\quad ");
+  const draw = (latex: string, length: "fixed" | "adaptive", pt: number, display: boolean) => {
+    const r = renderSvg(parseLatex(latex).root, { fonts, style: { ...STYLE, accents: { ...STYLE.accents, length } }, display, sizePt: pt });
+    const svg = r.svg.replace(/width="([\d.]+)pt" height="([\d.]+)pt"/, (_, w: string, h: string) => `width="${((+w * 96) / 72).toFixed(2)}px" height="${((+h * 96) / 72).toFixed(2)}px"`);
+    return display ? svg : `<span style="font:${pt}pt 'Times New Roman','Liberation Serif',serif">where&nbsp;<span style="display:inline-block;vertical-align:-${((r.depthPt * 96) / 72).toFixed(2)}px">${svg}</span>&nbsp;are the vectors</span>`;
+  };
+  const rows: string[] = [];
+  for (const bold of [false, true])
+    for (const [pt, display] of [[12, true], [10, false]] as const)
+      rows.push(`<tr><th>${bold ? "bold" : "regular"}, ${pt} pt ${display ? "display" : "inline"}</th><td>${draw(eq(bold), "fixed", pt, display)}</td><td>${draw(eq(bold), "adaptive", pt, display)}</td></tr>`);
+  return `<!doctype html><html><head><meta charset="utf-8"><style>body{margin:20px;font:13px system-ui;background:#fff;color:#111}h1{font-size:18px;margin:0 0 4px}p{margin:0 0 12px;color:#555}table{border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px 12px;text-align:left}th{font-weight:500;font-size:12px}</style></head><body>
+<h1>Harpoon length — 100 %</h1><p>Bases ℓ I i j r ω F M W. (a) MathType's fixed length, 0.41 em. (b) Adaptive: the letter's ink width plus 0.05 em on each side, never shorter than 2.6 barb lengths. ${esc(fontNote)}.</p>
+<table><thead><tr><th></th><th>(a) fixed 0.41 em (current default)</th><th>(b) adaptive</th></tr></thead><tbody>${rows.join("")}</tbody></table></body></html>`;
+}
+
 // ------------------------------------------------------------------ screenshots
 
 const browser = await chromium.launch();
 const dir = mkdtempSync(join(tmpdir(), "mb-sheets-"));
 async function shoot(html: string, file: string, scale = 2) {
-  const page = await browser.newPage({ viewport: { width: 1240, height: 900 }, deviceScaleFactor: scale });
+  const page = await browser.newPage({ viewport: { width: 1240, height: 200 }, deviceScaleFactor: scale });
   const f = join(dir, `${Math.random().toString(36).slice(2)}.html`);
   writeFileSync(f, html);
   await page.goto(pathToFileURL(f).href);
@@ -190,6 +209,7 @@ await shoot(sheet(false), "palette-light.png");
 await shoot(sheet(true), "palette-dark.png");
 await shoot(variantsSheet(false), "fallback-variants-light.png");
 await shoot(variantsSheet(true), "fallback-variants-dark.png");
+await shoot(harpoonPage(), "harpoon-length.png", 1);
 for (const scale of [1, 3]) {
   const page = await browser.newPage({ viewport: { width: 1240, height: 900 }, deviceScaleFactor: scale });
   const f = join(dir, `cases-${scale}.html`);

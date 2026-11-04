@@ -829,7 +829,13 @@ function arrowAccent(body: Box, at: { cx: number; top: number; inkW: number; sin
   const t = 0.029 * r.stroke * s;
   const barb = (harpoon ? 0.08 : 0.0975) * r.size * s;
   const angle = ((harpoon ? r.barbAngle : r.barbAngle - 6) * Math.PI) / 180;
-  const len = at.single ? Math.max(0.41 * r.size * s, at.inkW) : Math.max(at.inkW, 0.41 * r.size * s);
+  const adaptive = r.length === "adaptive";
+  // Adaptive: ink width + 0.05 em each side, at least 2.6 barb lengths (the barb stays readable).
+  const len = at.single
+    ? adaptive
+      ? Math.max(at.inkW + 0.1 * s, barb * 2.6)
+      : Math.max(0.41 * r.size * s, at.inkW)
+    : Math.max(at.inkW, adaptive ? barb * 2.6 : 0.41 * r.size * s);
   const gap = Math.max(r.minGap, harpoon ? r.gap : r.gap + 0.03) * s;
   const x0 = at.cx - len / 2;
   const x1 = at.cx + len / 2;

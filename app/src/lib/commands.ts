@@ -83,6 +83,13 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => import("../components/NomenclatureDialog").then((m) => m.openNomenclature()),
     },
     {
+      id: "app.fontCompare",
+      title: "Compare symbol fonts on this PC (STIX / thinned / MT Extra)…",
+      group: "View",
+      keywords: "font fallback stix mt extra mathtype symbols weight compare classic",
+      run: () => import("../components/FontCompareDialog").then((m) => m.openFontCompare()),
+    },
+    {
       id: "app.backups",
       title: "Open backups folder (automatic copies before document-wide changes)",
       group: "Word",

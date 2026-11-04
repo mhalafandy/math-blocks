@@ -77,6 +77,11 @@ export interface AccentRules {
   barbAngle: number;
   /** Smallest gap any accent keeps above the ink, em. */
   minGap: number;
+  /**
+   * Harpoon/arrow length over one letter: MathType's fixed 0.41 em, or adaptive (the letter's ink
+   * width plus a small margin each side, never shorter than what keeps the barb readable).
+   */
+  length?: "fixed" | "adaptive";
 }
 
 /** MathType's harpoon at 12 pt (measured), em. */
