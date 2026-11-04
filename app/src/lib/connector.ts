@@ -182,6 +182,7 @@ class ConnectorClient {
         if (params.command === "convertMathType") void import("./convertMathType").then((m) => m.convertOpenDocument(params.document));
         else if (params.command === "convertLatex") void import("./wordShortcuts").then((m) => m.convertAllLatex(params.document));
         else if (params.command === "insertReference") void import("./numbering").then((m) => m.openReferencePicker());
+        else if (params.command === "listOfSymbols") void import("../components/NomenclatureDialog").then((m) => m.openNomenclature());
         else if (params.command === "numberEquation") void import("./numbering").then((m) => m.toggleNumberFromRibbon(params));
         break;
       }

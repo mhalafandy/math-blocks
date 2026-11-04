@@ -25,6 +25,10 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added (thesis tools, M11)
+- List of symbols (nomenclature) inserted into Word and regenerated in place, keeping descriptions.
+- Definition check (used before defined, never defined) and equation dependencies in the Symbols tab.
+
 ### Added (recognition, snippets, consistency)
 - Equation from a screenshot: paste an image (main window or floating editor) or pick a file;
   Claude turns it into LaTeX (your own Anthropic API key, kept locally).

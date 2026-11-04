@@ -4,7 +4,7 @@ import { MathPreview } from "./MathPreview";
 import { askConfirm } from "./Dialogs";
 import { useApp } from "../lib/store";
 import { goToCopy } from "../lib/linking";
-import { buildDocumentIndex, indexEquations, renameInDocument, type DocumentIndex, type IndexedSymbol } from "../lib/symbolIndex";
+import { buildDocumentIndex, definitionStatus, dependencies, indexEquations, renameInDocument, type DefinitionStatus, type DocumentIndex, type IndexedEquation, type IndexedSymbol } from "../lib/symbolIndex";
 import { renameInLatex } from "../lib/symbols";
 
 /** Bottom panel tab: the symbols of the Word document (or of the current equation). */
@@ -15,13 +15,23 @@ export function SymbolsPanel() {
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState<string | null>(null);
+  const [filter, setFilter] = useState<"all" | DefinitionStatus>("all");
+  const editingTag = useApp((s) => s.editing?.tag ?? null);
 
   const local = useMemo(
     () => indexEquations([{ tag: "", page: 0, context: "", latex, display: true, blockId: null }]),
     [latex],
   );
   const symbols = index?.symbols ?? local;
-  const shown = query.trim() ? symbols.filter((s) => s.key.toLowerCase().includes(query.trim().toLowerCase())) : symbols;
+  const status = useMemo(() => new Map(index ? index.symbols.map((s) => [s.key, definitionStatus(index, s)] as const) : []), [index]);
+  const counts = useMemo(() => {
+    const c = { defined: 0, undefined: 0, usedBefore: 0 };
+    for (const v of status.values()) c[v]++;
+    return c;
+  }, [status]);
+  const deps = useMemo(() => (index && editingTag ? dependencies(index, editingTag) : null), [index, editingTag]);
+  const byQuery = query.trim() ? symbols.filter((s) => s.key.toLowerCase().includes(query.trim().toLowerCase())) : symbols;
+  const shown = index && filter !== "all" ? byQuery.filter((s) => status.get(s.key) === filter) : byQuery;
 
   const load = async () => {
     setLoading(true);
@@ -50,6 +60,11 @@ export function SymbolsPanel() {
           Change notation…
         </button>
         {connected && (
+          <button onClick={() => void import("./NomenclatureDialog").then((m) => m.openNomenclature())} title="Insert or update a list of symbols (nomenclature) in the Word document">
+            List of symbols…
+          </button>
+        )}
+        {connected && (
           <button onClick={() => void load()} disabled={loading} title="Read every MathBlocks equation of the active Word document">
             {loading ? "Reading…" : index ? "Refresh" : "Index Word document"}
           </button>
@@ -60,17 +75,65 @@ export function SymbolsPanel() {
           </button>
         )}
       </div>
+      {index && (
+        <div className="sym-filters">
+          {(
+            [
+              ["all", `All ${index.symbols.length}`, "Every symbol"],
+              ["usedBefore", `Used before defined ${counts.usedBefore}`, "Used in an equation that comes before the equation defining it"],
+              ["undefined", `Not defined by an equation ${counts.undefined}`, "No equation of the form “symbol = …” (it may be defined in the text)"],
+              ["defined", `Defined first ${counts.defined}`, "Defined by an equation before any use"],
+            ] as const
+          ).map(([k, label, title]) => (
+            <button key={k} className={filter === k ? "chip on" : "chip"} onClick={() => setFilter(k)} title={title}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+      {index && deps?.equation && <Dependencies index={index} deps={deps} />}
       {shown.length === 0 && <p className="empty">No symbols{query ? ` matching “${query}”` : ""}.</p>}
       <ul className="sym-list">
         {shown.map((s) => (
-          <SymbolRow key={s.key} s={s} index={index} expanded={open === s.key} onToggle={() => setOpen(open === s.key ? null : s.key)} onRenamed={load} />
+          <SymbolRow key={s.key} s={s} index={index} status={status.get(s.key)} expanded={open === s.key} onToggle={() => setOpen(open === s.key ? null : s.key)} onRenamed={load} />
         ))}
       </ul>
     </div>
   );
 }
 
-function SymbolRow({ s, index, expanded, onToggle, onRenamed }: { s: IndexedSymbol; index: DocumentIndex | null; expanded: boolean; onToggle: () => void; onRenamed: () => Promise<void> }) {
+const label = (e: IndexedEquation) => e.number ?? (e.page ? `p. ${e.page}` : "equation");
+
+/** The equation being edited: which definitions it relies on, and which equations rely on it. */
+function Dependencies({ index, deps }: { index: DocumentIndex; deps: ReturnType<typeof dependencies> }) {
+  if (!deps.dependsOn.length && !deps.usedBy.length) return <p className="sym-deps muted">This equation neither uses nor provides a definition of another equation.</p>;
+  return (
+    <div className="sym-deps">
+      {deps.dependsOn.length > 0 && (
+        <div>
+          <span className="muted">This equation uses</span>
+          {deps.dependsOn.map((d) => (
+            <button key={d.symbol} className="chip" onClick={() => void goToCopy(index.document, d.equation.tag)} title="Go to the definition">
+              <MathPreview latex={d.symbol} /> from {label(d.equation)}
+            </button>
+          ))}
+        </div>
+      )}
+      {deps.usedBy.length > 0 && (
+        <div>
+          <span className="muted">Its definition is used by</span>
+          {deps.usedBy.map((e) => (
+            <button key={e.tag} className="chip" onClick={() => void goToCopy(index.document, e.tag)} title="Go to it">
+              {label(e)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SymbolRow({ s, index, status, expanded, onToggle, onRenamed }: { s: IndexedSymbol; index: DocumentIndex | null; status?: DefinitionStatus; expanded: boolean; onToggle: () => void; onRenamed: () => Promise<void> }) {
   const [to, setTo] = useState("");
   const valid = !!to.trim() && !parseLatex(to).diagnostics.some((d) => d.severity === "error");
   const renameCurrent = () => {
@@ -106,7 +169,8 @@ function SymbolRow({ s, index, expanded, onToggle, onRenamed }: { s: IndexedSymb
         <span className="muted">
           {s.count}× {index ? `in ${s.equations.length} equation${s.equations.length > 1 ? "s" : ""}` : ""}
         </span>
-        {s.definedIn && index && <span className="sym-def">defined p. {s.definedIn.page || "?"}</span>}
+        {s.definedIn && index && <span className="sym-def">defined {s.definedIn.number ?? `p. ${s.definedIn.page || "?"}`}</span>}
+        {status === "usedBefore" && <span className="sym-warn">used before its definition</span>}
       </button>
       {expanded && (
         <div className="sym-detail">

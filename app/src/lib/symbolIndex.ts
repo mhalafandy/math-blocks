@@ -134,3 +134,31 @@ export async function rewriteDocument(
   }
   return { equations: items.length, libraryEquations };
 }
+
+export type DefinitionStatus = "defined" | "undefined" | "usedBefore";
+
+/**
+ * How a symbol is introduced: defined by an equation before any use, never defined by an
+ * equation (it may be defined in the text), or used in an equation that comes before its
+ * definition. Equations are in document order.
+ */
+export function definitionStatus(index: Pick<DocumentIndex, "equations">, s: IndexedSymbol): DefinitionStatus {
+  if (!s.definedIn) return "undefined";
+  const at = index.equations.indexOf(s.definedIn);
+  return s.equations.some((e) => index.equations.indexOf(e) < at) ? "usedBefore" : "defined";
+}
+
+/** The equations whose definitions an equation uses, and the equations that use its definition. */
+export function dependencies(index: DocumentIndex, tag: string): { equation: IndexedEquation | null; dependsOn: { symbol: string; equation: IndexedEquation }[]; usedBy: IndexedEquation[] } {
+  const equation = index.equations.find((e) => e.tag === tag) ?? null;
+  if (!equation) return { equation, dependsOn: [], usedBy: [] };
+  const dependsOn: { symbol: string; equation: IndexedEquation }[] = [];
+  const usedBy = new Set<IndexedEquation>();
+  for (const s of index.symbols) {
+    if (!s.equations.includes(equation)) continue;
+    if (s.definedIn && s.definedIn !== equation) dependsOn.push({ symbol: s.key, equation: s.definedIn });
+    if (s.definedIn === equation) for (const e of s.equations) if (e !== equation) usedBy.add(e);
+  }
+  const order = (e: IndexedEquation) => index.equations.indexOf(e);
+  return { equation, dependsOn: dependsOn.sort((a, b) => order(a.equation) - order(b.equation)), usedBy: [...usedBy].sort((a, b) => order(a) - order(b)) };
+}
