@@ -65,6 +65,68 @@ function pathData(commands: { type: string; x?: number; y?: number; x1?: number;
   return d;
 }
 
+/**
+ * Moves every outline point a distance `d` into the ink (thinning a glyph's strokes). The ink side
+ * of travel is the same for all contours of a filled glyph (holes run the other way), and is
+ * found from the largest contour's orientation. Control points move with their neighbours.
+ */
+export function thinOutline(cmds: PathCmd[], d: number): PathCmd[] {
+  const contours: PathCmd[][] = [];
+  let cur: PathCmd[] = [];
+  for (const c of cmds) {
+    if (c.type === "M" && cur.length) {
+      contours.push(cur);
+      cur = [];
+    }
+    cur.push({ ...c });
+    if (c.type === "Z") {
+      contours.push(cur);
+      cur = [];
+    }
+  }
+  if (cur.length) contours.push(cur);
+  const pts = (cs: PathCmd[]) => cs.filter((c) => c.x !== undefined).map((c) => [c.x!, c.y!] as [number, number]);
+  const area = (p: [number, number][]) => p.reduce((a, [x, y], i) => {
+    const [x2, y2] = p[(i + 1) % p.length]!;
+    return a + x * y2 - x2 * y;
+  }, 0) / 2;
+  let outer = 0;
+  for (const cs of contours) {
+    const a = area(pts(cs));
+    if (Math.abs(a) > Math.abs(outer)) outer = a;
+  }
+  // y down: a positive area runs clockwise on screen, ink on the right of travel.
+  const side = outer >= 0 ? 1 : -1;
+  const out: PathCmd[] = [];
+  for (const cs of contours) {
+    // Polygon of all points in order (end points and control points) for the normals.
+    const seq: { c: PathCmd; key: "1" | "2" | "" }[] = [];
+    for (const c of cs) {
+      if (c.x1 !== undefined) seq.push({ c, key: "1" });
+      if (c.x2 !== undefined) seq.push({ c, key: "2" });
+      if (c.x !== undefined) seq.push({ c, key: "" });
+    }
+    const get = (s: { c: PathCmd; key: string }) => [s.c[`x${s.key}` as "x"]!, s.c[`y${s.key}` as "y"]!] as [number, number];
+    const moved = seq.map((s, i) => {
+      const [px, py] = get(seq[(i - 1 + seq.length) % seq.length]!);
+      const [nx, ny] = get(seq[(i + 1) % seq.length]!);
+      let tx = nx - px;
+      let ty = ny - py;
+      const len = Math.hypot(tx, ty) || 1;
+      tx /= len;
+      ty /= len;
+      const [x, y] = get(s);
+      return [x + side * -ty * d, y + side * tx * d] as [number, number];
+    });
+    seq.forEach((s, i) => {
+      s.c[`x${s.key}` as "x"] = moved[i]![0];
+      s.c[`y${s.key}` as "y"] = moved[i]![1];
+    });
+    out.push(...cs);
+  }
+  return out;
+}
+
 /** Typesets an equation into a standalone SVG of glyph outlines (no fonts needed to view it). */
 export function renderSvg(root: Row, o: RenderOptions): RenderResult {
   const style = o.style ?? CLASSIC;
@@ -100,7 +162,8 @@ export function renderSvg(root: Row, o: RenderOptions): RenderResult {
     const sx = it.sx ?? 1;
     const sy = it.sy ?? 1;
     const fontSize = it.s * U;
-    const cmds = it.g.glyph.getPath(0, 0, fontSize).commands as PathCmd[];
+    let cmds = it.g.glyph.getPath(0, 0, fontSize).commands as PathCmd[];
+    if (it.thin) cmds = thinOutline(cmds, (it.thin * U) / ((it.sx ?? 1) || 1));
     const p = pathData(cmds);
     if (!p) continue;
     const tx = (it.x + m) * U;
