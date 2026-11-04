@@ -207,7 +207,8 @@ export interface Cases extends Base {
   rows: Row[][];
 }
 
-export type AlignedEnv = "aligned" | "align" | "gathered" | "split";
+/** multline: first line left, last line right, middle lines centred (one long equation broken). */
+export type AlignedEnv = "aligned" | "align" | "gathered" | "split" | "multline";
 
 /**
  * Multi-line aligned equations (derivations, systems).

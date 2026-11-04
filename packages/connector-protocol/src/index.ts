@@ -267,6 +267,8 @@ export interface AppToConnector {
   /** Rebuilds MathBlocks numbers and references as single fields (bookmark names kept). */
   upgradeNumbering: { params: DocTarget & NumberFormat; result: { numbers: number; references: number } };
   updateNumbers: { params: DocTarget; result: { numbers: number; references: number } };
+  /** Text width (pt) of the paragraph holding the equation (tag) or the cursor: page minus margins, gutter, indents. */
+  textWidth: { params: DocTarget & { tag?: string }; result: { textWidthPt: number; document: string } };
   /** What is at the cursor: a MathBlocks equation, selected text, or a LaTeX span around it. */
   selectionInfo: {
     params: Record<string, never>;

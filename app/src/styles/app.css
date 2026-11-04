@@ -540,7 +540,8 @@ kbd {
 .sym-uses button { padding: 1px 8px; border-color: var(--border); font-size: 12px; }
 .classic-preview { padding: 12px; background: #fff; border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; }
 .classic-preview .hint { color: #666; }
-.classic-svg svg { display: block; margin: 0 auto; }
+.classic-svg { text-align: center; }
+.classic-svg svg { display: block; }
 .status-btn { padding: 0 6px; font: inherit; color: inherit; background: none; }
 
 /* ================================================================ floating editor (panel window) */
@@ -664,3 +665,23 @@ html.panel-window, html.panel-window body, html.panel-window #root { height: aut
 .fontcmp .na { color: #999; font-style: italic; font-size: 12px; }
 .numbering-settings { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
 .numbering-settings legend { font-weight: 600; padding: 0 4px; }
+
+/* ================================================================ page-width check */
+.width-bar { margin: 6px 12px 0; font-size: 12px; color: var(--text-2); }
+.width-row { display: flex; align-items: center; gap: 8px; }
+.width-track { position: relative; flex: 0 0 120px; height: 6px; border-radius: 3px; background: var(--surface-3); }
+.width-fill { height: 100%; border-radius: 3px; background: var(--good); }
+.width-bar.warn .width-fill { background: var(--warn); }
+.width-bar.bad .width-fill { background: var(--bad); }
+.width-bar.bad .width-text { color: var(--bad); }
+.width-limit { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--text-3); }
+.width-suggest { margin-top: 6px; padding: 8px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); overflow-x: auto; }
+.width-suggest-actions { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.classic-guide { position: relative; display: inline-block; }
+.classic-guide-line { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px dashed var(--bad); opacity: 0.6; pointer-events: none; }
+.classic-guide-label { position: absolute; top: -2px; transform: translateX(-50%); font-size: 10px; color: var(--text-3); white-space: nowrap; }
+.width-bar button.link { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; cursor: pointer; text-decoration: underline; }
+.width-text { white-space: nowrap; }
+/* Main window: a strip along the bottom of the canvas, clear of the zoom tools. */
+.canvas > .width-bar { margin: 0; padding: 4px 12px 10px; padding-right: 170px; }
+.panel-window .width-bar { margin: 4px 10px 0; }

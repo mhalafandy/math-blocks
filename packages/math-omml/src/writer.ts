@@ -298,7 +298,9 @@ class OmmlWriter {
         const rows = n.rows.map((cells) => {
           let xml = "";
           cells.forEach((cell, i) => {
-            if (i > 0 && n.env !== "gathered") {
+            // gathered and multline have no alignment points; Word has no per-row alignment in an
+            // equation array, so multline comes out centred (its first/last-line offsets are lost).
+            if (i > 0 && n.env !== "gathered" && n.env !== "multline") {
               this.alnNext = true;
               const first = cell.children[0];
               if (!first || !isRunNode(first) || (first.kind === "space" && first.width === "negthin")) xml += this.run("");

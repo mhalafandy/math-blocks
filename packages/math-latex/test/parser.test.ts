@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MathNode, Row } from "@mathblocks/math-core";
-import { parseLatex } from "../src";
+import { parseLatex, serializeLatex } from "../src";
 
 const parse = (s: string) => {
   const r = parseLatex(s);
@@ -160,6 +160,12 @@ describe("parseLatex — environments", () => {
     if (a.kind !== "aligned") throw new Error();
     expect(a.rows.map((r) => r.length)).toEqual([2, 2]);
     expect(a.rows[1]![0]!.children).toHaveLength(0);
+  });
+
+  it("multline (and multline*) keeps its environment and round-trips", () => {
+    const a = only("\\begin{multline*} a+b \\\\ +c \\end{multline*}");
+    expect(a).toMatchObject({ kind: "aligned", env: "multline" });
+    expect(serializeLatex(parseLatex("\\begin{multline} a+b \\\\ +c \\end{multline}").root)).toBe("\\begin{multline} a+b \\\\ +c \\end{multline}");
   });
 
   it("align* normalises to aligned", () => {

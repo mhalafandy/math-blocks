@@ -1,3 +1,4 @@
+import { useWidthMeasure } from "./WidthBar";
 import { CONVENTIONS, VECTOR_STYLES, type Convention, type VectorStyle } from "../lib/palette";
 import type { MathNode, Row } from "@mathblocks/math-core";
 import { childRows } from "@mathblocks/math-core";
@@ -129,6 +130,7 @@ function StylePanel() {
   const numberStyle = useApp((s) => s.numberStyle);
   const look = useApp((s) => s.look);
   const sizePt = useApp((s) => s.equationSizePt);
+  const width = useWidthMeasure();
   const convention = useApp((s) => s.spacecraftConvention);
   const scVector = useApp((s) => s.spacecraftVector);
   const latex = useApp((s) => s.latex);
@@ -175,7 +177,7 @@ function StylePanel() {
               ))}
             </select>
           </label>
-          <ClassicPreview latex={latex} display={display} sizePt={sizePt} />
+          <ClassicPreview latex={latex} display={display} sizePt={sizePt} guidePt={width?.availPt} />
           <p className="hint">Classic equations use MathType's fonts and spacing (Times New Roman, Symbol) and look the same on every PC. Double-click one in Word to edit it in MathBlocks.</p>
         </>
       ) : (

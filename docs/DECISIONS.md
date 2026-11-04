@@ -476,3 +476,26 @@ templates. Phase 0 (docs/PALETTE-AUDIT.md) found two LaTeX round-trip bugs and 8
   MathType uses it; STIX Two Math stays the fallback.
 - Fixed-size delimiters (`\bigl` … `\Biggl`) are not offered yet: the AST has no delimiter size and
   OMML always stretches; they need a `size` on delimited nodes first.
+
+## D-026 — Multi-line equations are edited as LaTeX structure; long ones are broken, never shrunk
+
+**Status:** Accepted (Bug 2 from real-Word testing)
+
+**Context.** MathLive does nothing on Enter, has no alignment command, and treats `multline` as a
+top-level mode that a field never leaves again. Long equations overflowed the line in Word.
+
+**Decision.**
+- Enter and Ctrl+; rewrite the equation's LaTeX around a caret marker (U+2B1E) inserted at the
+  cursor (`app/src/lib/multiline.ts`), then put the cursor back where the marker lands. The stored
+  forms are `aligned`, `gathered` and `multline`, which LaTeX, Classic, OMML and the .tex export
+  all understand; notation kinds inside them round-trip (CI: tools/kinds-roundtrip.ts).
+- The editor holds a multline as `\class{mb-multline}{\begin{gathered}…}` (shown centred while
+  editing; the Classic preview and Word show the real layout).
+- Word's equation arrays have no per-row alignment, so a native multline comes out centred (a
+  known limitation; Classic pictures draw it properly).
+- Page width: the equation's Classic width is compared with the paragraph's text width from Word
+  (default 439 pt, MathType's right tab), minus twice the number and a 12 pt gap for numbered
+  equations (centre tab at half the width, number at the right tab). Too wide → a suggested break
+  (greedy, before + − or a relation outside brackets and fractions) that the user confirms. No
+  automatic shrinking, ever.
+

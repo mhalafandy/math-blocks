@@ -1190,6 +1190,12 @@
   "omml": "full",
   "roundtrip": "full"
  },
+ "matrices.aligned3": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
  "matrices.bmat2": {
   "mathlive": "full",
   "classic": "full",
@@ -1226,6 +1232,12 @@
   "omml": "full",
   "roundtrip": "full"
  },
+ "matrices.continued": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
  "matrices.diag": {
   "mathlive": "full",
   "classic": "converted",
@@ -1234,6 +1246,12 @@
   "notes": [
    "Classic: from STIX Two (not Times/Symbol): ⋱"
   ]
+ },
+ "matrices.gathered2": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
  },
  "matrices.general": {
   "mathlive": "full",
@@ -1245,6 +1263,12 @@
   ]
  },
  "matrices.identity": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "matrices.multline2": {
   "mathlive": "full",
   "classic": "full",
   "omml": "full",

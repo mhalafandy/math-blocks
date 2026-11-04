@@ -1,3 +1,4 @@
+import { LINE_TEMPLATES } from "./multiline";
 /**
  * Symbol & template palette data (MathType-style).
  *
@@ -369,6 +370,8 @@ const matrices: PaletteItem[] = [
   tpl("cases2", "\\begin{cases}#? & #?\\\\ #? & #?\\end{cases}", "Piecewise (2 cases)", "cases conditional"),
   tpl("cases3", "\\begin{cases}#? & #?\\\\ #? & #?\\\\ #? & #?\\end{cases}", "Piecewise (3 cases)", "cases"),
   tpl("aligned2", "\\begin{aligned}#? &= #?\\\\ &= #?\\end{aligned}", "Aligned derivation", "align equal signs steps"),
+  // Multi-line (Enter starts a new line, Ctrl+; sets the alignment point): src/lib/multiline.ts.
+  ...LINE_TEMPLATES.map((t) => tpl(t.id, t.latex, t.label, t.keywords)),
   tpl("system2", "\\left\\{\\begin{aligned}#? &= #?\\\\ #? &= #?\\end{aligned}\\right.", "System of equations", "simultaneous"),
 ];
 
@@ -824,7 +827,7 @@ const EXTRA_CATEGORIES: Record<string, (CategoryId | StructureId)[]> = {
   "operators.times": ["linalg"], "operators.cdot": ["linalg"], "operators.otimes": ["linalg"],
   "relations.perp": ["linalg"], "relations.parallel": ["linalg"], "misc.nabla": ["linalg"],
   "misc.triangle": ["less-used"], "misc.angle": ["less-used"], "misc.degree": ["less-used"],
-  "matrices.cases2": ["s-cases"], "matrices.cases3": ["s-cases"], "matrices.aligned2": ["s-cases"], "matrices.system2": ["s-cases"],
+  "matrices.cases2": ["s-cases"], "matrices.cases3": ["s-cases"], "matrices.aligned2": ["s-cases"], "matrices.aligned3": ["s-cases"], "matrices.multline2": ["s-cases"], "matrices.gathered2": ["s-cases"], "matrices.continued": ["s-cases"], "matrices.system2": ["s-cases"],
   "tab-derivs.lim": ["s-limits"], "tab-derivs.liminf": ["s-limits"], "tab-derivs.limsup": ["s-limits"], "tab-derivs.liminf2": ["s-limits"],
   "accents.overbrace": ["s-braces"], "accents.underbrace": ["s-braces"], "accents.boxed": ["s-braces"],
   "fractions.binom": ["s-braces"], "scripts.overset": ["s-braces"], "scripts.underset": ["s-braces"],
