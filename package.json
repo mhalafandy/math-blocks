@@ -2,7 +2,7 @@
   "name": "mathblocks",
   "private": true,
   "version": "0.1.0",
-  "description": "MathBlocks \u2014 advanced mathematical equation editor for Microsoft Word",
+  "description": "MathBlocks — advanced mathematical equation editor for Microsoft Word",
   "type": "module",
   "packageManager": "pnpm@10.28.0",
   "engines": {
@@ -22,6 +22,7 @@
     "@mathblocks/math-core": "workspace:*",
     "@mathblocks/math-latex": "workspace:*",
     "@mathblocks/math-omml": "workspace:*",
+    "@mathblocks/math-render": "workspace:*",
     "@mathblocks/mathtype": "workspace:*",
     "@mathblocks/ooxml": "workspace:*",
     "@mathjax/mathjax-newcm-font": "4.1.3",
@@ -30,9 +31,9 @@
     "@mathjax/src": "4.1.3",
     "@types/node": "^22.10.0",
     "fast-xml-parser": "^5.2.0",
+    "playwright": "1.63.0",
     "tsx": "^4.19.0",
     "typescript": "~5.9.3",
-    "vitest": "^4.1.12",
-    "@mathblocks/math-render": "workspace:*"
+    "vitest": "^4.1.12"
   }
 }

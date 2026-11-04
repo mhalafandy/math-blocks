@@ -3,6 +3,7 @@
  * width/height/depth in em, glyphs from the text fonts (Times) or the math font (STIX Two Math).
  */
 import type { MathNode, MathVariant, Row } from "@mathblocks/math-core";
+import { expandNotation, type NotationProfile } from "@mathblocks/math-core";
 import { charGlyph, glyphName, namedGlyph, symbolGlyph, type FontSet, type GlyphInfo } from "./fonts";
 import type { RenderStyle } from "./style";
 
@@ -382,6 +383,9 @@ function atomsOf(n: MathNode, c: Ctx, out: Atom[]) {
       return;
     case "aligned":
       out.push({ box: aligned(n.rows, c), cls: "ord" });
+      return;
+    case "notation":
+      for (const x of expandNotation({ kind: "row", children: [n] }).children) atomsOf(x, c, out);
       return;
     case "raw":
       out.push({ box: textBox(n.latex, "regular", c, undefined, "#c0392b"), cls: "ord" });
@@ -968,9 +972,12 @@ export interface LayoutOptions {
   fonts: FontSet;
   style: RenderStyle;
   display: boolean;
+  /** Notation profile for kind objects; default: Hughes. */
+  notation?: NotationProfile;
 }
 
 export function layout(root: Row, o: LayoutOptions): Box {
+  root = expandNotation(root, o.notation);
   return layoutRow(root, { fonts: o.fonts, st: o.style, s: 1, display: o.display, level: 0 });
 }
 

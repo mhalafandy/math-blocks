@@ -219,6 +219,20 @@ export interface Aligned extends Base {
   rows: Row[][];
 }
 
+/**
+ * A semantic notation object (physical vector, DCM, dyadic…): its kind and arguments. Drawn in
+ * the style of the current notation profile (expandNotation); stored as a macro (\pvec[P/O]{r}).
+ */
+export interface Notation extends Base {
+  kind: "notation";
+  /** Kind id, e.g. "pvec", "dcm". */
+  name: string;
+  /** Mandatory arguments (base symbol; for a DCM the two frame labels). */
+  args: Row[];
+  /** Optional frame label, \pvec[P/O]{r}: placed where the kind's style says. */
+  frames?: Row;
+}
+
 /** Input that could not be understood. Kept verbatim so nothing is ever silently lost. */
 export interface Raw extends Base {
   kind: "raw";
@@ -246,6 +260,7 @@ export type MathNode =
   | Matrix
   | Cases
   | Aligned
+  | Notation
   | Raw;
 
 export type MathNodeKind = MathNode["kind"];
