@@ -75,6 +75,13 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       keywords: "vector dyadic tensor style arrow harpoon bold hat bar notation consistency consistent check mixed all",
       run: () => import("../components/NotationDialog").then((m) => m.openNotation()),
     },
+    {
+      id: "word.nomenclature",
+      title: "Insert / update the list of symbols (nomenclature)…",
+      group: "Word",
+      keywords: "nomenclature symbols list notation glossary table thesis front matter",
+      run: () => import("../components/NomenclatureDialog").then((m) => m.openNomenclature()),
+    },
     { id: "view.symbols", title: "Symbols: where is each symbol used? rename everywhere", group: "View", keywords: "symbol index dependency rename variable notation consistency", run: () => app.setPrefs({ bottomOpen: true, bottomTab: "symbols" }) },
     { id: "export.mathml", title: "Copy as MathML", group: "Edit", keywords: "export paste web libreoffice", run: () => import("./export").then((m) => m.copyMathMl()) },
     { id: "export.image", title: "Copy as image (PNG)", group: "Edit", keywords: "export picture clipboard powerpoint slides", run: () => import("./export").then((m) => m.copyImage()) },

@@ -23,6 +23,7 @@ import { PromptHost } from "./components/Dialogs";
 import { ReferencePicker } from "./components/ReferencePicker";
 import { openTemplate, TemplateDialog } from "./components/TemplateDialog";
 import { NotationDialog } from "./components/NotationDialog";
+import { NomenclatureDialog } from "./components/NomenclatureDialog";
 import { numberInWord, unnumberInWord } from "./lib/numbering";
 import { ConversionReport } from "./components/ConversionReport";
 import { SaveDialog } from "./components/SaveDialog";
@@ -349,6 +350,7 @@ export function App() {
       <ReferencePicker />
       <TemplateDialog onSend={() => void insertIntoWord()} />
       <NotationDialog />
+      <NomenclatureDialog />
       <ShortcutsDialog />
       <RecognitionDialog />
       <SnippetsDialog />

@@ -188,6 +188,7 @@ namespace MathBlocks.WordConnector
         public void OnConvertMathType(IRibbonControl control) => RunAppCommand("convertMathType");
         public void OnConvertLatex(IRibbonControl control) => RunAppCommand("convertLatex");
         public void OnInsertReference(IRibbonControl control) => RunAppCommand("insertReference");
+        public void OnListOfSymbols(IRibbonControl control) => RunAppCommand("listOfSymbols");
         public void OnNumberEquation(IRibbonControl control) => RunAppCommand("numberEquation");
 
         public void OnUpdateNumbers(IRibbonControl control)
