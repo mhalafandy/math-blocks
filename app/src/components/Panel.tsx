@@ -1,6 +1,6 @@
 import { useWidthMeasure, WidthBar } from "./WidthBar";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MathEditor, focusVisualEditor, insertIntoVisual } from "./MathEditor";
+import { MathEditor, focusVisualEditor, insertIntoVisual, restoreEditorFocus } from "./MathEditor";
 import { insertPaletteItem } from "./SymbolPalette";
 import { ALL_ITEMS, type IndexedItem } from "../lib/palette";
 import { PaletteTop } from "./SymbolPalette";
@@ -320,7 +320,7 @@ function CommandLine({ commands }: { commands: Command[] }) {
     }
     setQ("");
     void c.run();
-    requestAnimationFrame(() => focusVisualEditor());
+    restoreEditorFocus(true);
   };
   return (
     <div className="panel-command">
@@ -335,7 +335,7 @@ function CommandLine({ commands }: { commands: Command[] }) {
           if (e.key === "ArrowDown") (e.preventDefault(), setSel(Math.min(sel + 1, matches.length - 1)));
           else if (e.key === "ArrowUp") (e.preventDefault(), setSel(Math.max(sel - 1, 0)));
           else if (e.key === "Enter") (e.preventDefault(), run(asLatex && sel === 0 && !matches.length ? undefined : matches[sel]));
-          else if (e.key === "Escape") (e.preventDefault(), q ? setQ("") : focusVisualEditor());
+          else if (e.key === "Escape") (e.preventDefault(), q ? setQ("") : restoreEditorFocus(true));
         }}
         spellCheck={false}
       />

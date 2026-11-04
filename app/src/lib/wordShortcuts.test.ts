@@ -70,4 +70,32 @@ describe("LaTeX in Word", () => {
     expect(items[1]!.flatOpc).toContain("<m:oMathPara");
     expect(items[0]!.flatOpc).not.toContain("<m:oMathPara");
   });
+
+  it("converts every delimiter type, several in one paragraph, inline and alone", async () => {
+    word.latex = [
+      { start: 0, end: 8, text: "$\\alpha$", alone: true },
+      { start: 10, end: 17, text: "$$a+b$$", alone: true },
+      { start: 20, end: 27, text: "$$c+d$$", alone: false },
+      { start: 30, end: 37, text: "\\(e+f\\)", alone: false },
+      { start: 40, end: 47, text: "\\[g=h\\]", alone: true },
+      { start: 50, end: 57, text: "\\[i=j\\]", alone: false },
+      { start: 60, end: 63, text: "$k$", alone: false },
+      { start: 64, end: 67, text: "$l$", alone: false },
+    ];
+    await ws.convertAllLatex();
+    const items = word.calls.find((c) => c.method === "replaceRanges")!.params.items as { start: number; expect: string; flatOpc: string }[];
+    expect(items.map((i) => i.start)).toEqual([0, 10, 20, 30, 40, 50, 60, 64]);
+    const display = items.map((i) => i.flatOpc.includes("<m:oMathPara"));
+    // Display only when display LaTeX ($$ or \[) stands alone in its paragraph; $…$ alone stays inline.
+    expect(display).toEqual([false, true, false, false, true, false, false, false]);
+    for (const i of items) expect(i.flatOpc).toContain("mb1|");
+  });
+
+  it("explains when LaTeX was found but none can be converted", async () => {
+    word.latex = [];
+    const notes: string[] = [];
+    useApp.setState({ notify: ((t: string) => notes.push(t)) as never });
+    await ws.convertAllLatex();
+    expect(notes.at(-1)).toMatch(/No LaTeX found/);
+  });
 });

@@ -275,7 +275,7 @@ export interface AppToConnector {
     result: { document: string; rect: ScreenRect | null; tag?: string; flatOpc?: string; number?: NumberInfo | null; text?: string; start?: number; end?: number };
   };
   /** LaTeX spans ($…$, $$…$$, \(…\), \[…\]) in the document text. */
-  findLatex: { params: DocTarget; result: { name: string; fullName: string; items: { start: number; end: number; text: string; alone: boolean }[] } };
+  findLatex: { params: DocTarget; result: { name: string; fullName: string; items: { start: number; end: number; text: string; alone: boolean }[]; skippedInside?: number; notLocated?: number } };
   /** Replaces ranges (still holding `expect`) by Flat OPC or text, one undo step. */
   replaceRanges: {
     params: DocTarget & { items: { start: number; end: number; expect?: string; flatOpc?: string; text?: string }[]; undoLabel: string };

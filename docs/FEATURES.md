@@ -73,6 +73,10 @@ See [ROADMAP.md](ROADMAP.md) for milestones. Highlights: MathLive visual editor,
 completion, command palette, library on SQLite, linked blocks, parameterized templates, symbol search
 by meaning, numbering/references, MathType migration, precision mode, dependency manager.
 
+### Backlog
+- Numbered multi-line equations: option to put the number on the last line (default stays centred).
+- Suggested line breaks: balance the lines (today each line is filled as far as it fits, so the last can be short).
+
 ## Known limitations
 
 - OMML cannot draw column rules in matrices (`\hline`, `|c|c|` are ignored).

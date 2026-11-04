@@ -832,15 +832,16 @@ function arrowAccent(body: Box, at: { cx: number; top: number; inkW: number; sin
   const r = c.st.accents;
   const harpoon = a.barbs !== "both";
   const t = 0.029 * r.stroke * s;
-  const barb = (harpoon ? 0.08 : 0.0975) * r.size * s;
-  const angle = ((harpoon ? r.barbAngle : r.barbAngle - 6) * Math.PI) / 180;
+  // Barb reach (from the tip, along the shaft): long enough for a thick barb to taper to a point.
+  const barb = (harpoon ? 0.2 : 0.17) * r.size * s;
+  const angle = ((harpoon ? r.barbAngle : r.barbAngle - 4) * Math.PI) / 180;
   const adaptive = r.length === "adaptive";
-  // Adaptive: ink width + 0.05 em each side, at least 2.6 barb lengths (the barb stays readable).
+  // Adaptive: ink width + 0.07 em each side, at least 0.48 em (the barb stays readable).
   const len = at.single
     ? adaptive
-      ? Math.max(at.inkW + 0.1 * s, barb * 2.6)
-      : Math.max(0.41 * r.size * s, at.inkW)
-    : Math.max(at.inkW, adaptive ? barb * 2.6 : 0.41 * r.size * s);
+      ? Math.max(at.inkW + 0.14 * s, 0.48 * r.size * s)
+      : Math.max(0.48 * r.size * s, at.inkW)
+    : Math.max(at.inkW, 0.48 * r.size * s);
   const gap = Math.max(r.minGap, harpoon ? r.gap : r.gap + 0.03) * s;
   const x0 = at.cx - len / 2;
   const x1 = at.cx + len / 2;
@@ -854,34 +855,39 @@ function arrowAccent(body: Box, at: { cx: number; top: number; inkW: number; sin
 }
 
 /**
- * Outline of a right-pointing arrow (counter-clockwise, y up): shaft [yb, yb + t] from x0 to the
- * tip at x1, barbs of length `barb` (along the shaft) at `angle`, as thick as the shaft.
+ * Outline of a right-pointing arrow (counter-clockwise, y up): shaft [yb, yb + t] from x0 to a
+ * sharp tip at x1; barbs reaching `barb` back from the tip (horizontally) at `angle`. A barb is
+ * tapered — as thick as the shaft at its root, narrowing to a mitred point — so it prints
+ * crisply (no round caps, no blunt end).
  */
 export function arrowOutline(x0: number, x1: number, yb: number, t: number, barb: number, angle: number, barbs: "up" | "both" | "down"): [number, number][] {
-  const cos = Math.cos(angle);
-  const sin = Math.sin(angle);
-  const L = barb / cos;
-  /** Upper barb: outer edge from the tip corner (x1, yTip) up-left; inner edge back to the shaft top. */
+  const tanA = Math.tan(angle);
+  const sinA = Math.sin(angle);
+  /**
+   * Upper barb with its outer edge leaving the tip (x1, yTip) up-left: the tip point, the barb's
+   * mitred end (a point on the outer edge, cut level with a narrow end), and where its inner
+   * edge meets the shaft top yShaftTop.
+   */
   const upper = (yTip: number, yShaftTop: number): [number, number][] => {
-    const ex = x1 - L * cos;
-    const ey = yTip + L * sin;
-    // Inner edge: the outer edge moved by t towards the shaft (normal pointing down-left).
-    const fx = ex - t * sin;
-    const fy = ey - t * cos;
-    const k = Math.max(0, (fy - yShaftTop) / sin);
-    const gx = Math.min(x1 - t * 0.5, fx + k * cos);
-    return [[x1, yTip], [ex, ey], [fx, fy], [gx, yShaftTop]];
+    const cosA = Math.cos(angle);
+    const eo: [number, number] = [x1 - barb, yTip + barb * tanA];
+    // Mitred end: cut straight down from the outer edge, 0.3 t across the barb (a sharp corner).
+    const ei: [number, number] = [eo[0], eo[1] - (0.3 * t) / cosA];
+    // Root: 0.85 t across the barb where it meets the shaft top (thicker than the end: tapered).
+    const xo = x1 - (yShaftTop - yTip) / tanA;
+    const g: [number, number] = [Math.max(ei[0] + 0.2 * t, xo - (0.85 * t) / sinA), yShaftTop];
+    return [[x1, yTip], eo, ei, g];
   };
   if (barbs === "up") {
-    const u = upper(yb + t, yb + t);
-    // Tip: the shaft's top-right corner carries the barb; bottom-right is the point.
-    return [[x0, yb], [x1, yb], ...u, [x0, yb + t]];
+    const u = upper(yb, yb + t);
+    // The shaft's bottom edge runs into the tip; the barb rises from it.
+    return [[x0, yb], ...u, [x0, yb + t]];
   }
-  // Both barbs: symmetric about the shaft centre line.
+  // Both barbs: symmetric about the shaft centre line, the tip on it.
   const ym = yb + t / 2;
   const u = upper(ym, yb + t);
   const lower = u.map(([x, y]) => [x, 2 * ym - y] as [number, number]).reverse();
-  return [[x0, yb], ...lower, ...u, [x0, yb + t]];
+  return [[x0, yb], ...lower.slice(0, -1), ...u, [x0, yb + t]];
 }
 
 function stack(body: Box, annotation: Row | undefined, position: "over" | "under", brace: boolean, c: Ctx): Box {

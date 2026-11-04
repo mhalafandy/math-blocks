@@ -48,7 +48,13 @@ export function kindSnippets(prefix = kindSnippetPrefix()): Snippet[] {
 }
 
 const KIND_LATEX = new Set(kindSnippets("").map((s) => s.latex));
-const isKindSnippet = (s: Snippet) => KIND_LATEX.has(s.latex) && KINDS.some((k) => s.trigger.endsWith(k.snippet) && s.trigger.length <= k.snippet.length + 1);
+const KIND_MACRO_RE = new RegExp(`\\\\(${KINDS.map((k) => k.macro).join("|")})(?![a-zA-Z])|\\^\\{\\\\T\\}`);
+/**
+ * A kind snippet saved by an older version (any trigger, with or without a prefix, inserting
+ * a kind): replaced by the current kind snippets, so an old bare "pv" can never win over ";pv".
+ */
+const isKindSnippet = (s: Snippet) =>
+  KIND_LATEX.has(s.latex) || (KIND_MACRO_RE.test(s.latex) && KINDS.some((k) => s.trigger.replace(/^[;:'!.]/, "") === k.snippet));
 
 /** Triggers: letters and digits, optionally after one prefix character. */
 export const TRIGGER_RE = /^[;:'!.]?[A-Za-z0-9]+$/;
@@ -104,6 +110,38 @@ export function saveSnippets(list: Snippet[]) {
   } catch {
     // Not saved.
   }
+}
+
+/** How the editor spells what was typed, back to the typed characters (prime, colon…). */
+export function typedText(latex: string): string {
+  return latex
+    .replace(/\^\{\\prime\}|\^\\prime\b|\\prime\b/g, "'")
+    .replace(/\\colon\b/g, ":")
+    // Some keyboards come back as spacing commands: \; \: \! are the typed ; : !
+    .replace(/\\([;:!])/g, "$1")
+    .replace(/\\mathpunct\{(.)\}|\\mathrel\{(.)\}|\\mathord\{(.)\}/g, (_, a, b, c) => a ?? b ?? c)
+    .replace(/\\ldotp\b/g, ".")
+    // MathLive autocorrects while typing ("in" → ∈, "int" → ∫): read commands as their letters.
+    .replace(/\\([A-Za-z]+)/g, "$1")
+    .replace(/[{}]/g, "")
+    .replace(/\s+/g, "");
+}
+
+/**
+ * The snippet whose trigger ends just before the cursor, and how many editor positions it takes
+ * (one typed character is not always one position: a prime is a superscript). `range(k)` is the
+ * editor's LaTeX of the last k positions. The whole trigger, prefix included, is to be replaced.
+ */
+export function findTrigger(range: (k: number) => string, list = loadSnippets()): { snippet: Snippet; positions: number } | null {
+  const sorted = [...list].filter((s) => TRIGGER_RE.test(s.trigger)).sort((a, b) => b.trigger.length - a.trigger.length);
+  const typed: string[] = [];
+  for (let k = 1; k <= 16; k++) typed.push(typedText(range(k)));
+  for (const s of sorted) {
+    // The fewest positions whose typed text is exactly the trigger.
+    const k = typed.findIndex((t) => t === s.trigger);
+    if (k >= 0) return { snippet: s, positions: k + 1 };
+  }
+  return null;
 }
 
 /**

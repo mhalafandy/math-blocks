@@ -97,6 +97,22 @@ static class Program
         // The package is well-formed XML.
         try { XDocument.Parse(NumberFields.Package(NumberFields.NumberRuns(F("section"), "_MBEq_x", "_MBEqN_x", false))); Check(true, "package is well-formed"); }
         catch (Exception e) { Check(false, "package is well-formed: " + e.Message); }
+        // Convert LaTeX: spans of every delimiter type, several per paragraph, inline and alone.
+        void Spans(string para, string expect, string what)
+        {
+            var got = string.Join(" | ", LatexText.Find(para).Select(x => x.Text + (x.Alone ? " [alone]" : "")));
+            Check(got == expect, "latex spans: " + what + " → " + got);
+        }
+        Spans("The energy $E=mc^2$ is.\r", "$E=mc^2$", "inline $…$");
+        Spans("$\\alpha$\r", "$\\alpha$ [alone]", "$…$ alone");
+        Spans("$$\\int_0^1 x\\,dx$$\r", "$$\\int_0^1 x\\,dx$$ [alone]", "$$…$$ alone");
+        Spans("see $$a+b$$ here\r", "$$a+b$$", "$$…$$ inline");
+        Spans("\\(a+b\\) and \\[c\\] and $d$\r", "\\(a+b\\) | \\[c\\] | $d$", "\\( \\), \\[ \\] and $ in one paragraph");
+        Spans("\t\\[x=1\\] \r", "\\[x=1\\] [alone]", "\\[…\\] alone with tab and space");
+        Spans("a $x$ and $y$ b\r", "$x$ | $y$", "two $…$");
+        Spans("Cost $5 and $6\r", "", "prices are not LaTeX");
+        Spans("text\a", "", "table cell without LaTeX");
+        Spans("$x$\a", "$x$ [alone]", "alone in a table cell");
         Console.WriteLine(failures == 0 ? "all number-field checks passed" : failures + " check(s) failed");
         return failures == 0 ? 0 : 1;
     }

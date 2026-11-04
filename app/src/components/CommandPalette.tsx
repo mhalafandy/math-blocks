@@ -1,3 +1,4 @@
+import { restoreEditorFocus } from "../lib/editorFocus";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Command } from "../lib/commands";
 import { useApp } from "../lib/store";
@@ -32,12 +33,18 @@ export function CommandPalette({ commands }: { commands: Command[] }) {
     [commands, query],
   );
 
+  const wasOpen = useRef(false);
   useEffect(() => {
     if (open) {
       setQuery("");
       setIndex(0);
       requestAnimationFrame(() => input.current?.focus());
+    } else if (wasOpen.current) {
+      // Closed (command run, Escape or click outside): back to the editor, caret where it was
+      // (or in the first slot of what the command inserted).
+      restoreEditorFocus();
     }
+    wasOpen.current = open;
   }, [open]);
 
   if (!open) return null;

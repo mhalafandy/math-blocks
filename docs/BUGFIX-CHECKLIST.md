@@ -49,3 +49,25 @@ Please send me the Repair report numbers for each row.
    - Numbered equations should leave room for the number.
 7. Word style tab: the Classic preview shows dashed line-width guides once the equation comes close to the line width.
 8. Export .tex: multline equations become `\begin{multline}` (with `\tag` when numbered) and compile.
+
+---
+
+# Round 2 — Priority 1 checklist (real Word)
+
+1. **Convert LaTeX:** in a test document, type `$\alpha$` alone on a line, `text $x^2$ and \(y\) and $$a+b$$ here`,
+   `\[E=mc^2\]` alone, and `Cost $5 and $6` (must stay text). Ribbon → Convert LaTeX → Convert.
+   Expected: all LaTeX converted (alone `$$`/`\[` → display; the others inline), the prices untouched.
+   If anything is left, the message now says why; please send the `findLatex …` and `replaceRanges …`
+   lines from connector.log.
+2. **Snippet prefix:** for each prefix in the Snippets dialog (`;` `:` `'` `!` `.`), type `x+` then the prefix and
+   `pv`, press Tab: a vector with an empty slot, **no prefix character left**. `;dc` Tab, `b`, Tab, `a` → C_ba.
+   `x;tp` Tab → xᵀ. `inv` Tab → ⁻¹.
+3. **Space leaves a kind:** `;pv` Tab `r` Space `+x` → r⃗ + x (the vector unchanged). Same with Tab. In a vector
+   with a frame label, Space from inside the label also leaves the kind.
+4. **Focus:** with the caret in the middle of an equation, Ctrl+K → Esc → type: the text goes where the caret
+   was. Ctrl+K → "fraction" → Enter → type: it goes into the numerator. Open Snippets, close it, type: into the
+   editor. Same from the floating editor's command line.
+5. **Dialogs:** at 1366×768 and at 125 % / 150 % scaling, open Snippets, Change notation, Save as new…,
+   List of symbols: the title and the buttons are always visible; the list scrolls.
+6. **Harpoon:** print `harpoon-print-A4.pdf` (sent with this message) at 100 % (no "fit to page") and judge the
+   12 pt and 10 pt lines. Then insert a Classic r⃗ at 10 pt in Word and print it.

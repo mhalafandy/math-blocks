@@ -78,38 +78,92 @@ namespace MathBlocks.WordConnector
             return result;
         }
 
-        /// <summary>$$…$$, \[…\], \(…\) and $…$ (not across paragraphs).</summary>
-        private static readonly Regex LatexSpans = new Regex(@"\$\$[^\r]+?\$\$|\\\[[^\r]+?\\\]|\\\([^\r]+?\\\)|(?<![\\$])\$[^\s$\r](?:[^$\r]*?[^\s$\\\r])?\$(?!\$)", RegexOptions.Compiled);
+        private static Regex LatexSpans => LatexText.Spans;
 
-        /// <summary>Every LaTeX span in the main text that is not already inside a MathBlocks equation or field.</summary>
+        /// <summary>
+        /// Every LaTeX span in the main text that is not already inside a MathBlocks equation or field.
+        /// Paragraph text and document positions can differ (fields, hidden text, objects): a span
+        /// whose position does not hold its text is searched for within the paragraph.
+        /// </summary>
         public Dictionary<string, object> FindLatex(Dictionary<string, object> p)
         {
             var doc = ResolveDocument(p);
             var items = new List<object>();
+            int found = 0, inside = 0, lost = 0, moved = 0;
             foreach (Word.Paragraph para in doc.Paragraphs)
             {
                 var r = para.Range;
                 var text = r.Text ?? "";
-                if (text.IndexOf('$') < 0 && text.IndexOf('\\') < 0) continue;
-                foreach (Match m in LatexSpans.Matches(text))
+                foreach (var m in LatexText.Find(text))
                 {
+                    found++;
                     int start = r.Start + m.Index, end = start + m.Length;
                     var span = doc.Range(start, end);
-                    // Paragraph text and document positions differ around fields and objects: check.
-                    if ((span.Text ?? "") != m.Value) continue;
-                    if (span.ContentControls.Count > 0 || span.ParentContentControl != null || span.Fields.Count > 0) continue;
-                    var paraText = text.Trim('\r', '\a', ' ', '\t');
-                    items.Add(new Dictionary<string, object>
+                    if ((span.Text ?? "") != m.Text)
                     {
-                        ["start"] = start,
-                        ["end"] = end,
-                        ["text"] = m.Value,
-                        // Alone in its paragraph: a display equation.
-                        ["alone"] = paraText == m.Value,
-                    });
+                        span = Locate(r, m.Text, start);
+                        if (span == null)
+                        {
+                            lost++;
+                            Log.Info("findLatex: could not locate \"" + Short(m.Text) + "\" near " + start);
+                            continue;
+                        }
+                        moved++;
+                        start = span.Start;
+                        end = span.End;
+                    }
+                    if (InsideFieldOrEquation(span))
+                    {
+                        inside++;
+                        continue;
+                    }
+                    items.Add(new Dictionary<string, object> { ["start"] = start, ["end"] = end, ["text"] = m.Text, ["alone"] = m.Alone });
                 }
             }
-            return new Dictionary<string, object> { ["name"] = doc.Name, ["fullName"] = doc.FullName, ["items"] = items };
+            Log.Info("findLatex in " + doc.Name + ": " + found + " span(s), " + items.Count + " to convert, " + inside + " inside equations/fields, " + moved + " relocated, " + lost + " not located");
+            return new Dictionary<string, object>
+            {
+                ["name"] = doc.Name, ["fullName"] = doc.FullName, ["items"] = items,
+                ["skippedInside"] = inside, ["notLocated"] = lost,
+            };
+        }
+
+        private static string Short(string s) => s.Length > 40 ? s.Substring(0, 40) + "…" : s;
+
+        private static bool InsideFieldOrEquation(Word.Range span)
+        {
+            try
+            {
+                if (span.ContentControls.Count > 0 || span.Fields.Count > 0) return true;
+                var cc = span.ParentContentControl;
+                return cc != null && cc.Tag != null && cc.Tag.StartsWith(TagPrefix, StringComparison.Ordinal);
+            }
+            catch (COMException)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>The span's text inside the paragraph, nearest to where it was expected.</summary>
+        private static Word.Range Locate(Word.Range para, string text, int near)
+        {
+            if (text.Length > 250) return null; // Word's Find limit
+            Word.Range best = null;
+            var r = para.Duplicate;
+            var f = r.Find;
+            f.ClearFormatting();
+            f.Text = text;
+            f.MatchWildcards = false;
+            f.MatchCase = true;
+            f.Forward = true;
+            f.Wrap = Word.WdFindWrap.wdFindStop;
+            int guard = 0;
+            while (f.Execute() && r.End <= para.End && guard++ < 50)
+            {
+                if (best == null || Math.Abs(r.Start - near) < Math.Abs(best.Start - near)) best = r.Duplicate;
+                r.Collapse(Word.WdCollapseDirection.wdCollapseEnd);
+            }
+            return best;
         }
 
         /// <summary>
@@ -142,13 +196,19 @@ namespace MathBlocks.WordConnector
                     }
                     try
                     {
-                        if (item.TryGetValue("flatOpc", out var f) && f is string flatOpc) r.InsertXML(flatOpc);
+                        if (item.TryGetValue("flatOpc", out var f) && f is string flatOpc)
+                        {
+                            // As a normal insertion: remove the text, insert at the empty point.
+                            r.Text = "";
+                            var at = doc.Range(start, start);
+                            at.InsertXML(flatOpc);
+                        }
                         else if (item.TryGetValue("text", out var t) && t is string text) r.Text = text;
                         replaced++;
                     }
                     catch (COMException ex)
                     {
-                        Log.Error("replaceRanges at " + start, ex);
+                        Log.Error("replaceRanges at " + start + " (" + Short(r.Text ?? "") + ")", ex);
                         skipped++;
                     }
                 }
@@ -159,6 +219,7 @@ namespace MathBlocks.WordConnector
                 _app.ScreenUpdating = screen;
                 undo.EndCustomRecord();
             }
+            Log.Info("replaceRanges \"" + undoLabel + "\": " + replaced + " replaced, " + skipped + " skipped");
             return new Dictionary<string, object> { ["replaced"] = replaced, ["skipped"] = skipped };
         }
 
