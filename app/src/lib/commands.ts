@@ -83,6 +83,20 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => import("../components/NomenclatureDialog").then((m) => m.openNomenclature()),
     },
     {
+      id: "word.upgradeNumbering",
+      title: "Upgrade numbering: rebuild equation numbers and references as single fields (current format)",
+      group: "Word",
+      keywords: "numbering number upgrade field reference format chapter section appendix",
+      run: () => import("./numbering").then((m) => m.upgradeNumbering()),
+    },
+    {
+      id: "word.numberMarker",
+      title: "Insert equation chapter marker (chapter / section / appendix) at Word's cursor…",
+      group: "Word",
+      keywords: "chapter section appendix marker numbering restart break",
+      run: () => import("../components/NumberMarkerDialog").then((m) => m.openNumberMarker()),
+    },
+    {
       id: "word.repair",
       title: "Repair equations: give pasted copies back their MathBlocks identity",
       group: "Word",

@@ -25,7 +25,16 @@ export interface ConnectorState {
 export interface NumberStyle {
   open: string;
   close: string;
+  /** Kept for older add-ins (= parts !== "eq"). */
   chapter: boolean;
+  /** (1), (1.1) chapter.equation, (1.2.3) chapter.section.equation. */
+  parts?: "eq" | "chapter" | "section";
+  separator?: "." | "-";
+  restart?: "chapter" | "section";
+  /** Chapter/section numbers from Word's heading numbering or from MathBlocks' hidden markers. */
+  source?: "headings" | "markers";
+  /** References: "(1.2)" with brackets, or "1.2" (for "Eq. 1.2"). */
+  references?: "brackets" | "number";
 }
 
 interface Prefs {

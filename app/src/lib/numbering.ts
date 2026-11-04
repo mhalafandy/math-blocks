@@ -4,7 +4,7 @@ import { serializeLatex } from "@mathblocks/math-latex";
 import { readEquationXml as readOmml } from "./readEquation";
 import { addinSupports, connector } from "./connector";
 import { buildInsertion, currentProfile } from "./equation";
-import { useApp } from "./store";
+import { useApp, type NumberStyle } from "./store";
 
 /**
  * Equation numbering and cross-references (M8). Numbers are Word fields (SEQ MBEq), each covered
@@ -25,7 +25,7 @@ export async function numberInWord(tag: string, latex: string) {
   if (!requireAddin("numberEquation")) return null;
   const { flatOpc } = await buildInsertion(latex, false, currentProfile(), tag, undefined, true);
   const style = useApp.getState().numberStyle;
-  return connector.request("numberEquation", { tag, flatOpc, open: style.open, close: style.close, chapter: style.chapter }, SLOW);
+  return connector.request("numberEquation", { tag, flatOpc, ...numberFormat(style) }, SLOW);
 }
 
 /** Removes an equation's number; it becomes a display (or inline) equation. */
@@ -96,10 +96,49 @@ export async function openReferencePicker() {
   }
 }
 
-export async function insertReference(item: ReferenceItem) {
+/** The add-in's number format from the preferences. */
+export function numberFormat(style: NumberStyle) {
+  const parts = style.parts ?? (style.chapter ? "chapter" : "eq");
+  return { open: style.open, close: style.close, chapter: parts !== "eq", parts, separator: style.separator ?? ".", restart: style.restart ?? "chapter", source: style.source ?? "headings" } as const;
+}
+
+/** Upgrade numbering: every MathBlocks number and reference becomes one field (backup first, one undo step). */
+export async function upgradeNumbering() {
+  const app = useApp.getState();
+  if (!addinSupports("upgradeNumbering")) return app.notify("Restart Word to load the updated MathBlocks add-in first.", "error");
+  const { backupIfMany } = await import("./docOps");
+  try {
+    const list = await connector.request("listNumbered", {}, SLOW);
+    const ours = list.equations.filter((e) => e.kind === "mathblocks");
+    if (!ours.length) return app.notify("No MathBlocks equation numbers in this document (MathType numbers are left as they are).");
+    const backup = await backupIfMany(list.fullName, ours.length > 10 ? ours.length : 11);
+    await connector.request("beginOperation", { document: list.fullName, title: "Upgrade numbering", total: ours.length, undoLabel: "Upgrade equation numbering" });
+    try {
+      const r = await connector.request("upgradeNumbering", { document: list.fullName, ...numberFormat(app.numberStyle) }, 600_000);
+      app.notify(`Numbering upgraded: ${r.numbers} number(s) and ${r.references} reference(s) are now single fields; references still point at the same equations. One Ctrl+Z undoes it.${backup ? ` Backup: ${backup.split(/[\\/]/).pop()}` : ""}`);
+    } finally {
+      await connector.request("endOperation", { done: ours.length }).catch(() => undefined);
+    }
+  } catch (e) {
+    app.notify(e instanceof Error ? e.message : String(e), "error");
+  }
+}
+
+/** Hidden chapter/section marker at Word's cursor (markers numbering source). */
+export async function insertNumberMarker(o: { chapter: number; section: number; appendix: boolean }) {
+  const app = useApp.getState();
+  try {
+    await connector.request("insertNumberMarker", { ...o, restartEquations: true });
+    app.notify(`${o.appendix ? "Appendix" : "Chapter"} ${o.appendix ? String.fromCharCode(64 + o.chapter) : o.chapter}, section ${o.section} starts here: equation numbers after it restart.`);
+  } catch (e) {
+    app.notify(e instanceof Error ? e.message : String(e), "error");
+  }
+}
+
+export async function insertReference(item: ReferenceItem, numberOnly = useApp.getState().numberStyle.references === "number") {
   const notify = useApp.getState().notify;
   try {
-    const r = await connector.request("insertReference", { bookmark: item.bookmark });
+    const r = await connector.request("insertReference", { bookmark: item.bookmark, numberOnly });
     useReferences.getState().set({ open: false });
     notify(`Inserted a reference to ${r.text || item.number}`);
   } catch (e) {

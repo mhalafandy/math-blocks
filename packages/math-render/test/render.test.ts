@@ -37,6 +37,18 @@ describe.skipIf(!available)("MathBlocks typesetting engine", () => {
     expect(sup.box.h).toBeGreaterThan(0.6);
   });
 
+  it("centres multi-line piles and matrices where MathType does (numbers sit level with them)", () => {
+    for (const latex of ["\\begin{aligned}a&=b\\\\&=c\\\\&=d\\end{aligned}", "\\begin{bmatrix}1&0&0\\\\0&c&s\\\\0&-s&c\\end{bmatrix}", "\\begin{cases}1&x>0\\\\0&x\\le 0\\end{cases}"]) {
+      const b = renderSvg(parseLatex(latex).root, { fonts }).box;
+      expect(Math.abs((b.h - b.d) / 2 - 0.246), latex).toBeLessThan(0.01);
+    }
+  });
+
+  it("matrix brackets stay centred on their contents", () => {
+    const r = renderSvg(parseLatex("\\begin{pmatrix}a\\\\b\\\\c\\end{pmatrix}").root, { fonts });
+    expect(Math.abs((r.box.h - r.box.d) / 2 - 0.246)).toBeLessThan(0.02);
+  });
+
   it("stretches brackets around tall contents", () => {
     const small = renderSvg(parseLatex("\\left(x\\right)").root, { fonts });
     const tall = renderSvg(parseLatex("\\left(\\frac{\\frac{a}{b}}{c}\\right)").root, { fonts });
