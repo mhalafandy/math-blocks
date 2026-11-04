@@ -1,3 +1,5 @@
+import { DEFAULT_PROFILE, kindNewcommand, KINDS, macroClashes, MBBOLD_DEFINITION, styleOf, type NotationProfile } from "@mathblocks/math-core";
+import { serializeLatex } from "@mathblocks/math-latex";
 import { convertLatexToMathMl } from "mathlive/ssr";
 import { isDesktop } from "./connector";
 import { useApp } from "./store";
@@ -185,19 +187,39 @@ export interface ExportedEquation {
   page?: number;
 }
 
-/** A compilable LaTeX file with the equations in document order. */
-export function documentToLatex(name: string, equations: ExportedEquation[]): string {
+export interface TexOptions {
+  /** Notation profile for the kind macros' definitions. */
+  profile?: NotationProfile;
+  /** Rename kind macros that clash with a package (\\diff → \\mbdiff) instead of failing loudly. */
+  renameOnClash?: boolean;
+}
+
+/**
+ * A compilable LaTeX file with the equations in document order. Kind macros (\\pvec…) are
+ * defined with \\newcommand (never \\providecommand: another package's definition must not
+ * silently win), generated from the notation profile.
+ */
+export function documentToLatex(name: string, equations: ExportedEquation[], o: TexOptions = {}): string {
+  const profile = o.profile ?? DEFAULT_PROFILE;
+  const clashes = macroClashes();
+  const rename = (macro: string) => (o.renameOnClash && clashes.has(macro) ? `mb${macro}` : macro);
+  const used = KINDS.filter((k) => equations.some((e) => new RegExp(`\\\\${k.macro}(?![a-zA-Z])`).test(e.latex)));
+  const defs = used.map((k) => kindNewcommand(k.id, styleOf(profile, k.id), serializeLatex, rename(k.macro)));
+  const clashNotes = used.filter((k) => clashes.has(k.macro)).map((k) => `% \\${k.macro} clashes with ${clashes.get(k.macro)!.join(", ")}${o.renameOnClash ? `: renamed \\${rename(k.macro)}` : ": loading that package together with these definitions gives an error"}`);
   const lines = [
     `% Equations of “${name}”, exported by MathBlocks on ${new Date().toISOString().slice(0, 10)}`,
     "\\documentclass{article}",
     "\\usepackage{amsmath,amssymb,bm}",
-    "\\providecommand{\\overrightharpoon}[1]{\\overset{\\rightharpoonup}{#1}}",
-    "\\providecommand{\\overleftharpoon}[1]{\\overset{\\leftharpoonup}{#1}}",
+    "\\newcommand{\\overrightharpoon}[1]{\\overset{\\rightharpoonup}{#1}}",
+    "\\newcommand{\\overleftharpoon}[1]{\\overset{\\leftharpoonup}{#1}}",
+    ...(used.length ? ["% Notation kinds (MathBlocks notation profile)", ...(defs.some((d) => d.includes("\\mbbold")) ? [MBBOLD_DEFINITION] : []), ...defs, ...clashNotes] : []),
     "\\begin{document}",
     "",
   ];
+  const renamed = (latex: string) =>
+    o.renameOnClash ? used.reduce((l, k) => (clashes.has(k.macro) ? l.replace(new RegExp(`\\\\${k.macro}(?![a-zA-Z])`, "g"), `\\${rename(k.macro)}`) : l), latex) : latex;
   for (const e of equations) {
-    const body = toStandardLatex(e.latex);
+    const body = renamed(toStandardLatex(e.latex));
     const where = e.page ? `% page ${e.page}` : "";
     if (e.number) {
       const n = e.number.replace(/^[([]|[)\]]$/g, "");
@@ -222,9 +244,20 @@ export async function exportDocumentLatex() {
     } catch {
       // Old add-in: export without numbers.
     }
+    const { askConfirm } = await import("../components/Dialogs");
+    const clashing = KINDS.filter((k) => macroClashes().has(k.macro) && index.equations.some((e) => e.latex.includes(`\\${k.macro}`)));
+    const renameOnClash = clashing.length
+      ? await askConfirm(
+          "Macro names that clash with packages",
+          `${clashing.map((k) => `\\${k.macro} (${macroClashes().get(k.macro)!.join(", ")})`).join(", ")} also exist in common packages. Rename them in the export (\\mb…)? If you keep them and your thesis loads such a package, LaTeX stops with an error.`,
+          "Rename",
+          false,
+        )
+      : false;
     const tex = documentToLatex(
       index.name,
       index.equations.map((e) => ({ latex: e.latex, display: e.display || numbers.has(e.tag), number: numbers.get(e.tag) ?? null, page: e.page })),
+      { profile: useApp.getState().notationProfile, renameOnClash },
     );
     const path = await saveFile(index.name.replace(/\.\w+$/, "") + " equations", "tex", tex, "application/x-tex");
     if (path) notify(`Exported ${index.equations.length} equation(s) to ${path.split(/[\\/]/).pop()}`);

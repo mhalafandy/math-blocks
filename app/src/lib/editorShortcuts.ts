@@ -25,7 +25,7 @@ export const SHORTCUT_TABLE: ShortcutDef[] = [
   { keys: "Ctrl+[", label: "Brackets [ ]", insert: "\\left[#0\\right]" },
   { keys: "Ctrl+Shift+[", label: "Braces { }", insert: "\\left\\{#0\\right\\}" },
   { keys: "Ctrl+Shift+\\", label: "Absolute value | |", insert: "\\left|#0\\right|" },
-  { keys: "Ctrl+Shift+V", label: "Vector arrow", insert: "\\vec{#0}" },
+  { keys: "Ctrl+Shift+V", label: "Physical vector (notation kind)", insert: "\\pvec{#0}" },
   { keys: "Ctrl+Shift+H", label: "Hat (unit vector)", insert: "\\hat{#0}" },
   { keys: "Ctrl+Shift+D", label: "Dot (time derivative)", insert: "\\dot{#0}" },
   { keys: "Ctrl+Shift+E", label: "Double dot", insert: "\\ddot{#0}" },

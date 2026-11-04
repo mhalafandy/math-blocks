@@ -67,6 +67,34 @@ function comboOf(e: KeyboardEvent): string {
   return parts.join("+");
 }
 
+/** The offsets of a whole kind object (\class{nk-…}{…}) ending (dir −1) or starting (dir +1) at `pos`. */
+function kindRangeAt(mf: { getValue: (a: number, b: number, f: "latex") => string; lastOffset: number }, pos: number, dir: -1 | 1): [number, number] | null {
+  for (let n = 1; n <= 80; n++) {
+    const [a, b] = dir < 0 ? [pos - n, pos] : [pos, pos + n];
+    if (a < 0 || b > mf.lastOffset) return null;
+    const v = mf.getValue(a, b, "latex");
+    if (v.startsWith("\\class{nk-") && completeGroup(v)) return [a, b];
+  }
+  return null;
+}
+
+/** "\class{name}{body}" exactly, nothing before or after. */
+function completeGroup(v: string): boolean {
+  const nameEnd = v.indexOf("}");
+  if (nameEnd < 0 || v[nameEnd + 1] !== "{") return false;
+  let depth = 0;
+  for (let i = nameEnd + 1; i < v.length; i++) {
+    const c = v[i];
+    if (c === "\\") {
+      i++;
+      continue;
+    }
+    if (c === "{") depth++;
+    else if (c === "}" && --depth === 0) return i === v.length - 1;
+  }
+  return false;
+}
+
 /** Handles an editor shortcut; true when the key was used. */
 export function handleEditorKey(e: KeyboardEvent): boolean {
   const mf = focusedMathField();
@@ -84,6 +112,17 @@ export function handleEditorKey(e: KeyboardEvent): boolean {
       return true;
     }
     return false;
+  }
+  // A notation kind is deleted as a whole: Backspace right after it, Delete right before it.
+  if ((e.key === "Backspace" || e.key === "Delete") && !e.ctrlKey && !e.metaKey && !e.altKey && mf.selectionIsCollapsed) {
+    const range = kindRangeAt(mf, mf.position, e.key === "Backspace" ? -1 : 1);
+    if (range) {
+      e.preventDefault();
+      e.stopPropagation();
+      mf.selection = { ranges: [range], direction: "forward" };
+      mf.executeCommand("deleteBackward");
+      return true;
+    }
   }
   // Tab after a snippet trigger ("ddt", "mat3"…) expands it; otherwise Tab moves between slots.
   if (e.key === "Tab" && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && mf.selectionIsCollapsed) {
