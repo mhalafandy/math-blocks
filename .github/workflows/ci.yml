@@ -50,7 +50,11 @@ jobs:
 
 
       - name: Palette font audit with the real Times New Roman and Symbol
-        run: pnpm tsx tools/palette-audit.ts
+        run: |
+          pnpm tsx tools/palette-audit.ts
+          Write-Output "----- PALETTE-AUDIT-windows.md -----"
+          Get-Content docs/PALETTE-AUDIT-windows.md
+          Write-Output "----- end -----"
       - uses: actions/upload-artifact@v4
         with:
           name: palette-audit-windows
