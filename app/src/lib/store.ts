@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { BoldScope } from "@mathblocks/math-core";
+import { DEFAULT_PROFILE, type BoldScope, type NotationProfile } from "@mathblocks/math-core";
 import { DEFAULT_ACCENTS, type AccentRules } from "@mathblocks/math-render";
 import { DEFAULT_FAVORITES, setNotationRules, type Convention, type TransposeForm, type VectorStyle as SpacecraftVector } from "./palette";
 
@@ -63,6 +63,8 @@ interface Prefs {
   boldScope: BoldScope;
   accentsFollowBold: boolean;
   transposeForm: TransposeForm;
+  /** Notation kinds: preset and the user's style changes (docs/NOTATION-KINDS.md). */
+  notationProfile: NotationProfile;
 }
 
 export interface UpdateState {
@@ -143,6 +145,7 @@ const DEFAULT_PREFS: Prefs = {
   boldScope: "base",
   accentsFollowBold: false,
   transposeForm: "upright",
+  notationProfile: DEFAULT_PROFILE,
 };
 
 function loadPrefs(): Prefs {

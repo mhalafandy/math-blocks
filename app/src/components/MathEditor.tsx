@@ -1,4 +1,5 @@
-import { isAllBold, setBold, type BoldScope } from "@mathblocks/math-core";
+import { isAllBold, KIND_BY_ID, KINDS, setBold, type BoldScope } from "@mathblocks/math-core";
+import { CLASS_PREFIX, fromEditorLatex, toEditorLatex } from "../lib/kinds";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { useEffect, useRef } from "react";
 import { MathfieldElement } from "mathlive";
@@ -22,8 +23,46 @@ export function focusedMathField(): MathfieldElement | null {
  * ("dx" becomes \mathrm{dx}). Its \differentialD atom is a proper upright differential d, so the
  * editor uses that internally while the rest of the app (and Word) sees standard \mathrm{d}.
  */
-export const toMathLive = (latex: string) => latex.replace(/\\mathrm\{d\}/g, "\\differentialD ");
-const fromMathLive = (latex: string) => latex.replace(/\\differentialD\b ?/g, "\\mathrm{d}");
+export const toMathLive = (latex: string) => toEditorKinds(latex).replace(/\\mathrm\{d\}/g, "\\differentialD ");
+const fromMathLive = (latex: string) => fromEditorKinds(latex.replace(/\\differentialD\b ?/g, "\\mathrm{d}"));
+
+/** Template slots survive the kind conversion as marker letters. */
+const SLOT_MARK = { "#?": "\u24C5", "#0": "\u24EA" } as const;
+const KIND_MACRO = new RegExp(`\\\\(${KINDS.map((k) => k.macro).join("|")})(?![a-zA-Z])`);
+
+/** Notation kinds are held expanded and wrapped in the editor (\class{nk-pvec}{…}). */
+function toEditorKinds(latex: string): string {
+  if (!KIND_MACRO.test(latex)) return latex;
+  const marked = latex.replace(/#\?/g, SLOT_MARK["#?"]).replace(/#0/g, SLOT_MARK["#0"]);
+  return toEditorLatex(marked, useApp.getState().notationProfile).replaceAll(SLOT_MARK["#?"], "#?").replaceAll(SLOT_MARK["#0"], "#0");
+}
+
+function fromEditorKinds(latex: string): string {
+  if (!latex.includes(`\\class{${CLASS_PREFIX}`)) return latex;
+  const r = fromEditorLatex(latex, useApp.getState().notationProfile);
+  if (r.handStyled.length) noteHandStyled(r.handStyled.map((h) => h.kind));
+  return r.latex;
+}
+
+let lastHandStyledNote = "";
+/** Tells (once per change) that an edit took an object out of its kind. */
+function noteHandStyled(kinds: string[]) {
+  const key = kinds.join(",");
+  if (key === lastHandStyledNote) return;
+  lastHandStyledNote = key;
+  const names = [...new Set(kinds.map((k) => KIND_BY_ID.get(k)?.name ?? k))].join(", ");
+  useApp.getState().notify(`Edited out of its kind (${names}): kept as typed. Undo (Ctrl+Z) to keep the kind.`);
+}
+
+/** Hover hint inside the editor: a kind shows a dashed outline and its name. */
+function kindHintCss(): string {
+  return [
+    `[class^="${CLASS_PREFIX}"]{border-radius:2px;position:relative}`,
+    `[class^="${CLASS_PREFIX}"]:hover{outline:1px dashed rgba(90,110,200,.55);outline-offset:1px}`,
+    `[class^="${CLASS_PREFIX}"]:hover::after{position:absolute;left:0;bottom:100%;margin-bottom:3px;padding:1px 5px;border-radius:3px;background:rgba(40,44,60,.88);color:#fff;font:11px/1.4 system-ui,sans-serif;white-space:nowrap;pointer-events:none;z-index:10}`,
+    ...KINDS.map((k) => `.${CLASS_PREFIX}${k.id}:hover::after{content:"${k.name}"}`),
+  ].join("\n");
+}
 
 /** Empty slot, possibly wrapped in a style command (\bm{\placeholder{}}). */
 const PLACEHOLDER = /^(?:\\[A-Za-z]+\{)?\\placeholder\{\}\}?$/;
@@ -288,6 +327,13 @@ export function MathEditor() {
       setLastEditor("visual");
     });
     host.current?.appendChild(mf);
+    try {
+      const style = document.createElement("style");
+      style.textContent = kindHintCss();
+      mf.shadowRoot?.appendChild(style);
+    } catch {
+      // The hint is cosmetic.
+    }
     // Autocorrect while typing (in addition to MathLive's: alpha → α, sqrt, sum, int…).
     // MathLive only exposes its shortcut list once the field is in the page.
     try {

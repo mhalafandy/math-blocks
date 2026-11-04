@@ -110,7 +110,63 @@ const results: string[] = await page.evaluate(async (list) => {
   }
   return out;
 }, cases.map((c) => ({ editor: c.editor, changeBase: c.changeBase })));
+// Deletion: Backspace after a kind / Delete before it removes the whole kind (the app's
+// kindRangeAt logic, same algorithm), and a selection crossing a kind's edge stays well-formed.
+// tsx names inner functions with a __name helper that the page does not have.
+await page.evaluate("window.__name = (f) => f");
+const deletion = await page.evaluate(async (forms) => {
+  const mf = document.getElementById("mf") as unknown as {
+    value: string; lastOffset: number; position: number; selection: unknown;
+    getValue: (a?: unknown, b?: unknown, c?: unknown) => string; executeCommand: (c: unknown) => boolean;
+  };
+  const complete = (v: string) => {
+    const e = v.indexOf("}");
+    if (e < 0 || v[e + 1] !== "{") return false;
+    let d = 0;
+    for (let i = e + 1; i < v.length; i++) {
+      if (v[i] === "\\") { i++; continue; }
+      if (v[i] === "{") d++;
+      else if (v[i] === "}" && --d === 0) return i === v.length - 1;
+    }
+    return false;
+  };
+  const range = (pos: number, dir: number): [number, number] | null => {
+    for (let n = 1; n <= 80; n++) {
+      const [a, b] = dir < 0 ? [pos - n, pos] : [pos, pos + n];
+      if (a < 0 || b > mf.lastOffset) return null;
+      const v = mf.getValue(a, b, "latex");
+      if (v.startsWith("\\class{nk-") && complete(v)) return [a, b];
+    }
+    return null;
+  };
+  const out: { form: string; backspace: string; del: string; crossing: string }[] = [];
+  for (const f of forms) {
+    mf.value = `y+${f}+x`;
+    // Caret right after the kind: find the offset where the text before ends with the kind.
+    const after = mf.lastOffset - 2; // before the final "+x"
+    let backspace = "!caret";
+    if (after >= 0) {
+      const r = range(after, -1);
+      if (r) { mf.selection = { ranges: [r], direction: "forward" }; mf.executeCommand("deleteBackward"); backspace = mf.getValue("latex"); } else backspace = "!no range";
+    }
+    mf.value = `y+${f}+x`;
+    let del = "!caret";
+    for (const p of [2]) {
+      const r = range(p, 1);
+      if (r) { mf.selection = { ranges: [r], direction: "forward" }; mf.executeCommand("deleteBackward"); del = mf.getValue("latex"); } else del = "!no range";
+      break;
+    }
+    // Crossing selection: from the middle of the kind to the end.
+    mf.value = `y+${f}+x`;
+    mf.selection = { ranges: [[Math.max(3, after - 1), mf.lastOffset]], direction: "forward" };
+    mf.executeCommand("deleteBackward");
+    out.push({ form: f, backspace, del, crossing: mf.getValue("latex") });
+  }
+  return out;
+}, [...new Set(cases.filter((c) => !c.changeBase && !/[_'^]\{?2?\}?$|^\\dot/.test(c.editor) && c.id.includes("hughes/harpoon") && !/\}_1$/.test(c.editor)).map((c) => c.editor))].slice(0, 40));
 await browser.close();
+const deletionFailures = deletion.filter((d) => d.backspace !== "y++x" || d.del !== "y++x").map((d) => `${d.form}: backspace → ${d.backspace}, delete → ${d.del}`);
+const crossingBroken = deletion.filter((d) => (d.crossing.match(/\\class\{nk-/g) ?? []).length && !d.crossing.includes("}{")).map((d) => `${d.form}: ${d.crossing}`);
 
 const failures: string[] = [];
 const handStyled: string[] = [];
@@ -130,12 +186,17 @@ const report = [
   `- Failed: ${failures.length}`,
   `- Fell back to hand-styled: ${handStyled.length}`,
   "",
+  `- Deletion (Backspace after / Delete before a kind, ${deletion.length} kinds): ${deletion.length - deletionFailures.length} removed whole${deletionFailures.length ? `, ${deletionFailures.length} not` : ""}`,
+  `- Selection crossing a kind's edge then Delete: ${crossingBroken.length ? `${crossingBroken.length} left a broken wrapper` : "all well-formed"} (e.g. ${deletion[0] ? `y+${deletion[0].form}+x → ${deletion[0].crossing}` : "—"})`,
+  "",
+  ...(deletionFailures.length ? ["## Deletion failures", "", ...deletionFailures.map((d) => `- ${d}`), ""] : []),
   ...(failures.length ? ["## Failures", "", "```", ...failures.slice(0, 80), "```", ""] : []),
   ...(handStyled.length ? ["## Hand-styled fallbacks", "", ...handStyled.slice(0, 80).map((h) => `- ${h}`), ""] : []),
 ];
 writeFileSync(new URL("../docs/KINDS-ROUNDTRIP.md", import.meta.url), report.join("\n"));
 console.log(`${cases.length} cases: ${failures.length} failed, ${handStyled.length} hand-styled`);
-if (failures.length) {
+if (deletionFailures.length) console.log("deletion:", deletionFailures.slice(0, 10).join("\n"));
+if (failures.length || deletionFailures.length || crossingBroken.length) {
   console.log(failures.slice(0, 15).join("\n"));
   process.exit(1);
 }

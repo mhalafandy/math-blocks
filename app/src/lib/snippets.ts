@@ -1,3 +1,5 @@
+import { KINDS } from "@mathblocks/math-core";
+
 /**
  * Snippets: type a short trigger in the equation editor and press Tab — "ddt" becomes d/dt with
  * a slot to fill, "mat3" a 3×3 matrix. #? marks the slots (Tab moves between them afterwards).
@@ -10,7 +12,15 @@ export interface Snippet {
   name: string;
 }
 
+/** One snippet per notation kind (pv, uv, dc…): inserts the kind, drawn in the profile's style. */
+export const KIND_SNIPPETS: Snippet[] = KINDS.map((k) => ({
+  trigger: k.snippet,
+  latex: k.id === "T" ? "^{\\T}" : `\\${k.macro}${"{#?}".repeat(k.args)}`,
+  name: k.name,
+}));
+
 export const DEFAULT_SNIPPETS: Snippet[] = [
+  ...KIND_SNIPPETS,
   { trigger: "ddt", latex: "\\frac{\\mathrm{d}#?}{\\mathrm{d}t}", name: "Time derivative d/dt" },
   { trigger: "d2dt", latex: "\\frac{\\mathrm{d}^{2}#?}{\\mathrm{d}t^{2}}", name: "Second time derivative" },
   { trigger: "dd", latex: "\\frac{\\mathrm{d}#?}{\\mathrm{d}#?}", name: "Derivative d/dx" },
@@ -26,9 +36,8 @@ export const DEFAULT_SNIPPETS: Snippet[] = [
   { trigger: "norm", latex: "\\left\\|#?\\right\\|", name: "Norm ‖x‖" },
   { trigger: "abs", latex: "\\left|#?\\right|", name: "Absolute value" },
   { trigger: "inv", latex: "^{-1}", name: "Inverse ⁻¹" },
-  { trigger: "trans", latex: "^{T}", name: "Transpose ᵀ" },
+  { trigger: "trans", latex: "^{\\T}", name: "Transpose ᵀ" },
   { trigger: "cases", latex: "\\begin{cases}#?&#?\\\\#?&#?\\end{cases}", name: "Cases (piecewise)" },
-  { trigger: "dyad", latex: "\\overset{\\leftrightarrow}{#?}", name: "Dyadic (double arrow)" },
   { trigger: "evalat", latex: "\\left.#?\\right|_{#?}", name: "Evaluated at …" },
   { trigger: "eqv", latex: "\\equiv", name: "Equivalent ≡" },
   { trigger: "defeq", latex: "\\coloneqq", name: "Defined as ≔" },
@@ -41,7 +50,12 @@ export function loadSnippets(): Snippet[] {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const list = JSON.parse(raw) as Snippet[];
-      if (Array.isArray(list)) return list.filter((s) => s && typeof s.trigger === "string" && typeof s.latex === "string");
+      if (Array.isArray(list)) {
+        const saved = list.filter((s) => s && typeof s.trigger === "string" && typeof s.latex === "string");
+        // Kind snippets added after the list was saved join it (the user's own entries win).
+        const have = new Set(saved.map((s) => s.trigger));
+        return [...saved, ...KIND_SNIPPETS.filter((k) => !have.has(k.trigger))];
+      }
     }
   } catch {
     // Defaults below.
