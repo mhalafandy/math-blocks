@@ -38,7 +38,7 @@ export interface IndexedSymbol {
 const DEFINING = new Set(["=", "≔", "≡", "≜"]);
 
 /** Symbols on the left of the first defining relation, when that side is a single symbol. */
-function definedSymbol(root: Row): string | null {
+export function definedSymbol(root: Row): string | null {
   const i = root.children.findIndex((n: MathNode) => n.kind === "operator" && DEFINING.has(n.text));
   if (i <= 0) return null;
   const lhs = listSymbols({ kind: "row", children: root.children.slice(0, i) });

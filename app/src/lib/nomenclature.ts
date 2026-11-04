@@ -58,12 +58,12 @@ function letterRank(letter: string): number {
 const whereOf = (e: IndexedEquation) => (e.number ? e.number : e.page ? `p. ${e.page}` : "");
 
 /** Entries in nomenclature order: Latin a–z (lower case before upper), Greek α–ω, then others. */
-export function nomenclatureEntries(index: Pick<DocumentIndex, "symbols">): NomenclatureEntry[] {
+export function nomenclatureEntries(index: Pick<DocumentIndex, "symbols">, where: (e: IndexedEquation) => string = whereOf): NomenclatureEntry[] {
   return index.symbols
     .map((s) => {
       const letter = baseLetter(s.key);
       const first = s.definedIn ?? s.equations[0];
-      return { key: s.key, group: groupOf(letter), letter, where: first ? whereOf(first) : "", count: s.count };
+      return { key: s.key, group: groupOf(letter), letter, where: first ? where(first) : "", count: s.count };
     })
     .sort(
       (a, b) =>

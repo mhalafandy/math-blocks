@@ -122,6 +122,9 @@ importers:
       '@tauri-apps/plugin-updater':
         specifier: ^2.14.1
         version: 2.14.1
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
       mathlive:
         specifier: ^0.111.4
         version: 0.111.4
