@@ -590,10 +590,15 @@ const ASSEMBLY: Record<string, [string, string, string, string?]> = {
   "⌋": ["⎥", "⎥", "⎦"],
 };
 
-/** A delimiter at least `size` tall (em, already scaled), centred on the axis. */
-export function delimiter(ch: string, size: number, c: Ctx): Box {
+/** Height at which multi-line piles and matrices (and their brackets) are centred. */
+function pileAxis(c: Ctx): number {
+  return c.st.pileCentre !== undefined ? c.st.pileCentre * c.s : axis(c);
+}
+
+/** A delimiter at least `size` tall (em, already scaled), centred on the axis (or on `centreAt`). */
+export function delimiter(ch: string, size: number, c: Ctx, centreAt?: number): Box {
   if (!ch) return empty(0.12 * c.s);
-  const a = axis(c);
+  const a = centreAt ?? axis(c);
   const centre = (b: Box, g: GlyphInfo, sy = 1): Box => {
     const dy = a - ((g.h - g.d) / 2) * c.s * sy;
     return { w: b.w, h: b.h + dy, d: b.d - dy, items: shift(b.items, 0, dy) };
@@ -952,7 +957,8 @@ function grid(rows: Row[][], c: Ctx, align: (j: number) => "c" | "l" | "r", gapA
   const top = rowH[0]!;
   const bottom = baselines[baselines.length - 1]! - rowD[rowD.length - 1]!;
   const centre = (top + bottom) / 2;
-  const dy = axis(c) - centre;
+  // Piles (matrices, aligned, cases) centre where MathType centres them (its numbers sit level with that).
+  const dy = pileAxis(c) - centre;
   const box = combine(parts.map((p) => ({ ...p, y: p.y + dy })), x);
   box.h = top + dy;
   box.d = -(bottom + dy);
@@ -974,15 +980,15 @@ function matrix(kind: string, rows: Row[][], c0: Ctx): Box {
   const g = grid(rows, c, () => "c", () => c.st.colGap * c.s).box;
   const [open, close] = MATRIX_DELIMS[kind] ?? ["", ""];
   if (!open && !close) return g;
-  return wrapDelims(g, open, close, c0);
+  return wrapDelims(g, open, close, c0, pileAxis(c0));
 }
 
-function wrapDelims(inner: Box, open: string, close: string, c: Ctx): Box {
-  const a = axis(c);
+function wrapDelims(inner: Box, open: string, close: string, c: Ctx, centreAt = axis(c)): Box {
+  const a = centreAt;
   const half = Math.max(inner.h - a, inner.d + a);
   const size = 2 * half + 2 * c.st.delimiterPad * c.s;
-  const l = delimiter(open, size, c);
-  const r = delimiter(close, size, c);
+  const l = delimiter(open, size, c, a);
+  const r = delimiter(close, size, c, a);
   const pad = 0.12 * c.s;
   return combine([
     { box: l, x: 0, y: 0 },
@@ -993,9 +999,9 @@ function wrapDelims(inner: Box, open: string, close: string, c: Ctx): Box {
 
 function cases(rows: Row[][], c: Ctx): Box {
   const g = grid(rows, c, () => "l", () => 1 * c.s).box;
-  const a = axis(c);
+  const a = pileAxis(c);
   const half = Math.max(g.h - a, g.d + a);
-  const l = delimiter("{", 2 * half + 2 * c.st.delimiterPad * c.s, c);
+  const l = delimiter("{", 2 * half + 2 * c.st.delimiterPad * c.s, c, a);
   return combine([
     { box: l, x: 0, y: 0 },
     { box: g, x: l.w + 0.15 * c.s, y: 0 },
