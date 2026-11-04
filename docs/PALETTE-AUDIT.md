@@ -11,12 +11,10 @@ Fonts: Liberation Serif stands in for Times New Roman (same metrics, similar but
 | omml | 448 | 0 | 0 | 0 |
 | roundtrip | 448 | 0 | 0 | 0 |
 
-## Characters drawn from the STIX fallback (99)
+## Characters drawn from the STIX fallback (98)
 
 | Character | Used by |
 |---|---|
-| (double-struck) | sets.N, sets.Z, sets.Q, sets.R, sets.C, sets.H |
-| (sans-serif) | tab-linalg.la-Tsf, tab-linalg.la-H |
 | ⌈ | fences.ceil |
 | ⌉ | fences.ceil |
 | ⌊ | fences.floor |
@@ -103,16 +101,17 @@ Fonts: Liberation Serif stands in for Times New Roman (same metrics, similar but
 | ⩾ | relations.geqslant |
 | ⪯ | relations.preceq |
 | ⪰ | relations.succeq |
-| C | sets.C |
-| H | sets.H, tab-linalg.la-H |
+| C[double-struck] | sets.C |
 | ℏ | misc.hbar |
+| H[double-struck] | sets.H |
+| H[sans-serif] | tab-linalg.la-H |
 | ℑ | misc.Im |
-| N | sets.N |
-| Q | sets.Q |
-| R | sets.R |
+| N[double-struck] | sets.N |
+| Q[double-struck] | sets.Q |
 | ℜ | misc.Re |
-| T | tab-linalg.la-Tsf |
-| Z | sets.Z |
+| R[double-struck] | sets.R |
+| T[sans-serif] | tab-linalg.la-Tsf |
+| Z[double-struck] | sets.Z |
 | ℵ | sets.aleph |
 
 ## Entries not fully supported (108)
@@ -184,12 +183,12 @@ Fonts: Liberation Serif stands in for Times New Roman (same metrics, similar but
 | logic.vdash | `\vdash` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): ⊢ |
 | logic.models | `\models` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): ⊨ |
 | sets.emptyset | `\emptyset` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): ∅ |
-| sets.N | `\mathbb{N}` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): N (double-struck) |
-| sets.Z | `\mathbb{Z}` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): Z (double-struck) |
-| sets.Q | `\mathbb{Q}` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): Q (double-struck) |
-| sets.R | `\mathbb{R}` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): R (double-struck) |
-| sets.C | `\mathbb{C}` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): C (double-struck) |
-| sets.H | `\mathbb{H}` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): H (double-struck) |
+| sets.N | `\mathbb{N}` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): N[double-struck] |
+| sets.Z | `\mathbb{Z}` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): Z[double-struck] |
+| sets.Q | `\mathbb{Q}` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): Q[double-struck] |
+| sets.R | `\mathbb{R}` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): R[double-struck] |
+| sets.C | `\mathbb{C}` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): C[double-struck] |
+| sets.H | `\mathbb{H}` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): H[double-struck] |
 | sets.subsetneq | `\subsetneq` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): ⊊ |
 | sets.nsubseteq | `\nsubseteq` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): ⊈ |
 | sets.complement | `\complement` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): ∁ |
@@ -220,8 +219,8 @@ Fonts: Liberation Serif stands in for Times New Roman (same metrics, similar but
 | matrices.general | `\begin{pmatrix}a_{11} & \cdots & a_{1n}\\ \vdots & \ddots & \vdots\\ a_{m1} & \cdots & a_{mn}\end{pmatrix}` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): ⋯ ⋮ ⋱ |
 | matrices.diag | `\begin{pmatrix}#? & & 0\\ & \ddots & \\ 0 & & #?\end{pmatrix}` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): ⋱ |
 | tab-spacecraft.framederiv | `\overset{\circ}{\overrightharpoon{\mathbf{#0}}}` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): ∘ |
-| tab-linalg.la-Tsf | `#0^{\mathsf{T}}` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): T (sans-serif) |
-| tab-linalg.la-H | `#0^{\mathsf{H}}` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): H (sans-serif) |
+| tab-linalg.la-Tsf | `#0^{\mathsf{T}}` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): T[sans-serif] |
+| tab-linalg.la-H | `#0^{\mathsf{H}}` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): H[sans-serif] |
 | tab-linalg.la-inner | `\left\langle #0,#?\right\rangle` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): ⟨ ⟩ |
 | tab-vectors.grad | `\nabla #0` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): ∇ |
 | tab-vectors.divergence | `\nabla\cdot\vec{#0}` | full | converted | full | full | Classic: from STIX Two (not Times/Symbol): ∇ |

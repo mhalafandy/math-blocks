@@ -103,7 +103,7 @@ export function supportOf(latex: string, deps: SupportDeps): SupportResult {
     // Without the Symbol font file (Linux CI) its repertoire is the renderer's own table.
     if (!deps.fonts.symbol && SYMBOL_CODES[ch] !== undefined && !variant && (GREEK.test(ch) || kind === "operator")) continue;
     const src = glyphSource(ch, kind, deps.fonts, CLASSIC, variant);
-    if (src === "math") stix.push(variant && STIX_VARIANTS.test(variant) ? `${ch} (${variant})` : ch);
+    if (src === "math") stix.push(variant && STIX_VARIANTS.test(variant) ? `${ch}[${variant}]` : ch);
     else if (src === "none") none.push(ch);
   }
   if (none.length) {
