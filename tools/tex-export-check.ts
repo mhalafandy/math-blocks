@@ -1,9 +1,11 @@
 /**
  * Generates .tex exports that use every notation kind (with and without frame labels, Greek and
  * Latin bases) under every preset, for CI to compile:
- *   <preset>-plain.tex        definitions alone                      → must compile
- *   <preset>-rename.tex       renamed on clash, with physics+diffcoeff → must compile
- *   <preset>-clash.tex        not renamed, with physics+diffcoeff     → must FAIL (loud clash)
+ *   <preset>-plain.tex              definitions alone                       → must compile
+ *   <preset>-rename-<pkg>.tex       renamed on clash, with physics / diffcoeff → must compile
+ *   <preset>-keep-physics.tex       not renamed, with physics (no clash)     → must compile
+ *   <preset>-clash-diffcoeff.tex    not renamed, with diffcoeff (\diff)      → must FAIL loudly
+ * (physics and diffcoeff cannot be loaded together: both define \diffd.)
  * Run: pnpm tsx tools/tex-export-check.ts <outDir>   (then compile with tectonic; see ci.yml)
  */
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -28,7 +30,7 @@ const equations = [
   { latex: "\\diff{m}=\\sigma\\,\\diff{A}", display: false },
 ];
 
-const withPackages = (tex: string) => tex.replace("\\usepackage{amsmath,amssymb,bm}", "\\usepackage{amsmath,amssymb,bm}\n\\usepackage{physics}\n\\usepackage{diffcoeff}");
+const withPackage = (tex: string, pkg: string) => tex.replace("\\usepackage{amsmath,amssymb,bm}", `\\usepackage{amsmath,amssymb,bm}\n\\usepackage{${pkg}}`);
 
 const files: string[] = [];
 for (const preset of Object.keys(PRESETS) as PresetId[]) {
@@ -36,7 +38,13 @@ for (const preset of Object.keys(PRESETS) as PresetId[]) {
   const plain = documentToLatex(`check-${preset}`, equations, { profile });
   const renamed = documentToLatex(`check-${preset}`, equations, { profile, renameOnClash: true });
   const clash = documentToLatex(`check-${preset}`, equations, { profile, renameOnClash: false });
-  for (const [name, tex] of [[`${preset}-plain`, plain], [`${preset}-rename`, withPackages(renamed)], [`${preset}-clash`, withPackages(clash)]] as const) {
+  for (const [name, tex] of [
+    [`${preset}-plain`, plain],
+    [`${preset}-rename-physics`, withPackage(renamed, "physics")],
+    [`${preset}-rename-diffcoeff`, withPackage(renamed, "diffcoeff")],
+    [`${preset}-keep-physics`, withPackage(clash, "physics")],
+    [`${preset}-clash-diffcoeff`, withPackage(clash, "diffcoeff")],
+  ] as const) {
     writeFileSync(join(out, `${name}.tex`), tex);
     files.push(name);
   }

@@ -36,11 +36,13 @@ jobs:
           pnpm tsx tools/tex-export-check.ts tex-check
           cd tex-check
           status=0
-          for f in *-plain.tex *-rename.tex; do
+          for f in *-plain.tex *-rename-*.tex *-keep-physics.tex; do
             if ../tectonic --keep-logs "$f" > "$f.out" 2>&1; then echo "ok    $f"; else echo "FAIL  $f (must compile)"; tail -30 "$f.out"; status=1; fi
           done
-          for f in *-clash.tex; do
-            if ../tectonic "$f" > "$f.out" 2>&1; then echo "FAIL  $f compiled although \\diff clashes with diffcoeff"; status=1; else echo "ok    $f fails loudly: $(grep -m1 -o 'Command .* already defined' "$f.out" || echo error)"; fi
+          for f in *-clash-diffcoeff.tex; do
+            if ../tectonic "$f" > "$f.out" 2>&1; then echo "FAIL  $f compiled although \diff clashes with diffcoeff"; status=1
+            elif grep -qF "Command '\diff' already defined" "$f.out"; then echo "ok    $f fails loudly on \diff"
+            else echo "FAIL  $f failed for another reason:"; tail -15 "$f.out"; status=1; fi
           done
           exit $status
       - run: pnpm typecheck
