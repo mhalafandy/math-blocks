@@ -53,6 +53,8 @@ export interface RenderStyle {
   /** STIX fallback glyphs: size factor (STIX is ~6 % larger than Times) and inward offset of their outlines (em) to match Times' weight. */
   fallbackScale: number;
   fallbackThin: number;
+  /** Height (em) at which multi-line piles and matrices are centred: MathType's 0.246 em (Appendix A, A.8). */
+  pileCentre?: number;
   /** MathType fractions: numerator baseline above / denominator baseline below the bar. */
   fracNumHeight: number;
   fracDenDepth: number;
@@ -125,6 +127,7 @@ export const CLASSIC: RenderStyle = {
   fallbackThin: 0,
   fracNumHeight: 0.35,
   fracDenDepth: 1.0,
+  pileCentre: 0.246,
   accents: DEFAULT_ACCENTS,
   color: "#000000",
 };
