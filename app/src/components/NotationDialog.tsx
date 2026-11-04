@@ -43,6 +43,12 @@ export function NotationDialog() {
   const inconsistent = useMemo(() => findInconsistencies(latexes), [latexes]);
   const mixes = useMemo(() => findStyleMixes(latexes).filter((m) => m.what !== "Transpose"), [latexes]);
   const transposes = useMemo(() => [...transposeForms(latexes)], [latexes]);
+  const fonts = useMemo(() => {
+    const eqs = index?.equations ?? [];
+    const extra = eqs.filter((e) => e.fallback === "mtextra" || e.fallback === "both").length;
+    const stix = eqs.filter((e) => e.fallback === "stix" || e.fallback === "both").length;
+    return extra && stix ? { extra, stix } : null;
+  }, [index]);
   const prefTranspose = useApp((s) => s.transposeForm);
   const [tTo, setTTo] = useState<Exclude<TransposeStyle, "sans">>(prefTranspose);
   const current: FormUse | undefined = forms.find((f) => f.key === from) ?? forms[0];
@@ -182,6 +188,16 @@ export function NotationDialog() {
               <button disabled={busy || (transposes.length === 1 && transposes[0]![0] === tTo)} onClick={() => void fixTranspose()}>
                 Convert
               </button>
+            </div>
+          </div>
+        )}
+        {!loading && fonts && (
+          <div className="notation-inconsistent">
+            <h4>Symbols drawn with different fonts</h4>
+            <div className="notation-inc-row">
+              <span>
+                {fonts.extra} equation(s) use MT Extra, {fonts.stix} use STIX Two for symbols Times lacks. Redraw them on a PC with MT Extra (Change notation or Update) so they match.
+              </span>
             </div>
           </div>
         )}

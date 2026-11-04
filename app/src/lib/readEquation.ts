@@ -10,12 +10,14 @@ export interface ReadEquation {
   kind: "native" | "picture";
   /** A Classic picture typeset as display but placed in a numbered line. */
   numbered?: boolean;
+  /** Classic pictures: the fallback symbol font used (MT Extra or STIX), if any. */
+  fallback?: string;
 }
 
 const ALT = /(?:descr|alt)="MathBlocks (display|inline|numbered): ([^"]*)"/;
 
 /** The source a MathBlocks picture carries inside its EMF (a GDI comment), if any. */
-function emfSource(xml: string): { latex: string; mode: string } | null {
+function emfSource(xml: string): { latex: string; mode: string; fallback?: string } | null {
   for (const m of xml.matchAll(/<pkg:part\b[^>]*pkg:contentType="image\/x-emf"[^>]*>\s*<pkg:binaryData>([\s\S]*?)<\/pkg:binaryData>/g)) {
     try {
       const bin = atob(m[1]!.replace(/\s+/g, ""));
@@ -23,8 +25,8 @@ function emfSource(xml: string): { latex: string; mode: string } | null {
       for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
       const text = emfComment(bytes);
       if (text) {
-        const src = JSON.parse(text) as { latex?: string; mode?: string };
-        if (typeof src.latex === "string") return { latex: src.latex, mode: src.mode ?? "display" };
+        const src = JSON.parse(text) as { latex?: string; mode?: string; fallback?: string };
+        if (typeof src.latex === "string") return { latex: src.latex, mode: src.mode ?? "display", fallback: src.fallback };
       }
     } catch {
       // Not ours, or damaged: try the next picture.
@@ -39,7 +41,7 @@ function emfSource(xml: string): { latex: string; mode: string } | null {
  */
 export function readEquationXml(xml: string): ReadEquation | null {
   const emf = emfSource(xml);
-  if (emf) return { root: parseLatex(emf.latex).root, display: emf.mode !== "inline", numbered: emf.mode === "numbered", unknown: [], kind: "picture" };
+  if (emf) return { root: parseLatex(emf.latex).root, display: emf.mode !== "inline", numbered: emf.mode === "numbered", unknown: [], kind: "picture", ...(emf.fallback ? { fallback: emf.fallback } : {}) };
   const pic = ALT.exec(xml);
   if (pic) {
     const latex = decodeEntities(pic[2]!);

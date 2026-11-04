@@ -651,3 +651,6 @@ html.panel-window, html.panel-window body, html.panel-window #root { height: aut
 .thesis-item.column { flex-direction: column; align-items: stretch; gap: 2px; }
 .thesis-def { display: flex; align-items: center; gap: 10px; padding: 2px 0; }
 .thesis-place { min-width: 120px; font-size: 12px; }
+.normalize-list { list-style: none; margin: 0; padding: 0; max-height: 50vh; overflow: auto; border: 1px solid var(--border); border-radius: 6px; }
+.normalize-list li { display: flex; align-items: center; gap: 12px; padding: 4px 8px; border-bottom: 1px solid var(--border); }
+.normalize-list li .muted { min-width: 56px; font-size: 12px; }

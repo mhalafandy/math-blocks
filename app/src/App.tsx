@@ -25,6 +25,7 @@ import { openTemplate, TemplateDialog } from "./components/TemplateDialog";
 import { NotationDialog } from "./components/NotationDialog";
 import { NomenclatureDialog } from "./components/NomenclatureDialog";
 import { ThesisDialog } from "./components/ThesisDialog";
+import { NormalizeBoldDialog } from "./components/NormalizeBoldDialog";
 import { numberInWord, unnumberInWord } from "./lib/numbering";
 import { ConversionReport } from "./components/ConversionReport";
 import { SaveDialog } from "./components/SaveDialog";
@@ -355,6 +356,7 @@ export function App() {
       <NotationDialog />
       <NomenclatureDialog />
       <ThesisDialog />
+      <NormalizeBoldDialog />
       <ShortcutsDialog />
       <RecognitionDialog />
       <SnippetsDialog />
