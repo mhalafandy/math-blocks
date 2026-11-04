@@ -656,3 +656,9 @@ html.panel-window, html.panel-window body, html.panel-window #root { height: aut
 .normalize-list li .muted { min-width: 56px; font-size: 12px; }
 .snippet-prefix { display: flex; align-items: center; gap: 8px; margin: 4px 0 10px; }
 .snippet-prefix .muted { font-family: var(--font-mono); font-size: 12px; }
+.fontcmp-wrap { max-height: 64vh; overflow: auto; background: #fff; color: #000; border-radius: 6px; padding: 6px; }
+.fontcmp { border-collapse: collapse; }
+.fontcmp th, .fontcmp td { border: 1px solid #ddd; padding: 4px 8px; text-align: left; vertical-align: middle; }
+.fontcmp th small { color: #777; font-weight: 400; }
+.fontcmp .times { font: 12pt "Times New Roman", serif; white-space: nowrap; }
+.fontcmp .na { color: #999; font-style: italic; font-size: 12px; }
