@@ -108,6 +108,15 @@ describe("toOmml — structures", () => {
     expect(xml).toContain('<m:r><m:rPr><m:aln/></m:rPr><m:t>=</m:t></m:r>');
   });
 
+  it("multline and gathered: an equation array without alignment points; kinds expanded", () => {
+    for (const env of ["multline", "gathered"]) {
+      const xml = lean(omml(`\\begin{${env}} \\pvec{r} = a + b \\\\ + \\dcm{b}{a} \\end{${env}}`, true));
+      expect(xml).toContain("<m:eqArr>");
+      expect(xml).not.toContain("<m:aln/>");
+      expect(xml.match(/<m:e>/g)!.length).toBeGreaterThanOrEqual(2);
+    }
+  });
+
   it("cases use a left brace around an equation array", () => {
     const xml = lean(omml("\\begin{cases} x & x>0 \\\\ 0 & \\text{otherwise} \\end{cases}"));
     expect(xml).toContain('<m:begChr m:val="{"/><m:endChr m:val=""/>');

@@ -104,7 +104,7 @@ namespace MathBlocks.WordConnector
             "numberEquation", "unnumberEquation", "listNumbered", "insertReference", "updateNumbers",
             "showWordMenu", "selectionInfo", "findLatex", "replaceRanges", "equationToText",
             "backupDocument", "beginOperation", "operationProgress", "endOperation", "repairEquations",
-            "insertNumberMarker", "upgradeNumbering",
+            "insertNumberMarker", "upgradeNumbering", "textWidth",
         };
 
         // ------------------------------------------------------------ ribbon
@@ -490,6 +490,7 @@ namespace MathBlocks.WordConnector
                     case "repairEquations": result = _ops.RepairEquations(p); break;
                     case "insertNumberMarker": result = _ops.InsertNumberMarker(p); break;
                     case "upgradeNumbering": result = _ops.UpgradeNumbering(p); break;
+                    case "textWidth": result = _ops.TextWidth(p); break;
                     case "beginOperation": result = _ops.BeginOperation(p); break;
                     case "operationProgress": result = _ops.OperationProgress(p); break;
                     case "endOperation": result = _ops.EndOperation(p); break;

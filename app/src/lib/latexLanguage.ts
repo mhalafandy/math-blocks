@@ -110,7 +110,7 @@ function buildCompletions(): Completion[] {
     gathered: "${} \\\\ ${}",
     split: "${} &= ${} \\\\ &= ${}",
   };
-  for (const env of [...C.MATRIX_ENVS, "cases", "aligned", "gathered", "split"]) {
+  for (const env of [...C.MATRIX_ENVS, "cases", "aligned", "gathered", "split", "multline"]) {
     const body = envBody[env] ?? envBody.matrix!;
     out.push(snip(`\\begin{${env}} ${body} \\end{${env}}`, `\\begin{${env}}`, "environment", 1));
   }

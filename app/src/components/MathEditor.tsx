@@ -4,6 +4,7 @@ import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { useEffect, useRef } from "react";
 import { MathfieldElement } from "mathlive";
 import { setLastEditor } from "../lib/focus";
+import { multlineFromEditor, multlineToEditor } from "../lib/multiline";
 import { useApp } from "../lib/store";
 
 // Fonts are served locally (copied by scripts/copy-mathlive-assets.mjs): no internet needed.
@@ -23,8 +24,8 @@ export function focusedMathField(): MathfieldElement | null {
  * ("dx" becomes \mathrm{dx}). Its \differentialD atom is a proper upright differential d, so the
  * editor uses that internally while the rest of the app (and Word) sees standard \mathrm{d}.
  */
-export const toMathLive = (latex: string) => toEditorKinds(latex).replace(/\\mathrm\{d\}/g, "\\differentialD ");
-const fromMathLive = (latex: string) => fromEditorKinds(latex.replace(/\\differentialD\b ?/g, "\\mathrm{d}"));
+export const toMathLive = (latex: string) => multlineToEditor(toEditorKinds(latex).replace(/\\mathrm\{d\}/g, "\\differentialD "));
+export const fromMathLive = (latex: string) => fromEditorKinds(multlineFromEditor(latex).replace(/\\differentialD\b ?/g, "\\mathrm{d}"));
 
 /** Template slots survive the kind conversion as marker letters. */
 const SLOT_MARK = { "#?": "\u24C5", "#0": "\u24EA" } as const;

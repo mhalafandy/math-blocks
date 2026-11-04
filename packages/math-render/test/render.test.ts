@@ -44,6 +44,33 @@ describe.skipIf(!available)("MathBlocks typesetting engine", () => {
     }
   });
 
+  it("multline: first line flush left, last line flush right; gathered: lines centred", () => {
+    // One glyph per line: its x tells where the line sits.
+    const xs = (latex: string) => {
+      const r = renderSvg(parseLatex(latex).root, { fonts });
+      const gs = r.box.items.filter((i) => i.k === "g").sort((a, b) => b.y - a.y);
+      return { w: r.box.w, xs: gs.map((g) => g.x) };
+    };
+    const ml = xs("\\begin{multline}a\\\\ b\\\\ c\\end{multline}");
+    expect(ml.xs[0]).toBeCloseTo(0, 2);
+    expect(ml.xs[2]).toBeGreaterThan(ml.xs[1]!);
+    expect(ml.xs[1]).toBeGreaterThan(ml.xs[0]!);
+    expect(ml.w).toBeGreaterThan(1.4); // one em of stagger beyond the widest line
+    const ga = xs("\\begin{gathered}a+b+c\\\\ d\\end{gathered}");
+    const dx = ga.xs[ga.xs.length - 1]!;
+    expect(dx).toBeGreaterThan(0.5); // centred under a+b+c, not flush right or left
+    expect(dx).toBeLessThan(ga.w - 0.7);
+  });
+
+  it("golden: a 3-line derivation and a broken long equation (SVG snapshots)", async () => {
+    const derivation = "\\begin{aligned}\\pvec[P/O]{r}&=\\dcm{b}{a}\\,\\cmat{c}\\\\ &=\\begin{bmatrix}c_\\theta&s_\\theta\\\\-s_\\theta&c_\\theta\\end{bmatrix}\\cmat{c}\\\\ &\\quad+\\crossmat{\\omega}\\,\\pvec{\\omega}_{2}\\end{aligned}";
+    const broken = "\\begin{multline}T=\\frac{1}{2}m\\,\\dot{x}^{2}+\\frac{1}{2}m\\,\\dot{y}^{2}+\\frac{1}{2}m\\,\\dot{z}^{2}\\\\ +\\frac{1}{2}I_{1}\\omega_{1}^{2}+\\frac{1}{2}I_{2}\\omega_{2}^{2}\\\\ +\\frac{1}{2}I_{3}\\omega_{3}^{2}\\end{multline}";
+    for (const [name, latex] of [["derivation-3-lines", derivation], ["multline-broken", broken]] as const) {
+      const r = renderSvg(parseLatex(latex).root, { fonts, display: true });
+      await expect(r.svg).toMatchFileSnapshot(`./golden/${name}.svg`);
+    }
+  });
+
   it("matrix brackets stay centred on their contents", () => {
     const r = renderSvg(parseLatex("\\begin{pmatrix}a\\\\b\\\\c\\end{pmatrix}").root, { fonts });
     expect(Math.abs((r.box.h - r.box.d) / 2 - 0.246)).toBeLessThan(0.02);

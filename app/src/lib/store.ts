@@ -105,6 +105,9 @@ interface AppState extends Prefs {
   latex: string;
   editing: EditingTarget | null;
   setEditing: (e: EditingTarget | null) => void;
+  /** Text width (pt) of the paragraph in Word holding the equation or the cursor; null = not known. */
+  textWidthPt: number | null;
+  setTextWidth: (pt: number | null) => void;
   notice: Notice | null;
   setNotice: (n: Notice | null) => void;
   display: boolean;
@@ -191,6 +194,8 @@ export const useApp = create<AppState>((set, get) => ({
   update: { status: "idle" },
   editing: null,
   setEditing: (editing) => set({ editing }),
+  textWidthPt: null,
+  setTextWidth: (textWidthPt) => set({ textWidthPt }),
   notice: null,
   setNotice: (notice) => set({ notice }),
   setUpdate: (u) => set({ update: { ...get().update, ...u } }),

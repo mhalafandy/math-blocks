@@ -66,7 +66,9 @@ const NARY_CHARS = new Set(Object.values(NARY));
 const BODY_STOP_BINARY = new Set(["+", "−", "±", "∓"]);
 const TEXT_COMMANDS = new Set(["text", "textrm", "textit", "textbf", "textnormal", "mbox", "mathnormal"]);
 
-const ENV_NORMALISE: Record<string, "aligned" | "gathered" | "split"> = {
+const ENV_NORMALISE: Record<string, "aligned" | "gathered" | "split" | "multline"> = {
+  multline: "multline",
+  "multline*": "multline",
   aligned: "aligned",
   align: "aligned",
   "align*": "aligned",

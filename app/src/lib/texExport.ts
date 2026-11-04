@@ -53,7 +53,14 @@ export function documentToLatex(name: string, equations: ExportedEquation[], o: 
   for (const e of equations) {
     const body = renamed(toStandardLatex(e.latex));
     const where = e.page ? `% page ${e.page}` : "";
-    if (e.number) {
+    // multline is an outer environment (not allowed inside equation or \[ \]): it replaces them.
+    const ml = /^\s*\\begin\{multline\*?\}([\s\S]*)\\end\{multline\*?\}\s*$/.exec(body);
+    if (ml && e.display) {
+      const n = e.number?.replace(/^[([]|[)\]]$/g, "");
+      const tag = n ? [`  \\tag{${n}}\\label{eq:${n.replace(/[^\w.:-]/g, "")}}`] : [];
+      const env = n ? "multline" : "multline*";
+      lines.push(where, `\\begin{${env}}`, `  ${ml[1]!.trim()}`, ...tag, `\\end{${env}}`, "");
+    } else if (e.number) {
       const n = e.number.replace(/^[([]|[)\]]$/g, "");
       lines.push(where, "\\begin{equation}", `  ${body}`, `  \\tag{${n}}\\label{eq:${n.replace(/[^\w.:-]/g, "")}}`, "\\end{equation}", "");
     } else if (e.display) lines.push(where, "\\[", `  ${body}`, "\\]", "");

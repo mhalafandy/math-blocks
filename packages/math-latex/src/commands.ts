@@ -149,7 +149,7 @@ export const IGNORED = new Set([
 ]);
 
 export const MATRIX_ENVS = new Set(["matrix", "pmatrix", "bmatrix", "Bmatrix", "vmatrix", "Vmatrix", "smallmatrix"]);
-export const ALIGNED_ENVS = new Set(["aligned", "align", "align*", "gathered", "gather", "gather*", "split", "alignat", "alignat*"]);
+export const ALIGNED_ENVS = new Set(["aligned", "align", "align*", "gathered", "gather", "gather*", "split", "alignat", "alignat*", "multline", "multline*"]);
 
 /**
  * Reverse lookup for operators by character and class: ⊥ as a relation is \perp, as an ordinary

@@ -1,3 +1,4 @@
+import { WidthBar } from "./components/WidthBar";
 import { useCallback, useEffect, useMemo } from "react";
 import { BottomPanel } from "./components/BottomPanel";
 import { CommandPalette } from "./components/CommandPalette";
@@ -290,6 +291,7 @@ export function App() {
                 </div>
               )}
             </div>
+            <WidthBar />
             <div className="canvas-tools">
               <button
                 className="icon-btn"

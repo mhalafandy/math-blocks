@@ -1,3 +1,4 @@
+import { useWidthMeasure, WidthBar } from "./WidthBar";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MathEditor, focusVisualEditor, insertIntoVisual } from "./MathEditor";
 import { insertPaletteItem } from "./SymbolPalette";
@@ -14,7 +15,8 @@ import { handleEditorKey } from "../lib/editorKeys";
 
 /**
  * The floating editor window (opened by right-clicking an equation in Word). Commands first
- * (type /frac, /bold…), the rest in collapsible sections. Enter applies, Esc cancels.
+ * (type /frac, /bold…), the rest in collapsible sections. Enter applies (Ctrl+Enter in a display
+ * equation, where Enter starts a new line), Esc cancels.
  */
 export function PanelApp() {
   const [info, setInfo] = useState<PanelOpen | null>(null);
@@ -42,6 +44,7 @@ export function PanelApp() {
   const numbered = useApp((s) => s.numbered);
   const look = useApp((s) => s.look);
   const sizePt = useApp((s) => s.equationSizePt);
+  const width = useWidthMeasure();
   const eq = useCompiledEquation();
   const toast = useApp((s) => s.toast);
   const theme = useApp((s) => s.theme);
@@ -90,7 +93,7 @@ export function PanelApp() {
     return () => window.removeEventListener("paste", onPaste, true);
   }, []);
 
-  // Enter applies, Esc cancels (capture: also while the equation editor has focus).
+  // Enter / Ctrl+Enter applies, Esc cancels (capture: also while the equation editor has focus).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.closest?.(".panel-command")) return;
@@ -103,7 +106,7 @@ export function PanelApp() {
       if (e.key === "Escape") {
         e.preventDefault();
         cancel();
-      } else if (e.key === "Enter" && !e.shiftKey && !(e.target as HTMLElement)?.closest?.(".cm-editor")) {
+      } else if (e.key === "Enter" && !e.shiftKey && (e.ctrlKey || e.metaKey || !(e.target as HTMLElement)?.closest?.(".cm-editor"))) {
         e.preventDefault();
         void apply();
       }
@@ -217,6 +220,7 @@ export function PanelApp() {
         <div className="panel-editor">
           <MathEditor />
         </div>
+        <WidthBar />
 
         <CommandLine commands={commands} />
         <QuickRow />
@@ -229,7 +233,7 @@ export function PanelApp() {
           ))}
           <div className="spacer" />
           <span className={eq.errors || toast?.kind === "error" ? "panel-hint bad" : "panel-hint"}>
-            {toast ? toast.text : eq.errors ? `${eq.errors} error(s)` : "Enter apply · Esc cancel"}
+            {toast ? toast.text : eq.errors ? `${eq.errors} error(s)` : display ? "Ctrl+Enter apply · Enter new line · Esc cancel" : "Enter apply · Esc cancel"}
           </span>
           <button className="primary panel-apply" onClick={() => void apply()} disabled={eq.errors > 0}>
             {info?.linked ? "Update everywhere" : "Apply"}
@@ -238,7 +242,7 @@ export function PanelApp() {
 
         {tab && (
           <div className="panel-pane">
-            {tab === "preview" && (look === "classic" ? <ClassicPreview latex={latex} display={display} sizePt={sizePt} /> : <MathPreview latex={latex} />)}
+            {tab === "preview" && (look === "classic" ? <ClassicPreview latex={latex} display={display} sizePt={sizePt} guidePt={width?.availPt} /> : <MathPreview latex={latex} />)}
             {tab === "symbols" && <PaletteTop />}
             {tab === "latex" && (
               <div className="panel-latex">

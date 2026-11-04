@@ -28,6 +28,11 @@ const equations = [
   { latex: uses.join(",\\;"), display: true },
   { latex: "\\pvec[P/O]{r}=\\dcm{b}{a}\\,\\cmat{c}^{\\T}+\\crossmat{\\omega}\\,\\pvec{\\omega}_{2}", display: true, number: "(A.1)" },
   { latex: "\\diff{m}=\\sigma\\,\\diff{A}", display: false },
+  // Multi-line: aligned and gathered inside \[ \] / equation; multline replaces them (numbered or not).
+  { latex: "\\begin{aligned}\\pvec[P/O]{r}&=\\dcm{b}{a}\\,\\cmat{c}\\\\ &\\quad+\\crossmat{\\omega}\\,\\pvec{\\omega}\\end{aligned}", display: true, number: "(A.2)" },
+  { latex: "\\begin{gathered}\\uvec{x}=\\pvec{r}\\\\ \\dyadic{I}\\cdot\\pvec{\\omega}\\end{gathered}", display: true },
+  { latex: "\\begin{multline}T=\\frac{1}{2}m\\,\\pvec{v}\\cdot\\pvec{v}\\\\ +\\frac{1}{2}\\pvec{\\omega}\\cdot\\dyadic{I}\\cdot\\pvec{\\omega}\\end{multline}", display: true, number: "(A.3)" },
+  { latex: "\\begin{multline}a+b\\\\ +c\\end{multline}", display: true },
 ];
 
 const withPackage = (tex: string, pkg: string) => tex.replace("\\usepackage{amsmath,amssymb,bm}", `\\usepackage{amsmath,amssymb,bm}\n\\usepackage{${pkg}}`);

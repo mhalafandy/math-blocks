@@ -25,6 +25,31 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed (real-Word testing: copy/paste, numbering, multi-line)
+- **Pasted equations keep their identity.** A Classic picture that lost its content control
+  (picture-only copies, some paste modes) is recognised by the source in its EMF (alt text as a
+  backup) and wrapped again with a new instance id on double-click, right-click, Ctrl+Alt+M and
+  when the document is indexed. Copies sharing an id get new ids; linked copies are registered
+  or unlinked; numbered copies get their own number bookmark. New command *Repair equations*
+  (Ctrl+K) reports what it found.
+- **Numbering:** numbers and references are single MathType-style fields (no stray spaces; the
+  bookmark covers the whole number). Formats (1), (1.1), (1.2.3); brackets ( ), [ ] or none;
+  separator . or -; appendix (A.1); restart per chapter or section; chapter numbers from Word's
+  heading numbering (STYLEREF) or hidden MathBlocks markers. References with or without brackets.
+  Numbers sit level with the centre of multi-line equations. *Upgrade numbering* rebuilds older
+  numbers and references (backup, one undo step).
+- **Multi-line equations:** Enter in a display equation starts a new line at the cursor (aligned at
+  the relation, continued lines start with \quad, centred lines when there is no relation);
+  Ctrl+; sets the alignment point of the current line. Templates: aligned derivation, long equation
+  broken over lines (multline), centred lines (gathered), continued line. Classic draws multline
+  (first line left, last right) and gathered (centred) properly; Word gets equation arrays;
+  the .tex export writes multline as its own environment. In the floating editor, Ctrl+Enter
+  applies a display equation (Enter applies inline ones).
+- **Page width:** a width bar under display equations ("112% of line width", against the text
+  width Word reports for that paragraph, minus the number for numbered equations) and, when too
+  wide, a suggested line break to confirm. Equations are never shrunk. The Classic preview shows
+  the line width as guide lines.
+
 ### Added (thesis tools, M11)
 - List of symbols (nomenclature) inserted into Word and regenerated in place, keeping descriptions.
 - Definition check (used before defined, never defined) and equation dependencies in the Symbols tab.

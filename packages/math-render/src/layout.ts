@@ -422,7 +422,7 @@ function atomsOf(n: MathNode, c: Ctx, out: Atom[]) {
       out.push({ box: cases(n.rows, c), cls: "inner" });
       return;
     case "aligned":
-      out.push({ box: aligned(n.rows, c), cls: "ord" });
+      out.push({ box: n.env === "gathered" ? gathered(n.rows, c) : n.env === "multline" ? multline(n.rows, c) : aligned(n.rows, c), cls: "ord" });
       return;
     case "notation":
       for (const x of expandNotation({ kind: "row", children: [n] }).children) atomsOf(x, c, out);
@@ -928,10 +928,17 @@ interface Grid {
  * Lays out rows of cells. align[j]: "c" | "l" | "r" per column; gaps[j]: space after column j.
  * The grid is centred on the math axis.
  */
-function grid(rows: Row[][], c: Ctx, align: (j: number) => "c" | "l" | "r", gapAfter: (j: number) => number, leadingOrd?: (j: number) => boolean): Grid {
+function grid(
+  rows: Row[][],
+  c: Ctx,
+  align: (j: number, i: number) => "c" | "l" | "r",
+  gapAfter: (j: number) => number,
+  leadingOrd?: (j: number) => boolean,
+  extraWidth = 0,
+): Grid {
   const cells = rows.map((r) => r.map((cell, j) => layoutRow(cell, c, { leadingOrd: leadingOrd?.(j) })));
   const nCols = Math.max(1, ...cells.map((r) => r.length));
-  const colW = Array.from({ length: nCols }, (_, j) => Math.max(0, ...cells.map((r) => r[j]?.w ?? 0)));
+  const colW = Array.from({ length: nCols }, (_, j) => Math.max(0, ...cells.map((r) => r[j]?.w ?? 0)) + (nCols === 1 ? extraWidth : 0));
   const rowH = cells.map((r) => Math.max(0.6 * c.s, ...r.map((b) => b.h)));
   const rowD = cells.map((r) => Math.max(0.2 * c.s, ...r.map((b) => b.d)));
   const baselines: number[] = [];
@@ -949,7 +956,7 @@ function grid(rows: Row[][], c: Ctx, align: (j: number) => "c" | "l" | "r", gapA
   const parts: { box: Box; x: number; y: number }[] = [];
   cells.forEach((r, i) =>
     r.forEach((b, j) => {
-      const al = align(j);
+      const al = align(j, i);
       const dx = al === "c" ? (colW[j]! - b.w) / 2 : al === "r" ? colW[j]! - b.w : 0;
       parts.push({ box: b, x: xs[j]! + dx, y: baselines[i]! });
     }),
@@ -1016,6 +1023,22 @@ function aligned(rows: Row[][], c: Ctx): Box {
     (j) => (j % 2 === 0 ? 0 : 1.5 * c.s),
     (j) => j % 2 === 1,
   ).box;
+}
+
+/** gathered: every line centred. */
+function gathered(rows: Row[][], c: Ctx): Box {
+  return grid(rows, c, () => "c", () => 0).box;
+}
+
+/**
+ * multline (one long equation broken over lines): the first line flush left, the last flush right,
+ * the lines between centred; the last line is indented by one em past the widest line so the
+ * stagger shows even when the lines are the same width.
+ */
+function multline(rows: Row[][], c: Ctx): Box {
+  const n = rows.length;
+  const al = (_j: number, i: number) => (n < 2 ? "c" : i === 0 ? "l" : i === n - 1 ? "r" : "c");
+  return grid(rows, c, al, () => 0, undefined, n > 1 ? 1 * c.s : 0).box;
 }
 
 // ------------------------------------------------------------------ entry

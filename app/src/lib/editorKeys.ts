@@ -1,4 +1,5 @@
-import { focusedMathField, insertIntoVisual, toggleBold, toMathLive } from "../components/MathEditor";
+import { focusedMathField, fromMathLive, insertIntoVisual, toggleBold, toMathLive } from "../components/MathEditor";
+import { breakLineAt, CARET, setAlignmentAt, type LineResult } from "./multiline";
 import { matchSnippet } from "./snippets";
 import { SHORTCUT_TABLE } from "./editorShortcuts";
 import { addDerivationLine } from "./derivation";
@@ -19,6 +20,32 @@ function newDerivationLine() {
     mf?.focus();
     mf?.executeCommand("moveToMathfieldEnd");
   }, 40);
+}
+
+type Field = NonNullable<ReturnType<typeof focusedMathField>>;
+
+/**
+ * Rewrites the equation at the cursor (new line, alignment mark): a marker goes in at the cursor,
+ * the LaTeX is rewritten, and the cursor returns to where the marker ends up.
+ */
+function rewriteAtCaret(mf: Field, fn: (latexWithCaret: string) => LineResult) {
+  const app = useApp.getState();
+  if (!mf.selectionIsCollapsed) mf.position = Math.max(...mf.selection.ranges.flat());
+  mf.executeCommand(["insert", CARET]);
+  const r = fn(fromMathLive(mf.value));
+  if ("error" in r) {
+    mf.executeCommand("deleteBackward");
+    app.notify(r.error);
+    return;
+  }
+  mf.setValue(toMathLive(r.latex), { silenceNotifications: true });
+  for (let i = 0; i < mf.lastOffset; i++) {
+    if (!mf.getValue(i, i + 1, "latex").includes(CARET)) continue;
+    mf.selection = { ranges: [[i, i + 1]], direction: "forward" };
+    mf.executeCommand("deleteBackward");
+    break;
+  }
+  app.setLatex(fromMathLive(mf.value).replaceAll(CARET, ""), "visual");
 }
 
 /**
@@ -50,6 +77,10 @@ const RUN: Record<string, () => void> = {
   "Ctrl+Shift+B": () => toggleBold(),
   "Ctrl+G, letter": () => (greekNext = true),
   "Ctrl+Shift+Enter": () => newDerivationLine(),
+  "Ctrl+;": () => {
+    const mf = focusedMathField();
+    if (mf) rewriteAtCaret(mf, setAlignmentAt);
+  },
 };
 
 export const EDITOR_SHORTCUTS: EditorShortcut[] = SHORTCUT_TABLE.map((d) => (RUN[d.keys] ? { ...d, run: RUN[d.keys] } : d));
@@ -112,6 +143,14 @@ export function handleEditorKey(e: KeyboardEvent): boolean {
       return true;
     }
     return false;
+  }
+  // Enter in a display equation: a new line at the cursor (aligned at the relation, gathered…).
+  if (e.key === "Enter" && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+    if (!useApp.getState().display) return false;
+    e.preventDefault();
+    e.stopPropagation();
+    rewriteAtCaret(mf, breakLineAt);
+    return true;
   }
   // A notation kind is deleted as a whole: Backspace right after it, Delete right before it.
   if ((e.key === "Backspace" || e.key === "Delete") && !e.ctrlKey && !e.metaKey && !e.altKey && mf.selectionIsCollapsed) {
