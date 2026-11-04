@@ -134,7 +134,6 @@ function StylePanel() {
   const latex = useApp((s) => s.latex);
   const display = useApp((s) => s.display);
   const setPrefs = useApp((s) => s.setPrefs);
-  const numberKey = `${numberStyle.open}${numberStyle.chapter ? "c" : ""}${numberStyle.close}`;
   return (
     <div className="form narrow">
       <label>
@@ -208,26 +207,85 @@ function StylePanel() {
         </select>
       </label>
       </>}
-      <label>
-        Equation numbers
-        <select
-          value={numberKey}
-          onChange={(e) => {
-            const v = e.target.value;
-            const open = v.startsWith("[") ? "[" : v.startsWith("(") ? "(" : "";
-            const close = v.endsWith("]") ? "]" : v.endsWith(")") ? ")" : "";
-            setPrefs({ numberStyle: { open, close, chapter: v.includes("c") } });
-          }}
-        >
-          <option value="()">(1)</option>
-          <option value="(c)">(2.1): chapter number first</option>
-          <option value="[]">[1]</option>
-          <option value="[c]">[2.1]: chapter number first</option>
-          <option value="">1</option>
-        </select>
-      </label>
-      <p className="hint">Chapter numbers come from your numbered Heading 1 and restart in each chapter. Existing numbers keep their look; press Update numbers in Word after changes.</p>
+      <NumberingSettings />
       <p className="hint">Fonts other than Cambria Math must be installed on every PC that opens the document.</p>
     </div>
+  );
+}
+
+/** Equation numbers: format, brackets, separator, restart rule, where chapter/section numbers come from. */
+function NumberingSettings() {
+  const ns = useApp((s) => s.numberStyle);
+  const setPrefs = useApp((s) => s.setPrefs);
+  const set = (patch: Partial<typeof ns>) => {
+    const next = { ...ns, ...patch };
+    next.chapter = (next.parts ?? (ns.chapter ? "chapter" : "eq")) !== "eq";
+    setPrefs({ numberStyle: next });
+  };
+  const parts = ns.parts ?? (ns.chapter ? "chapter" : "eq");
+  const sep = ns.separator ?? ".";
+  const sample = `${ns.open}${parts === "section" ? `2${sep}3${sep}` : parts === "chapter" ? `2${sep}` : ""}4${ns.close}`;
+  return (
+    <fieldset className="numbering-settings">
+      <legend>Equation numbers <span className="muted">e.g. {sample}</span></legend>
+      <label>
+        Format
+        <select value={parts} onChange={(e) => set({ parts: e.target.value as "eq" | "chapter" | "section" })}>
+          <option value="eq">1 (equation)</option>
+          <option value="chapter">1.1 (chapter.equation)</option>
+          <option value="section">1.2.3 (chapter.section.equation)</option>
+        </select>
+      </label>
+      <label>
+        Brackets
+        <select value={`${ns.open}${ns.close}`} onChange={(e) => set({ open: e.target.value[0] ?? "", close: e.target.value[1] ?? "" })}>
+          <option value="()">( )</option>
+          <option value="[]">[ ]</option>
+          <option value="">none</option>
+        </select>
+      </label>
+      {parts !== "eq" && (
+        <>
+          <label>
+            Separator
+            <select value={sep} onChange={(e) => set({ separator: e.target.value as "." | "-" })}>
+              <option value=".">. (2.4)</option>
+              <option value="-">- (2-4)</option>
+            </select>
+          </label>
+          {parts === "section" && (
+            <label>
+              Equations restart at each
+              <select value={ns.restart ?? "chapter"} onChange={(e) => set({ restart: e.target.value as "chapter" | "section" })}>
+                <option value="chapter">chapter</option>
+                <option value="section">section</option>
+              </select>
+            </label>
+          )}
+          <label>
+            Chapter numbers from
+            <select value={ns.source ?? "headings"} onChange={(e) => set({ source: e.target.value as "headings" | "markers" })}>
+              <option value="headings">Word's heading numbering (Heading 1/2; appendix headings numbered A, B…)</option>
+              <option value="markers">MathBlocks chapter markers (hidden, like MathType)</option>
+            </select>
+          </label>
+        </>
+      )}
+      <label>
+        References
+        <select value={ns.references ?? "brackets"} onChange={(e) => set({ references: e.target.value as "brackets" | "number" })}>
+          <option value="brackets">with brackets: (2.4)</option>
+          <option value="number">number only: 2.4 (for “Eq. 2.4”)</option>
+        </select>
+      </label>
+      <p className="hint">
+        {parts !== "eq" && (ns.source ?? "headings") === "markers"
+          ? "Insert a chapter marker where each chapter (or appendix) starts: Ctrl+K → “Insert equation chapter marker”. "
+          : parts !== "eq"
+            ? "Appendix headings numbered A, B… (Heading 1 with letter numbering) give (A.1). "
+            : ""}
+        New settings apply to new numbers; Ctrl+K → “Upgrade numbering” rebuilds the existing ones (references keep pointing at the same equations).
+      </p>
+    </fieldset>
   );
 }

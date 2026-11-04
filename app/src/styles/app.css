@@ -662,3 +662,5 @@ html.panel-window, html.panel-window body, html.panel-window #root { height: aut
 .fontcmp th small { color: #777; font-weight: 400; }
 .fontcmp .times { font: 12pt "Times New Roman", serif; white-space: nowrap; }
 .fontcmp .na { color: #999; font-style: italic; font-size: 12px; }
+.numbering-settings { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+.numbering-settings legend { font-weight: 600; padding: 0 4px; }

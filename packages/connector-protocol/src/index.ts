@@ -128,8 +128,15 @@ export interface NumberedEquation {
 export interface NumberFormat {
   open: string;
   close: string;
-  /** Prefix the number with the Heading 1 number (STYLEREF 1 \s) and restart it in each chapter. */
+  /** Older add-ins: prefix the Heading 1 number. Newer: use `parts`. */
   chapter: boolean;
+  /** (1), (1.1) chapter.equation, (1.2.3) chapter.section.equation. */
+  parts?: "eq" | "chapter" | "section";
+  separator?: "." | "-";
+  /** The equation counter restarts at each chapter or each section. */
+  restart?: "chapter" | "section";
+  /** Chapter/section numbers from Word's heading numbering, or from MathBlocks' hidden markers. */
+  source?: "headings" | "markers";
 }
 
 /** A document with MathBlocks equations was opened in Word. */
@@ -254,7 +261,11 @@ export interface AppToConnector {
   /** Removes the number; flatOpc is the display version. */
   unnumberEquation: { params: DocTarget & { tag: string; flatOpc: string }; result: { ok: true } };
   listNumbered: { params: DocTarget & { includeContent?: boolean }; result: { name: string; fullName: string; equations: NumberedEquation[] } };
-  insertReference: { params: { bookmark: string }; result: { text: string } };
+  insertReference: { params: { bookmark: string; numberOnly?: boolean }; result: { text: string } };
+  /** Hidden chapter/section(/appendix) marker at the cursor (markers numbering source). */
+  insertNumberMarker: { params: { chapter: number; section: number; appendix?: boolean; restartEquations?: boolean }; result: { ok: true } };
+  /** Rebuilds MathBlocks numbers and references as single fields (bookmark names kept). */
+  upgradeNumbering: { params: DocTarget & NumberFormat; result: { numbers: number; references: number } };
   updateNumbers: { params: DocTarget; result: { numbers: number; references: number } };
   /** What is at the cursor: a MathBlocks equation, selected text, or a LaTeX span around it. */
   selectionInfo: {

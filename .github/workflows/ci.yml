@@ -30,6 +30,8 @@ jobs:
       - run: pnpm test
       - name: Notation kinds round trip in the real editor (MathLive, headless Chromium)
         run: pnpm exec playwright install --with-deps chromium && pnpm tsx tools/kinds-roundtrip.ts
+      - name: Equation number and reference field structure (connector-word/tests)
+        run: dotnet run --project connector-word/tests
       - name: Compile the .tex export of every notation kind under every preset (Tectonic)
         run: |
           curl --proto '=https' --tlsv1.2 -fsSL https://drop-sh.fullyjustified.net | sh

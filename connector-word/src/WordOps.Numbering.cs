@@ -23,21 +23,34 @@ namespace MathBlocks.WordConnector
             return parts.Length == 3 ? parts[2] : WordOps.RandomId(12);
         }
 
-        /// <summary>Flat OPC with the runs "tab ( [chapter .] number )".</summary>
-        private static string NumberXml(string open, string close, bool chapter)
+        /// <summary>Whether the nearest MathBlocks chapter marker before a position starts an appendix.</summary>
+        private static bool InAppendix(Word.Document doc, int pos)
         {
-            string t(string s) => "<w:r><w:t xml:space=\"preserve\">" + SecurityElement.Escape(s) + "</w:t></w:r>";
-            string field(string instr) => "<w:fldSimple w:instr=\" " + instr + " \"><w:r><w:t>1</w:t></w:r></w:fldSimple>";
-            var runs = "<w:r><w:tab/></w:r>" + t(open)
-                + (chapter ? field("STYLEREF 1 \\s") + t(".") + field("SEQ MBEq \\* ARABIC \\s 1") : field("SEQ MBEq \\* ARABIC"))
-                + t(close);
-            return "<?xml version=\"1.0\" standalone=\"yes\"?><pkg:package xmlns:pkg=\"http://schemas.microsoft.com/office/2006/xmlPackage\">"
-                + "<pkg:part pkg:name=\"/_rels/.rels\" pkg:contentType=\"application/vnd.openxmlformats-package.relationships+xml\"><pkg:xmlData>"
-                + "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"word/document.xml\"/></Relationships>"
-                + "</pkg:xmlData></pkg:part><pkg:part pkg:name=\"/word/document.xml\" pkg:contentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"><pkg:xmlData>"
-                + "<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:body><w:p>" + runs + "</w:p></w:body></w:document>"
-                + "</pkg:xmlData></pkg:part></pkg:package>";
+            bool appendix = false;
+            foreach (Word.Field f in doc.Fields)
+            {
+                string code;
+                try
+                {
+                    if (f.Code.Start > pos) break;
+                    code = f.Code.Text ?? "";
+                }
+                catch (COMException) { continue; }
+                if (code.Contains("MBEquationSection")) appendix = code.Contains("Appendix");
+            }
+            return appendix;
         }
+
+        /// <summary>Puts a numbered equation's number (and bookmarks) after its content control.</summary>
+        private void InsertNumber(Word.Document doc, Word.ContentControl cc, NumberFields.NumberFormat f, string name)
+        {
+            var para = cc.Range.Paragraphs[1];
+            int pos = cc.Range.End + 1;
+            doc.Range(pos, pos).InsertXML(NumberFields.Package("<w:r><w:tab/></w:r>" + NumberFields.NumberRuns(f, name, NumberOnlyName(name), f.Source == "markers" && InAppendix(doc, pos))));
+        }
+
+        /// <summary>Bookmark of the number without brackets ("1.2.3", for "Eq. 1.2.3").</summary>
+        internal static string NumberOnlyName(string name) => name.StartsWith(BookmarkPrefix, StringComparison.Ordinal) ? "_MBEqN_" + name.Substring(BookmarkPrefix.Length) : name + "N";
 
         private static bool IsBlank(string s) => string.IsNullOrEmpty(s) || s.All(c => char.IsWhiteSpace(c) || c == '\t');
 
@@ -47,9 +60,7 @@ namespace MathBlocks.WordConnector
             var doc = ResolveDocument(p);
             var tag = Rpc.GetString(p, "tag");
             var flatOpc = Rpc.GetString(p, "flatOpc");
-            var open = p.TryGetValue("open", out var o) && o is string os ? os : "(";
-            var close = p.TryGetValue("close", out var c) && c is string cs ? cs : ")";
-            var chapter = Rpc.GetBool(p, "chapter");
+            var fmt = NumberFields.NumberFormat.From(p);
             var found = FindByTag(doc, tag);
             if (found.Count == 0) throw new RpcException(Rpc.NotFound, "The equation is no longer in the document.");
 
@@ -92,20 +103,14 @@ namespace MathBlocks.WordConnector
 
                 doc.Range(para.Range.Start, para.Range.Start).InsertBefore("\t");
                 cc = FindByTag(doc, tag)[0];
-                int pos = cc.Range.End + 1;
-                doc.Range(pos, pos).InsertXML(NumberXml(open, close, chapter));
-
-                // Bookmark the number (after the tab) for cross-references.
+                var name = BookmarkPrefix + InstanceId(tag);
+                // One field holding brackets and counters, bookmarked inside (as MathType does).
+                InsertNumber(doc, cc, fmt, name);
                 cc = FindByTag(doc, tag)[0];
                 para = cc.Range.Paragraphs[1];
-                int numStart = cc.Range.End + 1;
-                while (numStart < para.Range.End - 1 && doc.Range(numStart, numStart + 1).Text == "\t") numStart++;
-                var numRange = doc.Range(numStart, para.Range.End - 1);
-                var name = BookmarkPrefix + InstanceId(tag);
-                doc.Bookmarks.Add(name, numRange);
-                numRange.Fields.Update();
+                para.Range.Fields.Update();
                 UpdateNumberFields(doc);
-                return new Dictionary<string, object> { ["bookmark"] = name, ["number"] = (numRange.Text ?? "").Trim() };
+                return new Dictionary<string, object> { ["bookmark"] = name, ["number"] = NumberTextOf(para.Range) };
             }
             catch (COMException ex)
             {
@@ -201,8 +206,22 @@ namespace MathBlocks.WordConnector
             }
         }
 
+        /// <summary>What a numbered paragraph's number field shows, e.g. "(1.2.3)".</summary>
+        private static string NumberTextOf(Word.Range para)
+        {
+            foreach (Word.Field f in para.Fields)
+            {
+                string code;
+                try { code = f.Code?.Text ?? ""; } catch (COMException) { continue; }
+                if (code.Contains("MBPlaceRef") || code.Contains("MTPlaceRef")) return (f.Result?.Text ?? "").Replace("\t", "").Trim();
+            }
+            return "";
+        }
+
         private static string NumberText(Word.Bookmark bm)
         {
+            var single = NumberTextOf(bm.Range.Paragraphs[1].Range);
+            if (single.Length > 0) return single;
             var text = bm.Range.Text ?? "";
             // MathType's bookmark covers a MACROBUTTON field: take what the field displays.
             if (bm.Range.Fields.Count > 0 && (text.Contains("MACROBUTTON") || text.Contains("SEQ"))) text = bm.Range.Fields[1].Result.Text ?? text;
@@ -264,33 +283,152 @@ namespace MathBlocks.WordConnector
             };
         }
 
-        /// <summary>Inserts a cross-reference (REF field) to an equation number at the cursor.</summary>
+        /// <summary>
+        /// Inserts a reference to an equation number at the cursor, as one field (GOTOBUTTON around
+        /// REF, like MathType's): "(1.2.3)", or "1.2.3" with numberOnly (for "Eq. 1.2.3").
+        /// </summary>
         public Dictionary<string, object> InsertReference(Dictionary<string, object> p)
         {
             var doc = ActiveDocument();
             var name = Rpc.GetString(p, "bookmark");
+            var numberOnly = Rpc.GetBool(p, "numberOnly");
             bool hidden = doc.Bookmarks.ShowHidden;
             doc.Bookmarks.ShowHidden = true;
-            bool exists;
-            try { exists = doc.Bookmarks.Exists(name); }
+            bool exists, onlyExists;
+            try
+            {
+                exists = doc.Bookmarks.Exists(name);
+                onlyExists = doc.Bookmarks.Exists(NumberOnlyName(name));
+            }
             finally { doc.Bookmarks.ShowHidden = hidden; }
             if (!exists) throw new RpcException(Rpc.NotFound, "That equation number is no longer in the document.");
+            var target = numberOnly && onlyExists ? NumberOnlyName(name) : name;
             var undo = _app.UndoRecord;
             undo.StartCustomRecord("Insert equation reference");
             try
             {
                 var r = _app.Selection.Range;
-                var field = doc.Fields.Add(r, Word.WdFieldType.wdFieldEmpty, "REF " + name + " \\h", false);
-                field.Update();
-                var end = field.Result.End;
-                // Continue typing after the reference.
-                doc.Range(end + 1, end + 1).Select();
-                return new Dictionary<string, object> { ["text"] = field.Result.Text };
+                int start = r.Start;
+                r.InsertXML(NumberFields.Package(NumberFields.ReferenceRuns(target)));
+                var inserted = doc.Range(start, _app.Selection.Range.End);
+                inserted.Fields.Update();
+                var text = "";
+                foreach (Word.Field f in inserted.Fields)
+                {
+                    try { if ((f.Code.Text ?? "").Contains("GOTOBUTTON")) { text = f.Result.Text ?? ""; break; } } catch (COMException) { }
+                }
+                return new Dictionary<string, object> { ["text"] = text.Trim() };
             }
             finally
             {
                 undo.EndCustomRecord();
             }
+        }
+
+        /// <summary>
+        /// Hidden chapter/section marker (for documents whose headings are not numbered by Word),
+        /// like MathType's "Equation Chapter n Section m": it sets the chapter and section counters
+        /// and restarts the equation counter. "Appendix" makes the chapter number a letter.
+        /// </summary>
+        public Dictionary<string, object> InsertNumberMarker(Dictionary<string, object> p)
+        {
+            var doc = ActiveDocument();
+            int chapter = p.TryGetValue("chapter", out var c) ? Convert.ToInt32(c) : 1;
+            int section = p.TryGetValue("section", out var s) ? Convert.ToInt32(s) : 1;
+            bool appendix = Rpc.GetBool(p, "appendix");
+            bool restartEquations = !p.ContainsKey("restartEquations") || Rpc.GetBool(p, "restartEquations");
+            string hiddenInstr(string t) => "<w:r><w:rPr><w:vanish/></w:rPr><w:instrText xml:space=\"preserve\">" + SecurityElement.Escape(t) + "</w:instrText></w:r>";
+            string hb(string t) => "<w:r><w:rPr><w:vanish/></w:rPr><w:fldChar w:fldCharType=\"" + t + "\"/></w:r>";
+            var label = (appendix ? "Equation Appendix " : "Equation Chapter ") + chapter + " Section " + section;
+            var runs = hb("begin") + hiddenInstr(" MACROBUTTON MBEquationSection ") + hiddenInstr(label)
+                + (restartEquations ? hb("begin") + hiddenInstr(" SEQ MBEq \\r 0 \\h \\* MERGEFORMAT ") + hb("end") : "")
+                + hb("begin") + hiddenInstr(" SEQ MBSec \\r " + section + " \\h \\* MERGEFORMAT ") + hb("end")
+                + hb("begin") + hiddenInstr(" SEQ MBChap \\r " + chapter + " \\h \\* MERGEFORMAT ") + hb("end")
+                + hb("end");
+            var undo = _app.UndoRecord;
+            undo.StartCustomRecord("Insert equation chapter marker");
+            try
+            {
+                _app.Selection.Range.InsertXML(NumberFields.Package(runs));
+                UpdateNumberFields(doc);
+            }
+            finally
+            {
+                undo.EndCustomRecord();
+            }
+            return new Dictionary<string, object> { ["ok"] = true };
+        }
+
+        /// <summary>
+        /// Upgrade numbering: MathBlocks numbers built the old way (brackets as text, separate fields)
+        /// become one field each, keeping their bookmark names, so every reference still points at the
+        /// same equation; old references become one field too. MathType numbers are left alone.
+        /// </summary>
+        public Dictionary<string, object> UpgradeNumbering(Dictionary<string, object> p)
+        {
+            var doc = ResolveDocument(p);
+            var fmt = NumberFields.NumberFormat.From(p);
+            int numbers = 0, references = 0;
+            bool hidden = doc.Bookmarks.ShowHidden;
+            doc.Bookmarks.ShowHidden = true;
+            var undo = _app.UndoRecord;
+            var own = !undo.IsRecordingCustomRecord;
+            if (own) undo.StartCustomRecord("Upgrade equation numbering");
+            try
+            {
+                foreach (var cc0 in MathBlocksControls(doc))
+                {
+                    var tag = cc0.Tag;
+                    var para = cc0.Range.Paragraphs[1].Range;
+                    if (!HasNumberField(para)) continue;
+                    // Rebuilt every time (format changes apply too); the bookmark name is kept.
+                    string name = null;
+                    foreach (Word.Bookmark bm in para.Bookmarks)
+                        if (bm.Name.StartsWith(BookmarkPrefix, StringComparison.Ordinal)) { name = bm.Name; break; }
+                    if (name == null) name = BookmarkPrefix + InstanceId(tag);
+                    RemoveNumber(doc, cc0);
+                    var cc = FindByTag(doc, tag)[0];
+                    var pr = cc.Range.Paragraphs[1];
+                    var ps = pr.Range.Sections[1].PageSetup;
+                    float width = ps.PageWidth - ps.LeftMargin - ps.RightMargin - pr.LeftIndent - pr.RightIndent;
+                    pr.TabStops.ClearAll();
+                    pr.TabStops.Add(width / 2, Word.WdTabAlignment.wdAlignTabCenter);
+                    pr.TabStops.Add(width, Word.WdTabAlignment.wdAlignTabRight);
+                    doc.Range(pr.Range.Start, pr.Range.Start).InsertBefore("\t");
+                    InsertNumber(doc, FindByTag(doc, tag)[0], fmt, name);
+                    numbers++;
+                }
+                // Old references: REF _MBEq_… not yet inside a GOTOBUTTON.
+                var old = new List<Word.Field>();
+                foreach (Word.Field f in doc.Fields)
+                {
+                    string code;
+                    try { code = (f.Code.Text ?? "").Trim(); } catch (COMException) { continue; }
+                    if (!code.StartsWith("REF " + BookmarkPrefix, StringComparison.Ordinal)) continue;
+                    var before = doc.Range(Math.Max(0, f.Code.Start - 60), f.Code.Start).Text ?? "";
+                    if (before.Contains("GOTOBUTTON")) continue;
+                    old.Add(f);
+                }
+                foreach (var f in old)
+                {
+                    var code = (f.Code.Text ?? "").Trim();
+                    var bookmark = code.Split(' ')[1];
+                    int start = f.Code.Start - 1;
+                    int end = f.Result.End + 1;
+                    var r = doc.Range(start, end);
+                    r.Text = "";
+                    doc.Range(start, start).InsertXML(NumberFields.Package(NumberFields.ReferenceRuns(bookmark)));
+                    references++;
+                }
+                UpdateNumberFields(doc);
+            }
+            finally
+            {
+                doc.Bookmarks.ShowHidden = hidden;
+                if (own) undo.EndCustomRecord();
+            }
+            Log.Info("upgradeNumbering in " + doc.Name + ": " + numbers + " numbers, " + references + " references");
+            return new Dictionary<string, object> { ["numbers"] = numbers, ["references"] = references };
         }
 
         /// <summary>Updates equation numbers (SEQ MBEq / MTEqn, chapter fields) and references to them.</summary>
@@ -308,11 +446,11 @@ namespace MathBlocks.WordConnector
             {
                 string code;
                 try { code = f.Code?.Text ?? ""; } catch (COMException) { continue; }
-                if (code.Contains("SEQ MBEq") || code.Contains("SEQ MTEqn") || (code.Contains("STYLEREF") && code.Contains("\\s") && HasNumberField(f.Code.Paragraphs[1].Range)))
+                if (code.Contains("SEQ MBEq") || code.Contains("SEQ MTEqn") || code.Contains("MBPlaceRef") || code.Contains("SEQ MBChap") || code.Contains("SEQ MBSec") || (code.Contains("STYLEREF") && code.Contains("\\s") && HasNumberField(f.Code.Paragraphs[1].Range)))
                 {
                     try { f.Update(); numbers++; } catch (COMException) { }
                 }
-                else if (code.Contains("REF " + BookmarkPrefix) || code.Contains("REF " + MathTypeBookmarkPrefix)) refs.Add(f);
+                else if (code.Contains("REF " + BookmarkPrefix) || code.Contains("REF _MBEqN_") || code.Contains("REF " + MathTypeBookmarkPrefix) || code.Contains("GOTOBUTTON " + BookmarkPrefix)) refs.Add(f);
             }
             // References last, so they show the new numbers.
             foreach (var f in refs)
