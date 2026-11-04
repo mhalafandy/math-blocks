@@ -50,6 +50,7 @@ pub fn run() {
             documents::document_read,
             documents::document_write,
             documents::document_open,
+            documents::backups_open,
             documents::export_write,
             documents::system_font
         ])

@@ -83,6 +83,20 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => import("../components/NomenclatureDialog").then((m) => m.openNomenclature()),
     },
     {
+      id: "app.backups",
+      title: "Open backups folder (automatic copies before document-wide changes)",
+      group: "Word",
+      keywords: "backup restore copy undo safety folder",
+      run: async () => {
+        try {
+          const { invoke } = await import("@tauri-apps/api/core");
+          await invoke<string>("backups_open");
+        } catch (e) {
+          app.notify(`Could not open the backups folder: ${e instanceof Error ? e.message : String(e)}`, "error");
+        }
+      },
+    },
+    {
       id: "word.normalizeBold",
       title: "Normalize bold: keep bold off subscripts and superscripts in the document…",
       group: "Word",
