@@ -1,0 +1,3014 @@
+{
+ "accents.acute": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.bar": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.boxed": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.breve": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.check": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.ddddot": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.dddot": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.ddot": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.dot": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.dprimex": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.grave": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.harpoon": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.hat": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.lharpoon": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.mathring": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.overbrace": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.overleftarrow": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.overline": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.overrightarrow": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.primex": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.tilde": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.underbrace": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.underline": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.vec": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.widehat": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "accents.widetilde": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "arrows.downarrow": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "arrows.Downarrow": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "arrows.hookleftarrow": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ↩"
+  ]
+ },
+ "arrows.hookrightarrow": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ↪"
+  ]
+ },
+ "arrows.iff": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⟺"
+  ]
+ },
+ "arrows.impliedby": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⟸"
+  ]
+ },
+ "arrows.implies": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⟹"
+  ]
+ },
+ "arrows.leftarrow": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "arrows.Leftarrow": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "arrows.leftharpoondown": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ↽"
+  ]
+ },
+ "arrows.leftharpoonup": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ↼"
+  ]
+ },
+ "arrows.leftrightarrow": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "arrows.Leftrightarrow": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "arrows.leftrightharpoons": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⇋"
+  ]
+ },
+ "arrows.longleftarrow": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⟵"
+  ]
+ },
+ "arrows.longleftrightarrow": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⟷"
+  ]
+ },
+ "arrows.longmapsto": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⟼"
+  ]
+ },
+ "arrows.longrightarrow": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⟶"
+  ]
+ },
+ "arrows.mapsto": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ↦"
+  ]
+ },
+ "arrows.nearrow": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ↗"
+  ]
+ },
+ "arrows.nwarrow": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ↖"
+  ]
+ },
+ "arrows.Rightarrow": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "arrows.rightharpoondown": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⇁"
+  ]
+ },
+ "arrows.rightharpoonup": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⇀"
+  ]
+ },
+ "arrows.rightleftharpoons": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⇌"
+  ]
+ },
+ "arrows.searrow": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ↘"
+  ]
+ },
+ "arrows.swarrow": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ↙"
+  ]
+ },
+ "arrows.to": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "arrows.uparrow": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "arrows.Uparrow": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "arrows.updownarrow": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "fences.abs": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "fences.angle": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⟨ ⟩"
+  ]
+ },
+ "fences.brace": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "fences.bracket": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "fences.ceil": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⌈ ⌉"
+  ]
+ },
+ "fences.evalbar": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "fences.floor": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⌊ ⌋"
+  ]
+ },
+ "fences.halfopen1": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "fences.halfopen2": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "fences.inner": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⟨ ⟩"
+  ]
+ },
+ "fences.leftbrace": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "fences.norm": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "fences.paren": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "fractions.binom": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "fractions.dfrac": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "fractions.frac": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "fractions.nroot": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "fractions.slash": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "fractions.sqrt": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "fractions.tfrac": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.arcsin": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.cos": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.econst": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-arccos": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-arctan": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-arg": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-cosh": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-cot": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-coth": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-Cov": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-csc": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-csch": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-det": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-diag": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-dim": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-exp": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-gcd": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-inf": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-ker": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-log": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-max": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-min": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-Pr": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-rank": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-sec": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-sech": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-sgn": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-sinh": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-span": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-sup": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-tanh": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-tr": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.fn-Var": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.iconst": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.ln": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.sin": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "functions.tan": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.alpha": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.beta": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.chi": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.delta": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "Greek.Delta": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.epsilon": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.eta": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.gamma": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "Greek.Gamma": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.iota": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.kappa": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.lambda": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "Greek.Lambda": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.mu": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.nu": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.omega": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "Greek.Omega": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.phi": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "Greek.Phi": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.pi": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "Greek.Pi": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.psi": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "Greek.Psi": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.rho": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.sigma": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "Greek.Sigma": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.tau": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.theta": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "Greek.Theta": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.upsilon": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "Greek.Upsilon": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.varepsilon": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.varkappa": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.varphi": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.varpi": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.varrho": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.varsigma": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.vartheta": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.xi": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "Greek.Xi": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "greek.zeta": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "integrals.iiint": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∭"
+  ]
+ },
+ "integrals.iint": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∬"
+  ]
+ },
+ "integrals.int": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "integrals.intinf": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "integrals.intlim": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "integrals.intlimits": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "integrals.oiint": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∯"
+  ]
+ },
+ "integrals.oint": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∮"
+  ]
+ },
+ "labeled.arrowover": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⟶"
+  ]
+ },
+ "labeled.arrowunder": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⟶"
+  ]
+ },
+ "labeled.defeq": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "labeled.eqover": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "labeled.impliesover": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⟹"
+  ]
+ },
+ "labeled.limto": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "logic.because": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∵"
+  ]
+ },
+ "logic.bot": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "logic.exists": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "logic.forall": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "logic.models": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⊨"
+  ]
+ },
+ "logic.neg": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "logic.nexists": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∄"
+  ]
+ },
+ "logic.therefore": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∴"
+  ]
+ },
+ "logic.top": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⊤"
+  ]
+ },
+ "logic.vdash": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⊢"
+  ]
+ },
+ "matrices.aligned2": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "matrices.bmat2": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "matrices.bmat3": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "matrices.cases2": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "matrices.cases3": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "matrices.colvec2": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "matrices.colvec3": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "matrices.diag": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⋱"
+  ]
+ },
+ "matrices.general": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⋯ ⋮ ⋱"
+  ]
+ },
+ "matrices.identity": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "matrices.pmat2": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "matrices.pmat3": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "matrices.rowvec3": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "matrices.system2": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "matrices.vmat2": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "matrices.vmat3": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "misc.angle": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "misc.degree": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∘"
+  ]
+ },
+ "misc.ell": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "misc.hbar": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ℏ"
+  ]
+ },
+ "misc.Im": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ℑ"
+  ]
+ },
+ "misc.infty": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "misc.nabla": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∇"
+  ]
+ },
+ "misc.partial": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "misc.prime": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "misc.primecmd": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "misc.Re": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ℜ"
+  ]
+ },
+ "misc.triangle": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): △"
+  ]
+ },
+ "misc.wp": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ℘"
+  ]
+ },
+ "operators.ast": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "operators.bullet": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "operators.cdot": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "operators.circ": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∘"
+  ]
+ },
+ "operators.dagger": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "operators.ddagger": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "operators.diamond": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⋄"
+  ]
+ },
+ "operators.div": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "operators.minus": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "operators.mp": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∓"
+  ]
+ },
+ "operators.odot": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⊙"
+  ]
+ },
+ "operators.ominus": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⊖"
+  ]
+ },
+ "operators.oplus": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "operators.otimes": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "operators.plus": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "operators.pm": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "operators.setminus": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∖"
+  ]
+ },
+ "operators.sqcap": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⊓"
+  ]
+ },
+ "operators.sqcup": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⊔"
+  ]
+ },
+ "operators.star": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⋆"
+  ]
+ },
+ "operators.times": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "operators.uplus": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⊎"
+  ]
+ },
+ "operators.vee": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "operators.wedge": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "relations.approx": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "relations.asymp": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ≍"
+  ]
+ },
+ "relations.coloneqq": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ≔"
+  ]
+ },
+ "relations.cong": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "relations.doteq": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ≐"
+  ]
+ },
+ "relations.eq": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "relations.equiv": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "relations.geq": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "relations.geqslant": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⩾"
+  ]
+ },
+ "relations.gg": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ≫"
+  ]
+ },
+ "relations.gt": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "relations.gtrsim": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ≳"
+  ]
+ },
+ "relations.leq": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "relations.leqslant": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⩽"
+  ]
+ },
+ "relations.lesssim": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ≲"
+  ]
+ },
+ "relations.ll": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ≪"
+  ]
+ },
+ "relations.lt": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "relations.mid": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∣"
+  ]
+ },
+ "relations.ncong": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ≇"
+  ]
+ },
+ "relations.neq": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "relations.ngeq": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ≱"
+  ]
+ },
+ "relations.ngtr": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ≯"
+  ]
+ },
+ "relations.nleq": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ≰"
+  ]
+ },
+ "relations.nless": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ≮"
+  ]
+ },
+ "relations.nmid": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∤"
+  ]
+ },
+ "relations.nparallel": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∦"
+  ]
+ },
+ "relations.nsim": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ≁"
+  ]
+ },
+ "relations.parallel": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∥"
+  ]
+ },
+ "relations.perp": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "relations.prec": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ≺"
+  ]
+ },
+ "relations.preceq": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⪯"
+  ]
+ },
+ "relations.propto": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "relations.sim": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "relations.simeq": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ≃"
+  ]
+ },
+ "relations.succ": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ≻"
+  ]
+ },
+ "relations.succeq": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⪰"
+  ]
+ },
+ "relations.triangleq": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ≜"
+  ]
+ },
+ "scripts.overset": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "scripts.pre": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "scripts.sub": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "scripts.subsup": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "scripts.sup": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "scripts.underset": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "sets.aleph": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ℵ"
+  ]
+ },
+ "sets.C": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): C (double-struck)"
+  ]
+ },
+ "sets.cap": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "sets.complement": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∁"
+  ]
+ },
+ "sets.cup": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "sets.emptyset": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∅"
+  ]
+ },
+ "sets.H": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): H (double-struck)"
+  ]
+ },
+ "sets.in": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "sets.N": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): N (double-struck)"
+  ]
+ },
+ "sets.ni": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "sets.notin": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "sets.nsubseteq": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⊈"
+  ]
+ },
+ "sets.Q": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): Q (double-struck)"
+  ]
+ },
+ "sets.R": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): R (double-struck)"
+  ]
+ },
+ "sets.subset": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "sets.subseteq": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "sets.subsetneq": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⊊"
+  ]
+ },
+ "sets.supset": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "sets.supseteq": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "sets.Z": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): Z (double-struck)"
+  ]
+ },
+ "spaces.cdots": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⋯"
+  ]
+ },
+ "spaces.ddots": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⋱"
+  ]
+ },
+ "spaces.ldots": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "spaces.medium": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "spaces.qquad": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "spaces.quad": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "spaces.thick": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "spaces.thin": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "spaces.vdots": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⋮"
+  ]
+ },
+ "styles.colmat": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "styles.st-bb": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "styles.st-bs": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "styles.st-cal": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "styles.st-frak": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "styles.st-it": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "styles.st-rm": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "styles.st-sf": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "sums.bigcap": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⋂"
+  ]
+ },
+ "sums.bigcup": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⋃"
+  ]
+ },
+ "sums.bigoplus": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⨁"
+  ]
+ },
+ "sums.bigotimes": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⨂"
+  ]
+ },
+ "sums.coprod": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∐"
+  ]
+ },
+ "sums.prod": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "sums.sum": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "sums.sumlim": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "sums.sumsub": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-algebra.abseq": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-algebra.binomthm": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-algebra.diffsq": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-algebra.exp": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-algebra.log": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-algebra.quadratic": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-algebra.square": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-derivs.d2dx2": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-derivs.ddt": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-derivs.ddx": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-derivs.dndx": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-derivs.euler-lagrange": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-derivs.fprime": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-derivs.lim": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-derivs.liminf": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-derivs.liminf2": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-derivs.limsup": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-derivs.matder": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-derivs.p2dx2": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-derivs.pdx": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-derivs.pdxdy": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-derivs.taylor": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-linalg.la-det": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-linalg.la-diag": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-linalg.la-dyadic": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-linalg.la-dyadicarrow": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-linalg.la-H": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): H (sans-serif)"
+  ]
+ },
+ "tab-linalg.la-identity3": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-linalg.la-inner": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ⟨ ⟩"
+  ]
+ },
+ "tab-linalg.la-inv": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-linalg.la-invT": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-linalg.la-norm2": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-linalg.la-rank": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-linalg.la-span": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-linalg.la-tr": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-linalg.la-Tsf": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): T (sans-serif)"
+  ]
+ },
+ "tab-orbital.conic": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-orbital.euler-rigid": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-orbital.kepler": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-orbital.period": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-orbital.rotz": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-orbital.statespace": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-orbital.transfer": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-orbital.two-body": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-orbital.vis-viva": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.accrel": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.angaccframe": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.angmomc": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.angvelframe": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.basistriad": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.basisvec": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.bodyint": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.colmatsub": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.com": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.cop": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.cross": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.cyldv": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.cylr": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.dA": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.dcm": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.dint2": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.dint3": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.dm": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.dV": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.dx": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.dyadic": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.firstmoment": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.force": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.framecomp": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.framederiv": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∘"
+  ]
+ },
+ "tab-spacecraft.gravparam": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.inertiadyadic": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.inertiamatrix": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.mrp": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.omega": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.omegacross": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.orbelems": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.posrel": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.quatconv": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.quatfirst": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.quatlast": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.quatprod": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.range": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.rot": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.rot1": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.rot2": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.rot3": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.rowT": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.skewfilled": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.skewop": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.srp": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.torque": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.transpose": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.unitbold": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.unitsub": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.vecbold": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.vecharp": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.vectrixharpT": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.vectrixrel": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.vectrixT": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.velrel": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.zerocol": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-spacecraft.zerovec": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-stats.comb": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-stats.cond": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-stats.expect": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-stats.mean": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-stats.normal": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-stats.prob": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-stats.var": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-stats.variance": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-trig.euler": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-trig.pyth": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-trig.sin2": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-trig.sumangle": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-vectors.angmom": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-vectors.angvel": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-vectors.crossdet": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-vectors.crossprod": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-vectors.curl": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∇"
+  ]
+ },
+ "tab-vectors.divergence": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∇"
+  ]
+ },
+ "tab-vectors.dotprod": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-vectors.grad": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∇"
+  ]
+ },
+ "tab-vectors.ijk": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-vectors.laplacian": {
+  "mathlive": "full",
+  "classic": "converted",
+  "omml": "full",
+  "roundtrip": "full",
+  "notes": [
+   "Classic: from STIX Two (not Times/Symbol): ∇"
+  ]
+ },
+ "tab-vectors.magnitude": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ },
+ "tab-vectors.newton": {
+  "mathlive": "full",
+  "classic": "full",
+  "omml": "full",
+  "roundtrip": "full"
+ }
+}

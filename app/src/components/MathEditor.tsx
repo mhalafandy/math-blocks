@@ -90,7 +90,7 @@ export function toggleBold() {
 }
 
 const BOLD_CMD = /\\(mathbf|boldsymbol|bm|pmb)\{/g;
-const ACCENT_CMD = /^\\(vec|hat|widehat|bar|overline|dot|ddot|dddot|tilde|widetilde|check|breve|overrightarrow|overleftarrow|overrightharpoon|overleftharpoon)\{([\s\S]*)\}$/;
+const ACCENT_CMD = /^\\(vec|hat|widehat|bar|overline|dot|ddot|dddot|ddddot|acute|grave|mathring|tilde|widetilde|check|breve|overrightarrow|overleftarrow|overrightharpoon|overleftharpoon)\{([\s\S]*)\}$/;
 const GREEK_ONLY = /^(\\(alpha|beta|gamma|delta|epsilon|varepsilon|zeta|eta|theta|vartheta|iota|kappa|lambda|mu|nu|xi|pi|varpi|rho|varrho|sigma|varsigma|tau|upsilon|phi|varphi|chi|psi|omega)\s*)+$/;
 
 /** Removes every bold command, keeping its contents (braces matched). */
