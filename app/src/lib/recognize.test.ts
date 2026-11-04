@@ -19,3 +19,18 @@ describe("snippets", () => {
     expect(matchSnippet(before("y"), DEFAULT_SNIPPETS)).toBeNull();
   });
 });
+
+describe("kind snippets with a prefix", async () => {
+  const { kindSnippets, matchSnippet, BASE_SNIPPETS } = await import("./snippets");
+  const list = [...kindSnippets(";"), ...BASE_SNIPPETS];
+  const before = (text: string) => (n: number) => text.slice(-n);
+  it("needs the prefix, so a product uv + Tab stays a product", () => {
+    expect(matchSnippet(before("x+uv"), list)).toBeNull();
+    expect(matchSnippet(before("x+;uv"), list)?.latex).toBe("\\uvec{#?}");
+    expect(matchSnippet(before("2;dc"), list)?.latex).toBe("\\dcm{#?}{#?}");
+    expect(matchSnippet(before(";tp"), list)?.latex).toBe("^{\\T}");
+  });
+  it("plain snippets keep working", () => {
+    expect(matchSnippet(before("pdv"), list)?.trigger).toBe("pdv");
+  });
+});
