@@ -30,6 +30,7 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - Definition check (used before defined, never defined) and equation dependencies in the Symbols tab.
 - Thesis check across all chapter files (read from disk): notation, definitions, outdated linked
   copies, unconverted MathType; list of symbols for the whole thesis.
+- Derivation lines: Ctrl+Shift+Enter adds an aligned line starting from the last right-hand side.
 
 ### Added (recognition, snippets, consistency)
 - Equation from a screenshot: paste an image (main window or floating editor) or pick a file;

@@ -1,5 +1,23 @@
 import { focusedMathField, insertIntoVisual, toggleBold, toMathLive } from "../components/MathEditor";
 import { matchSnippet } from "./snippets";
+import { addDerivationLine } from "./derivation";
+import { useApp } from "./store";
+
+/** Ctrl+Shift+Enter: a new derivation line starting from the previous right-hand side. */
+function newDerivationLine() {
+  const app = useApp.getState();
+  const next = addDerivationLine(app.latex);
+  if (!next) {
+    app.notify("A derivation line needs an equation with =, ≈, ≤… to align at");
+    return;
+  }
+  app.setLatex(next, "external");
+  setTimeout(() => {
+    const mf = focusedMathField() ?? document.querySelector<HTMLElement & { executeCommand: (c: string) => void }>("math-field");
+    mf?.focus();
+    mf?.executeCommand("moveToMathfieldEnd");
+  }, 40);
+}
 
 /**
  * MathType-style keyboard shortcuts in the equation editor, so MathType habits carry over.
@@ -48,6 +66,7 @@ export const EDITOR_SHORTCUTS: EditorShortcut[] = [
   { keys: "Ctrl+Shift+M", label: "2×2 matrix in brackets", insert: "\\begin{bmatrix}#?&#?\\\\#?&#?\\end{bmatrix}" },
   { keys: "Ctrl+Shift+B", label: "Bold (vector style) on/off", run: () => toggleBold() },
   { keys: "Ctrl+Space", label: "Thin space", insert: "\\," },
+  { keys: "Ctrl+Shift+Enter", label: "New derivation line (aligned at =, starts from the last right-hand side)", run: () => newDerivationLine() },
   { keys: "Ctrl+G, letter", label: "Greek letter (a α, b β, q θ, f φ, w ω, D Δ…)", run: () => (greekNext = true) },
   { keys: "trigger + Tab", label: "Snippet: ddt, pdv, intab, mat3, col3, norm, inv, trans… (Ctrl+K → Snippets)" },
 ];
