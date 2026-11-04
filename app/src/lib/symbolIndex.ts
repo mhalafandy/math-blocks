@@ -79,6 +79,8 @@ export interface DocumentIndex {
 }
 
 export async function buildDocumentIndex(): Promise<DocumentIndex> {
+  // Pasted copies first get their identity back (Repair equations), quietly unless it changed something.
+  await import("./repair").then((m) => m.repairDocument(undefined, { quiet: true })).catch((e: unknown) => console.warn("repair", e));
   const r = await connector.request("listInstances", { includeContent: true }, 120_000);
   const doc = r.documents[0];
   if (!doc) throw new Error("No document is open in Word");

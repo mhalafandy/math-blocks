@@ -90,7 +90,7 @@ export const MATHTYPE_HARPOON = { length: 0.41, stroke: 0.029, barbLength: 0.08,
 export const MATHTYPE_ARROW = { barbLength: 0.0975, barbAngle: 26, gap: 0.145 };
 
 /** Defaults: MathType's harpoon a little heavier (×1.2 stroke) so it stays clear at 10 pt. */
-export const DEFAULT_ACCENTS: AccentRules = { size: 1, stroke: 1.2, gap: MATHTYPE_HARPOON.gap, barbAngle: MATHTYPE_HARPOON.barbAngle, minGap: 0.05 };
+export const DEFAULT_ACCENTS: AccentRules = { size: 1, stroke: 1.2, gap: MATHTYPE_HARPOON.gap, barbAngle: MATHTYPE_HARPOON.barbAngle, minGap: 0.05, length: "adaptive" };
 /** "Reset to MathType-like". */
 export const MATHTYPE_ACCENTS: AccentRules = { size: 1, stroke: 1, gap: MATHTYPE_HARPOON.gap, barbAngle: MATHTYPE_HARPOON.barbAngle, minGap: 0.05 };
 
@@ -119,7 +119,8 @@ export const CLASSIC: RenderStyle = {
   bigOpScale: 1.5,
   useSymbolFont: true,
   obliqueSlant: 0.2,
-  useExtraFont: true,
+  // The user's choice after comparing on their PC: STIX at 94 %, not thinned, not MT Extra.
+  useExtraFont: false,
   fallbackScale: 0.94,
   fallbackThin: 0,
   fracNumHeight: 0.35,

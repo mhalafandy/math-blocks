@@ -83,6 +83,13 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => import("../components/NomenclatureDialog").then((m) => m.openNomenclature()),
     },
     {
+      id: "word.repair",
+      title: "Repair equations: give pasted copies back their MathBlocks identity",
+      group: "Word",
+      keywords: "repair paste copy cut identity picture lost wrapper fix duplicate",
+      run: () => import("./repair").then((m) => void m.repairDocument()),
+    },
+    {
       id: "app.fontCompare",
       title: "Compare symbol fonts on this PC (STIX / thinned / MT Extra)…",
       group: "View",

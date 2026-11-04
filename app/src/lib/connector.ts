@@ -217,6 +217,11 @@ export async function activateEquation(params: ConnectorToApp["equationActivated
     );
     return;
   }
+  if ((params as { repaired?: boolean }).repaired) {
+    // A pasted picture that had lost its wrapper: registry entries follow (linked definition, kinds).
+    void import("./repair").then((m) => m.repairDocument(undefined, { quiet: true }));
+    app.notify("This pasted equation was a plain picture to Word; it is a MathBlocks equation again (with its own identity).");
+  }
   const linked = await import("./linking").then((m) => m.openLinkedForEditing(params.tag)).catch(() => false);
   if (!linked) {
     useLibraryClose();

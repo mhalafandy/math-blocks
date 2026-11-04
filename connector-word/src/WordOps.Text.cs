@@ -36,6 +36,18 @@ namespace MathBlocks.WordConnector
             var cc = sel.Range.ParentContentControl;
             if (cc == null)
                 foreach (Word.ContentControl c in sel.Range.ContentControls) { cc = c; break; }
+            if (cc?.Tag == null || !cc.Tag.StartsWith(TagPrefix, StringComparison.Ordinal))
+            {
+                // A pasted MathBlocks picture that lost its wrapper (Ctrl+Alt+M on it): wrap it again.
+                var shape = UnwrappedPictureAt(doc, sel.Range, out _);
+                if (shape != null)
+                {
+                    MathBlocksData(shape.Range.WordOpenXML, out var json);
+                    var block = json != null ? Regex.Match(json, "\"block\"\\s*:\\s*\"([0-9A-Za-z]{16})\"").Groups[1].Value : null;
+                    var tag = AdoptPicture(doc, shape, block);
+                    foreach (Word.ContentControl c in doc.SelectContentControlsByTag(tag)) cc = c;
+                }
+            }
             if (cc?.Tag != null && cc.Tag.StartsWith(TagPrefix, StringComparison.Ordinal))
             {
                 result["tag"] = cc.Tag;

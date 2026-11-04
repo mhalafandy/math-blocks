@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { countNodes } from "@mathblocks/math-core";
 import { parseLatex, type Diagnostic } from "@mathblocks/math-latex";
 import { toOmml, TUNED_PROFILE, WORD_DEFAULT_PROFILE, type StyleProfile } from "@mathblocks/math-omml";
-import { contentControl, flatOpc, formatTag, newInstanceId, paragraph, vmlPictureRun } from "@mathblocks/ooxml";
+import { contentControl, flatOpc, formatTag, newInstanceId, paragraph, parseTag, vmlPictureRun } from "@mathblocks/ooxml";
 import { useApp } from "./store";
 
 /** The Word style profile from the current preferences (outside React). */
@@ -74,7 +74,7 @@ export async function buildInsertion(
   const { renderPicture, toBase64, altText } = await import("./render");
   const tag = existingTag ?? formatTag({ blockId: null, instanceId: newInstanceId() });
   const mode = display ? "display" : typesetDisplay ? "numbered" : "inline";
-  const pic = await renderPicture(latex, typesetDisplay, useApp.getState().equationSizePt, mode);
+  const pic = await renderPicture(latex, typesetDisplay, useApp.getState().equationSizePt, mode, false, { block: parseTag(tag)?.blockId });
   const n = ++pictureCounter;
   const run = vmlPictureRun({
     rId: "rIdMbE1",

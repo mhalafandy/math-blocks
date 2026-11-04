@@ -27,7 +27,7 @@ export async function writeRegistry(document: string | undefined, registry: Regi
   await connector.request("setRegistry", { ...(document ? { document } : {}), xml: serializeRegistry(registry) });
 }
 
-async function writeBlock(document: string, q: Equation, reg?: Registry) {
+export async function writeBlock(document: string, q: Equation, reg?: Registry) {
   const registry = reg ?? (await readRegistry(document));
   registry.blocks[q.id] = { id: q.id, name: q.name, version: q.currentVersion, latex: q.latex, display: q.display };
   await connector.request("setRegistry", { document, xml: serializeRegistry(registry) });

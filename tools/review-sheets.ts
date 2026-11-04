@@ -13,7 +13,6 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "playwright";
 import { parseLatex } from "@mathblocks/math-latex";
 import { CLASSIC, glyphSource, loadFont, renderSvg, type FontSet, type RenderStyle } from "@mathblocks/math-render";
-import * as before from "../packages/math-render/before/index";
 import { CATEGORIES, ENTRIES, STRUCTURES, type PaletteEntry } from "../app/src/lib/palette";
 import { renderTile, STRUCTURE_CELL, SYMBOL_CELL, tileLatex } from "../app/src/lib/tiles";
 
@@ -159,9 +158,9 @@ cases.push(
 function casesPage(): string {
   const items: string[] = [];
   for (const c of cases) {
-    for (const [ver, latex] of [["before", c.before], ["after", c.after]] as const) {
+    for (const [ver, latex] of [["after", c.after]] as const) {
       for (const [mode, pt] of [["display", 12], ["inline", 10]] as const) {
-        const r = (ver === "before" ? before.renderSvg : renderSvg)(parseLatex(latex).root, { fonts, style: ver === "before" ? before.CLASSIC : STYLE, display: mode === "display", sizePt: pt } as never);
+        const r = renderSvg(parseLatex(latex).root, { fonts, style: STYLE, display: mode === "display", sizePt: pt });
         const svg = r.svg.replace(/width="([\d.]+)pt" height="([\d.]+)pt"/, (_, w: string, h: string) => `width="${((+w * 96) / 72).toFixed(2)}px" height="${((+h * 96) / 72).toFixed(2)}px"`);
         const html =
           mode === "inline"
@@ -215,7 +214,7 @@ for (const scale of [1, 3]) {
   const f = join(dir, `cases-${scale}.html`);
   writeFileSync(f, casesPage());
   await page.goto(pathToFileURL(f).href);
-  for (const c of cases) for (const ver of ["before", "after"]) for (const pt of [12, 10]) await page.locator(`#${c.id}-${ver}-${pt}`).screenshot({ path: join(out, "accents", `${c.id}-${ver}-${pt}pt-${scale}x.png`) });
+  for (const c of cases) for (const ver of ["after"]) for (const pt of [12, 10]) await page.locator(`#${c.id}-${ver}-${pt}`).screenshot({ path: join(out, "accents", `${c.id}-${ver}-${pt}pt-${scale}x.png`) });
   await page.close();
 }
 writeFileSync(join(out, "cases.json"), JSON.stringify({ fonts: fontNote, cases: cases.map(({ id, label, mathtype }) => ({ id, label, mathtype })) }, null, 1));
