@@ -64,11 +64,13 @@ const ItemButton = memo(function ItemButton({ x, size }: { x: IndexedItem; size:
 });
 
 function Grid({ items, size }: { items: IndexedItem[]; size: "glyph" | "small" | "large" }) {
+  // Spacecraft entries change with the notation setting: redraw them when it changes.
+  const notation = useApp((s) => `${s.spacecraftConvention}|${s.spacecraftVector}`);
   return (
     <div className={`pal-grid ${size}`}>
       {items.map((x) => (
         // A template in a glyph-sized row (quick access) still needs room for its preview.
-        <ItemButton key={x.key} x={x} size={size === "glyph" && !x.item.glyph ? "small" : size} />
+        <ItemButton key={x.item.conventions ? `${x.key}|${notation}` : x.key} x={x} size={size === "glyph" && !x.item.glyph ? "small" : size} />
       ))}
     </div>
   );

@@ -11,6 +11,10 @@
 
 export interface PaletteItem {
   id: string;
+  /** Spacecraft entries: the LaTeX per convention (item.latex follows the current setting). */
+  conventions?: Partial<Record<Convention, string>>;
+  /** Shown in the tooltip: why a form is used, what Word cannot keep… */
+  note?: string;
   /** Inserted LaTeX (template). */
   latex: string;
   /** Human name shown in the tooltip. */
@@ -33,6 +37,9 @@ export interface PaletteGroup {
   row: "symbols" | "templates" | "tabs";
   items: PaletteItem[];
 }
+
+import { SHORTCUT_TABLE } from "./editorShortcuts";
+import { DEFAULT_SNIPPETS } from "./snippets";
 
 const sym = (id: string, latex: string, glyph: string, name: string, keys = ""): PaletteItem => ({ id, latex, glyph, name, keys });
 const tpl = (id: string, latex: string, name: string, keys = ""): PaletteItem => ({ id, latex, name, keys });
@@ -59,6 +66,24 @@ const relations: PaletteItem[] = [
   sym("mid", "\\mid", "∣", "Divides / such that", "conditional given"),
   sym("parallel", "\\parallel", "∥", "Parallel to"),
   sym("perp", "\\perp", "⊥", "Perpendicular", "orthogonal normal"),
+  sym("triangleq", "\\triangleq", "≜", "Defined as (delta equal)", "definition by definition"),
+  sym("nmid", "\\nmid", "∤", "Does not divide"),
+  sym("nparallel", "\\nparallel", "∦", "Not parallel"),
+  sym("nless", "\\nless", "≮", "Not less than"),
+  sym("ngtr", "\\ngtr", "≯", "Not greater than"),
+  sym("nleq", "\\nleq", "≰", "Neither less nor equal"),
+  sym("ngeq", "\\ngeq", "≱", "Neither greater nor equal"),
+  sym("nsim", "\\nsim", "≁", "Not similar"),
+  sym("ncong", "\\ncong", "≇", "Not congruent"),
+  sym("leqslant", "\\leqslant", "⩽", "Less than or equal (slanted)"),
+  sym("geqslant", "\\geqslant", "⩾", "Greater than or equal (slanted)"),
+  sym("lesssim", "\\lesssim", "≲", "Less than or similar"),
+  sym("gtrsim", "\\gtrsim", "≳", "Greater than or similar"),
+  sym("asymp", "\\asymp", "≍", "Asymptotic to", "same order"),
+  sym("prec", "\\prec", "≺", "Precedes"),
+  sym("succ", "\\succ", "≻", "Succeeds"),
+  sym("preceq", "\\preceq", "⪯", "Precedes or equal"),
+  sym("succeq", "\\succeq", "⪰", "Succeeds or equal"),
 ];
 
 const spacesAndDots: PaletteItem[] = [
@@ -92,6 +117,12 @@ const operators: PaletteItem[] = [
   sym("wedge", "\\wedge", "∧", "Wedge / and", "exterior product and"),
   sym("vee", "\\vee", "∨", "Vee / or", "or"),
   sym("setminus", "\\setminus", "∖", "Set difference"),
+  sym("dagger", "\\dagger", "†", "Dagger", "adjoint"),
+  sym("ddagger", "\\ddagger", "‡", "Double dagger"),
+  sym("uplus", "\\uplus", "⊎", "Multiset union"),
+  sym("sqcup", "\\sqcup", "⊔", "Square cup"),
+  sym("sqcap", "\\sqcap", "⊓", "Square cap"),
+  sym("diamond", "\\diamond", "⋄", "Diamond"),
 ];
 
 const arrows: PaletteItem[] = [
@@ -104,11 +135,28 @@ const arrows: PaletteItem[] = [
   sym("longrightarrow", "\\longrightarrow", "⟶", "Long right arrow"),
   sym("longleftarrow", "\\longleftarrow", "⟵", "Long left arrow"),
   sym("implies", "\\implies", "⟹", "Long implies"),
-  sym("iff", "\\iff", "⟺", "Long if and only if"),
+  sym("iff", "\\iff", "⟺", "Long if and only if", "Longleftrightarrow"),
   sym("mapsto", "\\mapsto", "↦", "Maps to", "function mapping"),
   sym("uparrow", "\\uparrow", "↑", "Up arrow", "increase"),
   sym("downarrow", "\\downarrow", "↓", "Down arrow", "decrease"),
   sym("rightleftharpoons", "\\rightleftharpoons", "⇌", "Equilibrium", "reversible reaction"),
+  sym("leftrightharpoons", "\\leftrightharpoons", "⇋", "Equilibrium (reverse)"),
+  sym("longleftrightarrow", "\\longleftrightarrow", "⟷", "Long left-right arrow"),
+  sym("impliedby", "\\impliedby", "⟸", "Long implied by", "Longleftarrow"),
+  sym("longmapsto", "\\longmapsto", "⟼", "Long maps to"),
+  sym("hookrightarrow", "\\hookrightarrow", "↪", "Hook right arrow", "injection embedding"),
+  sym("hookleftarrow", "\\hookleftarrow", "↩", "Hook left arrow"),
+  sym("rightharpoonup", "\\rightharpoonup", "⇀", "Right harpoon up"),
+  sym("rightharpoondown", "\\rightharpoondown", "⇁", "Right harpoon down"),
+  sym("leftharpoonup", "\\leftharpoonup", "↼", "Left harpoon up"),
+  sym("leftharpoondown", "\\leftharpoondown", "↽", "Left harpoon down"),
+  sym("updownarrow", "\\updownarrow", "↕", "Up-down arrow"),
+  sym("Uparrow", "\\Uparrow", "⇑", "Double up arrow"),
+  sym("Downarrow", "\\Downarrow", "⇓", "Double down arrow"),
+  sym("nearrow", "\\nearrow", "↗", "North-east arrow"),
+  sym("searrow", "\\searrow", "↘", "South-east arrow"),
+  sym("nwarrow", "\\nwarrow", "↖", "North-west arrow"),
+  sym("swarrow", "\\swarrow", "↙", "South-west arrow"),
 ];
 
 const logic: PaletteItem[] = [
@@ -118,8 +166,7 @@ const logic: PaletteItem[] = [
   sym("exists", "\\exists", "∃", "There exists", "existential quantifier"),
   sym("nexists", "\\nexists", "∄", "There does not exist"),
   sym("neg", "\\neg", "¬", "Not", "negation"),
-  sym("land", "\\land", "∧", "Logical and"),
-  sym("lor", "\\lor", "∨", "Logical or"),
+  ...["wedge", "vee"].map((id) => operators.find((x) => x.id === id)!),
   sym("top", "\\top", "⊤", "True / top"),
   sym("bot", "\\bot", "⊥", "False / bottom"),
   sym("vdash", "\\vdash", "⊢", "Proves"),
@@ -136,12 +183,16 @@ const sets: PaletteItem[] = [
   sym("supseteq", "\\supseteq", "⊇", "Superset or equal"),
   sym("cap", "\\cap", "∩", "Intersection", "and"),
   sym("cup", "\\cup", "∪", "Union", "or"),
-  sym("emptyset", "\\emptyset", "∅", "Empty set", "null"),
+  sym("emptyset", "\\emptyset", "∅", "Empty set", "null varnothing"),
   sym("N", "\\mathbb{N}", "ℕ", "Natural numbers"),
   sym("Z", "\\mathbb{Z}", "ℤ", "Integers"),
   sym("Q", "\\mathbb{Q}", "ℚ", "Rational numbers"),
   sym("R", "\\mathbb{R}", "ℝ", "Real numbers", "reals"),
   sym("C", "\\mathbb{C}", "ℂ", "Complex numbers"),
+  sym("H", "\\mathbb{H}", "ℍ", "Quaternions (set)", "hamilton"),
+  sym("subsetneq", "\\subsetneq", "⊊", "Proper subset (not equal)"),
+  sym("nsubseteq", "\\nsubseteq", "⊈", "Not a subset"),
+  sym("complement", "\\complement", "∁", "Complement"),
   sym("aleph", "\\aleph", "ℵ", "Aleph", "cardinality"),
 ];
 
@@ -156,6 +207,7 @@ const misc: PaletteItem[] = [
   sym("wp", "\\wp", "℘", "Weierstrass p"),
   sym("degree", "^{\\circ}", "°", "Degree", "angle temperature"),
   sym("prime", "'", "′", "Prime", "derivative"),
+  sym("primecmd", "\\prime", "′", "Prime symbol (\\prime)", "derivative minute"),
   sym("angle", "\\angle", "∠", "Angle"),
   sym("triangle", "\\triangle", "△", "Triangle"),
 ];
@@ -165,7 +217,7 @@ const greekLower: PaletteItem[] = [
   ["zeta", "ζ"], ["eta", "η"], ["theta", "θ"], ["vartheta", "ϑ"], ["iota", "ι"], ["kappa", "κ"],
   ["lambda", "λ"], ["mu", "μ"], ["nu", "ν"], ["xi", "ξ"], ["pi", "π"], ["varpi", "ϖ"], ["rho", "ρ"],
   ["varrho", "ϱ"], ["sigma", "σ"], ["varsigma", "ς"], ["tau", "τ"], ["upsilon", "υ"], ["phi", "ϕ"],
-  ["varphi", "φ"], ["chi", "χ"], ["psi", "ψ"], ["omega", "ω"],
+  ["varphi", "φ"], ["chi", "χ"], ["psi", "ψ"], ["omega", "ω"], ["varkappa", "ϰ"],
 ].map(([n, g]) => sym(n!, `\\${n}`, g!, n!.replace(/^var/, "variant "), "greek"));
 
 const greekUpper: PaletteItem[] = [
@@ -204,9 +256,8 @@ const fractionsRoots: PaletteItem[] = [
 const scripts: PaletteItem[] = [
   tpl("sup", "#0^{#?}", "Superscript", "power exponent"),
   tpl("sub", "#0_{#?}", "Subscript", "index"),
-  tpl("subsup", "#0_{#?}^{#?}", "Subscript and superscript"),
+  tpl("subsup", "#0_{#?}^{#?}", "Subscript and superscript", "tensor indices index both"),
   tpl("pre", "{}_{#?}^{#?}#0", "Left scripts (tensor / isotope)", "prescript tensor isotope"),
-  tpl("tensor", "#0^{#?}_{#?}", "Tensor indices", "tensor index"),
   tpl("overset", "\\overset{#?}{#0}", "Text above", "over stack label"),
   tpl("underset", "\\underset{#?}{#0}", "Text below", "under stack label"),
 ];
@@ -240,7 +291,7 @@ const embellishments: PaletteItem[] = [
   tpl("overleftarrow", "\\overleftarrow{#0}", "Left arrow above"),
   tpl("harpoon", "\\overrightharpoon{#0}", "Vector harpoon (⇀ above)", "vector harpoon rightharpoonup"),
   tpl("lharpoon", "\\overleftharpoon{#0}", "Left harpoon above", "harpoon leftharpoonup"),
-  tpl("hat", "\\hat{#0}", "Hat", "unit vector estimate operator"),
+  tpl("hat", "\\hat{#0}", "Hat (unit vector)", "unit vector direction estimate operator"),
   tpl("widehat", "\\widehat{#0}", "Wide hat"),
   tpl("bar", "\\bar{#0}", "Bar", "mean average conjugate"),
   tpl("overline", "\\overline{#0}", "Overline", "conjugate closure"),
@@ -250,6 +301,10 @@ const embellishments: PaletteItem[] = [
   tpl("dot", "\\dot{#0}", "Dot (time derivative)", "velocity newton derivative"),
   tpl("ddot", "\\ddot{#0}", "Double dot", "acceleration second derivative"),
   tpl("dddot", "\\dddot{#0}", "Triple dot", "jerk third derivative"),
+  tpl("ddddot", "\\ddddot{#0}", "Quadruple dot", "snap fourth derivative"),
+  tpl("acute", "\\acute{#0}", "Acute"),
+  tpl("grave", "\\grave{#0}", "Grave"),
+  tpl("mathring", "\\mathring{#0}", "Ring above"),
   tpl("primex", "#0'", "Prime", "derivative"),
   tpl("dprimex", "#0''", "Double prime", "second derivative"),
   tpl("check", "\\check{#0}", "Check"),
@@ -310,13 +365,16 @@ const derivs: PaletteItem[] = [
   tpl("ddt", "\\frac{\\mathrm{d}}{\\mathrm{d}t}\\left(#0\\right)", "Time derivative operator"),
   tpl("fprime", "f'(#0)", "f′(x)"),
   tpl("lim", "\\lim_{#?\\to #?}#0", "Limit", "limit tends"),
+  tpl("limsup", "\\limsup_{#?}#0", "Limit superior", "lim sup"),
+  tpl("liminf2", "\\liminf_{#?}#0", "Limit inferior", "lim inf"),
+  tpl("matder", "\\frac{\\mathrm{D}#0}{\\mathrm{D}t}", "Material derivative D/Dt", "substantial convective derivative"),
   tpl("liminf", "\\lim_{#?\\to\\infty}#0", "Limit at infinity"),
   tpl("taylor", "f(x)=\\sum_{n=0}^{\\infty}\\frac{f^{(n)}(a)}{n!}(x-a)^n", "Taylor series"),
   tpl("euler-lagrange", "\\frac{\\mathrm{d}}{\\mathrm{d}t}\\left(\\frac{\\partial L}{\\partial\\dot{q}_i}\\right)-\\frac{\\partial L}{\\partial q_i}=0", "Euler–Lagrange equation", "lagrangian mechanics"),
 ];
 
 const vectors: PaletteItem[] = [
-  tpl("unitvec", "\\hat{#0}", "Unit vector", "direction"),
+  embellishments.find((x) => x.id === "hat")!,
   tpl("ijk", "#?\\,\\hat{i}+#?\\,\\hat{j}+#?\\,\\hat{k}", "Components in i, j, k", "cartesian unit vectors"),
   tpl("magnitude", "\\left\\|\\vec{#0}\\right\\|", "Vector magnitude", "norm length"),
   tpl("dotprod", "\\vec{a}\\cdot\\vec{b}", "Dot product", "scalar product"),
@@ -343,14 +401,103 @@ const orbital: PaletteItem[] = [
   tpl("statespace", "\\begin{aligned}\\dot{\\mathbf{x}} &= A\\mathbf{x}+B\\mathbf{u}\\\\ \\mathbf{y} &= C\\mathbf{x}+D\\mathbf{u}\\end{aligned}", "State-space model", "control"),
 ];
 
+// ------------------------------------------------------------------ spacecraft conventions
+
+/** Textbook conventions for attitude dynamics notation (one setting switches the Spacecraft category). */
+export type Convention = "hughes" | "schaub" | "markley";
+/** How physical vectors are drawn: V{r} in the templates below. */
+export type VectorStyle = "harpoon" | "arrow" | "plainArrow" | "bold";
+
+export const CONVENTIONS: Record<Convention, string> = {
+  hughes: "Hughes (vectrix, C_ba, a^×, ε/η)",
+  schaub: "Schaub & Junkins ([BN], [ω̃], β₀…β₃, ᴺd/dt)",
+  markley: "Markley & Crassidis (A, [ω×], q₄ last, ⊗)",
+};
+export const VECTOR_STYLES: Record<VectorStyle, string> = {
+  harpoon: "Bold with harpoon",
+  arrow: "Bold with arrow",
+  plainArrow: "Arrow",
+  bold: "Bold",
+};
+
+/** Current Spacecraft notation; the app sets it from the preferences. Defaults follow Hughes. */
+export const SPACECRAFT: { convention: Convention; vector: VectorStyle } = { convention: "hughes", vector: "harpoon" };
+export function setSpacecraftNotation(convention: Convention, vector: VectorStyle) {
+  SPACECRAFT.convention = convention;
+  SPACECRAFT.vector = vector;
+}
+
+/** A physical vector in the given style; Greek letters use \boldsymbol. */
+export function vectorLatex(x: string, style: VectorStyle): string {
+  const bold = /^\\[a-zA-Z]+$/.test(x) ? `\\boldsymbol{${x}}` : `\\mathbf{${x}}`;
+  if (style === "harpoon") return `\\overrightharpoon{${bold}}`;
+  if (style === "arrow") return `\\vec{${bold}}`;
+  if (style === "plainArrow") return `\\vec{${x}}`;
+  return bold;
+}
+const expandV = (t: string, style: VectorStyle) => t.replace(/V\{([^{}]*)\}/g, (_, x: string) => vectorLatex(x, style));
+
+/** The LaTeX of a spacecraft entry for a convention and vector style. */
+export function conventionLatex(item: PaletteItem, convention: Convention, vector: VectorStyle): string {
+  const c = item.conventions!;
+  return expandV(c[convention] ?? c.hughes ?? Object.values(c)[0]!, vector);
+}
+
+/** Spacecraft entry whose LaTeX follows the current convention and vector style. */
+function sc(id: string, name: string, keys: string, conventions: Partial<Record<Convention, string>>, note?: string): PaletteItem {
+  const item: PaletteItem = { id, latex: "", name, keys, conventions, note };
+  Object.defineProperty(item, "latex", { get: () => conventionLatex(item, SPACECRAFT.convention, SPACECRAFT.vector), enumerable: true });
+  return item;
+}
+
+const CHECK = "Form to confirm against your documents.";
+
+const spacecraftConventional: PaletteItem[] = [
+  sc("posrel", "Position of P relative to O", "position vector relative frame", { hughes: "V{r}_{P/O}" }),
+  sc("velrel", "Velocity of P relative to O", "velocity vector", { hughes: "V{v}_{P/O}" }),
+  sc("accrel", "Acceleration of P relative to O", "acceleration vector", { hughes: "V{a}_{P/O}" }),
+  sc("angvelframe", "Angular velocity of B relative to N", "angular velocity omega frame", { hughes: "V{\\omega}_{ba}", schaub: "V{\\omega}_{B/N}", markley: "V{\\omega}^{B/N}" }, CHECK),
+  sc("angaccframe", "Angular acceleration", "angular acceleration alpha omega dot", { hughes: "\\dot{V{\\omega}}_{ba}", schaub: "\\dot{V{\\omega}}_{B/N}", markley: "\\dot{V{\\omega}}^{B/N}" }, CHECK),
+  sc("angmomc", "Angular momentum about the centre of mass", "angular momentum h", { hughes: "V{h}_{c}", schaub: "V{H}_{c}", markley: "V{H}_{c}" }),
+  sc("torque", "External torque", "torque moment", { hughes: "V{g}", schaub: "V{L}", markley: "V{L}" }, "Hughes writes torques as g; Schaub and Markley as L."),
+  sc("force", "External force", "force", { hughes: "V{f}", schaub: "V{F}", markley: "V{F}" }),
+  sc("basisvec", "Basis unit vector", "unit vector basis axis b1 b2 b3", { hughes: "\\hat{\\mathbf{b}}_{#?}", schaub: "\\hat{b}_{#?}", markley: "\\hat{b}_{#?}" }),
+  sc("basistriad", "Basis triad / vectrix", "vectrix frame triad basis", { hughes: "\\vec{\\mathbf{F}}_{#?}", schaub: "\\left\\{\\hat{b}\\right\\}", markley: "\\left\\{\\hat{b}\\right\\}" }),
+  sc("framecomp", "Components of a vector in a frame", "components frame column", { hughes: "\\mathbf{#0}_{#?}", schaub: "{}^{#?}\\mathbf{#0}", markley: "\\mathbf{#0}_{#?}" }),
+  sc("framederiv", "Time derivative in a frame", "frame derivative rotating inertial", { hughes: "\\overset{\\circ}{V{#0}}", schaub: "\\frac{{}^{#?}\\mathrm{d}}{\\mathrm{d}t}\\left(V{#0}\\right)", markley: "\\frac{{}^{#?}\\mathrm{d}}{\\mathrm{d}t}\\left(V{#0}\\right)" }, "Hughes: ∘ = derivative relative to the rotating frame."),
+  sc("dcm", "Direction cosine (rotation) matrix", "dcm direction cosine matrix attitude rotation", { hughes: "\\mathbf{C}_{#?#?}", schaub: "\\left[#?#?\\right]", markley: "\\mathbf{A}" }),
+  sc("rot1", "Rotation about axis 1", "principal rotation matrix x axis dcm", { hughes: "\\mathbf{C}_{1}(#0)=\\begin{bmatrix}1&0&0\\\\ 0&\\cos #0&\\sin #0\\\\ 0&-\\sin #0&\\cos #0\\end{bmatrix}", schaub: "\\left[M_{1}(#0)\\right]=\\begin{bmatrix}1&0&0\\\\ 0&\\cos #0&\\sin #0\\\\ 0&-\\sin #0&\\cos #0\\end{bmatrix}", markley: "\\mathbf{R}_{1}(#0)=\\begin{bmatrix}1&0&0\\\\ 0&\\cos #0&\\sin #0\\\\ 0&-\\sin #0&\\cos #0\\end{bmatrix}" }, "Passive (frame) rotation."),
+  sc("rot2", "Rotation about axis 2", "principal rotation matrix y axis dcm", { hughes: "\\mathbf{C}_{2}(#0)=\\begin{bmatrix}\\cos #0&0&-\\sin #0\\\\ 0&1&0\\\\ \\sin #0&0&\\cos #0\\end{bmatrix}", schaub: "\\left[M_{2}(#0)\\right]=\\begin{bmatrix}\\cos #0&0&-\\sin #0\\\\ 0&1&0\\\\ \\sin #0&0&\\cos #0\\end{bmatrix}", markley: "\\mathbf{R}_{2}(#0)=\\begin{bmatrix}\\cos #0&0&-\\sin #0\\\\ 0&1&0\\\\ \\sin #0&0&\\cos #0\\end{bmatrix}" }, "Passive (frame) rotation."),
+  sc("rot3", "Rotation about axis 3", "principal rotation matrix z axis dcm", { hughes: "\\mathbf{C}_{3}(#0)=\\begin{bmatrix}\\cos #0&\\sin #0&0\\\\ -\\sin #0&\\cos #0&0\\\\ 0&0&1\\end{bmatrix}", schaub: "\\left[M_{3}(#0)\\right]=\\begin{bmatrix}\\cos #0&\\sin #0&0\\\\ -\\sin #0&\\cos #0&0\\\\ 0&0&1\\end{bmatrix}", markley: "\\mathbf{R}_{3}(#0)=\\begin{bmatrix}\\cos #0&\\sin #0&0\\\\ -\\sin #0&\\cos #0&0\\\\ 0&0&1\\end{bmatrix}" }, "Passive (frame) rotation."),
+  sc("skewop", "Skew-symmetric (cross-product) matrix of", "skew symmetric cross product matrix tilde", { hughes: "#0^{\\times}", schaub: "\\left[\\tilde{#0}\\right]", markley: "\\left[#0\\times\\right]" }),
+  sc("skewfilled", "Skew-symmetric matrix of ω, filled", "skew symmetric cross product matrix omega components", { hughes: "\\boldsymbol{\\omega}^{\\times}=\\begin{bmatrix}0&-\\omega_{3}&\\omega_{2}\\\\ \\omega_{3}&0&-\\omega_{1}\\\\ -\\omega_{2}&\\omega_{1}&0\\end{bmatrix}", schaub: "\\left[\\tilde{\\omega}\\right]=\\begin{bmatrix}0&-\\omega_{3}&\\omega_{2}\\\\ \\omega_{3}&0&-\\omega_{1}\\\\ -\\omega_{2}&\\omega_{1}&0\\end{bmatrix}", markley: "\\left[\\boldsymbol{\\omega}\\times\\right]=\\begin{bmatrix}0&-\\omega_{3}&\\omega_{2}\\\\ \\omega_{3}&0&-\\omega_{1}\\\\ -\\omega_{2}&\\omega_{1}&0\\end{bmatrix}" }),
+  sc("inertiadyadic", "Inertia dyadic", "inertia dyadic tensor", { hughes: "\\vec{\\vec{\\mathbf{I}}}", schaub: "\\bar{\\bar{I}}", markley: "\\bar{\\bar{J}}" }, CHECK),
+  sc("inertiamatrix", "Inertia matrix", "inertia matrix moment", { hughes: "\\mathbf{I}", schaub: "\\left[I\\right]", markley: "\\mathbf{J}" }),
+  sc("quatconv", "Quaternion (convention form)", "quaternion euler parameters attitude", { hughes: "\\begin{bmatrix}\\boldsymbol{\\epsilon}\\\\ \\eta\\end{bmatrix}", schaub: "\\boldsymbol{\\beta}=\\begin{bmatrix}\\beta_{0}&\\beta_{1}&\\beta_{2}&\\beta_{3}\\end{bmatrix}^{T}", markley: "\\mathbf{q}=\\begin{bmatrix}\\mathbf{q}_{1:3}\\\\ q_{4}\\end{bmatrix}" }, "Hughes and Markley: scalar last; Schaub: scalar first."),
+  sc("quatprod", "Quaternion product", "quaternion product multiplication composition", { hughes: "\\mathbf{q}_{1}\\otimes\\mathbf{q}_{2}", schaub: "\\boldsymbol{\\beta}^{\\prime\\prime}\\otimes\\boldsymbol{\\beta}^{\\prime}", markley: "\\mathbf{p}\\otimes\\mathbf{q}" }, CHECK),
+  sc("mrp", "Modified Rodrigues parameters", "mrp rodrigues attitude sigma", { hughes: "\\boldsymbol{\\sigma}", schaub: "\\boldsymbol{\\sigma}", markley: "\\mathbf{p}" }),
+  sc("com", "Centre-of-mass position", "centre center of mass cm", { hughes: "V{r}_{c}" }),
+  sc("cop", "Centre-of-pressure position", "centre center of pressure cp", { hughes: "V{r}_{cp}" }),
+  sc("srp", "Solar radiation pressure force", "srp solar radiation pressure force", { hughes: "V{f}_{\\mathrm{SRP}}", schaub: "V{F}_{\\mathrm{SRP}}", markley: "V{F}_{\\mathrm{SRP}}" }),
+  sc("orbelems", "Classical orbital elements", "orbital elements keplerian a e i raan argument perigee true anomaly", { hughes: "\\left(a,\\,e,\\,i,\\,\\Omega,\\,\\omega,\\,\\nu\\right)", schaub: "\\left(a,\\,e,\\,i,\\,\\Omega,\\,\\omega,\\,f\\right)", markley: "\\left(a,\\,e,\\,i,\\,\\Omega,\\,\\omega,\\,\\nu\\right)" }, "Schaub writes the true anomaly as f."),
+  sc("gravparam", "Gravitational parameter", "mu gravitational parameter gm", { hughes: "\\mu=GM" }),
+];
+
+/** Quaternion forms independent of convention (both orders always available). */
+const quaternionForms: PaletteItem[] = [
+  tpl("quatfirst", "\\mathbf{q}=\\begin{bmatrix}q_{0}&q_{1}&q_{2}&q_{3}\\end{bmatrix}^{\\mathbf{T}}", "Quaternion, scalar first", "quaternion scalar first euler parameters"),
+  tpl("quatlast", "\\mathbf{q}=\\begin{bmatrix}q_{1}&q_{2}&q_{3}&q_{4}\\end{bmatrix}^{\\mathbf{T}}", "Quaternion, scalar last", "quaternion scalar last euler parameters"),
+];
+
 /** Spacecraft dynamics in vectrix notation (Hughes): the user's thesis notation. */
 const spacecraft: PaletteItem[] = [
-  tpl("vecbold", "\\vec{\\mathbf{#0}}", "Geometric vector (bold with arrow)", "physical vector arrow bold"),
+  ...spacecraftConventional,
+  ...quaternionForms,
+  tpl("vecbold", "\\vec{\\mathbf{#0}}", "Geometric vector / vectrix (bold with arrow)", "physical vector arrow bold vectrix frame basis"),
   tpl("vectrixT", "\\vec{\\mathbf{#0}}^{\\mathbf{T}}", "Vectrix transpose (frame)", "vectrix frame basis hughes transpose"),
-  tpl("vectrix", "\\vec{\\mathbf{#0}}", "Vectrix / frame", "vectrix frame basis"),
   tpl("vecharp", "\\overrightharpoon{\\mathbf{#0}}", "Bold vector with harpoon", "vector harpoon rightharpoonup bold physical"),
   tpl("vectrixharpT", "\\overrightharpoon{\\mathbf{#0}}^{\\mathbf{T}}", "Vectrix transpose with harpoon", "vectrix frame harpoon transpose"),
-  tpl("colmat", "\\mathbf{#0}", "Column matrix (bold)", "components bold matrix column"),
+  tpl("colmat", "\\mathbf{#0}", "Bold upright (column matrix)", "components bold matrix column mathbf"),
   tpl("transpose", "#0^{\\mathbf{T}}", "Transpose (bold T)", "transpose T"),
   tpl("colmatsub", "\\mathbf{#0}_{#?}", "Bold with subscript", "components index"),
   tpl("unitbold", "\\hat{\\mathbf{#0}}_{#?}", "Unit vector, bold (b̂₁)", "unit vector basis axis"),
@@ -399,6 +546,49 @@ const statistics: PaletteItem[] = [
   tpl("comb", "\\binom{n}{k}=\\frac{n!}{k!\\,(n-k)!}", "Combinations", "choose"),
 ];
 
+/** An existing item with this LaTeX (shared, so one entry lives in several groups). */
+const existing = (latex: string, ...lists: PaletteItem[][]) => lists.flat().find((x) => x.latex === latex);
+
+const functions: PaletteItem[] = [
+  ...["sin", "cos", "tan", "cot", "sec", "csc", "arcsin", "arccos", "arctan", "sinh", "cosh", "tanh", "coth", "exp", "log", "ln", "arg", "max", "min", "sup", "inf", "Pr", "det", "dim", "ker", "gcd"].map((f) =>
+    existing(`\\${f} #0`, trig, algebra) ?? tpl(`fn-${f}`, `\\${f} #0`, f, "function operator name"),
+  ),
+  ...["sech", "csch", "sgn", "tr", "rank", "diag", "span", "Var", "Cov"].map((f) => tpl(`fn-${f}`, `\\operatorname{${f}}#0`, f, "function operator name")),
+  sym("econst", "\\mathrm{e}", "e", "Euler's number e (upright)", "exponential constant"),
+  sym("iconst", "\\mathrm{i}", "i", "Imaginary unit i (upright)", "imaginary unit complex"),
+];
+
+const styles: PaletteItem[] = [
+  spacecraft.find((x) => x.id === "colmat")!,
+  tpl("st-bs", "\\boldsymbol{#0}", "Bold italic / bold Greek", "bold greek boldsymbol bm"),
+  tpl("st-rm", "\\mathrm{#0}", "Upright (roman)", "upright roman text mathrm"),
+  tpl("st-it", "\\mathit{#0}", "Italic", "italic mathit"),
+  tpl("st-cal", "\\mathcal{#0}", "Calligraphic", "script calligraphic mathcal mathscr frame"),
+  tpl("st-bb", "\\mathbb{#0}", "Blackboard bold", "double struck sets mathbb"),
+  tpl("st-frak", "\\mathfrak{#0}", "Fraktur", "gothic mathfrak lie algebra"),
+  tpl("st-sf", "\\mathsf{#0}", "Sans-serif", "sans serif mathsf"),
+];
+
+const linalg: PaletteItem[] = [
+  spacecraft.find((x) => x.id === "transpose")!,
+  tpl("la-Tsf", "#0^{\\mathsf{T}}", "Transpose (sans-serif T)", "transpose"),
+  tpl("la-inv", "#0^{-1}", "Inverse", "inverse"),
+  tpl("la-H", "#0^{\\mathsf{H}}", "Conjugate transpose", "hermitian adjoint conjugate transpose"),
+  tpl("la-invT", "#0^{-\\mathbf{T}}", "Inverse transpose", "inverse transpose"),
+  tpl("la-det", "\\det\\left(#0\\right)", "Determinant det", "determinant"),
+  tpl("la-tr", "\\operatorname{tr}\\left(#0\\right)", "Trace", "trace"),
+  tpl("la-rank", "\\operatorname{rank}\\left(#0\\right)", "Rank", "rank"),
+  tpl("la-diag", "\\operatorname{diag}\\left(#0\\right)", "Diagonal matrix diag(…)", "diagonal"),
+  tpl("la-span", "\\operatorname{span}\\left\\{#0\\right\\}", "Span", "span linear combination"),
+  functions.find((x) => x.id === "fn-ker")!,
+  functions.find((x) => x.id === "fn-dim")!,
+  tpl("la-inner", "\\left\\langle #0,#?\\right\\rangle", "Inner product ⟨a, b⟩", "inner product scalar"),
+  tpl("la-norm2", "\\left\\|#0\\right\\|_{2}", "2-norm", "euclidean norm length"),
+  tpl("la-identity3", "\\mathbf{1}", "Identity matrix 1", "identity unit matrix"),
+  tpl("la-dyadic", "\\bar{\\bar{#0}}", "Dyadic (double bar)", "dyadic tensor double bar"),
+  tpl("la-dyadicarrow", "\\overset{\\leftrightarrow}{#0}", "Dyadic (double arrow)", "dyadic tensor double arrow"),
+];
+
 export const GROUPS: PaletteGroup[] = [
   { id: "relations", label: "Relations", icon: "≤ ≠ ≈", kind: "symbols", row: "symbols", items: relations },
   { id: "spaces", label: "Spaces & dots", icon: "␣ ⋯ ⋱", kind: "symbols", row: "symbols", items: spacesAndDots },
@@ -419,7 +609,11 @@ export const GROUPS: PaletteGroup[] = [
   { id: "labeled", label: "Labeled arrows", icon: "\\overset{#?}{\\to}\\,\\overset{#?}{=}", iconTex: true, kind: "templates", row: "templates", items: labeledArrows },
   { id: "matrices", label: "Matrices & cases", icon: "\\begin{pmatrix}#? & #?\\\\ #? & #?\\end{pmatrix}", iconTex: true, kind: "templates", row: "templates", items: matrices },
 
+  { id: "functions", label: "Functions", icon: "\\sin\\,\\log", iconTex: true, kind: "templates", row: "templates", items: functions },
+  { id: "styles", label: "Letter styles", icon: "\\mathbf{A}\\,\\mathcal{F}\\,\\mathbb{R}", iconTex: true, kind: "templates", row: "templates", items: styles },
+
   { id: "tab-spacecraft", label: "Spacecraft dynamics", icon: "", kind: "templates", row: "tabs", items: spacecraft },
+  { id: "tab-linalg", label: "Linear algebra", icon: "", kind: "templates", row: "tabs", items: linalg },
   { id: "tab-algebra", label: "Algebra", icon: "", kind: "templates", row: "tabs", items: algebra },
   { id: "tab-derivs", label: "Derivatives", icon: "", kind: "templates", row: "tabs", items: derivs },
   { id: "tab-vectors", label: "Vectors & mechanics", icon: "", kind: "templates", row: "tabs", items: vectors },
@@ -452,7 +646,16 @@ export interface IndexedItem {
 export const ALL_ITEMS: IndexedItem[] = GROUPS.flatMap((group) => group.items.map((item) => ({ key: itemKey(group, item), group, item })));
 
 const BY_KEY = new Map(ALL_ITEMS.map((x) => [x.key, x]));
-export const findItem = (key: string) => BY_KEY.get(key);
+
+/** Keys of entries merged into another one (favourites and recents saved before the merge keep working). */
+const KEY_ALIASES: Record<string, string> = {
+  "symbols:logic:land": "symbols:logic:wedge",
+  "symbols:logic:lor": "symbols:logic:vee",
+  "templates:scripts:tensor": "templates:scripts:subsup",
+  "tabs:tab-spacecraft:vectrix": "tabs:tab-spacecraft:vecbold",
+  "tabs:tab-vectors:unitvec": "tabs:tab-vectors:hat",
+};
+export const findItem = (key: string) => BY_KEY.get(KEY_ALIASES[key] ?? key);
 
 /** Search by name, meaning, LaTeX command or category; every word must match. Deduplicates by LaTeX. */
 export function searchPalette(query: string, limit = 60): IndexedItem[] {
@@ -489,3 +692,171 @@ export const previewLatex = (latex: string) => latex.replace(/#0/g, "x").replace
 
 /** LaTeX inserted into the plain-text LaTeX editor: slots become empty (\mathbf{#0} → \mathbf{}). */
 export const plainLatex = (latex: string) => latex.replace(/\{(#0|#\?)\}/g, "{}").replace(/#0|#\?/g, "{}");
+
+// ------------------------------------------------------------------ registry (one row per entry)
+
+/** Browsing categories, in the order of the thesis (Phase 1 plan). */
+export const CATEGORIES = [
+  { id: "my-notation", label: "My notation" },
+  { id: "spacecraft", label: "Spacecraft dynamics" },
+  { id: "greek", label: "Greek" },
+  { id: "linalg", label: "Vectors, matrices & linear algebra" },
+  { id: "calculus", label: "Calculus & analysis" },
+  { id: "operators", label: "Operators" },
+  { id: "relations", label: "Relations" },
+  { id: "arrows", label: "Arrows" },
+  { id: "delimiters", label: "Delimiters" },
+  { id: "styles", label: "Accents & letter styles" },
+  { id: "sets-logic", label: "Sets & logic" },
+  { id: "functions", label: "Functions & constants" },
+  { id: "less-used", label: "Less used" },
+] as const;
+export type CategoryId = (typeof CATEGORIES)[number]["id"];
+
+/** Structure sections (shown apart from symbols). */
+export const STRUCTURES = [
+  { id: "s-fractions", label: "Fractions & roots" },
+  { id: "s-scripts", label: "Scripts" },
+  { id: "s-bigops", label: "Big operators" },
+  { id: "s-integrals", label: "Integrals" },
+  { id: "s-limits", label: "Limits" },
+  { id: "s-matrices", label: "Matrices" },
+  { id: "s-cases", label: "Cases & aligned" },
+  { id: "s-braces", label: "Braces, stacks & labels" },
+] as const;
+export type StructureId = (typeof STRUCTURES)[number]["id"];
+
+export type MathClass = "ord" | "op" | "bin" | "rel" | "open" | "close" | "punct" | "inner" | "accent";
+export type Support = "full" | "converted" | "workaround" | "unsupported";
+export type EntryKind = "symbol" | "operator-name" | "accent" | "style" | "structure" | "notation";
+
+export interface PaletteEntry {
+  /** Stable id: "<group>.<item>", e.g. "greek.alpha", "tab-spacecraft.dcm". */
+  id: string;
+  kind: EntryKind;
+  name: string;
+  /** Canonical insertion LaTeX (MathLive slots #0 / #?); spacecraft entries follow the convention setting. */
+  readonly latex: string;
+  categories: (CategoryId | StructureId)[];
+  subcategory?: string;
+  aliases: string[];
+  unicode?: string;
+  mathClass?: MathClass;
+  shortcut?: string;
+  snippet?: string;
+  note?: string;
+  /** The palette item (and every key it is reachable by, for favourites/recents). */
+  item: PaletteItem;
+  keys: string[];
+}
+
+/** Group → categories and subcategory label. */
+const GROUP_PLACE: Record<string, { cats: (CategoryId | StructureId)[]; sub?: string; kind?: EntryKind }> = {
+  relations: { cats: ["relations"] },
+  spaces: { cats: ["operators"], sub: "Spaces & dots" },
+  operators: { cats: ["operators"] },
+  arrows: { cats: ["arrows"] },
+  logic: { cats: ["sets-logic"], sub: "Logic" },
+  sets: { cats: ["sets-logic"], sub: "Sets" },
+  misc: { cats: ["calculus"], sub: "Symbols" },
+  greek: { cats: ["greek"], sub: "Lowercase" },
+  Greek: { cats: ["greek"], sub: "Uppercase" },
+  fences: { cats: ["delimiters"] },
+  fractions: { cats: ["s-fractions"] },
+  scripts: { cats: ["s-scripts"] },
+  sums: { cats: ["s-bigops"] },
+  integrals: { cats: ["s-integrals"] },
+  accents: { cats: ["styles"], sub: "Accents", kind: "accent" },
+  labeled: { cats: ["arrows", "s-braces"], sub: "Labeled" },
+  matrices: { cats: ["s-matrices"] },
+  functions: { cats: ["functions"], kind: "operator-name" },
+  styles: { cats: ["styles"], sub: "Letter styles", kind: "style" },
+  "tab-spacecraft": { cats: ["spacecraft"], kind: "notation" },
+  "tab-linalg": { cats: ["linalg"] },
+  "tab-algebra": { cats: ["less-used"], sub: "Algebra" },
+  "tab-derivs": { cats: ["calculus"], sub: "Derivatives" },
+  "tab-vectors": { cats: ["linalg"], sub: "Vectors" },
+  "tab-matrices": { cats: ["linalg"], sub: "Matrices" },
+  "tab-orbital": { cats: ["spacecraft"], sub: "Orbits & control" },
+  "tab-trig": { cats: ["functions", "less-used"], sub: "Trigonometry" },
+  "tab-stats": { cats: ["less-used"], sub: "Probability & statistics" },
+};
+
+/** Extra categories for single entries (symbols that belong in several places). */
+const EXTRA_CATEGORIES: Record<string, (CategoryId | StructureId)[]> = {
+  "operators.times": ["linalg"], "operators.cdot": ["linalg"], "operators.otimes": ["linalg"],
+  "relations.perp": ["linalg"], "relations.parallel": ["linalg"], "misc.nabla": ["linalg"],
+  "misc.triangle": ["less-used"], "misc.angle": ["less-used"], "misc.degree": ["less-used"],
+  "matrices.cases2": ["s-cases"], "matrices.cases3": ["s-cases"], "matrices.aligned2": ["s-cases"], "matrices.system2": ["s-cases"],
+  "tab-derivs.lim": ["s-limits"], "tab-derivs.liminf": ["s-limits"], "tab-derivs.limsup": ["s-limits"], "tab-derivs.liminf2": ["s-limits"],
+  "accents.overbrace": ["s-braces"], "accents.underbrace": ["s-braces"], "accents.boxed": ["s-braces"],
+  "fractions.binom": ["s-braces"], "scripts.overset": ["s-braces"], "scripts.underset": ["s-braces"],
+  "accents.dot": ["calculus"], "accents.ddot": ["calculus"], "accents.dddot": ["calculus"], "accents.ddddot": ["calculus"],
+  "sets.H": ["spacecraft"],
+};
+
+const OP_CLASS: Record<string, MathClass> = { binary: "bin", relation: "rel", punctuation: "punct", ordinary: "ord" };
+
+const normalise = (latex: string) => latex.replace(/\s+/g, "");
+
+function buildEntries(): PaletteEntry[] {
+  const byItem = new Map<PaletteItem, PaletteEntry>();
+  for (const g of GROUPS) {
+    const place = GROUP_PLACE[g.id] ?? { cats: ["less-used"] };
+    for (const item of g.items) {
+      const key = itemKey(g, item);
+      let e = byItem.get(item);
+      if (!e) {
+        const id = `${g.id}.${item.id}`;
+        const glyphy = !!item.glyph && !/[␣⎵]/.test(item.glyph);
+        e = {
+          id,
+          kind: item.glyph ? "symbol" : place.kind ?? (g.kind === "templates" ? "structure" : "symbol"),
+          name: item.name,
+          get latex() {
+            return item.latex;
+          },
+          categories: [...place.cats, ...(EXTRA_CATEGORIES[id] ?? [])],
+          subcategory: place.sub,
+          aliases: (item.keys ?? "").split(/\s+/).filter(Boolean),
+          unicode: glyphy ? item.glyph : undefined,
+          note: item.note,
+          item,
+          keys: [key],
+        };
+        byItem.set(item, e);
+      } else {
+        e.keys.push(key);
+        for (const c of place.cats) if (!e.categories.includes(c)) e.categories.push(c);
+      }
+    }
+  }
+  const entries = [...byItem.values()];
+  // Fastest way to type it: editor shortcut or snippet with the same LaTeX.
+  for (const sc of SHORTCUT_TABLE) {
+    if (!sc.insert) continue;
+    const e = entries.find((x) => normalise(x.item.latex) === normalise(sc.insert!));
+    if (e && !e.shortcut) e.shortcut = sc.keys;
+  }
+  for (const sn of DEFAULT_SNIPPETS) {
+    const e = entries.find((x) => normalise(x.item.latex.replace(/#0/g, "#?")) === normalise(sn.latex));
+    if (e && !e.snippet) e.snippet = sn.trigger;
+  }
+  return entries;
+}
+
+export const ENTRIES: PaletteEntry[] = buildEntries();
+const ENTRY_BY_ID = new Map(ENTRIES.map((e) => [e.id, e]));
+export const findEntry = (id: string) => ENTRY_BY_ID.get(id);
+
+/** TeX class of an entry's single symbol (for spacing-aware tiles), from the parsed LaTeX. */
+export function mathClassOf(root: { children: { kind: string; opClass?: string }[] }): MathClass | undefined {
+  if (root.children.length !== 1) return undefined;
+  const n = root.children[0]!;
+  if (n.kind === "operator") return OP_CLASS[n.opClass ?? "ordinary"];
+  if (n.kind === "ident" || n.kind === "number") return "ord";
+  if (n.kind === "nary") return "op";
+  if (n.kind === "delimited") return "inner";
+  if (n.kind === "accent") return "accent";
+  return undefined;
+}

@@ -31,13 +31,16 @@ export const SYMBOLS: Record<string, SymbolDef> = {
   ell: ident("ℓ"), Re: ident("ℜ"), Im: ident("ℑ"), aleph: ident("ℵ"), wp: ident("℘"),
   emptyset: ident("∅"), varnothing: ident("∅"), forall: ord("∀"), exists: ord("∃"),
   nexists: ord("∄"), neg: ord("¬"), lnot: ord("¬"), angle: ord("∠"), triangle: ord("△"),
-  prime: ord("′"), degree: ord("°"), top: ord("⊤"), bot: ord("⊥"),
+  prime: ord("′"), degree: ord("°"), top: ord("⊤"), bot: ord("⊥"), varkappa: ident("ϰ"),
+  complement: ord("∁"), mho: ord("℧"),
   cdots: ord("⋯"), ldots: ord("…"), dots: ord("…"), vdots: ord("⋮"), ddots: ord("⋱"),
   // Binary operators
   pm: bin("±"), mp: bin("∓"), times: bin("×"), div: bin("÷"), cdot: bin("⋅"),
   ast: bin("∗"), star: bin("⋆"), circ: bin("∘"), bullet: bin("∙"), cap: bin("∩"),
   cup: bin("∪"), wedge: bin("∧"), land: bin("∧"), vee: bin("∨"), lor: bin("∨"),
   oplus: bin("⊕"), ominus: bin("⊖"), otimes: bin("⊗"), odot: bin("⊙"), setminus: bin("∖"),
+  dagger: bin("†"), ddagger: bin("‡"), uplus: bin("⊎"), sqcup: bin("⊔"), sqcap: bin("⊓"),
+  circledast: bin("⊛"), diamond: bin("⋄"), amalg: bin("⨿"),
   // Relations and arrows
   leq: rel("≤"), le: rel("≤"), geq: rel("≥"), ge: rel("≥"), neq: rel("≠"), ne: rel("≠"),
   approx: rel("≈"), equiv: rel("≡"), sim: rel("∼"), simeq: rel("≃"), cong: rel("≅"),
@@ -51,6 +54,17 @@ export const SYMBOLS: Record<string, SymbolDef> = {
   Longrightarrow: rel("⟹"), Longleftarrow: rel("⟸"), uparrow: rel("↑"), downarrow: rel("↓"),
   rightleftharpoons: rel("⇌"),
   therefore: rel("∴"), because: rel("∵"), vdash: rel("⊢"), models: rel("⊨"),
+  triangleq: rel("≜"), nmid: rel("∤"), nless: rel("≮"), ngtr: rel("≯"), nleq: rel("≰"),
+  ngeq: rel("≱"), nsim: rel("≁"), ncong: rel("≇"), nparallel: rel("∦"), prec: rel("≺"),
+  succ: rel("≻"), preceq: rel("⪯"), succeq: rel("⪰"), subsetneq: rel("⊊"), supsetneq: rel("⊋"),
+  nsubseteq: rel("⊈"), nsupseteq: rel("⊉"), leqslant: rel("⩽"), geqslant: rel("⩾"),
+  lesssim: rel("≲"), gtrsim: rel("≳"), asymp: rel("≍"), approxeq: rel("≊"),
+  longleftrightarrow: rel("⟷"), Longleftrightarrow: rel("⟺"), hookrightarrow: rel("↪"),
+  hookleftarrow: rel("↩"), longmapsto: rel("⟼"), rightharpoonup: rel("⇀"),
+  rightharpoondown: rel("⇁"), leftharpoonup: rel("↼"), leftharpoondown: rel("↽"),
+  updownarrow: rel("↕"), Uparrow: rel("⇑"), Downarrow: rel("⇓"), Updownarrow: rel("⇕"),
+  nearrow: rel("↗"), searrow: rel("↘"), nwarrow: rel("↖"), swarrow: rel("↙"),
+  leftrightharpoons: rel("⇋"),
   // Punctuation-like
   colon: punct(":"),
 };
@@ -82,7 +96,7 @@ export const FUNCTION_DISPLAY: Record<string, string> = {
 
 export const ACCENTS: Record<string, AccentKind> = {
   hat: "hat", widehat: "widehat", bar: "bar", vec: "vec", overrightarrow: "overrightarrow",
-  overleftarrow: "overleftarrow", overrightharpoon: "overrightharpoon", overleftharpoon: "overleftharpoon", dot: "dot", ddot: "ddot", dddot: "dddot", tilde: "tilde",
+  overleftarrow: "overleftarrow", overrightharpoon: "overrightharpoon", overleftharpoon: "overleftharpoon", dot: "dot", ddot: "ddot", dddot: "dddot", ddddot: "ddddot", acute: "acute", grave: "grave", mathring: "mathring", tilde: "tilde",
   widetilde: "widetilde", check: "check", breve: "breve", overline: "overline",
   underline: "underline",
 };

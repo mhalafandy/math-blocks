@@ -443,3 +443,36 @@ equation tools (same as MathType). The engine is checked against MathType's own 
 SVG + PNG: Word then treats them like MathType's objects (simple selection frame), all versions
 draw them as vectors, and the source travels inside the EMF as a GDI comment, as MathType does
 with its MTEF data.
+
+## D-025 — One palette registry, support measured by tests, notation conventions as a setting
+
+**Status:** Accepted (Phase 1a of the palette work)
+
+**Context.** The palette had ~330 entries in groups, copies of entries to show them in two
+places, no record of which entries work in Word or Classic, and fixed Hughes-style spacecraft
+templates. Phase 0 (docs/PALETTE-AUDIT.md) found two LaTeX round-trip bugs and 84 missing items.
+
+**Decision.**
+- `app/src/lib/palette.ts` stays the single registry. Each item becomes one `PaletteEntry`
+  (`ENTRIES`, stable id `<group>.<item>`) with kind, categories (an entry can be in several),
+  aliases, Unicode, maths class, and the fastest way to type it (editor shortcut or snippet,
+  joined automatically from `editorShortcuts.ts` and `snippets.ts`). Duplicates are merged; old
+  favourite/recent keys resolve through `KEY_ALIASES`.
+- **Support is measured, never written by hand:** `palette.support.test.ts` computes MathLive /
+  Classic / OMML / round-trip support for every LaTeX an entry can insert into
+  `palette-support.json` and fails CI on any regression. `tools/palette-audit.ts` runs the same
+  code with the real Times New Roman and Symbol in the Windows CI job.
+- **Round trips keep the typed command when the class differs:** operators serialize by
+  character *and* class (⊥: `\perp` relation, `\bot` ordinary; `:` relation stays `:`, `\colon`
+  stays punctuation). An empty last matrix row is written `{}` so it is not read as a trailing
+  `\\`.
+- **Spacecraft notation is one setting** (Word style tab): convention Hughes / Schaub & Junkins /
+  Markley & Crassidis, and how physical vectors are drawn (bold with harpoon / bold with arrow /
+  arrow / bold). Entries carry their LaTeX per convention. Defaults follow Hughes: bold
+  with harpoon (`tools/notation-census.ts` counts forms in a document into a local report).
+- **Classic glyphs and MT Extra:** MathBlocks' EMF pictures contain only filled paths (glyph
+  outlines; no text records, no font references), so a font used while drawing is not needed to
+  display, print or save as PDF. MT Extra may therefore be used as a Classic source where
+  MathType uses it; STIX Two Math stays the fallback.
+- Fixed-size delimiters (`\bigl` … `\Biggl`) are not offered yet: the AST has no delimiter size and
+  OMML always stretches; they need a `size` on delimited nodes first.

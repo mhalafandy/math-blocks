@@ -80,7 +80,8 @@ function rowLatex(r: Row): string {
 function operatorCommand(char: string, opClass: string): string | undefined {
   const preferred = CHAR_TO_COMMAND.get(char);
   if (preferred && (SYMBOLS[preferred]?.type ?? opClass) === opClass) return preferred;
-  return CLASS_CHAR_TO_COMMAND.get(`${char}|${opClass}`) ?? preferred;
+  // No command of this class (a plain ":" relation is not \\colon): keep the character itself.
+  return CLASS_CHAR_TO_COMMAND.get(`${char}|${opClass}`) ?? (preferred && SYMBOLS[preferred] ? undefined : preferred);
 }
 
 function identChar(text: string): string {

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { DEFAULT_FAVORITES } from "./palette";
+import { DEFAULT_FAVORITES, setSpacecraftNotation, type Convention, type VectorStyle as SpacecraftVector } from "./palette";
 
 export type Theme = "system" | "light" | "dark";
 /** Tabs of the bottom panel under the equation canvas. */
@@ -53,6 +53,9 @@ interface Prefs {
   look: "classic" | "native";
   /** Size of Classic equations in points (MathType's default: 12). */
   equationSizePt: number;
+  /** Spacecraft palette notation: textbook convention and how physical vectors are drawn. */
+  spacecraftConvention: Convention;
+  spacecraftVector: SpacecraftVector;
 }
 
 export interface UpdateState {
@@ -127,6 +130,8 @@ const DEFAULT_PREFS: Prefs = {
   numberStyle: { open: "(", close: ")", chapter: false },
   look: "classic",
   equationSizePt: 12,
+  spacecraftConvention: "hughes",
+  spacecraftVector: "harpoon",
 };
 
 function loadPrefs(): Prefs {
@@ -181,3 +186,7 @@ export const useApp = create<AppState>((set, get) => ({
     toastTimer = setTimeout(() => set({ toast: null }), kind === "error" ? 6000 : 3000);
   },
 }));
+
+// The palette's spacecraft entries follow the notation preference.
+setSpacecraftNotation(useApp.getState().spacecraftConvention, useApp.getState().spacecraftVector);
+useApp.subscribe((s) => setSpacecraftNotation(s.spacecraftConvention, s.spacecraftVector));

@@ -1,3 +1,4 @@
+import { CONVENTIONS, VECTOR_STYLES, type Convention, type VectorStyle } from "../lib/palette";
 import type { MathNode, Row } from "@mathblocks/math-core";
 import { childRows } from "@mathblocks/math-core";
 import type { CompiledEquation } from "../lib/equation";
@@ -10,7 +11,7 @@ import { ClassicPreview } from "./ClassicPreview";
 const TABS: { id: BottomTab; label: string }[] = [
   { id: "latex", label: "LaTeX" },
   { id: "details", label: "Library" },
-  { id: "symbols", label: "Symbols" },
+  { id: "symbols", label: "Symbol index" },
   { id: "structure", label: "Structure" },
   { id: "style", label: "Word style" },
   { id: "omml", label: "OMML" },
@@ -128,12 +129,34 @@ function StylePanel() {
   const numberStyle = useApp((s) => s.numberStyle);
   const look = useApp((s) => s.look);
   const sizePt = useApp((s) => s.equationSizePt);
+  const convention = useApp((s) => s.spacecraftConvention);
+  const scVector = useApp((s) => s.spacecraftVector);
   const latex = useApp((s) => s.latex);
   const display = useApp((s) => s.display);
   const setPrefs = useApp((s) => s.setPrefs);
   const numberKey = `${numberStyle.open}${numberStyle.chapter ? "c" : ""}${numberStyle.close}`;
   return (
     <div className="form narrow">
+      <label>
+        Spacecraft notation
+        <select value={convention} onChange={(e) => setPrefs({ spacecraftConvention: e.target.value as Convention })} title="Which textbook's notation the Spacecraft palette uses">
+          {Object.entries(CONVENTIONS).map(([k, v]) => (
+            <option key={k} value={k}>
+              {v}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Physical vectors
+        <select value={scVector} onChange={(e) => setPrefs({ spacecraftVector: e.target.value as VectorStyle })} title="How the Spacecraft palette writes vectors (r, ω, h…)">
+          {Object.entries(VECTOR_STYLES).map(([k, v]) => (
+            <option key={k} value={k}>
+              {v}
+            </option>
+          ))}
+        </select>
+      </label>
       <label>
         Equations in Word
         <select value={look} onChange={(e) => setPrefs({ look: e.target.value as "classic" | "native" })}>

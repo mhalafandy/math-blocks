@@ -25,6 +25,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Fonts for the palette support test (Liberation Serif = Times New Roman metrics)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fonts-liberation
       - run: pnpm test
       - run: pnpm typecheck
       - run: pnpm --filter @mathblocks/app build

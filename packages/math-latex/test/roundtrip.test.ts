@@ -49,3 +49,10 @@ describe("round trip regressions (palette audit)", () => {
     expect(serializeLatex(parseLatex("\\leq").root)).toBe("\\leq");
   });
 });
+
+describe("operator class survives serialization", () => {
+  it("keeps a plain colon (relation) distinct from \\colon (punctuation)", () => {
+    expect(serializeLatex(parseLatex("q_{1:3}").root)).toBe("q_{1:3}");
+    expect(serializeLatex(parseLatex("f\\colon A\\to B").root)).toContain("\\colon");
+  });
+});
