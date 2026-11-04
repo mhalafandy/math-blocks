@@ -149,7 +149,10 @@ namespace MathBlocks.WordConnector
             int replaced = 0;
             var missing = new List<object>();
             var undo = _app.UndoRecord;
-            undo.StartCustomRecord(undoLabel);
+            // Inside a document-wide operation the operation's undo record covers every batch.
+            var ownUndo = !undo.IsRecordingCustomRecord;
+            if (ownUndo) undo.StartCustomRecord(undoLabel);
+            var clock = System.Diagnostics.Stopwatch.StartNew();
             try
             {
                 foreach (var o in list)
@@ -174,9 +177,9 @@ namespace MathBlocks.WordConnector
             }
             finally
             {
-                undo.EndCustomRecord();
+                if (ownUndo) undo.EndCustomRecord();
             }
-            Log.Info("replaceMany in " + doc.Name + ": " + replaced + " replaced, " + missing.Count + " missing");
+            Log.Info("replaceMany in " + doc.Name + ": " + replaced + " replaced, " + missing.Count + " missing, " + clock.ElapsedMilliseconds + " ms (" + (clock.ElapsedMilliseconds / Math.Max(1, replaced)) + " ms each)");
             return new Dictionary<string, object> { ["replaced"] = replaced, ["missing"] = missing };
         }
 

@@ -1,3 +1,4 @@
+import { backupIfMany } from "./docOps";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { askConfirm } from "../components/Dialogs";
 import { activateEquation, addinSupports, connector } from "./connector";
@@ -132,6 +133,7 @@ export async function convertAllLatex(document?: string) {
       const { flatOpc } = await buildInsertion(latex, display && it.alone, profile, undefined, undefined, display);
       items.push({ start: it.start, end: it.end, expect: it.text, flatOpc });
     }
+    await backupIfMany(found.fullName, items.length);
     const r = items.length ? await connector.request("replaceRanges", { document: found.fullName, items, undoLabel: "Convert LaTeX to equations" }, 600_000) : { replaced: 0, skipped: 0 };
     notify(
       `Converted ${r.replaced} LaTeX expression(s)${bad ? `; ${bad} with errors left as text` : ""}${r.skipped ? `; ${r.skipped} changed meanwhile and were skipped` : ""}`,

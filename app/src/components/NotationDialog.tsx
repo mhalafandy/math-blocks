@@ -72,7 +72,7 @@ export function NotationDialog() {
     try {
       if (index) {
         const r = await rewriteDocument(index, index.equations, transform, "Change notation");
-        notify(`Changed the notation in ${r.equations} equation(s)${r.libraryEquations ? ` and ${r.libraryEquations} library equation(s)` : ""}. One Ctrl+Z in Word undoes it.`);
+        notify(`Changed the notation in ${r.equations} equation(s)${r.libraryEquations ? ` and ${r.libraryEquations} library equation(s)` : ""}. One Ctrl+Z in Word undoes it.${r.note}`);
       } else {
         const app = useApp.getState();
         app.setLatex(transform(app.latex), "external");
@@ -97,7 +97,7 @@ export function NotationDialog() {
     try {
       if (index) {
         const r = await rewriteDocument(index, index.equations, transform, `Consistent ${inc.letter}`);
-        notify(`${inc.letter} is now written one way in ${r.equations} equation(s)${r.libraryEquations ? ` and ${r.libraryEquations} library equation(s)` : ""}`);
+        notify(`${inc.letter} is now written one way in ${r.equations} equation(s)${r.libraryEquations ? ` and ${r.libraryEquations} library equation(s)` : ""}.${r.note}`);
         setIndex(await buildDocumentIndex());
       } else {
         const app = useApp.getState();
@@ -118,7 +118,7 @@ export function NotationDialog() {
     try {
       if (index) {
         const r = await rewriteDocument(index, index.equations, transform, "Transpose form");
-        notify(`Transposes written as ${TRANSPOSE_STYLE_LABEL[tTo]} in ${r.equations} equation(s)${r.libraryEquations ? ` and ${r.libraryEquations} library equation(s)` : ""}`);
+        notify(`Transposes written as ${TRANSPOSE_STYLE_LABEL[tTo]} in ${r.equations} equation(s)${r.libraryEquations ? ` and ${r.libraryEquations} library equation(s)` : ""}.${r.note}`);
         setIndex(await buildDocumentIndex());
       } else {
         const app = useApp.getState();

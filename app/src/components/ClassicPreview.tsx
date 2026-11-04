@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { parseLatex } from "@mathblocks/math-latex";
-import { CLASSIC, renderSvg } from "@mathblocks/math-render";
-import { hasClassicFonts, loadFonts } from "../lib/render";
+import { renderSvg } from "@mathblocks/math-render";
+import { classicStyle, hasClassicFonts, loadFonts, notationProfile } from "../lib/render";
 
 /** The equation as the MathBlocks engine will draw it in Word (Classic style). */
 export function ClassicPreview({ latex, display, sizePt }: { latex: string; display: boolean; sizePt: number }) {
@@ -16,7 +16,7 @@ export function ClassicPreview({ latex, display, sizePt }: { latex: string; disp
         if (!live) return;
         setReal(await hasClassicFonts());
         // Shown at twice the size for legibility.
-        setSvg(renderSvg(parseLatex(latex).root, { fonts, style: CLASSIC, display, sizePt: sizePt * 2 }).svg);
+        setSvg(renderSvg(parseLatex(latex).root, { fonts, style: classicStyle(), display, sizePt: sizePt * 2, notation: notationProfile() }).svg);
       } catch {
         setSvg(null);
       }

@@ -32,6 +32,18 @@ vi.mock("./connector", () => ({
           return { documents: [{ name: "thesis.docx", fullName: "C:\\thesis.docx", instances: word.instances }] };
         case "replaceMany":
           return { replaced: (params.items as unknown[]).length, missing: [] };
+        case "backupDocument":
+          return { path: "C:\\backups\\thesis.xml" };
+        case "beginOperation":
+          return { ok: true };
+        case "operationProgress":
+          return { cancelled: false };
+        case "endOperation":
+          return { ms: 10 };
+        case "getRegistry":
+          return { xml: null, fullName: "C:\\thesis.docx" };
+        case "setRegistry":
+          return { ok: true };
         default:
           throw new Error(`unexpected ${method}`);
       }

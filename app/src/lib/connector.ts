@@ -220,7 +220,29 @@ export async function activateEquation(params: ConnectorToApp["equationActivated
   const linked = await import("./linking").then((m) => m.openLinkedForEditing(params.tag)).catch(() => false);
   if (!linked) {
     useLibraryClose();
-    app.setLatex(serializeLatex(read.root), "external");
+    let latex = serializeLatex(read.root);
+    if (read.kind === "native") {
+      // Native equations keep their notation kinds in the registry; an edit in Word is never lost silently.
+      const { sourceOf, recordNativeSources } = await import("./nativeSources");
+      const src = await sourceOf(undefined, params.tag, params.flatOpc).catch(() => ({ state: "none" }) as const);
+      if (src.state === "same") latex = src.latex;
+      else if (src.state === "edited") {
+        app.setNotice({
+          text: "This equation was edited directly in Word since MathBlocks wrote it; its notation kinds (\\pvec…) are not in Word's version.",
+          actions: [
+            { label: "Keep Word's edit", run: () => void recordNativeSources(undefined, [{ tag: params.tag, latex: src.wordLatex }]).then(() => useApp.getState().setNotice(null)) },
+            {
+              label: "Restore MathBlocks version",
+              run: () => {
+                useApp.getState().setLatex(src.latex, "external");
+                useApp.getState().setNotice(null);
+              },
+            },
+          ],
+        });
+      }
+    }
+    app.setLatex(latex, "external");
     app.setEditing({ tag: params.tag, adopted: !!params.adopted });
   }
   app.setDisplay(read.display || !!params.number);

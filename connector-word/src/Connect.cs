@@ -103,6 +103,7 @@ namespace MathBlocks.WordConnector
             "listMathTypeParagraphs", "replaceParagraphs", "activateObject",
             "numberEquation", "unnumberEquation", "listNumbered", "insertReference", "updateNumbers",
             "showWordMenu", "selectionInfo", "findLatex", "replaceRanges", "equationToText",
+            "backupDocument", "beginOperation", "operationProgress", "endOperation",
         };
 
         // ------------------------------------------------------------ ribbon
@@ -449,6 +450,10 @@ namespace MathBlocks.WordConnector
                     case "replaceEquation": result = _ops.ReplaceEquation(p); break;
                     case "listInstances": result = _ops.ListInstances(p); break;
                     case "replaceMany": result = _ops.ReplaceMany(p); break;
+                    case "backupDocument": result = _ops.BackupDocument(p); break;
+                    case "beginOperation": result = _ops.BeginOperation(p); break;
+                    case "operationProgress": result = _ops.OperationProgress(p); break;
+                    case "endOperation": result = _ops.EndOperation(p); break;
                     case "retag": result = _ops.Retag(p); break;
                     case "selectInstance": result = _ops.SelectInstance(p); break;
                     case "getRegistry": result = _ops.GetRegistry(p); break;
