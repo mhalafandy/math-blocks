@@ -15,7 +15,7 @@ describe("export", () => {
     expect(tex).toContain("\\begin{equation}\n  E=mc^2\n  \\tag{A.1}\\label{eq:A.1}\n\\end{equation}");
     expect(tex).toContain("% inline: $x$");
     expect(tex).toContain("\\[\n  \\overrightharpoon{\\mathbf{c}}=0\n\\]");
-    expect(tex).toMatch(/\\providecommand\{\\overrightharpoon\}/);
+    expect(tex).toMatch(/\\newcommand\{\\overrightharpoon\}/);
     expect(tex.trim().endsWith("\\end{document}")).toBe(true);
   });
 });
