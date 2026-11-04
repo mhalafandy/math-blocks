@@ -1,5 +1,5 @@
 import type { AccentKind, MathNode, MathVariant, Matrix, MatrixKind, Row } from "@mathblocks/math-core";
-import { isRunNode } from "@mathblocks/math-core";
+import { expandNotation, isRunNode, type NotationProfile } from "@mathblocks/math-core";
 import { TUNED_PROFILE, type StyleProfile } from "./style";
 import { el, NS_M, NS_W, val } from "./xml";
 
@@ -9,6 +9,8 @@ export interface OmmlOptions {
   display?: boolean;
   /** Add xmlns declarations on the root element (for standalone use). */
   standalone?: boolean;
+  /** Notation profile for kind objects (\pvec…); default: Hughes. */
+  notation?: NotationProfile;
 }
 
 export const INTEGRALS = new Set(["∫", "∬", "∭", "∮", "∯", "∰"]);
@@ -94,6 +96,7 @@ interface RunOptions {
  * word/document.xml or a Flat OPC package passed to Range.InsertXML.
  */
 export function toOmml(root: Row, options: OmmlOptions = {}): string {
+  root = expandNotation(root, options.notation);
   const w = new OmmlWriter(options.profile ?? TUNED_PROFILE);
   const ns = options.standalone ? { "xmlns:m": NS_M, "xmlns:w": NS_W } : null;
   const math = el("m:oMath", options.display ? null : ns, w.row(root));
@@ -160,6 +163,9 @@ class OmmlWriter {
 
   private node(n: MathNode): string {
     switch (n.kind) {
+      case "notation":
+        // Normally expanded in toOmml; a stray kind object uses the default profile.
+        return this.row(expandNotation({ kind: "row", children: [n] }));
       case "row":
         return this.row(n);
       case "ident":

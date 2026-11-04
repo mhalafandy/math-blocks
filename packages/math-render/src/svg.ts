@@ -1,4 +1,4 @@
-import type { Row } from "@mathblocks/math-core";
+import type { NotationProfile, Row } from "@mathblocks/math-core";
 import { layout, type Box } from "./layout";
 import type { FontSet } from "./fonts";
 import { CLASSIC, type RenderStyle } from "./style";
@@ -11,6 +11,8 @@ export interface RenderOptions {
   sizePt?: number;
   /** Extra margin around the ink, em. */
   margin?: number;
+  /** Notation profile for kind objects (\pvec…); default: Hughes. */
+  notation?: NotationProfile;
 }
 
 /** Glyph outline command (opentype.js form, y down). */
@@ -64,7 +66,7 @@ function pathData(commands: { type: string; x?: number; y?: number; x1?: number;
 /** Typesets an equation into a standalone SVG of glyph outlines (no fonts needed to view it). */
 export function renderSvg(root: Row, o: RenderOptions): RenderResult {
   const style = o.style ?? CLASSIC;
-  const box = layout(root, { fonts: o.fonts, style, display: o.display ?? true });
+  const box = layout(root, { fonts: o.fonts, style, display: o.display ?? true, notation: o.notation });
   const m = o.margin ?? 0.04;
   const sizePt = o.sizePt ?? 12;
   const w = box.w + 2 * m;

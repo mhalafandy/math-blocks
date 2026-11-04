@@ -29,6 +29,7 @@ import {
   type SymbolDef,
 } from "./commands";
 import { tokenize, type Token } from "./tokenizer";
+import { KIND_BY_MACRO } from "@mathblocks/math-core";
 
 export interface Diagnostic {
   severity: "error" | "warning";
@@ -335,6 +336,31 @@ class Parser {
 
     const accent = ACCENTS[name];
     if (accent) return { kind: "accent", accent, body: this.parseArg(t) };
+
+    // Notation kinds: \pvec[P/O]{r}, \dcm{b}{a}, \T
+    const kind = KIND_BY_MACRO.get(name);
+    if (kind) {
+      let frames: Row | undefined;
+      const n = this.peek();
+      if (kind.args > 0 && n.type === "char" && n.value === "[") {
+        this.next();
+        frames = this.parseRow({ stopChar: "]" });
+        const close = this.peek();
+        if (close.type === "char" && close.value === "]") this.next();
+        else this.error(`Missing ']' after the frame label of \\${name}`, close);
+      }
+      const args: Row[] = [];
+      for (let i = 0; i < kind.args; i++) args.push(this.parseArg(t));
+      const node: MathNode = { kind: "notation", name: kind.id, args, ...(frames ? { frames } : {}) };
+      // An index written on the base (\pvec{b_1}) is an ordinary script on the kind: the kind's
+      // style (accent, bold) covers the letter only.
+      const only = kind.args === 1 && args[0]!.children.length === 1 ? args[0]!.children[0]! : null;
+      if (only && only.kind === "scripts" && only.base.children.length === 1) {
+        args[0] = only.base;
+        return { kind: "scripts", base: row(node), ...(only.sub ? { sub: only.sub } : {}), ...(only.sup ? { sup: only.sup } : {}) };
+      }
+      return node;
+    }
 
     const font = FONTS[name];
     if (font) {

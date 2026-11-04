@@ -1,4 +1,5 @@
 import type { MathNode, MathVariant, Row } from "@mathblocks/math-core";
+import { KIND_BY_ID } from "@mathblocks/math-core";
 import {
   CHAR_TO_COMMAND,
   CLASS_CHAR_TO_COMMAND,
@@ -125,6 +126,12 @@ function scriptsLatex(sub: Row | undefined, sup: Row | undefined): string {
 
 function nodeLatex(n: MathNode): string {
   switch (n.kind) {
+    case "notation": {
+      const def = KIND_BY_ID.get(n.name);
+      const macro = def?.macro ?? n.name;
+      const opt = n.frames ? `[${rowLatex(n.frames)}]` : "";
+      return `\\${macro}${opt}${n.args.map((a) => `{${rowLatex(a)}}`).join("")}`;
+    }
     case "row":
       return braced(n);
     case "ident":
