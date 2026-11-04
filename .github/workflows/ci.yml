@@ -30,6 +30,19 @@ jobs:
       - run: pnpm test
       - name: Notation kinds round trip in the real editor (MathLive, headless Chromium)
         run: pnpm exec playwright install --with-deps chromium && pnpm tsx tools/kinds-roundtrip.ts
+      - name: Compile the .tex export of every notation kind under every preset (Tectonic)
+        run: |
+          curl --proto '=https' --tlsv1.2 -fsSL https://drop-sh.fullyjustified.net | sh
+          pnpm tsx tools/tex-export-check.ts tex-check
+          cd tex-check
+          status=0
+          for f in *-plain.tex *-rename.tex; do
+            if ../tectonic --keep-logs "$f" > "$f.out" 2>&1; then echo "ok    $f"; else echo "FAIL  $f (must compile)"; tail -30 "$f.out"; status=1; fi
+          done
+          for f in *-clash.tex; do
+            if ../tectonic "$f" > "$f.out" 2>&1; then echo "FAIL  $f compiled although \\diff clashes with diffcoeff"; status=1; else echo "ok    $f fails loudly: $(grep -m1 -o 'Command .* already defined' "$f.out" || echo error)"; fi
+          done
+          exit $status
       - run: pnpm typecheck
       - run: pnpm --filter @mathblocks/app build
 
