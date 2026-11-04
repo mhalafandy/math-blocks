@@ -36,7 +36,29 @@ namespace MathBlocks.WordConnector
             var path = Path.Combine(dir, name + " " + DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + ".xml");
             File.WriteAllText(path, doc.WordOpenXML, System.Text.Encoding.UTF8);
             Log.Info("backup of " + doc.Name + " → " + path);
+            PruneBackups(dir, name);
             return new Dictionary<string, object> { ["path"] = path };
+        }
+
+        /// <summary>Keeps a document's newest 20 backups and every backup younger than 30 days (whichever keeps more).</summary>
+        private static void PruneBackups(string dir, string name)
+        {
+            try
+            {
+                var files = new List<FileInfo>(new DirectoryInfo(dir).GetFiles(name + " ????-??-?? ??-??-??.xml"));
+                files.Sort((a, b) => b.LastWriteTimeUtc.CompareTo(a.LastWriteTimeUtc));
+                var cutoff = DateTime.UtcNow.AddDays(-30);
+                for (int i = 20; i < files.Count; i++)
+                {
+                    if (files[i].LastWriteTimeUtc >= cutoff) continue;
+                    files[i].Delete();
+                    Log.Info("backup removed (older than 30 days, beyond the newest 20): " + files[i].Name);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("pruning backups", ex);
+            }
         }
 
         /// <summary>Opens one undo record for the whole operation and shows the progress window.</summary>

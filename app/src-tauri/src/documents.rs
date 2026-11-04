@@ -90,6 +90,19 @@ pub fn document_open(path: String) -> Result<(), String> {
     Ok(())
 }
 
+/// Opens the folder with the automatic document backups (%LOCALAPPDATA%\MathBlocks\backups).
+#[tauri::command]
+pub fn backups_open() -> Result<String, String> {
+    let base = std::env::var("LOCALAPPDATA").map_err(|_| "LOCALAPPDATA is not set".to_string())?;
+    let dir = std::path::Path::new(&base).join("MathBlocks").join("backups");
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    #[cfg(windows)]
+    {
+        std::process::Command::new("explorer").arg(&dir).spawn().map_err(|e| e.to_string())?;
+    }
+    Ok(dir.to_string_lossy().into_owned())
+}
+
 fn urlencoding_decode(s: &str) -> String {
     let b = s.as_bytes();
     let mut out = Vec::with_capacity(b.len());
