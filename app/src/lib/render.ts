@@ -62,6 +62,8 @@ export interface PictureSource {
   fallback?: "mtextra" | "stix" | "both";
   /** Library block of a linked copy: a pasted picture that lost its wrapper stays linked. */
   block?: string;
+  /** The equation's ID (mb1|block|instance): identifies it when its picture title is edited or lost. */
+  tag?: string;
 }
 
 /** Which fallback font a drawing used. */
@@ -123,12 +125,12 @@ export function classicStyle(): RenderStyle {
 /** Notation profile of the current document/thesis. */
 export const notationProfile = () => useApp.getState().notationProfile;
 
-export async function renderPicture(latex: string, display: boolean, sizePt: number, mode: PictureMode = display ? "display" : "inline", withPng = false, extra: { block?: string | null } = {}): Promise<Picture> {
+export async function renderPicture(latex: string, display: boolean, sizePt: number, mode: PictureMode = display ? "display" : "inline", withPng = false, extra: { block?: string | null; tag?: string | null } = {}): Promise<Picture> {
   const fonts = await loadFonts();
   const r = renderSvg(parseLatex(latex).root, { fonts, style: classicStyle(), display, sizePt, notation: notationProfile() });
   const fallback = fallbackOf(r.sources);
   if (fallback === "stix" && !fonts.extra && fonts.symbol) warnNoExtra();
-  const source: PictureSource = { latex, mode, style: CLASSIC.id, sizePt, ...(fallback ? { fallback } : {}), ...(extra.block ? { block: extra.block } : {}) };
+  const source: PictureSource = { latex, mode, style: CLASSIC.id, sizePt, ...(fallback ? { fallback } : {}), ...(extra.block ? { block: extra.block } : {}), ...(extra.tag ? { tag: extra.tag } : {}) };
   const emf = renderEmf(r, { comment: JSON.stringify(source) });
   const png = withPng ? await rasterise(r) : new Uint8Array();
   return { ...r, png, emf };

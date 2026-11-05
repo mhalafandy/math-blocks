@@ -33,20 +33,22 @@ namespace MathBlocks.WordConnector
             var doc = ActiveDocument();
             var sel = _app.Selection;
             var result = new Dictionary<string, object> { ["document"] = doc.FullName, ["rect"] = RectOf(sel.Range) };
-            var cc = WrapperAt(doc, sel.Range);
+            // A titled picture, a picture recognised by its alt text / source, or a wrapper (native).
+            var cc = EquationAt(doc, sel.Range);
             if (cc == null)
             {
-                // A pasted MathBlocks picture that lost its wrapper (Ctrl+Alt+M on it): wrap it again.
+                // A floating MathBlocks picture (pasted): back in line and identified.
                 var shape = UnwrappedPictureAt(doc, sel.Range, out _);
                 if (shape != null)
                 {
                     MathBlocksData(shape.Range.WordOpenXML, out var json);
                     var block = json != null ? Regex.Match(json, "\"block\"\\s*:\\s*\"([0-9A-Za-z]{16})\"").Groups[1].Value : null;
                     var tag = AdoptPicture(doc, shape, block);
-                    foreach (Word.ContentControl c in doc.SelectContentControlsByTag(tag)) cc = c;
+                    var again = FindByTag(doc, tag);
+                    if (again.Count > 0) cc = again[0];
                 }
             }
-            if (cc != null && IsMathBlocks(cc))
+            if (cc != null)
             {
                 var problem = PrepareRead(doc, ref cc, "Ctrl+Alt+M", out var fingerprint);
                 result["tag"] = cc.Tag;
@@ -225,6 +227,7 @@ namespace MathBlocks.WordConnector
                             r.Text = "";
                             var at = doc.Range(start, start);
                             at.InsertXML(flatOpc);
+                            FinishInserted(doc, flatOpc);
                         }
                         else if (item.TryGetValue("text", out var t) && t is string text) r.Text = text;
                         replaced++;
@@ -235,7 +238,6 @@ namespace MathBlocks.WordConnector
                         skipped++;
                     }
                 }
-                foreach (var cc in MathBlocksControls(doc)) Secure(cc);
             }
             finally
             {
@@ -259,10 +261,19 @@ namespace MathBlocks.WordConnector
             undo.StartCustomRecord("Equation to LaTeX");
             try
             {
-                cc.LockContents = false;
-                cc.LockContentControl = false;
-                int at = Math.Max(0, cc.Range.Start - 1);
-                cc.Delete(true);
+                int at;
+                if (cc.IsPicture)
+                {
+                    at = cc.Before;
+                    cc.Range.Delete();
+                }
+                else
+                {
+                    cc.Control.LockContents = false;
+                    cc.Control.LockContentControl = false;
+                    at = Math.Max(0, cc.Control.Range.Start - 1);
+                    cc.Control.Delete(true);
+                }
                 RemoveEmptyMath(doc, at);
                 var r = doc.Range(at, at);
                 r.InsertAfter(text);

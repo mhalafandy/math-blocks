@@ -124,33 +124,121 @@ namespace MathBlocks.WordConnector
             return null;
         }
 
-        /// <summary>Wraps a MathBlocks picture in a new content control (new instance id); returns the tag.</summary>
+        /// <summary>
+        /// A MathBlocks picture that had no ID title (pasted or dropped): its ID — the one in its hidden
+        /// source when there is one (its identity is restored), else a new one. No wrapper: the picture
+        /// is the equation. Returns the tag.
+        /// </summary>
         internal string AdoptPicture(Word.Document doc, Word.InlineShape shape, string blockId = null)
         {
-            var tag = "mb1|" + (string.IsNullOrEmpty(blockId) ? "-" : blockId) + "|" + RandomId(12);
             var undo = _app.UndoRecord;
             var own = !undo.IsRecordingCustomRecord;
             if (own) undo.StartCustomRecord("Restore MathBlocks equation");
+            string tag;
             try
             {
-                object range = shape.Range;
-                var cc = doc.ContentControls.Add(Word.WdContentControlType.wdContentControlRichText, ref range);
-                cc.Tag = tag;
-                cc.Title = "MathBlocks equation";
-                Secure(cc);
+                tag = EnsurePictureTag(shape);
+                if (tag == null)
+                {
+                    tag = "mb1|" + (string.IsNullOrEmpty(blockId) ? "-" : blockId) + "|" + RandomId(12);
+                    shape.Title = tag;
+                }
+                // A copy keeps its source's ID: the original keeps it, this one gets its own.
+                if (FindByTag(doc, tag).Count > 1) ResolveDuplicates(doc, tag);
+                tag = TitleOf(shape);
             }
             finally
             {
                 if (own) undo.EndCustomRecord();
             }
-            Log.Info("re-wrapped a pasted MathBlocks picture as " + tag);
+            Log.Info("pasted MathBlocks picture identified as " + tag);
             return tag;
         }
 
         /// <summary>
-        /// Repair equations: copies with duplicated instance ids get new ids, MathBlocks pictures that
-        /// lost their wrapper are wrapped again, numbered equations without a bookmark get one.
-        /// Reports what it found (also for diagnosing which paste modes keep what).
+        /// Older documents: a Classic equation inside a wrapper becomes a titled picture (the wrapper's
+        /// ID moves to the picture's title, the wrapper goes). Native equations and MathType objects
+        /// are left alone. Returns how many.
+        /// </summary>
+        internal int ConvertWrappedPictures(Word.Document doc, bool dry)
+        {
+            int n = 0;
+            foreach (var cc in WrapperControls(doc))
+            {
+                try
+                {
+                    if (UnwrapClassic(doc, cc, dry, "repair")) n++;
+                }
+                catch (COMException ex)
+                {
+                    Log.Error("repair: could not convert a wrapped equation", ex);
+                }
+            }
+            return n;
+        }
+
+        /// <summary>
+        /// A wrapper holding exactly one Classic picture (and nothing else): the picture takes the
+        /// wrapper's tag as its title and the wrapper goes. Native equations keep their wrapper.
+        /// </summary>
+        internal bool UnwrapClassic(Word.Document doc, Word.ContentControl cc, bool dry, string why)
+        {
+            var r = cc.Range;
+            if (r.OMaths.Count > 0) return false; // a native equation keeps its wrapper
+            var c = Inspect(doc, new Eq(cc));
+            if (c.PictureSources.Count != 1 || EquationIdentity.Problem(c) != null) return false;
+            Word.InlineShape picture = null;
+            foreach (Word.InlineShape s in r.InlineShapes)
+                if (PictureSource(s.Range.WordOpenXML) != null) { picture = s; break; }
+            if (picture == null) return false;
+            if (dry) return true;
+            var tag = cc.Tag;
+            Unlock(cc);
+            picture.Title = tag;
+            cc.Delete(false);
+            Log.Info(why + ": the wrapped Classic equation " + tag + " is now a titled picture");
+            return true;
+        }
+
+        private static readonly System.Text.RegularExpressions.Regex XmlTagRe =
+            new System.Text.RegularExpressions.Regex("w:tag w:val=\"(mb1\\|[^\"]+)\"", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        /// <summary>
+        /// After inserting app content (Flat OPC): the Classic equations it brought become titled pictures
+        /// (no wrapper), a picture inserted without a wrapper gets its ID title, native wrappers are secured.
+        /// </summary>
+        internal void FinishInserted(Word.Document doc, string flatOpc, int at = -1, string tag = null)
+        {
+            if (!flatOpc.Contains("<w:sdt"))
+            {
+                if (tag != null && at >= 0) TitleInsertedPicture(doc, at, tag);
+                return;
+            }
+            var tags = new HashSet<string>();
+            foreach (System.Text.RegularExpressions.Match m in XmlTagRe.Matches(flatOpc)) tags.Add(m.Groups[1].Value);
+            if (tag != null) tags.Add(tag);
+            foreach (var t in tags)
+            {
+                foreach (var e in FindByTag(doc, t))
+                {
+                    if (e.IsPicture) continue;
+                    try
+                    {
+                        if (!UnwrapClassic(doc, e.Control, false, "insert")) Secure(e.Control);
+                    }
+                    catch (COMException ex)
+                    {
+                        Log.Error("insert: could not finish " + t, ex);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Repair equations: floating pictures back in line, wrappers that grew split, wrapped Classic
+        /// equations converted to titled pictures, pictures without ID identified (from their hidden
+        /// source), copies given their own ID (originals keep theirs), numbered copies bookmarked.
+        /// Native equations and MathType objects are left alone. Reports what it found.
         /// </summary>
         public Dictionary<string, object> RepairEquations(Dictionary<string, object> p)
         {
@@ -160,8 +248,8 @@ namespace MathBlocks.WordConnector
             var renamed = new List<object>();
             var wrapped = new List<object>();
             var splitReport = new List<object>();
-            int split = 0, secured = 0, inlined = 0;
-            int wrappedOk = 0, plainPictures = 0, bookmarks = 0;
+            int split = 0, unlocked = 0, inlined = 0, converted = 0;
+            int ok = 0, plainPictures = 0, bookmarks = 0;
             bool screen = _app.ScreenUpdating;
             var undo = _app.UndoRecord;
             var own = !dry && !undo.IsRecordingCustomRecord;
@@ -169,52 +257,67 @@ namespace MathBlocks.WordConnector
             try
             {
                 _app.ScreenUpdating = false;
-                // Pasted pictures that came in floating (Word's paste setting): back in line first.
-                inlined = InlineFloatingPictures(doc, dry);
-                // Wrappers that grew (several equations, text, nested wrappers): one wrapper per equation again.
+                // Pasted pictures that came in floating: back in line first.
+                inlined = dry ? InlineFloatingPictures(doc, true) : InlineFloatingNow(doc);
+                // Wrappers that grew (several equations, text, nested wrappers): one equation each again.
                 split = SplitWrappers(doc, dry, splitReport);
-                if (dry)
-                {
-                    var seen = new HashSet<string>(StringComparer.Ordinal);
-                    foreach (var cc in MathBlocksControls(doc)) if (!seen.Add(cc.Tag)) renamed.Add(new Dictionary<string, object> { ["from"] = cc.Tag, ["to"] = "" });
-                }
-                else foreach (var pair in Dedupe(doc, true)) renamed.Add(pair);
+                // Older documents: wrapped Classic equations become titled pictures.
+                converted = ConvertWrappedPictures(doc, dry);
+                // Pictures with MathBlocks data but no ID title: identified.
                 var shapes = new List<Word.InlineShape>();
                 foreach (Word.InlineShape s in doc.InlineShapes) shapes.Add(s);
                 foreach (var s in shapes)
                 {
-                    if (InsideMathBlocksControl(s.Range))
+                    if (InsideMathBlocksControl(s.Range) || IsTag(TitleOf(s)))
                     {
-                        wrappedOk++;
+                        ok++;
                         continue;
                     }
-                    var how = MathBlocksData(s.Range.WordOpenXML, out var json);
+                    var how = MathBlocksData(s.Range.WordOpenXML, out _);
                     if (how == null)
                     {
                         plainPictures++;
                         continue;
                     }
-                    var block = json != null ? Regex.Match(json, "\"block\"\\s*:\\s*\"([0-9A-Za-z]{16})\"").Groups[1].Value : null;
-                    var tag = dry ? "" : AdoptPicture(doc, s, block);
-                    wrapped.Add(new Dictionary<string, object> { ["tag"] = tag, ["source"] = how });
+                    var tag = dry ? "" : EnsurePictureTag(s);
+                    wrapped.Add(new Dictionary<string, object> { ["tag"] = tag ?? "", ["source"] = how });
                 }
+                if (dry)
+                {
+                    var seen = new HashSet<string>(StringComparer.Ordinal);
+                    foreach (var e in AllEquations(doc)) if (!seen.Add(e.Tag)) renamed.Add(new Dictionary<string, object> { ["from"] = e.Tag, ["to"] = "" });
+                }
+                else foreach (var pair in ResolveDuplicates(doc)) renamed.Add(pair);
                 bookmarks = BookmarkNumberedEquations(doc, dry);
-                if (!dry) secured = SecureAll(doc);
+                if (!dry) unlocked = UnlockAll(doc);
             }
             finally
             {
                 _app.ScreenUpdating = screen;
                 if (own) undo.EndCustomRecord();
             }
-            Log.Info("repair in " + doc.Name + ": " + inlined + " floating picture(s) put in line, " + split + " wrapper(s) split, " + renamed.Count + " new ids, " + wrapped.Count + " re-wrapped, " + bookmarks + " bookmarks, " + secured + " unlocked, " + plainPictures + " other pictures");
+            // Left untouched, reported: native Word equations (they keep their wrapper) and MathType objects.
+            int native = 0, mathType = 0;
+            try
+            {
+                foreach (var cc in WrapperControls(doc)) if (cc.Range.OMaths.Count > 0) native++;
+                mathType = CountMathType(doc.Content);
+            }
+            catch (COMException)
+            {
+            }
+            Log.Info("repair in " + doc.Name + (dry ? " (dry run)" : "") + ": " + inlined + " floating picture(s) put in line, " + split + " wrapper(s) split, " + converted + " wrapped Classic equation(s) converted, " + wrapped.Count + " picture(s) identified, " + renamed.Count + " copies given their own ID, " + bookmarks + " bookmarks, " + unlocked + " unlocked, " + plainPictures + " other pictures; untouched: " + native + " native, " + mathType + " MathType");
             return new Dictionary<string, object>
             {
                 ["document"] = doc.FullName,
                 ["renamed"] = renamed,
                 ["split"] = splitReport,
                 ["inlined"] = inlined,
+                ["converted"] = converted,
+                ["native"] = native,
+                ["mathType"] = mathType,
                 ["wrapped"] = wrapped,
-                ["wrappedOk"] = wrappedOk,
+                ["wrappedOk"] = ok,
                 ["bookmarks"] = bookmarks,
                 ["otherPictures"] = plainPictures,
             };
@@ -228,7 +331,7 @@ namespace MathBlocks.WordConnector
             doc.Bookmarks.ShowHidden = true;
             try
             {
-                foreach (var cc in MathBlocksControls(doc))
+                foreach (var cc in AllEquations(doc))
                 {
                     var para = cc.Range.Paragraphs[1];
                     if (!HasNumberField(para.Range)) continue;
@@ -236,7 +339,7 @@ namespace MathBlocks.WordConnector
                     foreach (Word.Bookmark bm in para.Range.Bookmarks)
                         if (bm.Name.StartsWith(BookmarkPrefix, StringComparison.Ordinal) || bm.Name.StartsWith(MathTypeBookmarkPrefix, StringComparison.Ordinal)) has = true;
                     if (has) continue;
-                    int numStart = cc.Range.End + 1;
+                    int numStart = cc.After;
                     while (numStart < para.Range.End - 1 && doc.Range(numStart, numStart + 1).Text == "\t") numStart++;
                     if (numStart >= para.Range.End - 1) continue;
                     if (dry)

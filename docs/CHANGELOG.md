@@ -25,6 +25,29 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Changed (round 5 — hybrid equation identity)
+- **A Classic equation is now just a picture** (like a MathType equation): no content control. Its ID
+  (`mb1|block|instance`) is the picture's title; the hidden source in the EMF also carries the ID,
+  and the alt text keeps the LaTeX. Select, Delete, Cut, Copy, paste, drag behave exactly as for a
+  picture; text can no longer end up "inside" an equation.
+- **Native Word equations keep an unlocked wrapper** (OMML has no place for an ID) with the caret
+  guard and the self-healing checks.
+- **Copies, not originals, get a new ID.** When equations share an ID, the one whose paragraph holds
+  the number bookmark (so the references) keeps it; otherwise the earliest; the decision is logged.
+  Checked when a document opens, after a paste/drop (selection change, only near the selection, only
+  when the picture or control count changed), and before every read and write.
+- **Floating pictures go back in line automatically** as soon as they are detected (open, selection,
+  paste, Repair), one undo step; right-clicking a floating equation opens it directly.
+- **Edited title or alt text:** the ID comes back from the hidden source (else from the number
+  bookmark in its paragraph) and the title is restored.
+- **Repair equations converts older documents:** wrapped Classic equations become titled pictures
+  (backup when many, one undo step); native equations and MathType objects are untouched and counted
+  in the report.
+- Every insertion path (Insert, Update, Number, Convert LaTeX, Convert MathType) ends with a titled
+  picture; the thesis check reads titled pictures from closed files.
+- Paste diagnosis in connector.log: what each pasted picture kept (title, alt, source with/without ID,
+  VML/DrawingML, EMF/PNG).
+
 ### Fixed (round 5, interim — before the wrapper decision)
 - **No lock blocks editing any more:** wrappers are never content-locked (the lock blocked Number,
   Delete, Cut and drag on a selected equation); wrappers locked by the previous build are unlocked

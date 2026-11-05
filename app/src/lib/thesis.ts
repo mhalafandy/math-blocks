@@ -89,8 +89,40 @@ export function docxEquations(bytes: Uint8Array, chapter: Chapter): ChapterRead 
       numbered: read.numbered,
       number: numberAfter(xml, end),
       chapter: chapter.name,
-    });
+      at: start,
+    } as ChapterEquation & { at: number });
   }
+  // Classic equations: a picture whose title is the ID (VML v:shape title, or DrawingML wp:docPr title).
+  for (const m of xml.matchAll(/<(?:v:shape|wp:docPr)\b[^>]*\btitle="(mb1\|[^"]*)"/g)) {
+    const start = Math.max(xml.lastIndexOf("<w:r>", m.index), xml.lastIndexOf("<w:r ", m.index));
+    if (start < 0 || seen.has(start)) continue;
+    // Inside a wrapper already read above.
+    const sdtOpen = Math.max(xml.lastIndexOf("<w:sdt>", m.index), xml.lastIndexOf("<w:sdt ", m.index));
+    if (sdtOpen >= 0 && seen.has(sdtOpen) && sdtEnd(xml, sdtOpen) > m.index) continue;
+    seen.add(start);
+    const end = xml.indexOf("</w:r>", m.index);
+    if (end < 0) continue;
+    const runEnd = end + "</w:r>".length;
+    const read = readEquationXml(WRAP(xml.slice(start, runEnd)));
+    if (!read || !read.root.children.length) continue;
+    const tag = decode(m[1]!);
+    equations.push({
+      tag,
+      page: 0,
+      context: chapter.name,
+      latex: serializeLatex(read.root),
+      display: read.display,
+      blockId: parseTag(tag)?.blockId ?? null,
+      kind: read.kind,
+      numbered: read.numbered,
+      number: numberAfter(xml, runEnd),
+      chapter: chapter.name,
+      at: start,
+    } as ChapterEquation & { at: number });
+  }
+  // Document order (wrapped and titled equations were collected in two passes).
+  equations.sort((a, b) => ((a as { at?: number }).at ?? 0) - ((b as { at?: number }).at ?? 0));
+  for (const e of equations) delete (e as { at?: number }).at;
   const mathType = (xml.match(/ProgID="Equation\.(DSMT4|3)"/g) ?? []).length;
   return { chapter, equations, mathType };
 }

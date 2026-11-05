@@ -114,7 +114,9 @@ namespace MathBlocks.WordConnector
                     }
                     try
                     {
-                        r.InsertXML(Rpc.GetString(item, "flatOpc"));
+                        var xml = Rpc.GetString(item, "flatOpc");
+                        r.InsertXML(xml);
+                        FinishInserted(doc, xml);
                         replaced++;
                     }
                     catch (COMException ex)
@@ -123,7 +125,6 @@ namespace MathBlocks.WordConnector
                         skipped++;
                     }
                 }
-                foreach (var cc in MathBlocksControls(doc)) Secure(cc);
             }
             finally
             {

@@ -159,3 +159,42 @@ Install the new build and restart Word. Work on a **copy** of MathBlocks Tests.d
 7. **Kinds in groups:** open an equation containing `{\pvec{r}_2}` → the visual editor shows the vector (not red text).
 8. **\text{}:** type `x=1`, then `\text{}` and ` for all t`, Enter, `+y` → x = 1 for all t + y with the words as text.
    Insert "Text" from the palette and from F1 → LaTeX commands → type "if t>0" → it is text; Tab returns to maths.
+
+---
+
+# Round 5 — hybrid identity (test log)
+
+Install the new build, restart Word, work on a **copy** of MathBlocks Tests.docx and a second, empty
+document B. "Opens" means: right-click → the floating editor shows that equation (one menu only).
+Keep connector.log for the paste rows (lines `document changed …` and `near the selection: …`).
+
+| # | Operation | Expected result | Result |
+|---|---|---|---|
+| 1 | Open the old test document, Ctrl+K → Repair equations | Report: "N Classic equation(s) converted to the new form", "Left untouched: n native Word equation(s), m MathType object(s)"; a backup if many. Click an equation: Word's picture frame, no content-control box | |
+| 2 | Ctrl+Z once after 1 | The whole repair is undone in one step (wrappers back) ; Ctrl+Y redoes it | |
+| 3 | Insert a new Classic display equation, then click it | Picture frame only (no wrapper). Format Picture → Alt Text shows the title `mb1\|…` and the LaTeX description. Right-click → opens | |
+| 4 | Click the picture, Delete; then Ctrl+Z | Deleted completely, nothing left behind; Ctrl+Z brings it back in one step and it still opens | |
+| 5 | Click the picture, Ctrl+X, paste elsewhere (Ctrl+V) | Moved; same ID (log: no "duplicate"), it opens, its number (if any) follows | |
+| 6 | Copy a **numbered** equation, paste it **before** the original (Ctrl+V) | The copy gets a new ID, the original keeps its own (log: `duplicate ID … is a copy … keeps it (its number bookmark …)`). References still go to the original | |
+| 7 | Copy an unnumbered equation, paste it twice | Each copy gets its own ID; the earliest keeps the original ID (logged as "earliest"). Each opens alone; editing one leaves the others unchanged | |
+| 8 | Copy picture → Paste options: Keep source formatting / Merge formatting / Picture | Each paste is in line (never floating) and opens; Picture: note whether it still opens (log line tells what it kept) | |
+| 9 | Copy picture → Home → Paste Special → Picture (Enhanced Metafile), same document | Expected: recognised from its hidden source, gets a new ID, opens. If it does not open, send the `near the selection` log line | |
+| 10 | Same as 9, Paste Special → Picture (PNG) | Becomes an ordinary picture (nothing to recover, as with MathType); Repair lists it under "other pictures" | |
+| 11 | 9 and 10 again, from the test document **into B**, then from B back into the test document | EMF: opens in B (and back); PNG: ordinary picture in both directions | |
+| 12 | Ctrl+V of a whole paragraph with a Classic and a native equation, into B and back | Both open; in the same document the copies get new IDs; native keeps its kinds only within the same document | |
+| 13 | Paste or drop that comes in floating (rotate handle / layout button) | Goes back in line by itself at once (status bar message), one Ctrl+Z step; right-click opens it — no "right-click again" | |
+| 14 | Drag an equation to another place in the same document | Moved, same ID, opens. Ctrl+drag (copy): the copy gets a new ID | |
+| 15 | Drag an equation from the test document into B | Copied into B, opens there | |
+| 16 | Number equation on a Classic equation; then Unnumber | Number appears to the right, picture unchanged and opens; Unnumber removes it; each is one Ctrl+Z step, Ctrl+Y redoes | |
+| 17 | Number three equations, insert a reference to the 2nd, then number a new equation above them, Update numbers | Numbers shift (1)(2)(3)(4); the reference shows the 2nd's new number; Ctrl+click jumps to it | |
+| 18 | Format Picture → Alt Text: change the **title** to "abc", click elsewhere, then right-click the equation | It opens as the same equation (log: `picture ID restored from its hidden source`); the title shows `mb1\|…` again; its number and references unchanged | |
+| 19 | Change the **description** (alt text) too, then right-click | Still opens (identified from the hidden source) | |
+| 20 | Review → Track Changes on; edit an equation (Update in Word) | Shown as deletion + insertion; the new one opens; no "duplicate ID" in the log. Accept → one equation; Reject → the old one, which opens | |
+| 21 | Track Changes on: Delete an equation, Number another | Tracked as Word's changes; Accept/Reject work; nothing renamed in the log | |
+| 22 | Ctrl+Z / Ctrl+Y after each of: Insert, Update, Number, Unnumber, Convert LaTeX | One step each, both directions; the equation opens after undo and after redo | |
+| 23 | Type text right before and right after an inline equation, then paste text there | Text is outside; the equation still opens alone | |
+| 24 | Native Word equation (look: native): insert, type at its edges, Delete it | Text stays outside; Delete leaves no empty box (removed right after) | |
+| 25 | Ribbon → Convert MathType on a document with MathType equations | Converted equations are pictures without wrapper and open; Repair shows nothing to convert | |
+| 26 | Close and reopen the test document | No dialog; log: `on open: …` only if copies were found; every equation opens | |
+
+Please send connector.log after rows 8–15 (the paste rows) — I will fix the cause from what each paste kept.

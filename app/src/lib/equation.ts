@@ -74,7 +74,7 @@ export async function buildInsertion(
   const { renderPicture, toBase64, altText } = await import("./render");
   const tag = existingTag ?? formatTag({ blockId: null, instanceId: newInstanceId() });
   const mode = display ? "display" : typesetDisplay ? "numbered" : "inline";
-  const pic = await renderPicture(latex, typesetDisplay, useApp.getState().equationSizePt, mode, false, { block: parseTag(tag)?.blockId });
+  const pic = await renderPicture(latex, typesetDisplay, useApp.getState().equationSizePt, mode, false, { block: parseTag(tag)?.blockId, tag });
   const n = ++pictureCounter;
   const run = vmlPictureRun({
     rId: "rIdMbE1",
@@ -83,9 +83,10 @@ export async function buildInsertion(
     depthPt: pic.depthPt,
     id: Date.now() % 1_000_000_000 + n,
     alt: altText(latex, mode),
+    // The picture is the equation: its ID is its title (no content control around it).
+    title: tag,
   });
-  const cc = contentControl(run, { tag, title: "MathBlocks equation" });
-  const body = display ? `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${cc}</w:p>` : paragraph(cc);
+  const body = display ? `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${run}</w:p>` : paragraph(run);
   return {
     tag,
     flatOpc: flatOpc([body], [{ rId: "rIdMbE1", target: `media/mathblocks${n}.emf`, contentType: "image/x-emf", base64: toBase64(pic.emf) }]),
