@@ -129,6 +129,18 @@ function completeGroup(v: string): boolean {
   return false;
 }
 
+let lastSpace = 0;
+
+/** The command palette: the main window's, or the floating editor's command line. */
+function openCommands() {
+  // The floating editor opens its Commands flyout; the main window its command palette.
+  if (document.documentElement.classList.contains("panel-window")) {
+    window.dispatchEvent(new CustomEvent("mb:commands"));
+    return;
+  }
+  useApp.getState().setPaletteOpen(true);
+}
+
 /** Handles an editor shortcut; true when the key was used. */
 export function handleEditorKey(e: KeyboardEvent): boolean {
   const mf = focusedMathField();
@@ -194,6 +206,20 @@ export function handleEditorKey(e: KeyboardEvent): boolean {
       return true;
     }
   }
+  // Space Space (quickly) opens the command palette; a single Space keeps its role (leaving a kind).
+  if (e.key === " " && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+    const app = useApp.getState();
+    const mode = (mf as unknown as { mode?: string }).mode;
+    const now = performance.now();
+    if (app.doubleSpace && mode === "math" && now - lastSpace <= app.doubleSpaceMs) {
+      lastSpace = 0;
+      e.preventDefault();
+      e.stopPropagation();
+      openCommands();
+      return true;
+    }
+    lastSpace = mode === "math" ? now : 0;
+  } else lastSpace = 0;
   // Space inside a notation kind leaves it (caret right after the kind, the kind unchanged).
   if (e.key === " " && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && mf.selectionIsCollapsed && exitKind(mf as unknown as KindField, "Space")) {
     e.preventDefault();

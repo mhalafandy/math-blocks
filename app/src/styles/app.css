@@ -209,6 +209,15 @@ kbd {
   --placeholder-color: var(--text-3);
 }
 .mathfield:focus-within { outline: none; }
+/* The main editor reads as a field: a visible box, a focus ring, a placeholder (MathLive's). */
+.canvas-inner .mathfield {
+  min-width: min(560px, 100%); min-height: 1.9em; padding: 10px 18px;
+  background: var(--surface); border: 1.5px solid var(--border-strong, #c9c9d3); border-radius: 10px;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.canvas-inner .mathfield:hover { border-color: var(--text-3); }
+.canvas-inner .mathfield:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.mathfield::part(placeholder) { color: var(--text-3); font-size: 0.5em; }
 .mathfield::part(virtual-keyboard-toggle) { display: none; }
 /* MathLive's own menu duplicates the app's (palette, Ctrl+K, right-click actions). */
 .mathfield::part(menu-toggle) { display: none; }
@@ -556,16 +565,17 @@ kbd {
 /* The window is transparent: only the card is visible, with a margin for its shadow. */
 html.panel-window, html.panel-window body, html.panel-window #root { height: auto; background: transparent !important; overflow: hidden; }
 .panel-shell { padding: 14px; }
+/* Opaque: the window is transparent and WebView2 cannot blur what lies behind it, so a
+   see-through card let Word's ribbon show through the top row. */
 .panel-card {
   display: flex; flex-direction: column; color: var(--text);
-  background: color-mix(in srgb, var(--surface) 94%, transparent);
-  backdrop-filter: blur(18px) saturate(1.2);
-  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 14px; box-shadow: 0 10px 34px rgb(0 0 0 / 0.28), 0 2px 8px rgb(0 0 0 / 0.16);
   overflow: hidden;
 }
 .panel-top { display: flex; align-items: center; gap: 6px; padding: 8px 8px 0 10px; user-select: none; }
-.panel-modes { display: flex; gap: 2px; background: color-mix(in srgb, var(--surface-2) 80%, transparent); border-radius: 999px; padding: 2px; }
+.panel-modes { display: flex; gap: 2px; background: var(--surface-2); border-radius: 999px; padding: 2px; }
 .panel-modes button { padding: 2px 10px; border-radius: 999px; font-size: 11.5px; color: var(--text-2); }
 .panel-modes button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgb(0 0 0 / 0.15); }
 .panel-linked { font-size: 11.5px; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
@@ -729,3 +739,41 @@ html.panel-window, html.panel-window body, html.panel-window #root { height: aut
 .ns-own { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; margin-bottom: 8px; }
 .ns-own input { width: 140px; }
 .link-button { align-self: flex-start; padding: 2px 0; border: 0; background: none; color: var(--accent); font: inherit; cursor: pointer; text-decoration: underline; }
+/* F1: shortcuts and the LaTeX commands sheet */
+.sheet-tabs { display: flex; gap: 4px; margin: -4px 0 10px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface); z-index: 3; }
+.sheet-tabs button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 6px 10px; color: var(--text-2); font: inherit; cursor: pointer; }
+.sheet-tabs button.on { color: var(--text); border-bottom-color: var(--accent); }
+.sheet-setting { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; font-size: 12.5px; color: var(--text-2); }
+.sheet-setting input[type="number"] { width: 64px; }
+.latex-sheet-search { width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); color: var(--text); font: inherit; }
+.latex-sheet h4 { margin: 14px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); }
+.latex-sheet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 4px; }
+.latex-sheet-row { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; align-items: center; gap: 8px; text-align: left; padding: 4px 8px; border: 1px solid transparent; border-radius: 6px; background: none; color: inherit; font: inherit; cursor: pointer; min-width: 0; }
+.latex-sheet-row:hover { background: var(--surface-2); border-color: var(--border); }
+.latex-sheet-row code { font-size: 11.5px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.latex-sheet-row kbd { font-size: 10.5px; }
+.latex-sheet-row .math-preview { justify-self: center; font-size: 15px; max-width: 76px; overflow: hidden; white-space: nowrap; }
+
+/* Floating editor: rail + split editors + one flyout */
+.panel-body2 { display: flex; min-height: 0; border-top: 1px solid var(--border); margin-top: 6px; }
+.panel-rail { flex: 0 0 40px; display: flex; flex-direction: column; gap: 2px; padding: 6px 4px; border-right: 1px solid var(--border); background: var(--surface-2); }
+.panel-rail button { width: 32px; height: 32px; border-radius: 8px; font-size: 15px; color: var(--text-2); display: grid; place-items: center; }
+.panel-rail button:hover { background: var(--surface-3); color: var(--text); }
+.panel-rail button.on { background: var(--accent-soft); color: var(--accent); }
+.panel-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.panel-pane2 { border-bottom: 1px solid var(--border); }
+.panel-pane-head { display: block; width: 100%; text-align: left; padding: 4px 12px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-3); background: none; border: 0; border-radius: 0; }
+.panel-pane-head:hover { color: var(--text); }
+.panel-main .panel-editor { padding: 6px 18px 12px; min-height: 76px; }
+.panel-main .panel-latex { height: 96px; margin: 0 12px 10px; }
+.panel-flyout { display: flex; flex-direction: column; min-height: 0; }
+.panel-flyout-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 6px 0 12px; font-size: 12px; font-weight: 600; color: var(--text-2); }
+.panel-flyout-body { padding: 6px 12px 10px; max-height: 260px; overflow: auto; }
+.panel-flyout-body .panel-command { padding: 0; }
+.panel-flyout-body .panel-quick { padding: 0; }
+.panel-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; align-items: center; }
+.panel-chips button { padding: 2px 9px; border-radius: 999px; font-size: 11.5px; color: var(--text-2); border: 1px solid var(--border); background: var(--surface); }
+.panel-chips button.on { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.panel-chip-search { margin-left: auto; width: 140px; padding: 3px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); color: var(--text); font: inherit; font-size: 12px; }
+.panel-foot2 { display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 12px; border-top: 1px solid var(--border); }
+.panel-grip { width: 10px; align-self: stretch; margin-right: -8px; cursor: ew-resize; background: linear-gradient(90deg, transparent 3px, var(--border) 3px, var(--border) 4px, transparent 4px, transparent 6px, var(--border) 6px, var(--border) 7px, transparent 7px); }

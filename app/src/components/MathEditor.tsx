@@ -387,6 +387,8 @@ export function MathEditor() {
     mf.smartSuperscript = true;
     mf.mathVirtualKeyboardPolicy = "manual";
     mf.placeholderSymbol = "□"; // lighter than the default ▢ (styled further in app.css)
+    // Shown while the equation is empty, so it is clear where to type.
+    mf.placeholder = "\\text{Type here, or press Space Space for commands}";
     mf.className = "mathfield";
     mf.setAttribute("aria-label", "Equation editor");
     mf.value = toMathLive(useApp.getState().latex);
@@ -430,6 +432,10 @@ export function MathEditor() {
     }
     field.current = mf;
     activeField = mf;
+    // Ready to type on launch (and in the floating editor when it opens).
+    requestAnimationFrame(() => {
+      if (!document.querySelector(".modal-backdrop") && (document.activeElement === document.body || !document.activeElement)) mf.focus();
+    });
     return () => {
       mf.remove();
       if (activeField === mf) activeField = null;

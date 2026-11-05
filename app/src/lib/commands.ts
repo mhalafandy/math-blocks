@@ -187,6 +187,18 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
     { id: "recognize.settings", title: "Equation recognition settings (API key)…", group: "View", keywords: "ocr picture screenshot claude anthropic api key", run: () => import("../components/RecognitionDialog").then((m) => m.openRecognitionSettings()) },
     { id: "edit.snippets", title: "Snippets (trigger + Tab)…", group: "Edit", keywords: "snippet abbreviation expand tab macro ddt pdv", run: () => import("../components/SnippetsDialog").then((m) => m.openSnippets()) },
     { id: "help.shortcuts", title: "Keyboard shortcuts", group: "View", shortcut: "F1", keywords: "keys help mathtype cheat sheet", run: () => import("../components/ShortcutsDialog").then((m) => m.openShortcuts()) },
+    { id: "help.latex", title: "LaTeX commands (cheat sheet)", group: "View", keywords: "latex commands reference cheat sheet macros insert list", run: () => import("../components/ShortcutsDialog").then((m) => m.openShortcuts("latex")) },
+    {
+      id: "view.doubleSpace",
+      title: "Space Space opens the command palette (on/off)",
+      group: "View",
+      keywords: "double space palette setting",
+      run: () => {
+        const app = useApp.getState();
+        app.setPrefs({ doubleSpace: !app.doubleSpace });
+        app.notify(`Space Space ${app.doubleSpace ? "no longer opens" : "opens"} the command palette.`);
+      },
+    },
     { id: "app.update", title: "Check for updates", group: "View", keywords: "upgrade new version", run: () => checkForUpdate(true) },
     { id: "word.new", title: "New equation", group: "Edit", shortcut: "Ctrl+N", keywords: "clear reset fresh blank stop editing", run: () => newEquation() },
     { id: "edit.bold", title: "Bold (toggle)", group: "Edit", shortcut: "Ctrl+Shift+B", keywords: "bold vector matrix strong", run: () => toggleBold() },

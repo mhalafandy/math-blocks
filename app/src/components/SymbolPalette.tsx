@@ -63,7 +63,7 @@ const ItemButton = memo(function ItemButton({ x, size }: { x: IndexedItem; size:
   );
 });
 
-function Grid({ items, size }: { items: IndexedItem[]; size: "glyph" | "small" | "large" }) {
+export function Grid({ items, size }: { items: IndexedItem[]; size: "glyph" | "small" | "large" }) {
   // Spacecraft entries change with the notation setting: redraw them when it changes.
   const notation = useApp((s) => `${s.spacecraftConvention}|${s.spacecraftVector}`);
   return (
@@ -76,8 +76,8 @@ function Grid({ items, size }: { items: IndexedItem[]; size: "glyph" | "small" |
   );
 }
 
-const groupItems = (g: PaletteGroup): IndexedItem[] => g.items.map((item) => ({ key: itemKey(g, item), group: g, item }));
-const sizeOf = (g: PaletteGroup) => (g.kind === "symbols" ? "glyph" : g.row === "tabs" ? "large" : "small");
+export const groupItems = (g: PaletteGroup): IndexedItem[] => g.items.map((item) => ({ key: itemKey(g, item), group: g, item }));
+export const sizeOf = (g: PaletteGroup) => (g.kind === "symbols" ? "glyph" : g.row === "tabs" ? "large" : "small");
 
 function useOutsideClose(open: boolean, close: () => void) {
   const ref = useRef<HTMLDivElement>(null);
@@ -116,7 +116,7 @@ function SearchBox({ query, setQuery, autoFocus }: { query: string; setQuery: (q
   );
 }
 
-function SearchResults({ query }: { query: string }) {
+export function SearchResults({ query }: { query: string }) {
   const results = useMemo(() => searchPalette(query), [query]);
   if (results.length === 0) return <p className="empty">No symbols match “{query}”.</p>;
   const symbols = results.filter((r) => r.item.glyph);
