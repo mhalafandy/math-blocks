@@ -77,6 +77,26 @@ namespace MathBlocks.WordConnector
         internal Word.InlineShape UnwrappedPictureAt(Word.Document doc, Word.Range r, out string how)
         {
             how = null;
+            // A floating MathBlocks picture under the selection (pasted as floating): back in line first.
+            try
+            {
+                var sel = _app.Selection;
+                if (sel.ShapeRange.Count > 0)
+                {
+                    foreach (Word.Shape sh in sel.ShapeRange)
+                    {
+                        if (!IsMathBlocksShape(sh)) continue;
+                        var inline = sh.ConvertToInlineShape();
+                        Log.Info("a floating MathBlocks picture was put back in line with the text");
+                        how = MathBlocksData(inline.Range.WordOpenXML, out _) ?? "alt";
+                        return inline;
+                    }
+                }
+            }
+            catch (COMException)
+            {
+                // No shapes in the selection.
+            }
             var ranges = new List<Word.Range> { r };
             if (r.Start == r.End)
             {
@@ -131,7 +151,7 @@ namespace MathBlocks.WordConnector
             var renamed = new List<object>();
             var wrapped = new List<object>();
             var splitReport = new List<object>();
-            int split = 0, secured = 0;
+            int split = 0, secured = 0, inlined = 0;
             int wrappedOk = 0, plainPictures = 0, bookmarks = 0;
             bool screen = _app.ScreenUpdating;
             var undo = _app.UndoRecord;
@@ -140,6 +160,8 @@ namespace MathBlocks.WordConnector
             try
             {
                 _app.ScreenUpdating = false;
+                // Pasted pictures that came in floating (Word's paste setting): back in line first.
+                inlined = InlineFloatingPictures(doc, dry);
                 // Wrappers that grew (several equations, text, nested wrappers): one wrapper per equation again.
                 split = SplitWrappers(doc, dry, splitReport);
                 if (dry)
@@ -175,12 +197,13 @@ namespace MathBlocks.WordConnector
                 _app.ScreenUpdating = screen;
                 if (own) undo.EndCustomRecord();
             }
-            Log.Info("repair in " + doc.Name + ": " + split + " wrapper(s) split, " + renamed.Count + " new ids, " + wrapped.Count + " re-wrapped, " + bookmarks + " bookmarks, " + secured + " locked, " + plainPictures + " other pictures");
+            Log.Info("repair in " + doc.Name + ": " + inlined + " floating picture(s) put in line, " + split + " wrapper(s) split, " + renamed.Count + " new ids, " + wrapped.Count + " re-wrapped, " + bookmarks + " bookmarks, " + secured + " locked, " + plainPictures + " other pictures");
             return new Dictionary<string, object>
             {
                 ["document"] = doc.FullName,
                 ["renamed"] = renamed,
                 ["split"] = splitReport,
+                ["inlined"] = inlined,
                 ["wrapped"] = wrapped,
                 ["wrappedOk"] = wrappedOk,
                 ["bookmarks"] = bookmarks,

@@ -133,6 +133,7 @@ function StylePanel() {
   const width = useWidthMeasure();
   const convention = useApp((s) => s.spacecraftConvention);
   const scVector = useApp((s) => s.spacecraftVector);
+  const confirmWord = useApp((s) => s.confirmWordCommands);
   const latex = useApp((s) => s.latex);
   const display = useApp((s) => s.display);
   const setPrefs = useApp((s) => s.setPrefs);
@@ -161,6 +162,10 @@ function StylePanel() {
       <button className="link-button" onClick={() => void import("./NotationSettings").then((m) => m.openNotationSettings())}>
         Kinds and their styles, my own kinds…
       </button>
+      <label className="check">
+        <input type="checkbox" checked={confirmWord} onChange={(e) => setPrefs({ confirmWordCommands: e.target.checked })} /> Ask before Convert LaTeX and other
+        document-wide commands started from Word (one Ctrl+Z undoes them; a backup is made)
+      </label>
       <label>
         Equations in Word
         <select value={look} onChange={(e) => setPrefs({ look: e.target.value as "classic" | "native" })}>

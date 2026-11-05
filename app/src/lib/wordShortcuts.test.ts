@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const word = vi.hoisted(() => ({ calls: [] as { method: string; params: Record<string, unknown> }[], selection: {} as Record<string, unknown>, latex: [] as { start: number; end: number; text: string; alone: boolean }[] }));
+const word = vi.hoisted(() => ({ calls: [] as { method: string; params: Record<string, unknown> }[], selection: {} as Record<string, unknown>, latex: [] as { start: number; end: number; text: string; alone: boolean }[], trapped: false, repaired: false, dontAsk: false }));
 
 vi.mock("./connector", () => ({
   isDesktop: () => false,
@@ -10,7 +10,18 @@ vi.mock("./connector", () => ({
     async request(method: string, params: Record<string, unknown>) {
       word.calls.push({ method, params });
       if (method === "selectionInfo") return { document: "C:\\t.docx", rect: null, ...word.selection };
-      if (method === "findLatex") return { name: "t.docx", fullName: "C:\\t.docx", items: word.latex };
+      if (method === "findLatex") {
+        // LaTeX typed into an equation's wrapper is reported until Repair moved it out.
+        if (word.trapped && !word.repaired) return { name: "t.docx", fullName: "C:\\t.docx", items: [], skippedInside: 1, insideWrapper: 1 };
+        return { name: "t.docx", fullName: "C:\\t.docx", items: word.latex, selection: !!params.selectionOnly };
+      }
+      if (method === "repairEquations") {
+        if (!params.dryRun) word.repaired = true;
+        return { document: "C:\\t.docx", renamed: [], wrapped: [], wrappedOk: 0, bookmarks: 0, otherPictures: 0, split: word.trapped && !word.repaired ? [{ tag: "mb1|-|x", equations: 1, text: 4, nested: 0, otherPictures: 0 }] : [] };
+      }
+      if (method === "confirm") return { ok: true, dontAsk: word.dontAsk };
+      if (method === "showMessage") return { ok: true };
+      if (method === "getRegistry") return { xml: null, fullName: "C:\\t.docx" };
       if (method === "replaceRanges") return { replaced: (params.items as unknown[]).length, skipped: 0 };
       if (method === "equationToText") return { ok: true };
       throw new Error(`unexpected ${method}`);
@@ -28,6 +39,9 @@ beforeEach(() => {
   word.calls = [];
   word.selection = {};
   word.latex = [];
+  word.trapped = false;
+  word.repaired = false;
+  word.dontAsk = false;
   useApp.setState({ connector: { available: true, connected: true }, look: "native" });
 });
 
@@ -89,6 +103,36 @@ describe("LaTeX in Word", () => {
     // Display only when display LaTeX ($$ or \[) stands alone in its paragraph; $…$ alone stays inline.
     expect(display).toEqual([false, true, false, false, true, false, false, false]);
     for (const i of items) expect(i.flatOpc).toContain("mb1|");
+  });
+
+  it("LaTeX typed into an equation's wrapper is moved out (Repair) and then converted", async () => {
+    word.trapped = true;
+    word.latex = [{ start: 3, end: 8, text: "$x^2$", alone: false }];
+    await ws.convertAllLatex();
+    const methods = word.calls.map((c) => c.method);
+    expect(methods.filter((m) => m === "repairEquations")).toHaveLength(2); // dry run, then the repair
+    expect(methods.lastIndexOf("findLatex")).toBeGreaterThan(methods.indexOf("repairEquations"));
+    expect(word.calls.find((c) => c.method === "replaceRanges")).toBeTruthy();
+  });
+
+  it("started from Word: the question and the result appear over Word; the selection only when there is one", async () => {
+    word.latex = [{ start: 0, end: 5, text: "$x^2$", alone: false }];
+    await ws.convertAllLatex(undefined, { fromWord: true, selectionOnly: true });
+    expect(word.calls.find((c) => c.method === "findLatex")!.params.selectionOnly).toBe(true);
+    expect(word.calls.some((c) => c.method === "confirm")).toBe(true);
+    expect(word.calls.find((c) => c.method === "showMessage")!.params.text).toMatch(/Converted 1/);
+  });
+
+  it("“Don't ask again” is remembered: the next conversion from Word asks nothing", async () => {
+    word.latex = [{ start: 0, end: 5, text: "$x^2$", alone: false }];
+    word.dontAsk = true;
+    await ws.convertAllLatex(undefined, { fromWord: true });
+    expect(useApp.getState().confirmWordCommands).toBe(false);
+    word.calls = [];
+    await ws.convertAllLatex(undefined, { fromWord: true });
+    expect(word.calls.some((c) => c.method === "confirm")).toBe(false);
+    expect(word.calls.some((c) => c.method === "replaceRanges")).toBe(true);
+    useApp.setState({ confirmWordCommands: true });
   });
 
   it("explains when LaTeX was found but none can be converted", async () => {

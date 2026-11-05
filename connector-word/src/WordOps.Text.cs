@@ -94,15 +94,24 @@ namespace MathBlocks.WordConnector
         {
             var doc = ResolveDocument(p);
             var items = new List<object>();
-            int found = 0, inside = 0, lost = 0, moved = 0;
-            foreach (Word.Paragraph para in doc.Paragraphs)
+            int found = 0, inside = 0, lost = 0, moved = 0, inWrapper = 0;
+            // With a selection (and selectionOnly): only the LaTeX in it, as MathType's Alt+\.
+            Word.Range scope = null;
+            if (Rpc.GetBool(p, "selectionOnly"))
+            {
+                var sel = _app.Selection;
+                if (sel.Start != sel.End && sel.Document.FullName == doc.FullName) scope = sel.Range;
+            }
+            var paragraphs = scope != null ? scope.Paragraphs : doc.Paragraphs;
+            foreach (Word.Paragraph para in paragraphs)
             {
                 var r = para.Range;
                 var text = r.Text ?? "";
                 foreach (var m in LatexText.Find(text))
                 {
-                    found++;
                     int start = r.Start + m.Index, end = start + m.Length;
+                    if (scope != null && (end <= scope.Start || start >= scope.End)) continue;
+                    found++;
                     var span = doc.Range(start, end);
                     if ((span.Text ?? "") != m.Text)
                     {
@@ -117,35 +126,44 @@ namespace MathBlocks.WordConnector
                         start = span.Start;
                         end = span.End;
                     }
-                    if (InsideFieldOrEquation(span))
+                    // Only the span's own range decides: an equation, a field or a wrapper around these characters.
+                    var why = InsideFieldOrEquation(span);
+                    Log.Info("findLatex span \"" + Short(m.Text) + "\" at " + start + ": " + (why ?? "plain text → convert"));
+                    if (why != null)
                     {
                         inside++;
+                        if (why.StartsWith("text inside", StringComparison.Ordinal)) inWrapper++;
                         continue;
                     }
                     items.Add(new Dictionary<string, object> { ["start"] = start, ["end"] = end, ["text"] = m.Text, ["alone"] = m.Alone });
                 }
             }
-            Log.Info("findLatex in " + doc.Name + ": " + found + " span(s), " + items.Count + " to convert, " + inside + " inside equations/fields, " + moved + " relocated, " + lost + " not located");
+            Log.Info("findLatex in " + doc.Name + (scope != null ? " (selection)" : "") + ": " + found + " span(s), " + items.Count + " to convert, " + inside + " inside equations/fields (" + inWrapper + " typed into an equation's wrapper), " + moved + " relocated, " + lost + " not located");
             return new Dictionary<string, object>
             {
                 ["name"] = doc.Name, ["fullName"] = doc.FullName, ["items"] = items,
-                ["skippedInside"] = inside, ["notLocated"] = lost,
+                ["skippedInside"] = inside, ["notLocated"] = lost, ["insideWrapper"] = inWrapper, ["selection"] = scope != null,
             };
         }
 
         private static string Short(string s) => s.Length > 40 ? s.Substring(0, 40) + "…" : s;
 
-        private static bool InsideFieldOrEquation(Word.Range span)
+        /// <summary>Why a LaTeX span cannot be converted where it is (null: plain text, convert it).</summary>
+        private static string InsideFieldOrEquation(Word.Range span)
         {
             try
             {
-                if (span.ContentControls.Count > 0 || span.Fields.Count > 0) return true;
+                if (span.OMaths.Count > 0) return "inside a Word equation";
+                if (span.Fields.Count > 0) return "contains a field";
+                if (span.ContentControls.Count > 0) return "contains a content control";
                 var cc = span.ParentContentControl;
-                return cc != null && cc.Tag != null && cc.Tag.StartsWith(TagPrefix, StringComparison.Ordinal);
+                if (cc != null && IsMathBlocks(cc)) return "text inside the wrapper of " + cc.Tag + " (Repair equations moves it out)";
+                if (cc != null) return "inside a content control (" + (cc.Title ?? cc.Tag ?? "untitled") + ")";
+                return null;
             }
             catch (COMException)
             {
-                return false;
+                return null;
             }
         }
 

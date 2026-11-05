@@ -137,3 +137,25 @@ Install the new build and restart Word. Work on a **copy** of MathBlocks Tests.d
    Open A in the floating editor and close it with Esc → the main window is no longer attached to A.
 7. **Refusals:** in an unrepaired copy of the old document, right-click a grown wrapper → a notice "This equation cannot be
    opened safely: its wrapper holds 3 equations…" with Repair equations; nothing changes in the document.
+
+---
+
+# Round 3 — Priority 1 checklist
+
+1. **Convert LaTeX in your test document:** run Repair equations first (or let Convert LaTeX do it), then ribbon →
+   Convert LaTeX. Expected: the small dialog over Word "Convert N LaTeX expression(s)…?" (Enter = Convert), the
+   LaTeX becomes equations, the result is in Word's status bar; the MathBlocks window does not come to the front.
+   connector.log: one `findLatex span "…" at …: plain text → convert` line per span.
+2. **Selection only:** select one paragraph with LaTeX, Convert LaTeX → only that paragraph's LaTeX is converted.
+3. **Don't ask again:** tick it in the dialog → next Convert LaTeX converts at once. Turn asking back on in the Word
+   style tab ("Ask before Convert LaTeX…").
+4. **Insert reference from the ribbon:** a picker over Word lists the numbered equations (number, page, LaTeX); type
+   to filter, Enter inserts; "Number only" gives 1.2 instead of (1.2). The app stays in the background.
+5. **Floating pastes:** paste a copied equation (Ctrl+V, Keep source formatting, both directions between documents);
+   if it arrives with rotate handles / floating, right-click it → it goes back in line and opens. Repair equations
+   reports "N floating picture(s) put back in line with the text".
+6. **Restyle → Word:** change the physical vector's style (Notation settings), Insert into Word → the new style in Word;
+   the same from the floating editor (Apply). Reopen the equation → still the kind, new style.
+7. **Kinds in groups:** open an equation containing `{\pvec{r}_2}` → the visual editor shows the vector (not red text).
+8. **\text{}:** type `x=1`, then `\text{}` and ` for all t`, Enter, `+y` → x = 1 for all t + y with the words as text.
+   Insert "Text" from the palette and from F1 → LaTeX commands → type "if t>0" → it is text; Tab returns to maths.

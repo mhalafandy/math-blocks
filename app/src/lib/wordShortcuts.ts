@@ -1,6 +1,7 @@
 import { backupIfMany } from "./docOps";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { askConfirm } from "../components/Dialogs";
+import { confirmInWord, tell } from "./wordUi";
 import { activateEquation, addinSupports, connector } from "./connector";
 import { buildInsertion, currentProfile } from "./equation";
 import { readEquationXml } from "./readEquation";
@@ -107,19 +108,33 @@ export async function numberAtCursor() {
   }
 }
 
-/** Converts every LaTeX span (dollars, \( \), \[ \]) of the document into equations. */
-export async function convertAllLatex(document?: string) {
+/**
+ * Converts LaTeX spans (dollars, \( \), \[ \]) into equations: the selection's when the command
+ * came from Word with a selection (as MathType's Alt+\), otherwise the whole document. LaTeX that
+ * was typed into an equation's wrapper is first moved out of it (Repair equations), then converted.
+ * Started from Word, it finishes in Word: the question and the result appear over Word.
+ */
+export async function convertAllLatex(document?: string, o: { fromWord?: boolean; selectionOnly?: boolean } = {}) {
   if (!ready("findLatex")) return;
+  const fromWord = !!o.fromWord;
+  const say = (text: string, kind: "info" | "error" = "info") => tell(text, kind, fromWord);
   try {
-    const found = await connector.request("findLatex", document ? { document } : {}, 120_000);
+    const target = { ...(document ? { document } : {}), ...(o.selectionOnly ? { selectionOnly: true } : {}) };
+    let found = await connector.request("findLatex", target, 120_000);
+    if (found.insideWrapper) {
+      // Text typed at an equation's edge went into its wrapper: give it back to the text first.
+      const { repairDocument } = await import("./repair");
+      await repairDocument(found.fullName, { quiet: true });
+      found = await connector.request("findLatex", target, 120_000);
+    }
     const why = [found.skippedInside ? `${found.skippedInside} inside equations or fields` : "", found.notLocated ? `${found.notLocated} that Word could not locate (see connector.log)` : ""].filter(Boolean).join(", ");
-    console.info("convert LaTeX:", found.items.length, "span(s)", why);
-    if (!found.items.length) return notify(`No LaTeX found in “${found.name}” to convert (expressions between dollar signs, \\( \\) or \\[ \\])${why ? `; skipped: ${why}` : ""}.`, why ? "error" : "info");
-    const ok = await askConfirm(
+    const where = found.selection ? "the selection" : `“${found.name}”`;
+    if (!found.items.length) return say(`No LaTeX found in ${where} to convert (expressions between dollar signs, \\( \\) or \\[ \\])${why ? `; skipped: ${why}` : ""}.`, why ? "error" : "info");
+    const ok = await confirmInWord(
       "Convert LaTeX to equations",
-      `Turn the ${found.items.length} LaTeX expression(s) in “${found.name}” into MathBlocks equations? One Ctrl+Z in Word undoes it.`,
+      `Convert ${found.items.length} LaTeX expression(s) in ${where} into MathBlocks equations? One Ctrl+Z in Word undoes it.`,
       "Convert",
-      false,
+      fromWord,
     );
     if (!ok) return;
     const profile = currentProfile();
@@ -137,12 +152,12 @@ export async function convertAllLatex(document?: string) {
     }
     await backupIfMany(found.fullName, items.length);
     const r = items.length ? await connector.request("replaceRanges", { document: found.fullName, items, undoLabel: "Convert LaTeX to equations" }, 600_000) : { replaced: 0, skipped: 0 };
-    notify(
-      `Converted ${r.replaced} LaTeX expression(s)${bad ? `; ${bad} with errors left as text` : ""}${r.skipped ? `; ${r.skipped} changed meanwhile and were skipped` : ""}`,
+    say(
+      `Converted ${r.replaced} LaTeX expression(s)${bad ? `; ${bad} with errors left as text` : ""}${r.skipped ? `; ${r.skipped} changed meanwhile and were skipped` : ""}${why ? `; skipped: ${why}` : ""}`,
       bad || r.skipped ? "error" : "info",
     );
   } catch (e) {
-    notify(errorText(e), "error");
+    say(errorText(e), "error");
   }
 }
 

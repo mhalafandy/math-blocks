@@ -264,6 +264,46 @@ namespace MathBlocks.WordConnector
             return cc;
         }
 
+        // ------------------------------------------------------------------ floating pictures
+
+        /// <summary>A floating MathBlocks picture (Word's "Insert/paste pictures as" can make a paste float): known by its alt text.</summary>
+        internal static bool IsMathBlocksShape(Word.Shape sh)
+        {
+            try
+            {
+                var alt = sh.AlternativeText ?? "";
+                return alt.StartsWith("MathBlocks display:", StringComparison.Ordinal) || alt.StartsWith("MathBlocks inline:", StringComparison.Ordinal) || alt.StartsWith("MathBlocks numbered:", StringComparison.Ordinal);
+            }
+            catch (COMException)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>Floating MathBlocks pictures back in line with the text (where they are anchored). Returns how many.</summary>
+        internal int InlineFloatingPictures(Word.Document doc, bool dry, Word.Range only = null)
+        {
+            var list = new List<Word.Shape>();
+            foreach (Word.Shape sh in only != null ? only.ShapeRange : (System.Collections.IEnumerable)doc.Shapes)
+                if (IsMathBlocksShape(sh)) list.Add(sh);
+            if (dry) return list.Count;
+            int n = 0;
+            foreach (var sh in list)
+            {
+                try
+                {
+                    sh.ConvertToInlineShape();
+                    n++;
+                }
+                catch (COMException ex)
+                {
+                    Log.Error("could not put a floating MathBlocks picture back in line", ex);
+                }
+            }
+            if (n > 0) Log.Info("put " + n + " floating MathBlocks picture(s) back in line with the text");
+            return n;
+        }
+
         // ------------------------------------------------------------------ repair: split and dedupe
 
         /// <summary>

@@ -80,6 +80,8 @@ interface Prefs {
   doubleSpace: boolean;
   /** Longest time between the two Spaces, ms. */
   doubleSpaceMs: number;
+  /** Ask (a small dialog over Word) before document-wide commands started from Word. */
+  confirmWordCommands: boolean;
 }
 
 export interface UpdateState {
@@ -171,6 +173,7 @@ const DEFAULT_PREFS: Prefs = {
   customKinds: [],
   doubleSpace: true,
   doubleSpaceMs: 300,
+  confirmWordCommands: true,
 };
 
 function loadPrefs(): Prefs {
@@ -240,6 +243,8 @@ export const useApp = create<AppState>((set, get) => ({
     }
     set(p);
     savePrefs(get());
+    // The other window (main / floating editor) follows at once (storage events are not guaranteed between WebView2 windows).
+    if (p.notationProfile || p.customKinds || p.accentRules) broadcastNotation(get());
   },
   setPaletteOpen: (paletteOpen) => set({ paletteOpen }),
   setConnector: (c) => set({ connector: { ...get().connector, ...c } }),
@@ -254,6 +259,36 @@ export const useApp = create<AppState>((set, get) => ({
 registerCustomKinds(useApp.getState().customKinds ?? []);
 syncMyNotation(useApp.getState().customKinds ?? []);
 useApp.subscribe((s, prev) => s.customKinds !== prev.customKinds && syncMyNotation(s.customKinds));
+
+function broadcastNotation(s: Prefs) {
+  if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) return;
+  void import("@tauri-apps/api/event")
+    .then((m) => m.emit("prefs:notation", { notationProfile: s.notationProfile, customKinds: s.customKinds, accentRules: s.accentRules, from: window.location.search }))
+    .catch(() => undefined);
+}
+
+/** A notation change made in the other window (explicit event; the storage event is the fallback). */
+function adoptNotation(p: Partial<Prefs>) {
+  const cur = useApp.getState();
+  const change: Partial<Prefs> = {};
+  if (p.customKinds && JSON.stringify(p.customKinds) !== JSON.stringify(cur.customKinds)) {
+    registerCustomKinds(p.customKinds);
+    change.customKinds = p.customKinds;
+  }
+  if (p.notationProfile && (change.customKinds || JSON.stringify(p.notationProfile) !== JSON.stringify(cur.notationProfile))) change.notationProfile = { ...p.notationProfile };
+  if (p.accentRules && JSON.stringify(p.accentRules) !== JSON.stringify(cur.accentRules)) change.accentRules = p.accentRules;
+  if (Object.keys(change).length) useApp.setState(change);
+}
+
+if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+  void import("@tauri-apps/api/event")
+    .then((m) =>
+      m.listen<Partial<Prefs> & { from?: string }>("prefs:notation", (e) => {
+        if (e.payload.from !== window.location.search) adoptNotation(e.payload);
+      }),
+    )
+    .catch(() => undefined);
+}
 
 // The main window and the floating editor share the notation: a change in one reaches the other.
 if (typeof window !== "undefined") {
