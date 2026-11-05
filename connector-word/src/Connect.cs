@@ -45,6 +45,25 @@ namespace MathBlocks.WordConnector
                 _app.DocumentOpen += OnDocumentOpen;
                 _app.DocumentBeforeSave += OnDocumentBeforeSave;
 
+                // Pastes follow Word's "Insert/paste pictures as" option: a floating setting makes pasted equations float.
+                try
+                {
+                    Log.Info("Word option Insert/paste pictures as: " + _app.Options.PictureWrapType);
+                }
+                catch (Exception)
+                {
+                }
+                // Documents already open: a previous build locked wrappers; unlock them.
+                try
+                {
+                    foreach (Word.Document d in _app.Documents)
+                        if (WordOps.HasEquations(d)) _ops.UnlockAll(d);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("unlocking wrappers at start", ex);
+                }
+
                 _pipe = new PipeClient(PipeClient.DefaultPipeName());
                 _pipe.LineReceived += OnLine;
                 _pipe.ConnectionChanged += connected => { if (connected) OnUi(SendHello); };
@@ -261,6 +280,15 @@ namespace MathBlocks.WordConnector
             {
                 if (_pipe == null || !_pipe.IsConnected) return;
                 var doc = _app.ActiveDocument;
+                // A floating MathBlocks picture (pasted floating): Word's own shape menu cannot be suppressed,
+                // so exactly one menu shows — Word's. The picture is put back in line and wrapped; the next
+                // right-click opens the floating editor.
+                if (FloatingMathBlocksSelected(sel))
+                {
+                    var adopted = AdoptPastedPicture(sel);
+                    _app.StatusBar = adopted != null ? "MathBlocks: the equation is back in line with the text — right-click it again to edit it." : "MathBlocks: this picture could not be put back in line.";
+                    return;
+                }
                 var cc = WordOps.WrapperAt(doc, sel.Range);
                 if (cc == null)
                 {
@@ -296,6 +324,20 @@ namespace MathBlocks.WordConnector
             }
             else prm["flatOpc"] = cc.Range.WordOpenXML;
             SendRequest("equationActivated", prm);
+        }
+
+        private static bool FloatingMathBlocksSelected(Word.Selection sel)
+        {
+            try
+            {
+                if (sel.ShapeRange.Count == 0) return false;
+                foreach (Word.Shape sh in sel.ShapeRange)
+                    if (WordOps.IsMathBlocksShape(sh)) return true;
+            }
+            catch (System.Runtime.InteropServices.COMException)
+            {
+            }
+            return false;
         }
 
         private bool _guarding;
@@ -435,6 +477,15 @@ namespace MathBlocks.WordConnector
         {
             try
             {
+                // A previous build locked wrappers: unlock them so Delete, Cut, drag and Number work.
+                try
+                {
+                    if (WordOps.HasEquations(doc)) _ops.UnlockAll(doc);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("unlocking wrappers", ex);
+                }
                 if (_pipe == null || !_pipe.IsConnected) return;
                 if (!WordOps.HasEquations(doc)) return;
                 SendRequest("documentOpened", new Dictionary<string, object> { ["name"] = doc.Name, ["fullName"] = doc.FullName });

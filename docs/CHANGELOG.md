@@ -25,6 +25,20 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed (round 5, interim — before the wrapper decision)
+- **No lock blocks editing any more:** wrappers are never content-locked (the lock blocked Number,
+  Delete, Cut and drag on a selected equation); wrappers locked by the previous build are unlocked
+  when a document opens, when the add-in starts, on every read and write, and by Repair. After Delete
+  or Cut of a selected equation the empty wrapper is removed (no placeholder text).
+- **Right-click shows exactly one menu:** on a floating (pasted) MathBlocks picture Word's own menu
+  shows and the picture is put back in line (status bar: right-click again to edit); on an equation
+  the floating editor; elsewhere Word's menu.
+- **Kinds pasted or dropped as LaTeX** (`{\pvec{r}_2}`, `\pvec{r}_2`) are shown as their kind at once,
+  never as red unknown commands; the exact case is in the CI round trip.
+- connector.log: Word's "Insert/paste pictures as" option at start; for every pasted picture that is
+  adopted, whether it arrived floating, as VML or DrawingML, with EMF or PNG (to settle the paste cause).
+- docs/DESIGN-CLASSIC-IDENTITY.md: wrapper vs. no wrapper for Classic equations (evaluation).
+
 ### Fixed (testing round 3, priority 1)
 - **Convert LaTeX in a real document:** the "inside equations or fields" spans were LaTeX typed into
   grown equation wrappers. Each span's own range is now tested and logged ("text inside the wrapper

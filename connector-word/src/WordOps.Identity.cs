@@ -117,18 +117,47 @@ namespace MathBlocks.WordConnector
             return n;
         }
 
-        /// <summary>Hides the wrapper's box and, for a picture, locks its content: Word then refuses to type or paste into it.</summary>
+        /// <summary>
+        /// Hides the wrapper's box. Wrappers are never locked: a lock blocked Delete, Cut, drag and
+        /// numbering of a selected equation. Growth is prevented by the caret guard, by insertion
+        /// that never lands inside a wrapper, and by the checks before every read and write.
+        /// </summary>
         internal static void Secure(Word.ContentControl cc)
         {
             TryHide(cc);
+            Unlock(cc);
+        }
+
+        internal static void Unlock(Word.ContentControl cc)
+        {
             try
             {
-                if (cc.Range.OMaths.Count == 0) cc.LockContents = true;
+                if (cc.LockContents) cc.LockContents = false;
+                if (cc.LockContentControl) cc.LockContentControl = false;
             }
             catch (COMException)
             {
-                // Older Word or a protected document: the caret guard still applies.
             }
+        }
+
+        /// <summary>Unlocks every MathBlocks wrapper of a document (a previous build locked them). Returns how many.</summary>
+        internal int UnlockAll(Word.Document doc)
+        {
+            int n = 0;
+            foreach (var cc in MathBlocksControls(doc))
+            {
+                try
+                {
+                    if (!cc.LockContents && !cc.LockContentControl) continue;
+                    Unlock(cc);
+                    n++;
+                }
+                catch (COMException)
+                {
+                }
+            }
+            if (n > 0) Log.Info("unlocked " + n + " MathBlocks wrapper(s) in " + doc.Name);
+            return n;
         }
 
         /// <summary>The outermost MathBlocks wrapper around a position, if any.</summary>
@@ -179,8 +208,32 @@ namespace MathBlocks.WordConnector
         internal void GuardCaret(Word.Selection sel)
         {
             if (sel == null || sel.Start != sel.End) return;
+            // Our own commands run inside an undo record: leave the caret to them.
+            try
+            {
+                if (_app.UndoRecord.IsRecordingCustomRecord) return;
+            }
+            catch (COMException)
+            {
+            }
             var outer = OutermostWrapper(sel.Range);
             if (outer == null) return;
+            // The equation was deleted (Delete or Cut on its picture): remove the empty wrapper, which
+            // Word would otherwise show as placeholder text.
+            try
+            {
+                if (outer.Range.Start >= outer.Range.End || (outer.Range.Text ?? "").Trim().Length == 0 && outer.Range.InlineShapes.Count == 0 && outer.Range.OMaths.Count == 0 && outer.Range.ShapeRange.Count == 0)
+                {
+                    var tag = outer.Tag;
+                    Unlock(outer);
+                    outer.Delete(true);
+                    Log.Info("removed the empty wrapper of a deleted equation (" + tag + ")");
+                    return;
+                }
+            }
+            catch (COMException)
+            {
+            }
             try
             {
                 if (sel.Range.OMaths.Count > 0) return;
@@ -232,6 +285,7 @@ namespace MathBlocks.WordConnector
         /// </summary>
         internal string PrepareRead(Word.Document doc, ref Word.ContentControl cc, string what, out string fingerprint)
         {
+            Unlock(cc);
             var c = Inspect(doc, cc);
             if (c.SameTag > 1)
             {
@@ -255,6 +309,15 @@ namespace MathBlocks.WordConnector
             var found = FindByTag(doc, tag);
             if (found.Count == 0) throw new RpcException(Rpc.NotFound, "The equation is no longer in the document.");
             var cc = found[0];
+            // Nothing in the paragraph may be locked for our own write (number, update, repair).
+            try
+            {
+                foreach (Word.ContentControl other in cc.Range.Paragraphs[1].Range.ContentControls) Unlock(other);
+            }
+            catch (COMException)
+            {
+            }
+            Unlock(cc);
             var c = Inspect(doc, cc);
             c.SameTag = found.Count;
             var expect = p != null && p.TryGetValue("expect", out var e) ? e as string : null;
@@ -380,25 +443,7 @@ namespace MathBlocks.WordConnector
             Log.Info("repair: wrapped one equation as " + cc.Tag);
         }
 
-        /// <summary>Locks the content of every clean Classic wrapper (documents made before wrappers were locked).</summary>
-        internal int SecureAll(Word.Document doc)
-        {
-            int n = 0;
-            foreach (var cc in MathBlocksControls(doc))
-            {
-                try
-                {
-                    if (!cc.LockContents && cc.Range.OMaths.Count == 0 && EquationIdentity.Problem(Inspect(doc, cc)) == null)
-                    {
-                        Secure(cc);
-                        n++;
-                    }
-                }
-                catch (COMException)
-                {
-                }
-            }
-            return n;
-        }
+        /// <summary>Repair: every wrapper unlocked (no lock may block editing).</summary>
+        internal int SecureAll(Word.Document doc) => UnlockAll(doc);
     }
 }
