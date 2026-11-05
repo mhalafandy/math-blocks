@@ -93,3 +93,22 @@ Please send me the Repair report numbers for each row.
    kind… → Physical vector → `\pvec[P/O]{r}`. Also Ctrl+K → "Make → Unit direction vector".
 8. **Floating editor:** the same right-click menu and popup work there; a kind made in the main window is known
    in the floating editor without restarting.
+
+---
+
+# Round 2 — Priority 3 checklist (editing experience)
+
+1. **Editor field:** start the app → a framed field with "Type here, or press Space Space for commands" and a
+   blinking caret; typing goes straight in. Ctrl+N → empty field, focused. Focus ring visible while typing.
+2. **Space Space:** type `x+y`, press Space twice quickly → command palette; Esc → keep typing where you were,
+   no space added. Slowly (two separate Spaces) → nothing happens. Inside `\text{…}` and in the LaTeX editor,
+   Space Space types spaces. F1 → turn it off / change the time; Ctrl+Space Space still… (Ctrl+K always works).
+3. **LaTeX commands:** F1 → "LaTeX commands" tab; search "arrow", "frac", "pvec"; click one → inserted at the
+   caret, keyboard back in the editor. Your own kinds appear under "Notation kinds (and my own)".
+4. **Floating editor** (right-click an equation in Word):
+   - opens with Visual and LaTeX stacked, caret at the end of the equation; collapse either one (▾);
+   - the left rail: ⌕ commands (Space Space / Ctrl+K focus its search), ★ favourites, ≤ symbols, ∑ structures,
+     ⇀ spacecraft / my notation / collections, Aa style, ◫ preview — one flyout at a time;
+   - footer: "Ctrl+Enter apply · Enter new line · Esc cancel" (inline: "Enter apply"), Cancel / Apply;
+   - drag the grip at the bottom right to make it wider; close and reopen → same width, same panes, same flyout;
+   - the top row is solid: Word's ribbon no longer shows through it.

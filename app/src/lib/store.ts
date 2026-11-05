@@ -76,6 +76,10 @@ interface Prefs {
   notationProfile: NotationProfile;
   /** The user's own kinds (Notation settings → New kind). */
   customKinds: CustomKind[];
+  /** Two Spaces in quick succession in the visual editor open the command palette. */
+  doubleSpace: boolean;
+  /** Longest time between the two Spaces, ms. */
+  doubleSpaceMs: number;
 }
 
 export interface UpdateState {
@@ -161,6 +165,8 @@ const DEFAULT_PREFS: Prefs = {
   transposeForm: "upright",
   notationProfile: DEFAULT_PROFILE,
   customKinds: [],
+  doubleSpace: true,
+  doubleSpaceMs: 300,
 };
 
 function loadPrefs(): Prefs {

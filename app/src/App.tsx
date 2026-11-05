@@ -289,7 +289,7 @@ export function App() {
                 <div className="canvas-hint" aria-hidden>
                   Type an equation: <kbd>x^2</kbd> <kbd>alpha</kbd> <kbd>-&gt;</kbd> <kbd>/</kbd> for a fraction
                   <br />
-                  <kbd>Ctrl F</kbd> fraction · <kbd>Ctrl R</kbd> root · <kbd>Ctrl H</kbd>/<kbd>Ctrl L</kbd> super/subscript · <kbd>Ctrl Shift V</kbd> vector · <kbd>F1</kbd> all shortcuts
+                  <kbd>Ctrl F</kbd> fraction · <kbd>Ctrl R</kbd> root · <kbd>Ctrl H</kbd>/<kbd>Ctrl L</kbd> super/subscript · <kbd>Ctrl Shift V</kbd> vector · <kbd>Space Space</kbd> commands · <kbd>F1</kbd> shortcuts and LaTeX commands
                 </div>
               )}
             </div>
@@ -341,7 +341,7 @@ export function App() {
         <button className="status-btn" title="How equations go into Word (Word style tab)" onClick={() => s.setPrefs({ bottomOpen: true, bottomTab: "style" })}>
           {s.look === "classic" ? `Classic ${s.equationSizePt} pt` : `Native · ${profile.mathFont}`}
         </button>
-        <button className="status-btn" title="Keyboard shortcuts (F1)" onClick={openShortcuts}>
+        <button className="status-btn" title="Keyboard shortcuts (F1)" onClick={() => openShortcuts()}>
           ⌨ Shortcuts
         </button>
         <div className="spacer" />

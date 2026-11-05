@@ -5,8 +5,8 @@ import { useWidthMeasure, WidthBar } from "./WidthBar";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MathEditor, focusVisualEditor, insertIntoVisual, restoreEditorFocus } from "./MathEditor";
 import { insertPaletteItem } from "./SymbolPalette";
-import { ALL_ITEMS, type IndexedItem } from "../lib/palette";
-import { PaletteTop } from "./SymbolPalette";
+import { ALL_ITEMS, GROUPS, type IndexedItem } from "../lib/palette";
+import { Grid, groupItems, SearchResults, sizeOf } from "./SymbolPalette";
 import { LatexEditor } from "./LatexEditor";
 import { ClassicPreview } from "./ClassicPreview";
 import { MathPreview } from "./MathPreview";
@@ -25,23 +25,17 @@ export function PanelApp() {
   const [info, setInfo] = useState<PanelOpen | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const openedAt = useRef(0);
-  const [tab, setTab] = useState<string | null>(() => {
-    try {
-      return localStorage.getItem(TAB_KEY);
-    } catch {
-      return null;
-    }
-  });
-  const chooseTab = (t: string) => {
-    const next = tab === t ? null : t;
-    setTab(next);
-    try {
-      if (next) localStorage.setItem(TAB_KEY, next);
-      else localStorage.removeItem(TAB_KEY);
-    } catch {
-      // Not remembered.
-    }
-  };
+  // Remembered: which panes are open, the open flyout, the window's width.
+  const [layout, setLayoutState] = useState<PanelLayout>(loadLayout);
+  const setLayout = (patch: Partial<PanelLayout>) =>
+    setLayoutState((cur) => {
+      const next = { ...cur, ...patch };
+      if (!next.visual && !next.latex) next.visual = true;
+      saveLayout(next);
+      return next;
+    });
+  const flyout = layout.flyout;
+  const toggleFlyout = (id: FlyoutId) => setLayout({ flyout: flyout === id ? null : id });
   const latex = useApp((s) => s.latex);
   const display = useApp((s) => s.display);
   const numbered = useApp((s) => s.numbered);
@@ -103,7 +97,7 @@ export function PanelApp() {
       if (handleEditorKey(e)) return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        (document.querySelector(".panel-command input") as HTMLInputElement | null)?.focus();
+        window.dispatchEvent(new CustomEvent("mb:commands"));
         return;
       }
       if (e.key === "Escape") {
@@ -130,12 +124,40 @@ export function PanelApp() {
       void (async () => {
         const { getCurrentWindow } = await import("@tauri-apps/api/window");
         const { LogicalSize } = await import("@tauri-apps/api/dpi");
-        await getCurrentWindow().setSize(new LogicalSize(PANEL_WIDTH, Math.min(720, h)));
+        await getCurrentWindow().setSize(new LogicalSize(loadLayout().width, Math.min(760, h)));
       })().catch(() => undefined);
     });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+
+  // Ctrl+K or Space Space: the Commands flyout, its search focused.
+  const focusCommands = useRef(false);
+  useEffect(() => {
+    const open = () => {
+      focusCommands.current = true;
+      setLayout({ flyout: "commands" });
+      // Already open: focus now (no re-render follows).
+      document.querySelector<HTMLInputElement>(".panel-command input")?.focus();
+    };
+    window.addEventListener("mb:commands", open);
+    return () => window.removeEventListener("mb:commands", open);
+  });
+  useEffect(() => {
+    if (flyout !== "commands" || !focusCommands.current) return;
+    focusCommands.current = false;
+    document.querySelector<HTMLInputElement>(".panel-command input")?.focus();
+  }, [flyout]);
+
+  // The width the user dragged the window to is kept for next time.
+  useEffect(() => {
+    const onResize = () => {
+      const w = Math.round(window.innerWidth);
+      if (w >= 480 && Math.abs(w - loadLayout().width) > 4) setLayout({ width: w });
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  });
 
   // Behaves like a popover: clicking back into Word (or anywhere else) closes it.
   useEffect(() => {
@@ -186,12 +208,7 @@ export function PanelApp() {
   );
 
   const app = useApp.getState();
-  const tabs: [string, string][] = [
-    ["preview", look === "classic" ? "Preview" : "Preview"],
-    ["symbols", "Symbols"],
-    ["latex", "LaTeX"],
-    ["style", "Style"],
-  ];
+  const hint = toast ? toast.text : eq.errors ? `${eq.errors} error(s)` : display ? "Ctrl+Enter apply · Enter new line · Esc cancel" : "Enter apply · Esc cancel";
   return (
     <div className="panel-shell">
       <div className="panel-card" ref={root}>
@@ -220,51 +237,86 @@ export function PanelApp() {
           </button>
         </div>
 
-        <div className="panel-editor">
-          <MathEditor />
-        </div>
-        <WidthBar />
-
-        <CommandLine commands={commands} />
-        <QuickRow />
-
-        <div className="panel-tabs" role="tablist">
-          {tabs.map(([id, label]) => (
-            <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? "on" : undefined} onClick={() => chooseTab(id)}>
-              {label}
-            </button>
-          ))}
-          <div className="spacer" />
-          <span className={eq.errors || toast?.kind === "error" ? "panel-hint bad" : "panel-hint"}>
-            {toast ? toast.text : eq.errors ? `${eq.errors} error(s)` : display ? "Ctrl+Enter apply · Enter new line · Esc cancel" : "Enter apply · Esc cancel"}
-          </span>
-          <button className="primary panel-apply" onClick={() => void apply()} disabled={eq.errors > 0}>
-            {info?.linked ? "Update everywhere" : "Apply"}
-          </button>
-        </div>
-
-        {tab && (
-          <div className="panel-pane">
-            {tab === "preview" && (look === "classic" ? <ClassicPreview latex={latex} display={display} sizePt={sizePt} guidePt={width?.availPt} /> : <MathPreview latex={latex} />)}
-            {tab === "symbols" && <PaletteTop />}
-            {tab === "latex" && (
-              <div className="panel-latex">
-                <LatexEditor diagnostics={eq.diagnostics} />
+        <div className="panel-body2">
+          {/* One icon per group; each opens its flyout, one at a time. */}
+          <nav className="panel-rail" aria-label="Tools">
+            {FLYOUTS.map((f) => (
+              <button key={f.id} className={flyout === f.id ? "on" : undefined} title={`${f.label}${f.keys ? ` (${f.keys})` : ""}`} aria-pressed={flyout === f.id} onMouseDown={(e) => e.preventDefault()} onClick={() => toggleFlyout(f.id)}>
+                <span aria-hidden>{f.icon}</span>
+              </button>
+            ))}
+          </nav>
+          <div className="panel-main">
+            <section className={layout.visual ? "panel-pane2" : "panel-pane2 collapsed"}>
+              <button className="panel-pane-head" onClick={() => setLayout({ visual: !layout.visual })} aria-expanded={layout.visual}>
+                {layout.visual ? "▾" : "▸"} Visual
+              </button>
+              <div className="panel-editor" hidden={!layout.visual}>
+                <MathEditor />
               </div>
-            )}
-            {tab === "style" && (
-              <div className="form narrow">
-                <label>
-                  Equations in Word
-                  <select value={look} onChange={(e) => app.setPrefs({ look: e.target.value as "classic" | "native" })}>
-                    <option value="classic">Classic: MathType look</option>
-                    <option value="native">Native Word equation</option>
-                  </select>
-                </label>
-              </div>
+              {layout.visual && <WidthBar />}
+            </section>
+            <section className={layout.latex ? "panel-pane2" : "panel-pane2 collapsed"}>
+              <button className="panel-pane-head" onClick={() => setLayout({ latex: !layout.latex })} aria-expanded={layout.latex}>
+                {layout.latex ? "▾" : "▸"} LaTeX
+              </button>
+              {layout.latex && (
+                <div className="panel-latex">
+                  <LatexEditor diagnostics={eq.diagnostics} />
+                </div>
+              )}
+            </section>
+            {flyout && (
+              <section className="panel-flyout" aria-label={FLYOUTS.find((f) => f.id === flyout)?.label}>
+                <div className="panel-flyout-head">
+                  <span>{FLYOUTS.find((f) => f.id === flyout)?.label}</span>
+                  <button className="panel-icon" title="Close" onClick={() => setLayout({ flyout: null })}>
+                    ✕
+                  </button>
+                </div>
+                <div className="panel-flyout-body">
+                  {flyout === "commands" && <CommandLine commands={commands} />}
+                  {flyout === "favourites" && <QuickRow />}
+                  {flyout === "symbols" && <GroupFlyout row="symbols" />}
+                  {flyout === "structures" && <GroupFlyout row="templates" />}
+                  {flyout === "collections" && <GroupFlyout row="tabs" />}
+                  {flyout === "style" && (
+                    <div className="form narrow">
+                      <label>
+                        Equations in Word
+                        <select value={look} onChange={(e) => app.setPrefs({ look: e.target.value as "classic" | "native" })}>
+                          <option value="classic">Classic: MathType look</option>
+                          <option value="native">Native Word equation</option>
+                        </select>
+                      </label>
+                      <button className="link-button" onClick={() => void import("./NotationSettings").then((m) => m.openNotationSettings())}>
+                        Kinds and their styles, my own kinds…
+                      </button>
+                    </div>
+                  )}
+                  {flyout === "preview" && (look === "classic" ? <ClassicPreview latex={latex} display={display} sizePt={sizePt} guidePt={width?.availPt} /> : <MathPreview latex={latex} />)}
+                </div>
+              </section>
             )}
           </div>
-        )}
+        </div>
+
+        <div className="panel-foot2">
+          <span className={eq.errors || toast?.kind === "error" ? "panel-hint bad" : "panel-hint"}>{hint}</span>
+          <div className="spacer" />
+          <button onClick={cancel}>Cancel</button>
+          <button className="primary panel-apply" onClick={() => void apply()} disabled={eq.errors > 0} title={display ? "Ctrl+Enter" : "Enter"}>
+            {info?.linked ? "Update everywhere" : "Apply"}
+          </button>
+          <span
+            className="panel-grip"
+            title="Drag to change the width"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              void import("@tauri-apps/api/window").then((m) => m.getCurrentWindow().startResizeDragging("East")).catch(() => undefined);
+            }}
+          />
+        </div>
       </div>
       <KindPopup />
       <NotationSettings />
@@ -273,9 +325,63 @@ export function PanelApp() {
   );
 }
 
-const PANEL_WIDTH = 680;
+type FlyoutId = "commands" | "favourites" | "symbols" | "structures" | "collections" | "style" | "preview";
+const FLYOUTS: { id: FlyoutId; icon: string; label: string; keys?: string }[] = [
+  { id: "commands", icon: "⌕", label: "Commands and LaTeX", keys: "Ctrl+K, Space Space" },
+  { id: "favourites", icon: "★", label: "Favourites" },
+  { id: "symbols", icon: "≤", label: "Symbols" },
+  { id: "structures", icon: "∑", label: "Structures (fractions, scripts, matrices…)" },
+  { id: "collections", icon: "⇀", label: "Spacecraft, my notation and collections" },
+  { id: "style", icon: "Aa", label: "Style" },
+  { id: "preview", icon: "◫", label: "Preview (as in Word)" },
+];
+
+interface PanelLayout {
+  visual: boolean;
+  latex: boolean;
+  flyout: FlyoutId | null;
+  width: number;
+}
+const LAYOUT_KEY = "mathblocks.panel.layout.v1";
+const DEFAULT_LAYOUT: PanelLayout = { visual: true, latex: true, flyout: null, width: 720 };
+function loadLayout(): PanelLayout {
+  try {
+    const raw = localStorage.getItem(LAYOUT_KEY);
+    return raw ? { ...DEFAULT_LAYOUT, ...(JSON.parse(raw) as Partial<PanelLayout>) } : DEFAULT_LAYOUT;
+  } catch {
+    return DEFAULT_LAYOUT;
+  }
+}
+function saveLayout(l: PanelLayout) {
+  try {
+    localStorage.setItem(LAYOUT_KEY, JSON.stringify(l));
+  } catch {
+    // Not remembered.
+  }
+}
+
+/** One palette row's groups as chips, the chosen group's items below, with a search. */
+function GroupFlyout({ row }: { row: "symbols" | "templates" | "tabs" }) {
+  const groups = GROUPS.filter((g) => g.row === row && g.items.length);
+  const [id, setId] = useState(groups[0]?.id ?? "");
+  const [query, setQuery] = useState("");
+  const g = groups.find((x) => x.id === id) ?? groups[0];
+  return (
+    <div className="panel-groups">
+      <div className="panel-chips">
+        {groups.map((x) => (
+          <button key={x.id} className={x.id === g?.id && !query ? "on" : undefined} onMouseDown={(e) => e.preventDefault()} onClick={() => (setId(x.id), setQuery(""))}>
+            {x.label}
+          </button>
+        ))}
+        <input className="panel-chip-search" placeholder="Search…" value={query} onChange={(e) => setQuery(e.target.value)} />
+      </div>
+      {query ? <SearchResults query={query} /> : g ? <Grid items={groupItems(g)} size={sizeOf(g)} /> : null}
+    </div>
+  );
+}
+
 const CARD_MARGIN = 14;
-const TAB_KEY = "mathblocks.panel.tab";
 
 /** One-click favourites (the main window's Quick access, right-click there to change them). */
 function QuickRow() {

@@ -25,6 +25,24 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Changed (testing round 2, priority 3: editing experience)
+- **The main editor is a visible field:** border, focus ring, placeholder "Type here, or press Space Space
+  for commands", blinking caret; focused on launch and on New.
+- **Space Space** (within 300 ms, adjustable in F1; can be turned off) opens the command palette — the
+  floating editor's Commands flyout there. A single Space keeps its role (leaving a kind); nothing is left
+  in the equation. Not while typing a \command or inside \text{}, and never in the LaTeX editor.
+- **LaTeX commands sheet** (F1 → second tab, or Ctrl+K → LaTeX commands): searchable, grouped like the
+  palette (Greek, operators, relations, arrows, accents, structures, environments, kinds and my own),
+  each with its rendering and shortcut or snippet; click inserts at the cursor.
+- **Floating editor redesign:** visual and LaTeX editors in a split view (each collapsible); every other
+  group (commands, favourites, symbols, structures, collections incl. My notation, style, preview) in a
+  narrow side rail, opening one flyout at a time; Ctrl+Enter / Esc hints and Cancel / Apply in the footer;
+  width (drag the grip), collapsed panes and the open flyout are remembered.
+- **Top-row bug (cause):** the floating editor's card was 94 % opaque with a backdrop blur; in a
+  transparent window WebView2 cannot blur what is behind the window, so Word's ribbon showed through the
+  top row. The card is opaque now. (The rows of symbol menus that ran off the right edge are gone: they
+  are in the rail's flyouts.)
+
 ### Added / fixed (testing round 2, priority 2: kinds)
 - **Kind name on hover:** a small label above the kind ("Physical vector"), drawn outside the
   editor so it is never clipped.
