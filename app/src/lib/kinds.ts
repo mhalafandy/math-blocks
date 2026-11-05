@@ -1,4 +1,4 @@
-import { DEFAULT_PROFILE, expandKind, KIND_BY_ID, peelKind, styleOf, type MathNode, type NotationProfile, type Row } from "@mathblocks/math-core";
+import { DEFAULT_PROFILE, expandKind, KIND_BY_ID, KINDS, peelKind, styleOf, type MathNode, type NotationProfile, type Row } from "@mathblocks/math-core";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 
 /**
@@ -10,6 +10,18 @@ import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
  */
 
 export const CLASS_PREFIX = "nk-";
+
+let macroKey = "";
+let macroRe = /$^/;
+/** Matches any kind macro, built-in or the user's own (recomputed when the kinds change). */
+export function kindMacroRe(): RegExp {
+  const key = KINDS.map((k) => k.macro).join("|");
+  if (key !== macroKey) {
+    macroKey = key;
+    macroRe = new RegExp(`\\\\(${key})(?![a-zA-Z])`);
+  }
+  return macroRe;
+}
 
 /** Stand-in letter for an empty slot while a kind is recognised (the parser drops \placeholder{}). */
 const SLOT = "\u24C8";

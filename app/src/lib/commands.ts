@@ -1,5 +1,6 @@
 import { insertPaletteItem } from "../components/SymbolPalette";
-import { toggleBold } from "../components/MathEditor";
+import { convertKindToPlain, makeKindFromSelection, toggleBold } from "../components/MathEditor";
+import { KINDS } from "@mathblocks/math-core";
 import { newEquation } from "./actions";
 import { ALL_ITEMS } from "./palette";
 import { checkForUpdate } from "./updates";
@@ -68,6 +69,44 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
     { id: "word.convertLatex", title: "Convert all LaTeX in the Word document to equations", group: "Word", keywords: "latex dollar tex import overleaf convert", run: () => import("./wordShortcuts").then((m) => m.convertAllLatex()) },
     { id: "word.editAtCursor", title: "Edit the equation at Word's cursor", group: "Word", shortcut: "Ctrl+Alt+M (in Word)", keywords: "edit new insert floating", run: () => import("./wordShortcuts").then((m) => m.editAtCursor()) },
     { id: "word.toggleLatex", title: "Equation ↔ LaTeX at Word's cursor", group: "Word", shortcut: "Ctrl+Alt+L (in Word)", keywords: "latex text linear toggle source", run: () => import("./wordShortcuts").then((m) => m.toggleLatexAtCursor()) },
+    {
+      id: "notation.settings",
+      title: "Notation settings: kinds and their styles, new kinds…",
+      group: "View",
+      keywords: "kind style vector harpoon bold preset hughes schaub markley new kind my notation macro restyle",
+      run: () => import("../components/NotationSettings").then((m) => m.openNotationSettings()),
+    },
+    {
+      id: "notation.newKind",
+      title: "New notation kind…",
+      group: "Edit",
+      keywords: "my notation macro kind custom define",
+      run: () => import("../components/NotationSettings").then((m) => m.openNotationSettings("__new")),
+    },
+    // Make → kind on the selection (or the symbol before the cursor), one command per kind.
+    ...KINDS.filter((k) => k.args === 1 && k.id !== "diff" && k.id !== "frm").map((k): Command => ({
+      id: `notation.make.${k.id}`,
+      title: `Make → ${k.name}`,
+      group: "Edit",
+      keywords: `kind convert selection ${k.macro} notation`,
+      run: () => void makeKindFromSelection(k.id),
+    })),
+    {
+      id: "notation.toPlain",
+      title: "Convert kind to plain (hand-styled)",
+      group: "Edit",
+      keywords: "kind plain unlink style manual",
+      run: () => {
+        if (!convertKindToPlain()) useApp.getState().notify("Put the cursor in or right after a notation kind first.");
+      },
+    },
+    {
+      id: "notation.applyWord",
+      title: "Apply the notation to the Word document (redraw equations with kinds)…",
+      group: "Word",
+      keywords: "restyle redraw kinds document notation",
+      run: () => import("./kindRestyle").then((m) => m.restyleDocument()),
+    },
     {
       id: "word.notation",
       title: "Change notation / check consistency across the document (vectors, dyadics…)…",

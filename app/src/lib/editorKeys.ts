@@ -1,6 +1,7 @@
 import { focusedMathField, fromMathLive, insertIntoVisual, toggleBold, toMathLive } from "../components/MathEditor";
 import { breakLineAt, CARET, setAlignmentAt, type LineResult } from "./multiline";
-import { findTrigger } from "./snippets";
+import { findTrigger, kindSnippets } from "./snippets";
+import { KIND_BY_MACRO } from "@mathblocks/math-core";
 import { applySnippet, type SnippetField } from "./snippetApply";
 import { exitKind, type KindField } from "./kindExit";
 import { SHORTCUT_TABLE } from "./editorShortcuts";
@@ -142,6 +143,34 @@ export function handleEditorKey(e: KeyboardEvent): boolean {
       e.preventDefault();
       e.stopPropagation();
       mf.executeCommand(["insert", `\\${name}`]);
+      return true;
+    }
+    return false;
+  }
+  // Typing a LaTeX command (\pvec…): Enter, Space or Tab finish it. A kind's macro becomes the
+  // kind, with its slots to fill; any other command is left to the editor.
+  if ((mf as unknown as { mode?: string }).mode === "latex") {
+    if ((e.key === "Enter" || e.key === " " || e.key === "Tab") && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const pos = mf.position;
+      let name = "";
+      let len = 0;
+      for (let k = 2; k <= 26 && k <= pos; k++) {
+        const v = mf.getValue(pos - k, pos, "latex");
+        if (/^\\[A-Za-z]+$/.test(v)) {
+          name = v.slice(1);
+          len = k;
+          break;
+        }
+      }
+      const kind = name ? KIND_BY_MACRO.get(name) : undefined;
+      if (!kind) return false;
+      e.preventDefault();
+      e.stopPropagation();
+      // Remove the typed command (with its group) and leave command mode.
+      mf.selection = { ranges: [[pos - len, Math.min(mf.lastOffset, pos + 1)]], direction: "forward" };
+      mf.executeCommand("deleteBackward");
+      const latex = kindSnippets("").find((x) => x.trigger === kind.snippet)?.latex ?? `\\${kind.macro}{#?}`;
+      insertIntoVisual(applyTranspose(latex, useApp.getState().transposeForm));
       return true;
     }
     return false;

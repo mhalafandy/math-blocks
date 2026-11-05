@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import { parseLatex } from "@mathblocks/math-latex";
 import { renderSvg } from "@mathblocks/math-render";
+import { useApp } from "../lib/store";
 import { classicStyle, hasClassicFonts, loadFonts, notationProfile } from "../lib/render";
 
 /** The equation as the MathBlocks engine will draw it in Word (Classic style). */
 export function ClassicPreview({ latex, display, sizePt, guidePt }: { latex: string; display: boolean; sizePt: number; guidePt?: number }) {
+  // Redrawn when the notation or accent settings change.
+  const profile = useApp((s) => s.notationProfile);
+  const accents = useApp((s) => s.accentRules);
   const [svg, setSvg] = useState<string | null>(null);
   const [widthPt, setWidthPt] = useState(0);
   const [real, setReal] = useState(true);
@@ -28,7 +32,7 @@ export function ClassicPreview({ latex, display, sizePt, guidePt }: { latex: str
       live = false;
       clearTimeout(timer);
     };
-  }, [latex, display, sizePt]);
+  }, [latex, display, sizePt, profile, accents]);
   return (
     <div className="classic-preview">
       {svg ? (

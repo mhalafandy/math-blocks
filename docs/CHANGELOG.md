@@ -25,6 +25,30 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added / fixed (testing round 2, priority 2: kinds)
+- **Kind name on hover:** a small label above the kind ("Physical vector"), drawn outside the
+  editor so it is never clipped.
+- **Live restyle:** the Word style tab's Spacecraft notation and Physical vectors choices now set how
+  kinds are drawn (they used to change only the palette); the open equation, the Classic preview
+  and library thumbnails restyle at once. The main window and the floating editor share the notation.
+- **Ctrl+Shift+B on a kind:** a popup — "Physical vector: style comes from its kind → Edit kind
+  style… / Convert to plain (hand-styled)".
+- **Notation settings** (Ctrl+K → Notation settings, Word style tab → Kinds and their styles): every
+  kind with weight, shape, letter style, bold Greek, accent (over/under), accent weight, brackets,
+  bold scope, frame-label position and separator (symbol for DCM / frame), live preview of a, r,
+  ω, F, H with and without frame labels at 12 pt and 10 pt; preset; Reset to preset; Duplicate.
+- **My own kinds:** New kind (name, macro, snippet, start-from style) — parsed, drawn (Classic, Word,
+  .tex export with \newcommand), recognised in the editor, in the palette under "My notation", in
+  snippets (;trigger), and typed as \macro. Edit, rename, delete. Covered by the CI round trip and
+  snippet check.
+- **Apply to the Word document:** redraws every equation that uses a kind in the current style
+  (backup, stored XML, progress, one undo step).
+- **Make → kind** (right-click in the editor, Ctrl+K "Make → Physical vector"…): the selection or the
+  symbol before the cursor becomes the kind; styles and accents dropped, a subscript kept as the frame
+  label. **Convert to plain** (right-click, popup, Ctrl+K).
+- Typing a kind's macro (\pvec, \dcm…) then Enter, Space or Tab inserts the kind with its slots
+  (it used to stay as an unknown red command).
+
 ### Fixed (testing round 2, priority 1)
 - **Convert LaTeX:** spans whose Word position does not match the paragraph text are found again
   by searching; each LaTeX span is replaced like a normal insertion (text removed, equation

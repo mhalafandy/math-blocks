@@ -1,7 +1,7 @@
 import { create } from "zustand";
-import { DEFAULT_PROFILE, type BoldScope, type NotationProfile } from "@mathblocks/math-core";
+import { DEFAULT_PROFILE, registerCustomKinds, type BoldScope, type CustomKind, type KindStyle, type NotationProfile } from "@mathblocks/math-core";
 import { DEFAULT_ACCENTS, type AccentRules } from "@mathblocks/math-render";
-import { DEFAULT_FAVORITES, setNotationRules, type Convention, type TransposeForm, type VectorStyle as SpacecraftVector } from "./palette";
+import { DEFAULT_FAVORITES, setNotationRules, syncMyNotation, type Convention, type TransposeForm, type VectorStyle as SpacecraftVector } from "./palette";
 
 export type Theme = "system" | "light" | "dark";
 /** Tabs of the bottom panel under the equation canvas. */
@@ -74,6 +74,8 @@ interface Prefs {
   transposeForm: TransposeForm;
   /** Notation kinds: preset and the user's style changes (docs/NOTATION-KINDS.md). */
   notationProfile: NotationProfile;
+  /** The user's own kinds (Notation settings → New kind). */
+  customKinds: CustomKind[];
 }
 
 export interface UpdateState {
@@ -158,6 +160,7 @@ const DEFAULT_PREFS: Prefs = {
   accentsFollowBold: false,
   transposeForm: "upright",
   notationProfile: DEFAULT_PROFILE,
+  customKinds: [],
 };
 
 function loadPrefs(): Prefs {
@@ -178,6 +181,14 @@ function savePrefs(s: Prefs) {
     // Storage unavailable: preferences simply do not persist.
   }
 }
+
+/** The physical vector's style for each "Physical vectors" choice. */
+const PVEC_STYLE: Record<SpacecraftVector, Partial<KindStyle>> = {
+  harpoon: { weight: "bold", shape: "upright", accent: "harpoon" },
+  arrow: { weight: "bold", shape: "upright", accent: "arrow" },
+  plainArrow: { weight: "regular", shape: "italic", accent: "arrow" },
+  bold: { weight: "bold", shape: "upright", accent: "none" },
+};
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -203,6 +214,19 @@ export const useApp = create<AppState>((set, get) => ({
   setLatex: (latex, source) => set({ latex, source }),
   setDisplay: (display) => set(display ? { display } : { display, numbered: false }),
   setPrefs: (p) => {
+    // The Word style tab's "Spacecraft notation" and "Physical vectors" also set how the kinds are
+    // drawn (preset; the physical vector's style), so the open equation restyles at once.
+    if (p.spacecraftConvention || p.spacecraftVector) {
+      const cur = p.notationProfile ?? get().notationProfile;
+      const next: NotationProfile = { preset: p.spacecraftConvention ?? cur.preset, overrides: { ...cur.overrides } };
+      if (p.spacecraftVector) next.overrides.pvec = { ...(next.overrides.pvec ?? {}), ...PVEC_STYLE[p.spacecraftVector] };
+      p = { ...p, notationProfile: next };
+    }
+    if (p.customKinds) {
+      registerCustomKinds(p.customKinds);
+      // A new profile object: everything drawn in the notation (editor, previews) redraws.
+      p = { ...p, notationProfile: { ...(p.notationProfile ?? get().notationProfile) } };
+    }
     set(p);
     savePrefs(get());
   },
@@ -214,6 +238,32 @@ export const useApp = create<AppState>((set, get) => ({
     toastTimer = setTimeout(() => set({ toast: null }), kind === "error" ? 6000 : 3000);
   },
 }));
+
+// The user's kinds are known to the parser before any equation is read, and in the palette.
+registerCustomKinds(useApp.getState().customKinds ?? []);
+syncMyNotation(useApp.getState().customKinds ?? []);
+useApp.subscribe((s, prev) => s.customKinds !== prev.customKinds && syncMyNotation(s.customKinds));
+
+// The main window and the floating editor share the notation: a change in one reaches the other.
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) => {
+    if (e.key !== PREFS_KEY || !e.newValue) return;
+    try {
+      const p = JSON.parse(e.newValue) as Partial<Prefs>;
+      const cur = useApp.getState();
+      const change: Partial<Prefs> = {};
+      if (p.customKinds && JSON.stringify(p.customKinds) !== JSON.stringify(cur.customKinds)) {
+        registerCustomKinds(p.customKinds);
+        change.customKinds = p.customKinds;
+      }
+      if (p.notationProfile && (change.customKinds || JSON.stringify(p.notationProfile) !== JSON.stringify(cur.notationProfile))) change.notationProfile = { ...p.notationProfile };
+      if (p.accentRules && JSON.stringify(p.accentRules) !== JSON.stringify(cur.accentRules)) change.accentRules = p.accentRules;
+      if (Object.keys(change).length) useApp.setState(change);
+    } catch {
+      // Ignore a malformed value.
+    }
+  });
+}
 
 // The palette's spacecraft entries follow the notation preference.
 const syncNotation = (s: Prefs) => setNotationRules(s.spacecraftConvention, s.spacecraftVector, s.transposeForm);

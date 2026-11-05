@@ -1,3 +1,5 @@
+import { NotationSettings } from "./components/NotationSettings";
+import { KindPopup } from "./components/KindPopup";
 import { WidthBar } from "./components/WidthBar";
 import { useCallback, useEffect, useMemo } from "react";
 import { BottomPanel } from "./components/BottomPanel";
@@ -358,6 +360,8 @@ export function App() {
       <ReferencePicker />
       <TemplateDialog onSend={() => void insertIntoWord()} />
       <NotationDialog />
+      <NotationSettings />
+      <KindPopup />
       <NomenclatureDialog />
       <ThesisDialog />
       <NormalizeBoldDialog />

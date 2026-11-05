@@ -11,11 +11,15 @@ import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "playwright";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
+import { NEW_KIND_STYLE, registerCustomKinds } from "@mathblocks/math-core";
 import { fromEditorLatex, toEditorLatex } from "../app/src/lib/kinds";
 import { BASE_SNIPPETS, findTrigger, kindSnippets, PREFIX_CHARS } from "../app/src/lib/snippets";
 import { applySnippet } from "../app/src/lib/snippetApply";
 
 const norm = (l: string) => serializeLatex(parseLatex(l).root);
+
+// A kind of the user's own (Notation settings → New kind) goes through every check too.
+registerCustomKinds([{ id: "u_angvel", name: "Angular velocity", macro: "angvel", snippet: "av", style: { ...NEW_KIND_STYLE, accent: "harpoon", frames: { position: "sub", separator: "/" } } }]);
 const mathlive = pathToFileURL(realpathSync(fileURLToPath(new URL("../app/node_modules/mathlive/mathlive.min.mjs", import.meta.url)))).href;
 const browser = await chromium.launch({ args: ["--allow-file-access-from-files"] });
 const page = await browser.newPage();

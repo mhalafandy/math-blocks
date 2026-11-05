@@ -63,6 +63,87 @@ export const KINDS: KindDef[] = [
 ];
 export const KIND_BY_ID = new Map(KINDS.map((k) => [k.id, k]));
 export const KIND_BY_MACRO = new Map(KINDS.map((k) => [k.macro, k]));
+/** The built-in kinds (KINDS also holds the user's own, after registerCustomKinds). */
+export const BUILTIN_KINDS: readonly KindDef[] = [...KINDS];
+
+/**
+ * A kind the user defined (Notation settings → New kind): one symbol argument, an optional frame
+ * label like the vectors, its own macro, snippet trigger and default style.
+ */
+export interface CustomKind {
+  id: string;
+  name: string;
+  macro: string;
+  snippet: string;
+  style: KindStyle;
+}
+
+const CUSTOM_STYLES = new Map<string, KindStyle>();
+
+/** True for the user's own kinds. */
+export const isCustomKind = (id: string) => CUSTOM_STYLES.has(id);
+
+/**
+ * Replaces the user's kinds (all of them) in the registry: KINDS, KIND_BY_ID, KIND_BY_MACRO.
+ * Definitions that are invalid or clash with a built-in kind are skipped and returned.
+ */
+export function registerCustomKinds(defs: CustomKind[]): { skipped: { def: CustomKind; reason: string }[] } {
+  const skipped: { def: CustomKind; reason: string }[] = [];
+  for (const id of [...CUSTOM_STYLES.keys()]) {
+    const old = KIND_BY_ID.get(id);
+    if (old) KIND_BY_MACRO.delete(old.macro);
+    KIND_BY_ID.delete(id);
+  }
+  CUSTOM_STYLES.clear();
+  KINDS.splice(BUILTIN_KINDS.length);
+  for (const d of defs) {
+    const reason = customKindProblem(d, KINDS);
+    if (reason) {
+      skipped.push({ def: d, reason });
+      continue;
+    }
+    const def: KindDef = { id: d.id, name: d.name, macro: d.macro, args: 1, argNames: ["symbol"], snippet: d.snippet };
+    KINDS.push(def);
+    KIND_BY_ID.set(def.id, def);
+    KIND_BY_MACRO.set(def.macro, def);
+    CUSTOM_STYLES.set(def.id, S({ ...d.style, symbol: undefined }));
+  }
+  return { skipped };
+}
+
+/** Why a new kind cannot be used as defined (null when it can). */
+export function customKindProblem(d: Pick<CustomKind, "id" | "name" | "macro" | "snippet">, existing: readonly KindDef[] = KINDS): string | null {
+  if (!d.name.trim()) return "a name is needed";
+  if (!/^[A-Za-z]{2,24}$/.test(d.macro)) return "the macro is letters only (2–24), without the backslash";
+  if (!/^[A-Za-z0-9]{1,8}$/.test(d.snippet)) return "the snippet trigger is 1–8 letters or digits";
+  if (RESERVED_MACROS.has(d.macro)) return `\\${d.macro} is a LaTeX command already`;
+  for (const k of existing) {
+    if (k.id === d.id) continue;
+    if (k.macro === d.macro) return `\\${d.macro} is already the macro of “${k.name}”`;
+    if (k.snippet === d.snippet) return `the trigger “${d.snippet}” is already used by “${k.name}”`;
+  }
+  return null;
+}
+
+/** Common LaTeX commands a new kind's macro must not take over. */
+const RESERVED_MACROS = new Set([
+  "vec", "hat", "bar", "dot", "ddot", "tilde", "mathbf", "mathrm", "mathit", "mathsf", "mathcal", "mathbb", "mathfrak", "boldsymbol", "bm",
+  "frac", "sqrt", "sum", "int", "prod", "lim", "left", "right", "begin", "end", "text", "operatorname", "overline", "underline",
+  "overrightarrow", "overrightharpoon", "alpha", "beta", "gamma", "delta", "epsilon", "theta", "lambda", "mu", "pi", "sigma", "tau", "phi", "psi", "omega",
+  "partial", "nabla", "times", "cdot", "in", "to", "cross", "dyad", "vb", "va", "vu", "dd", "dv", "pdv", "norm", "abs", "tr", "det", "exp", "log", "ln", "sin", "cos", "tan",
+  "label", "tag", "ref", "eqref", "class", "placeholder", "quad", "qquad", "mbbold", "newcommand", "def",
+]);
+
+/** A style to start a new kind from: bold upright, no accent, frame label as a subscript. */
+export const NEW_KIND_STYLE: KindStyle = {
+  weight: "bold", boldScope: "base", shape: "upright", letters: "serif", greek: "bold-italic", accent: "none",
+  accentWeight: "regular", frames: { position: "sub", separator: "" }, wrap: "none",
+};
+
+/** Default style of a kind in a preset (without the user's changes). */
+export function presetStyle(preset: PresetId, kind: string): KindStyle {
+  return PRESETS[preset].kinds[kind] ?? CUSTOM_STYLES.get(kind) ?? BASE;
+}
 
 const BASE: KindStyle = {
   weight: "regular", boldScope: "base", shape: "italic", letters: "serif", greek: "bold-italic", accent: "none",
@@ -146,7 +227,7 @@ export interface NotationProfile {
 export const DEFAULT_PROFILE: NotationProfile = { preset: "hughes", overrides: {} };
 
 export function styleOf(profile: NotationProfile, kind: string): KindStyle {
-  const base = PRESETS[profile.preset].kinds[kind] ?? BASE;
+  const base = PRESETS[profile.preset].kinds[kind] ?? CUSTOM_STYLES.get(kind) ?? BASE;
   const over = profile.overrides[kind];
   return over ? { ...base, ...over, frames: { ...base.frames, ...(over.frames ?? {}) } } : base;
 }

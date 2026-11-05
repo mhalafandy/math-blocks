@@ -13,11 +13,15 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "playwright";
 import { KINDS, PRESETS, type KindStyle, type NotationProfile, type PresetId } from "@mathblocks/math-core";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
+import { NEW_KIND_STYLE, registerCustomKinds } from "@mathblocks/math-core";
 import { fromEditorLatex, toEditorLatex } from "../app/src/lib/kinds";
 import { multlineFromEditor, multlineToEditor } from "../app/src/lib/multiline";
 import { exitKind } from "../app/src/lib/kindExit";
 
 const norm = (l: string) => serializeLatex(parseLatex(l).root);
+
+// A kind of the user's own (Notation settings → New kind) goes through every check too.
+registerCustomKinds([{ id: "u_angvel", name: "Angular velocity", macro: "angvel", snippet: "av", style: { ...NEW_KIND_STYLE, accent: "harpoon", frames: { position: "sub", separator: "/" } } }]);
 
 const VECTOR_STYLES: Record<string, Partial<KindStyle>> = {
   harpoon: { weight: "bold", shape: "upright", accent: "harpoon" },
