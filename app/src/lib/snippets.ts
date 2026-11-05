@@ -47,14 +47,14 @@ export function kindSnippets(prefix = kindSnippetPrefix()): Snippet[] {
   }));
 }
 
-const KIND_LATEX = new Set(kindSnippets("").map((s) => s.latex));
-const KIND_MACRO_RE = new RegExp(`\\\\(${KINDS.map((k) => k.macro).join("|")})(?![a-zA-Z])|\\^\\{\\\\T\\}`);
+const kindLatex = () => new Set(kindSnippets("").map((s) => s.latex));
+const kindMacroRe = () => new RegExp(`\\\\(${KINDS.map((k) => k.macro).join("|")})(?![a-zA-Z])|\\^\\{\\\\T\\}`);
 /**
  * A kind snippet saved by an older version (any trigger, with or without a prefix, inserting
  * a kind): replaced by the current kind snippets, so an old bare "pv" can never win over ";pv".
  */
 const isKindSnippet = (s: Snippet) =>
-  KIND_LATEX.has(s.latex) || (KIND_MACRO_RE.test(s.latex) && KINDS.some((k) => s.trigger.replace(/^[;:'!.]/, "") === k.snippet));
+  kindLatex().has(s.latex) || (kindMacroRe().test(s.latex) && KINDS.some((k) => s.trigger.replace(/^[;:'!.]/, "") === k.snippet));
 
 /** Triggers: letters and digits, optionally after one prefix character. */
 export const TRIGGER_RE = /^[;:'!.]?[A-Za-z0-9]+$/;

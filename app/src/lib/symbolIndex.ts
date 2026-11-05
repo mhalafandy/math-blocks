@@ -123,6 +123,8 @@ export async function rewriteDocument(
   equations: IndexedEquation[],
   transform: (latex: string) => string,
   undoLabel: string,
+  /** Draw these again although their LaTeX stays (a kind's style changed). */
+  redraw?: (latex: string) => boolean,
 ): Promise<{ equations: number; libraryEquations: number; note: string }> {
   const profile = currentProfile();
   const items: ReplaceItem[] = [];
@@ -131,12 +133,13 @@ export async function rewriteDocument(
   for (const eq of equations) {
     // Edited in Word: its kinds would be lost; listed, left alone until the user decides.
     if (eq.editedInWord && !eq.blockId) continue;
-    if (eq.blockId) {
+    const next = transform(eq.latex);
+    const again = next === eq.latex && !!redraw?.(eq.latex);
+    if (eq.blockId && !again) {
       blocks.add(eq.blockId);
       continue;
     }
-    const next = transform(eq.latex);
-    if (next === eq.latex) continue;
+    if (next === eq.latex && !again) continue;
     items.push({ tag: eq.tag, flatOpc: (await buildInsertion(next, eq.numbered ? false : eq.display, profile, eq.tag, eq.kind === "picture" ? "classic" : "native", eq.display)).flatOpc, previous: eq.flatOpc });
   }
   let note = "";

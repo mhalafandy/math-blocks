@@ -158,6 +158,9 @@ function StylePanel() {
           ))}
         </select>
       </label>
+      <button className="link-button" onClick={() => void import("./NotationSettings").then((m) => m.openNotationSettings())}>
+        Kinds and their styles, my own kinds…
+      </button>
       <label>
         Equations in Word
         <select value={look} onChange={(e) => setPrefs({ look: e.target.value as "classic" | "native" })}>

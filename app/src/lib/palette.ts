@@ -629,6 +629,9 @@ const linalg: PaletteItem[] = [
   tpl("la-dyadicarrow", "\\overset{\\leftrightarrow}{#0}", "Dyadic (double arrow)", "dyadic tensor double arrow"),
 ];
 
+/** The user's own kinds (Notation settings → New kind), kept in step by syncMyNotation. */
+const myNotation: PaletteItem[] = [];
+
 export const GROUPS: PaletteGroup[] = [
   { id: "relations", label: "Relations", icon: "≤ ≠ ≈", kind: "symbols", row: "symbols", items: relations },
   { id: "spaces", label: "Spaces & dots", icon: "␣ ⋯ ⋱", kind: "symbols", row: "symbols", items: spacesAndDots },
@@ -661,6 +664,7 @@ export const GROUPS: PaletteGroup[] = [
   { id: "tab-orbital", label: "Orbital & control", icon: "", kind: "templates", row: "tabs", items: orbital },
   { id: "tab-trig", label: "Trig", icon: "", kind: "templates", row: "tabs", items: trig },
   { id: "tab-stats", label: "Statistics", icon: "", kind: "templates", row: "tabs", items: statistics },
+  { id: "tab-mynotation", label: "My notation", icon: "", kind: "templates", row: "tabs", items: myNotation },
 ];
 
 /** Default quick-access bar (MathType's third row). The user can pin/unpin items. */
@@ -696,6 +700,23 @@ const KEY_ALIASES: Record<string, string> = {
   "tabs:tab-vectors:unitvec": "tabs:tab-vectors:hat",
 };
 export const findItem = (key: string) => BY_KEY.get(KEY_ALIASES[key] ?? key);
+
+/** Puts the user's kinds in the palette ("My notation"), searchable and pinnable like any entry. */
+export function syncMyNotation(kinds: { name: string; macro: string; snippet: string }[]) {
+  const group = GROUPS.find((g) => g.id === "tab-mynotation")!;
+  for (const it of myNotation) {
+    const key = itemKey(group, it);
+    BY_KEY.delete(key);
+    const i = ALL_ITEMS.findIndex((x) => x.key === key);
+    if (i >= 0) ALL_ITEMS.splice(i, 1);
+  }
+  myNotation.splice(0, myNotation.length, ...kinds.map((k) => tpl(`my-${k.macro}`, `\\${k.macro}{#0}`, k.name, `my notation kind ${k.macro} ${k.snippet}`)));
+  for (const item of myNotation) {
+    const x = { key: itemKey(group, item), group, item };
+    ALL_ITEMS.push(x);
+    BY_KEY.set(x.key, x);
+  }
+}
 
 /** Search by name, meaning, LaTeX command or category; every word must match. Deduplicates by LaTeX. */
 export function searchPalette(query: string, limit = 60): IndexedItem[] {

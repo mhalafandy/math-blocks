@@ -1,10 +1,12 @@
 import { isAllBold, KIND_BY_ID, KINDS, setBold, type BoldScope } from "@mathblocks/math-core";
-import { CLASS_PREFIX, fromEditorLatex, toEditorLatex } from "../lib/kinds";
+import { CLASS_PREFIX, fromEditorLatex, kindMacroRe, toEditorLatex } from "../lib/kinds";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { useEffect, useRef } from "react";
 import { MathfieldElement } from "mathlive";
 import { setLastEditor } from "../lib/focus";
 import { registerEditor, saveEditorCaret } from "../lib/editorFocus";
+import { kindAt, type KindField } from "../lib/kindExit";
+import { makeKindLatex, plainLatex } from "../lib/kindStyles";
 export { restoreEditorFocus } from "../lib/editorFocus";
 import { multlineFromEditor, multlineToEditor } from "../lib/multiline";
 import { useApp } from "../lib/store";
@@ -32,11 +34,10 @@ export const fromMathLive = (latex: string) => fromEditorKinds(multlineFromEdito
 
 /** Template slots survive the kind conversion as marker letters. */
 const SLOT_MARK = { "#?": "\u24C5", "#0": "\u24EA" } as const;
-const KIND_MACRO = new RegExp(`\\\\(${KINDS.map((k) => k.macro).join("|")})(?![a-zA-Z])`);
 
 /** Notation kinds are held expanded and wrapped in the editor (\class{nk-pvec}{…}). */
 function toEditorKinds(latex: string): string {
-  if (!KIND_MACRO.test(latex)) return latex;
+  if (!kindMacroRe().test(latex)) return latex;
   const marked = latex.replace(/#\?/g, SLOT_MARK["#?"]).replace(/#0/g, SLOT_MARK["#0"]);
   // Adjacent slots inside a kind get a thin space (MathLive empties both when the first is typed into).
   return toEditorLatex(marked, useApp.getState().notationProfile).replaceAll(`${SLOT_MARK["#?"]}${SLOT_MARK["#?"]}`, `${SLOT_MARK["#?"]}\\,${SLOT_MARK["#?"]}`).replaceAll(SLOT_MARK["#?"], "#?").replaceAll(SLOT_MARK["#0"], "#0");
@@ -64,9 +65,33 @@ function kindHintCss(): string {
   return [
     `[class^="${CLASS_PREFIX}"]{border-radius:2px;position:relative}`,
     `[class^="${CLASS_PREFIX}"]:hover{outline:1px dashed rgba(90,110,200,.55);outline-offset:1px}`,
-    `[class^="${CLASS_PREFIX}"]:hover::after{position:absolute;left:0;bottom:100%;margin-bottom:3px;padding:1px 5px;border-radius:3px;background:rgba(40,44,60,.88);color:#fff;font:11px/1.4 system-ui,sans-serif;white-space:nowrap;pointer-events:none;z-index:10}`,
-    ...KINDS.map((k) => `.${CLASS_PREFIX}${k.id}:hover::after{content:"${k.name}"}`),
+    // The name is shown by kindTooltip() outside the field (a label inside it would be clipped).
   ].join("\n");
+}
+
+/** The kind under the mouse: its name in a small label above it (outside the field's clipping). */
+function kindTooltip(mf: MathfieldElement) {
+  let tip: HTMLDivElement | null = null;
+  const hide = () => tip && (tip.style.display = "none");
+  mf.addEventListener("mousemove", (e) => {
+    const el = (e.composedPath() as Element[]).find((n) => n instanceof Element && [...n.classList].some((c) => c.startsWith(CLASS_PREFIX)));
+    const id = el && [...el.classList].find((c) => c.startsWith(CLASS_PREFIX))!.slice(CLASS_PREFIX.length);
+    const kind = id ? KIND_BY_ID.get(id) : undefined;
+    if (!el || !kind) return hide();
+    if (!tip) {
+      tip = document.createElement("div");
+      tip.className = "kind-tooltip";
+      tip.setAttribute("role", "tooltip");
+      document.body.appendChild(tip);
+    }
+    const r = el.getBoundingClientRect();
+    tip.textContent = kind.name;
+    tip.style.display = "block";
+    tip.style.left = `${Math.round(r.left)}px`;
+    tip.style.top = `${Math.round(r.top - 6)}px`;
+  });
+  mf.addEventListener("mouseleave", hide);
+  mf.addEventListener("keydown", hide);
 }
 
 /** Empty slot, possibly wrapped in a style command (\bm{\placeholder{}}). */
@@ -100,6 +125,48 @@ function selectPlaceholderAt(mf: MathfieldElement, x: number, y: number) {
   }
 }
 
+/** Where the caret is on screen (for small popups next to it). */
+function caretRect(mf: MathfieldElement): { left: number; top: number; bottom: number } {
+  const c = mf.shadowRoot?.querySelector(".ML__caret, .ML__text-caret, .ML__selection") as HTMLElement | null;
+  const r = (c ?? mf).getBoundingClientRect();
+  return { left: r.left, top: r.top, bottom: r.bottom };
+}
+
+/** The kind object at the caret, replaced by its drawing in the current style (no longer follows the kind). */
+export function convertKindToPlain(): boolean {
+  const mf = activeField;
+  if (!mf) return false;
+  const k = kindAt(mf as unknown as KindField);
+  if (!k) return false;
+  const source = fromMathLive(mf.getValue(k.a, k.b, "latex"));
+  mf.selection = { ranges: [[k.a, k.b]], direction: "forward" };
+  mf.executeCommand(["insert", `{${plainLatex(source)}}`, { insertionMode: "replaceSelection", selectionMode: "after" }]);
+  mf.focus();
+  return true;
+}
+
+/**
+ * Make → kind: the selection (or the symbol before the cursor) becomes that kind; its letters stay,
+ * styles and accents come from the kind, a subscript becomes the frame label.
+ */
+export function makeKindFromSelection(kindId: string): boolean {
+  const mf = activeField;
+  if (!mf) return false;
+  mf.focus();
+  if (mf.selectionIsCollapsed) {
+    if (mf.position === 0) {
+      insertIntoVisual(makeKindLatex("", kindId) ?? "");
+      return true;
+    }
+    mf.executeCommand("extendSelectionBackward");
+  }
+  const src = fromMathLive(mf.getValue(mf.selection, "latex"));
+  const out = makeKindLatex(src, kindId);
+  if (!out) return false;
+  mf.executeCommand(["insert", toMathLive(out.replace(/\{\}$/, "{#?}")), { insertionMode: "replaceSelection", selectionMode: "placeholder" }]);
+  return true;
+}
+
 /** Focuses the visual editor, caret at the end (used when clicking empty canvas space). */
 export function focusVisualEditor() {
   const mf = activeField;
@@ -123,6 +190,12 @@ export function toggleBold() {
   const mf = activeField;
   if (!mf) return;
   mf.focus();
+  // A kind's look comes from its kind: say so and offer the two ways on, instead of failing silently.
+  const k = kindAt(mf as unknown as KindField);
+  if (k) {
+    void import("./KindPopup").then((m) => m.showKindPopup(k.id, caretRect(mf)));
+    return;
+  }
   const collapsed = mf.selectionIsCollapsed;
   if (collapsed) {
     if (mf.position === 0) return;
@@ -333,9 +406,17 @@ export function MathEditor() {
       setLastEditor("visual");
     });
     host.current?.appendChild(mf);
+    // Right-click: the app's menu (kinds: Make → kind, Convert to plain, Edit kind style), not MathLive's.
+    const onMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      void import("./EditorMenu").then((m) => m.openEditorMenu(mf, e));
+    };
+    host.current?.addEventListener("contextmenu", onMenu, true);
     try {
       const style = document.createElement("style");
       style.textContent = kindHintCss();
+      kindTooltip(mf);
       mf.shadowRoot?.appendChild(style);
     } catch {
       // The hint is cosmetic.
@@ -354,6 +435,28 @@ export function MathEditor() {
       if (activeField === mf) activeField = null;
     };
   }, [setLatex]);
+
+  // A different notation (preset, vector style, a kind's style) restyles the open equation at
+  // once: its kinds are expanded again in the new style, the caret kept where possible.
+  const profile = useApp((s) => s.notationProfile);
+  const firstProfile = useRef(true);
+  useEffect(() => {
+    if (firstProfile.current) {
+      firstProfile.current = false;
+      return;
+    }
+    const mf = field.current;
+    if (!mf) return;
+    const pos = mf.position;
+    const next = toMathLive(useApp.getState().latex);
+    if (next === mf.value) return;
+    mf.setValue(next, { silenceNotifications: true });
+    try {
+      mf.position = Math.min(pos, mf.lastOffset);
+    } catch {
+      // Caret placement is cosmetic.
+    }
+  }, [profile]);
 
   // Changes made elsewhere (LaTeX editor, library, palette) flow into the visual editor.
   useEffect(() => {

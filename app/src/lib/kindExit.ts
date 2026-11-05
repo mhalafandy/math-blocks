@@ -75,3 +75,33 @@ export function exitKind(mf: KindField, key: "Space" | "Tab"): boolean {
   }
   return false;
 }
+
+/**
+ * The kind at the caret: the innermost one around it, or the one right before it (as Ctrl+Shift+B
+ * takes the symbol before the cursor). [start, end) offsets and its id; null when none.
+ */
+export function kindAt(mf: KindField): { a: number; b: number; id: string } | null {
+  const prefix = "\\class{nk-";
+  const pos = mf.position;
+  const idOf = (v: string) => v.slice(prefix.length, v.indexOf("}"));
+  const balanced = (v: string) => {
+    let d = 0;
+    for (let i = 0; i < v.length; i++) {
+      if (v[i] === "\\") {
+        i++;
+        continue;
+      }
+      if (v[i] === "{") d++;
+      else if (v[i] === "}" && --d < 0) return false;
+    }
+    return d === 0;
+  };
+  for (let a = pos; a >= Math.max(0, pos - 60); a--) {
+    if (!mf.getValue(a, mf.lastOffset, "latex").startsWith(prefix)) continue;
+    for (let b = Math.max(a + 1, pos); b <= Math.min(mf.lastOffset, a + 120); b++) {
+      const v = mf.getValue(a, b, "latex");
+      if (v.startsWith(prefix) && v.endsWith("}") && balanced(v) && v.indexOf("}{") > 0) return { a, b, id: idOf(v) };
+    }
+  }
+  return null;
+}

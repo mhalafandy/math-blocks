@@ -71,3 +71,25 @@ Please send me the Repair report numbers for each row.
    List of symbols: the title and the buttons are always visible; the list scrolls.
 6. **Harpoon:** print `harpoon-print-A4.pdf` (sent with this message) at 100 % (no "fit to page") and judge the
    12 pt and 10 pt lines. Then insert a Classic r⃗ at 10 pt in Word and print it.
+
+---
+
+# Round 2 — Priority 2 checklist (kinds)
+
+1. **Hover:** move the mouse over a vector in the editor: "Physical vector" appears above it.
+2. **Live restyle:** with `\pvec[P/O]{r}=\dcm{b}{a}` open, Word style tab → Spacecraft notation: Schaub → the
+   editor and the Classic preview change at once; Physical vectors: Arrow → the vector changes at once.
+3. **Bold on a kind:** cursor after a vector, Ctrl+Shift+B → the popup. "Convert to plain" → it becomes ordinary
+   bold letters (no longer a kind; hover shows no name). "Edit kind style…" opens Notation settings on that kind.
+4. **Notation settings:** change the physical vector's accent to Hat → preview, editor and library thumbnails
+   change; "Reset to preset" brings the harpoon back. Duplicate the physical vector, name it, give a macro and
+   trigger → it appears under My notation.
+5. **New kind:** New kind → "Angular velocity", macro `angvel`, trigger `av` → Create. In the editor `;av` Tab `w`
+   Space → the new kind; in the palette tab "My notation"; type `\angvel` Enter → the kind. Send to Word (Classic
+   and native), double-click it back → still the kind. Export .tex → `\newcommand{\angvel}` and it compiles.
+6. **Apply to the Word document:** after changing a style, "Apply to the Word document…" → every equation with
+   kinds is redrawn (backup if more than 10, progress window, one Ctrl+Z undoes it).
+7. **Make → kind:** select `\mathbf{r}_{P/O}` (or put the cursor after a bold r), right-click → Make the selection a
+   kind… → Physical vector → `\pvec[P/O]{r}`. Also Ctrl+K → "Make → Unit direction vector".
+8. **Floating editor:** the same right-click menu and popup work there; a kind made in the main window is known
+   in the floating editor without restarting.

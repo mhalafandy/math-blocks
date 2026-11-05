@@ -208,7 +208,7 @@ export function PaletteTop() {
   const rows: ("symbols" | "templates")[] = ["symbols", "templates"];
   const openGroup = GROUPS.find((g) => g.id === openId && g.row !== "tabs");
   const favItems = favorites.map(findItem).filter((x): x is IndexedItem => !!x);
-  const tabs = GROUPS.filter((g) => g.row === "tabs");
+  const tabs = GROUPS.filter((g) => g.row === "tabs" && g.items.length);
   const tabGroup = tabs.find((g) => g.id === tab);
   const tabItems: IndexedItem[] = tab === "recent" ? recents.map(findItem).filter((x): x is IndexedItem => !!x) : tabGroup ? groupItems(tabGroup) : [];
 
@@ -284,7 +284,7 @@ export function SymbolPanel() {
   const setPrefs = useApp((s) => s.setPrefs);
   const favItems = favorites.map(findItem).filter((x): x is IndexedItem => !!x);
   const recentItems = recents.map(findItem).filter((x): x is IndexedItem => !!x);
-  const collections = GROUPS.filter((g) => g.row === "tabs");
+  const collections = GROUPS.filter((g) => g.row === "tabs" && g.items.length);
   const collection = collections.find((g) => g.id === tab) ?? collections[0]!;
   return (
     <aside className="symbol-panel" aria-label="Symbols">

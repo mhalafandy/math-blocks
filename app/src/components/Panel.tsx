@@ -1,3 +1,6 @@
+import { ContextMenu } from "./ContextMenu";
+import { KindPopup } from "./KindPopup";
+import { NotationSettings } from "./NotationSettings";
 import { useWidthMeasure, WidthBar } from "./WidthBar";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MathEditor, focusVisualEditor, insertIntoVisual, restoreEditorFocus } from "./MathEditor";
@@ -263,6 +266,9 @@ export function PanelApp() {
           </div>
         )}
       </div>
+      <KindPopup />
+      <NotationSettings />
+      <ContextMenu />
     </div>
   );
 }
