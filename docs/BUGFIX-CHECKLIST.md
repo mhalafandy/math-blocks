@@ -102,7 +102,7 @@ Please send me the Repair report numbers for each row.
    blinking caret; typing goes straight in. Ctrl+N → empty field, focused. Focus ring visible while typing.
 2. **Space Space:** type `x+y`, press Space twice quickly → command palette; Esc → keep typing where you were,
    no space added. Slowly (two separate Spaces) → nothing happens. Inside `\text{…}` and in the LaTeX editor,
-   Space Space types spaces. F1 → turn it off / change the time; Ctrl+Space Space still… (Ctrl+K always works).
+   Space Space types spaces. F1 → turn it off or change the time (Ctrl+K always works).
 3. **LaTeX commands:** F1 → "LaTeX commands" tab; search "arrow", "frac", "pvec"; click one → inserted at the
    caret, keyboard back in the editor. Your own kinds appear under "Notation kinds (and my own)".
 4. **Floating editor** (right-click an equation in Word):
