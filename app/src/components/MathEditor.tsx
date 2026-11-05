@@ -406,6 +406,18 @@ export function MathEditor() {
     mf.value = toMathLive(useApp.getState().latex);
     mf.addEventListener("input", () => {
       onInputDone(mf);
+      // A kind macro that arrived raw (pasted, dropped, inserted as LaTeX: \pvec{r}_2, {\pvec{r}_2})
+      // is shown as its kind at once, never as an unknown red command.
+      if (kindMacroRe().test(mf.value)) {
+        const pos = mf.position;
+        const back = mf.lastOffset - pos;
+        mf.setValue(toMathLive(fromMathLive(mf.value)), { silenceNotifications: true });
+        try {
+          mf.position = Math.max(0, mf.lastOffset - back);
+        } catch {
+          // Caret placement is cosmetic.
+        }
+      }
       setLatex(fromMathLive(mf.value), "visual");
     });
     mf.addEventListener("pointerdown", () => setLastEditor("visual"));

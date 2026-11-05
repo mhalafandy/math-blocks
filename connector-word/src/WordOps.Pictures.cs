@@ -86,6 +86,9 @@ namespace MathBlocks.WordConnector
                     foreach (Word.Shape sh in sel.ShapeRange)
                     {
                         if (!IsMathBlocksShape(sh)) continue;
+                        string wrap = "?";
+                        try { wrap = sh.WrapFormat.Type.ToString(); } catch (COMException) { }
+                        Log.Info("a pasted MathBlocks picture is floating (" + wrap + "); putting it back in line");
                         var inline = sh.ConvertToInlineShape();
                         Log.Info("a floating MathBlocks picture was put back in line with the text");
                         how = MathBlocksData(inline.Range.WordOpenXML, out _) ?? "alt";
@@ -108,8 +111,14 @@ namespace MathBlocks.WordConnector
                 foreach (Word.InlineShape s in range.InlineShapes)
                 {
                     if (InsideMathBlocksControl(s.Range)) continue;
-                    how = MathBlocksData(s.Range.WordOpenXML, out _);
-                    if (how != null) return s;
+                    var xml = s.Range.WordOpenXML;
+                    how = MathBlocksData(xml, out _);
+                    if (how != null)
+                    {
+                        // Diagnosis of how pastes arrive (which paste modes keep what).
+                        Log.Info("unwrapped MathBlocks picture: data " + how + ", VML " + xml.Contains("<v:imagedata") + ", DrawingML " + xml.Contains("<pic:pic") + ", EMF " + xml.Contains("image/x-emf") + ", PNG " + xml.Contains("image/png"));
+                        return s;
+                    }
                 }
             }
             return null;
@@ -197,7 +206,7 @@ namespace MathBlocks.WordConnector
                 _app.ScreenUpdating = screen;
                 if (own) undo.EndCustomRecord();
             }
-            Log.Info("repair in " + doc.Name + ": " + inlined + " floating picture(s) put in line, " + split + " wrapper(s) split, " + renamed.Count + " new ids, " + wrapped.Count + " re-wrapped, " + bookmarks + " bookmarks, " + secured + " locked, " + plainPictures + " other pictures");
+            Log.Info("repair in " + doc.Name + ": " + inlined + " floating picture(s) put in line, " + split + " wrapper(s) split, " + renamed.Count + " new ids, " + wrapped.Count + " re-wrapped, " + bookmarks + " bookmarks, " + secured + " unlocked, " + plainPictures + " other pictures");
             return new Dictionary<string, object>
             {
                 ["document"] = doc.FullName,

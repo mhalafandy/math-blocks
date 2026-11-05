@@ -83,6 +83,11 @@ let nestedCases = 0;
       nestedCases++;
     }
   }
+  // The exact cases reported from Word (outer braces, plain subscript).
+  for (const form of ["{\\pvec{r}_2}", "x={\\pvec{r}_2}+1", "{{\\pvec{r}_2}}"]) {
+    cases.push({ id: `nested exact ${form}`, profile, editor: toEditorLatex(form, profile), expected: form });
+    nestedCases++;
+  }
 }
 
 // Multi-line equations (aligned / gathered / multline) holding every kind: the editor form is the
