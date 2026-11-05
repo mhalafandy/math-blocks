@@ -15,6 +15,8 @@ namespace MathBlocks.WordConnector
         public const int NoDocument = 1001;
         public const int WordRejected = 1002;
         public const int NotFound = 1003;
+        /// <summary>The equation is not the one that was read, or its wrapper is not one clean equation.</summary>
+        public const int Conflict = 1004;
 
         private static readonly JavaScriptSerializer Json = new JavaScriptSerializer { MaxJsonLength = int.MaxValue, RecursionLimit = 64 };
 

@@ -27,6 +27,9 @@ export interface PanelResult {
   numbered: boolean;
 }
 
+/** The equation the floating editor was opened for (its target ends when it closes). */
+let panelTarget: string | null = null;
+
 async function panelWindow() {
   const { Window } = await import("@tauri-apps/api/window");
   return Window.getByLabel("panel");
@@ -37,6 +40,7 @@ export async function openPanel(rect: ScreenRect) {
   const w = await panelWindow();
   if (!w) return;
   const st = useApp.getState();
+  panelTarget = st.editing?.tag ?? null;
   const { useLibrary } = await import("./library/useLibrary");
   const lib = useLibrary.getState();
   const q = st.editing?.blockId ? lib.equations.find((x) => x.id === st.editing!.blockId) : undefined;
@@ -79,6 +83,12 @@ export async function initPanelBridge() {
   if (bridged) return;
   bridged = true;
   const { listen } = await import("@tauri-apps/api/event");
+  await listen("panel:closed", () => {
+    // Applied (the update already ended it) or cancelled: the floating editor's target is over.
+    const app = useApp.getState();
+    if (app.editing && panelTarget === app.editing.tag) app.setEditing(null);
+    panelTarget = null;
+  });
   await listen<PanelResult>("panel:apply", async (e) => {
     const app = useApp.getState();
     app.setLatex(e.payload.latex, "external");

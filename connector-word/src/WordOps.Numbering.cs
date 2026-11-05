@@ -61,8 +61,7 @@ namespace MathBlocks.WordConnector
             var tag = Rpc.GetString(p, "tag");
             var flatOpc = Rpc.GetString(p, "flatOpc");
             var fmt = NumberFields.NumberFormat.From(p);
-            var found = FindByTag(doc, tag);
-            if (found.Count == 0) throw new RpcException(Rpc.NotFound, "The equation is no longer in the document.");
+            var found = new List<Word.ContentControl> { VerifyForWrite(doc, tag, p, "numberEquation") };
 
             var undo = _app.UndoRecord;
             undo.StartCustomRecord("Number equation");
@@ -71,7 +70,7 @@ namespace MathBlocks.WordConnector
                 RemoveNumber(doc, found[0]);
                 ReplaceControl(doc, FindByTag(doc, tag)[0], flatOpc);
                 var cc = FindByTag(doc, tag)[0];
-                TryHide(cc);
+                Secure(cc);
 
                 // Own paragraph: split off text before and after.
                 var para = cc.Range.Paragraphs[1];
@@ -128,15 +127,14 @@ namespace MathBlocks.WordConnector
             var doc = ResolveDocument(p);
             var tag = Rpc.GetString(p, "tag");
             var flatOpc = Rpc.GetString(p, "flatOpc");
-            var found = FindByTag(doc, tag);
-            if (found.Count == 0) throw new RpcException(Rpc.NotFound, "The equation is no longer in the document.");
+            var found = new List<Word.ContentControl> { VerifyForWrite(doc, tag, p, "unnumberEquation") };
             var undo = _app.UndoRecord;
             undo.StartCustomRecord("Remove equation number");
             try
             {
                 RemoveNumber(doc, found[0]);
                 ReplaceControl(doc, FindByTag(doc, tag)[0], flatOpc);
-                foreach (var cc in FindByTag(doc, tag)) TryHide(cc);
+                foreach (var cc in FindByTag(doc, tag)) Secure(cc);
                 UpdateNumberFields(doc);
             }
             finally

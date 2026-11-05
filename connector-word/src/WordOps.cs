@@ -45,7 +45,8 @@ namespace MathBlocks.WordConnector
             var tag = Rpc.GetString(p, "tag");
             var undoLabel = p.TryGetValue("undoLabel", out var u) && u is string s ? s : "Insert equation";
             var doc = ActiveDocument();
-            var range = _app.Selection.Range;
+            // Never inside an existing equation's wrapper, never replacing an equation.
+            var range = SafeInsertionPoint(doc, _app.Selection.Range);
 
             var undo = _app.UndoRecord;
             undo.StartCustomRecord(undoLabel);
@@ -66,7 +67,7 @@ namespace MathBlocks.WordConnector
             // Keep the identity wrapper but do not draw its box/label around Word's own equation frame
             // (Word 2013+). Set here rather than in the XML so that an unexpected XML element can never
             // make Word reject the insertion.
-            foreach (var cc in found) TryHide(cc);
+            foreach (var cc in found) Secure(cc);
             if (found.Count == 1)
             {
                 try
@@ -80,7 +81,7 @@ namespace MathBlocks.WordConnector
                     // Cursor placement is cosmetic.
                 }
             }
-            Log.Info("insertEquation " + tag + " -> found " + found.Count);
+            Log.Info("insertEquation " + (found.Count > 0 ? EquationIdentity.Describe(tag, Inspect(doc, found[0])) : tag) + " -> found " + found.Count);
             return new Dictionary<string, object> { ["found"] = found.Count };
         }
 
@@ -94,9 +95,8 @@ namespace MathBlocks.WordConnector
             var tag = Rpc.GetString(p, "tag");
             var undoLabel = p.TryGetValue("undoLabel", out var u) && u is string s ? s : "Update equation";
             var doc = ActiveDocument();
-            var found = FindByTag(doc, tag);
-            if (found.Count == 0) throw new RpcException(Rpc.NotFound, "The equation is no longer in the document (deleted or edited elsewhere).");
-            var cc = found[0];
+            // Exactly one clean equation with this ID, and still the one the app read.
+            var cc = VerifyForWrite(doc, tag, p, "replaceEquation");
 
             var undo = _app.UndoRecord;
             undo.StartCustomRecord(undoLabel);
@@ -114,7 +114,7 @@ namespace MathBlocks.WordConnector
             }
 
             var after = FindByTag(doc, tag);
-            foreach (var c in after) TryHide(c);
+            foreach (var c in after) Secure(c);
             Log.Info("replaceEquation " + tag + " -> found " + after.Count);
             return new Dictionary<string, object> { ["found"] = after.Count };
         }

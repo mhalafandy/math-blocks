@@ -54,7 +54,7 @@ export async function editAtCursor() {
   try {
     const s = await connector.request("selectionInfo", {});
     const rect = s.rect ?? { left: 200, top: 200, width: 0, height: 0 };
-    if (s.tag && s.flatOpc) return activateEquation({ tag: s.tag, flatOpc: s.flatOpc, number: s.number ?? null, panel: rect });
+    if (s.tag && (s.flatOpc || s.problem)) return activateEquation({ tag: s.tag, flatOpc: s.flatOpc ?? "", number: s.number ?? null, panel: rect, fingerprint: s.fingerprint, problem: s.problem });
     // A new equation at the cursor (selected LaTeX becomes its content).
     const app = useApp.getState();
     const { useLibrary } = await import("./library/useLibrary");

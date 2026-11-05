@@ -112,3 +112,28 @@ Please send me the Repair report numbers for each row.
    - footer: "Ctrl+Enter apply · Enter new line · Esc cancel" (inline: "Enter apply"), Cancel / Apply;
    - drag the grip at the bottom right to make it wider; close and reopen → same width, same panes, same flyout;
    - the top row is solid: Word's ribbon no longer shows through it.
+
+---
+
+# Round 3 — Priority 0 checklist (equation identity)
+
+Install the new build and restart Word. Work on a **copy** of MathBlocks Tests.docx.
+
+1. **Repair the test document first:** Ctrl+K → Repair equations. Expected message: "N wrapper(s) holding several
+   equations or text split into one per equation (text moved out)", plus new IDs for copies. connector.log:
+   `repair: splitting mb1|-|… [pictures 3+0, …, text 120 …]` lines, then `repair: wrapped one equation as …`.
+2. **Your three equations again:** right-click the long equation (v ω×c…) → the floating editor shows *that* equation.
+   Number equation on it → it gets a number and keeps its content. Repeat for r₂ and one more.
+   connector.log: `panel resolved to mb1|-|… [pictures 1+0, math 0, nested 0, text 0, same-tag 1] "…"` with the right LaTeX.
+3. **Typing next to an equation:** click just right of an inline equation and type text, then paste text there; the same
+   just left of it. The text appears outside: right-click the equation → it still opens alone (log: `text 0`).
+   Try to type *into* the equation picture: Word refuses (the wrapper is locked).
+4. **Insert next to an equation:** put the cursor right after an equation (End, arrow keys) and Insert into Word → the new
+   equation is a separate equation (log: `insert: the cursor was inside … inserting after it` if it was at the edge).
+5. **Copy/paste:** copy an equation and paste it twice; right-click each copy → each opens; connector.log shows a new ID
+   for a copy that shared one (`was shared by 2 wrappers; this one is now …`).
+6. **No stale target:** double-click equation A, change it, Update in Word → the button turns to "Insert into Word" and the
+   editing bar disappears; type a new equation and press it → a *new* equation is inserted, A is unchanged.
+   Open A in the floating editor and close it with Esc → the main window is no longer attached to A.
+7. **Refusals:** in an unrepaired copy of the old document, right-click a grown wrapper → a notice "This equation cannot be
+   opened safely: its wrapper holds 3 equations…" with Repair equations; nothing changes in the document.

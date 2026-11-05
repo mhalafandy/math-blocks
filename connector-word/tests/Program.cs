@@ -113,6 +113,27 @@ static class Program
         Spans("Cost $5 and $6\r", "", "prices are not LaTeX");
         Spans("text\a", "", "table cell without LaTeX");
         Spans("$x$\a", "$x$ [alone]", "alone in a table cell");
+        // Equation identity: a wrapper is one clean equation, and a write needs the same content that was read.
+        EquationIdentity.WrapperContents W(int pics, int text = 0, int nested = 0, int same = 1, int other = 0, string src = "{\"latex\":\"x\"}")
+        {
+            var w = new EquationIdentity.WrapperContents { TextChars = text, NestedControls = nested, SameTag = same, OtherPictures = other };
+            for (int i = 0; i < pics; i++) w.PictureSources.Add(i == 0 ? src : "{\"latex\":\"r_2\"}");
+            return w;
+        }
+        var clean = W(1);
+        var fp = EquationIdentity.Fingerprint(clean);
+        Check(EquationIdentity.Problem(clean) == null, "identity: one picture, nothing else → clean");
+        Check(EquationIdentity.RefuseWrite(clean, fp) == null, "identity: write allowed with the fingerprint that was read");
+        Check(EquationIdentity.RefuseWrite(clean, null) == null, "identity: write allowed without fingerprint (insert-time update)");
+        Check(EquationIdentity.RefuseWrite(W(1, src: "{\"latex\":\"y\"}"), fp) != null, "identity: refused when the content changed since it was read");
+        Check(EquationIdentity.RefuseWrite(W(2), null)?.Contains("2 equations") == true, "identity: refused when the wrapper holds two equations (the r₂ case)");
+        Check(EquationIdentity.RefuseWrite(W(1, text: 12), null)?.Contains("12 character(s) of text") == true, "identity: refused when text was typed into the wrapper");
+        Check(EquationIdentity.RefuseWrite(W(1, nested: 1), null)?.Contains("nested") == true, "identity: refused with a nested wrapper");
+        Check(EquationIdentity.RefuseWrite(W(1, same: 3), null)?.Contains("3 equations in the document share this ID") == true, "identity: refused when the ID is duplicated");
+        Check(EquationIdentity.RefuseWrite(W(1, other: 1), null) != null, "identity: refused with another picture inside");
+        Check(EquationIdentity.Fingerprint(W(2)) != fp, "identity: the fingerprint sees a second equation");
+        Check(EquationIdentity.FirstLatex("{\"latex\":\"\\\\pvec{r}_2\",\"mode\":\"display\"}") == "\\pvec{r}_2", "identity: first LaTeX read from the source JSON");
+        Check(EquationIdentity.Describe("mb1|-|abc", W(2, text: 5)).Contains("pictures 2+0") , "identity: log line counts pictures and text");
         Console.WriteLine(failures == 0 ? "all number-field checks passed" : failures + " check(s) failed");
         return failures == 0 ? 0 : 1;
     }

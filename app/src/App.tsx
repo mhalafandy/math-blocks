@@ -1,3 +1,4 @@
+import { MathPreview } from "./components/MathPreview";
 import { NotationSettings } from "./components/NotationSettings";
 import { KindPopup } from "./components/KindPopup";
 import { WidthBar } from "./components/WidthBar";
@@ -16,11 +17,11 @@ import { HSplitter, Splitter } from "./components/Splitter";
 import { PaletteTop, SymbolPanel } from "./components/SymbolPalette";
 import { buildCommands } from "./lib/commands";
 import { connector } from "./lib/connector";
-import { buildInsertion, useCompiledEquation, useProfile } from "./lib/equation";
+import { useCompiledEquation, useProfile } from "./lib/equation";
 import { useApp } from "./lib/store";
 import { installAndRestart, startUpdates } from "./lib/updates";
 import { isDirty, useLibrary } from "./lib/library/useLibrary";
-import { insertLinked, unlinkEditing } from "./lib/linking";
+import { unlinkEditing } from "./lib/linking";
 import { ContextMenu, openMenu } from "./components/ContextMenu";
 import { PromptHost } from "./components/Dialogs";
 import { ReferencePicker } from "./components/ReferencePicker";
@@ -31,24 +32,13 @@ import { ThesisDialog } from "./components/ThesisDialog";
 import { NormalizeBoldDialog } from "./components/NormalizeBoldDialog";
 import { FontCompareDialog } from "./components/FontCompareDialog";
 import { NumberMarkerDialog } from "./components/NumberMarkerDialog";
-import { numberInWord, unnumberInWord } from "./lib/numbering";
+import { sendToWord } from "./lib/sendToWord";
 import { ConversionReport } from "./components/ConversionReport";
 import { SaveDialog } from "./components/SaveDialog";
 import { zoomStep } from "./lib/zoom";
 
 /** Adds or removes the number of an equation that is in Word (keeps its tag). */
-async function setNumberOf(tag: string, latex: string, numbered: boolean, display: boolean) {
-  const st = useApp.getState();
-  if (numbered) {
-    const r = await numberInWord(tag, latex);
-    if (r) st.notify(`Numbered ${r.number}`);
-  } else {
-    await unnumberInWord(tag, latex, display);
-    st.notify("Number removed");
-  }
-  const ed = useApp.getState().editing;
-  if (ed?.tag === tag) st.setEditing({ ...ed, numbered });
-};
+
 
 
 export function App() {
@@ -70,53 +60,7 @@ export function App() {
     void startUpdates();
   }, []);
 
-  const insertIntoWord = useCallback(async () => {
-    const { connector: c, latex, display, notify, editing, setEditing } = useApp.getState();
-    if (!c.available) return notify("Sending to Word works in the desktop app.", "error");
-    if (!c.connected) return notify("Word is not connected. Start Word with the MathBlocks add-in installed.", "error");
-    if (eq.errors > 0) return notify("Fix the LaTeX errors first.", "error");
-    try {
-      const lib = useLibrary.getState();
-      const libEq = lib.open ? lib.equations.find((q) => q.id === lib.open!.id) : undefined;
-      const dirty = isDirty(lib.open, latex, display);
-      const { numbered } = useApp.getState();
-      const shape = display && !numbered; // display paragraph; numbered equations are inline math
-      if (editing?.blockId && libEq) {
-        // A linked copy: save a new library version; every copy (this one included) follows.
-        if (dirty) await lib.saveCurrent();
-        else if (!!editing.numbered === numbered) notify("No changes: the linked copies already show this version");
-        if (!!editing.numbered !== numbered) await setNumberOf(editing.tag, latex, numbered, display);
-      } else if (editing) {
-        if (!!editing.numbered !== numbered) {
-          await setNumberOf(editing.tag, latex, numbered, display);
-        } else {
-          const { flatOpc } = await buildInsertion(latex, shape, profile, editing.tag, undefined, display);
-          const r = await connector.request("replaceEquation", { tag: editing.tag, flatOpc, undoLabel: "Update equation" });
-          if (useApp.getState().look === "native") void import("./lib/nativeSources").then((m) => m.recordNativeSources(undefined, [{ tag: editing.tag, latex }]));
-          notify(r.found === 1 ? "Equation updated in Word" : `Updated, but found ${r.found} copies of its tag`);
-        }
-      } else if (libEq && !dirty) {
-        const found = await insertLinked(libEq);
-        notify(found === 1 ? `Inserted a linked copy of “${libEq.name}”` : `Inserted, but found ${found} copies of its tag`);
-        void lib.markUsed(libEq.id);
-      } else {
-        const { tag, flatOpc } = await buildInsertion(latex, shape, profile, undefined, undefined, display);
-        const r = await connector.request("insertEquation", { tag, flatOpc, display: shape, undoLabel: "Insert equation" });
-        if (useApp.getState().look === "native") void import("./lib/nativeSources").then((m) => m.recordNativeSources(undefined, [{ tag, latex }]));
-        let numberText = "";
-        if (numbered) numberText = (await numberInWord(tag, latex))?.number ?? "";
-        notify(
-          libEq
-            ? "Inserted as an unlinked copy because of unsaved changes. Save (Ctrl+S) first to insert a linked copy."
-            : r.found === 1 ? `Inserted into Word${numberText ? ` as ${numberText}` : ""}` : `Inserted, but found ${r.found} copies of its tag`,
-        );
-      }
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
-      notify(message, "error");
-      if (editing && /no longer in the document/.test(message)) setEditing(null);
-    }
-  }, [eq.errors, profile]);
+  const insertIntoWord = useCallback(() => sendToWord({ errors: eq.errors, profile }), [eq.errors, profile]);
 
   const copyLatex = useCallback(async () => {
     try {
@@ -236,7 +180,7 @@ export function App() {
           disabled={!s.connector.connected}
           title={!s.connector.connected ? "Start Word to enable" : s.editing?.blockId ? "Save a new version and update all linked copies (Ctrl+Enter)" : s.editing ? "Replace the equation in Word (Ctrl+Enter)" : useLibrary.getState().open ? "Insert a linked copy at Word's cursor (Ctrl+Enter)" : "Insert at Word's cursor (Ctrl+Enter)"}
         >
-          {s.editing?.blockId ? "Update everywhere" : s.editing ? "Update in Word" : "Send to Word"}
+          {s.editing?.blockId ? "Update everywhere" : s.editing ? "Update in Word" : "Insert into Word"}
         </button>
       </header>
 
@@ -256,7 +200,10 @@ export function App() {
             title={s.editing.blockId ? "A linked copy: saving updates every copy in your documents" : s.editing.adopted ? "Equation typed in Word, now managed by MathBlocks" : "MathBlocks equation from Word"}
           >
             <span className="editing-label">{s.editing.blockId ? "Editing a linked equation from Word" : "Editing an equation from Word"}</span>
-            <span className="muted">{s.editing.blockId ? "Update everywhere (Ctrl+Enter) changes every copy" : "Update in Word (Ctrl+Enter) replaces it"}</span>
+            <span className="editing-target" title={`Target: ${s.editing.tag}`}>
+              <code>…{s.editing.tag.slice(-6)}</code> {s.editing.opened ? <MathPreview latex={s.editing.opened.length > 120 ? s.editing.opened.slice(0, 120) : s.editing.opened} /> : null}
+            </span>
+            <span className="muted">{s.editing.blockId ? "Update everywhere (Ctrl+Enter) changes every copy" : "Update in Word (Ctrl+Enter) replaces this one"}</span>
             <div className="spacer" />
             {s.editing.blockId && (
               <button title="Make this copy an ordinary equation that no longer follows the library" onClick={() => void unlinkEditing()}>

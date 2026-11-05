@@ -123,7 +123,7 @@ namespace MathBlocks.WordConnector
                         skipped++;
                     }
                 }
-                foreach (var cc in MathBlocksControls(doc)) TryHide(cc);
+                foreach (var cc in MathBlocksControls(doc)) Secure(cc);
             }
             finally
             {

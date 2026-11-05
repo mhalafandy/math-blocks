@@ -99,6 +99,10 @@ export interface EditingTarget {
   blockId?: string;
   /** The equation in Word has a number (its own paragraph with a number field). */
   numbered?: boolean;
+  /** Fingerprint of Word's equation when it was opened: every write sends it, the add-in refuses on a mismatch. */
+  fingerprint?: string;
+  /** The LaTeX it had when opened (shown in the editing bar, so the target is always visible). */
+  opened?: string;
 }
 
 /** A message bar above the editor with action buttons (e.g. "document out of date"). */
@@ -217,7 +221,8 @@ export const useApp = create<AppState>((set, get) => ({
   setNotice: (notice) => set({ notice }),
   setUpdate: (u) => set({ update: { ...get().update, ...u } }),
 
-  setLatex: (latex, source) => set({ latex, source }),
+  // Clearing the editor starts a new equation: the Word target (if any) ends.
+  setLatex: (latex, source) => set(source === "visual" && !latex.trim() && get().editing ? { latex, source, editing: null } : { latex, source }),
   setDisplay: (display) => set(display ? { display } : { display, numbered: false }),
   setPrefs: (p) => {
     // The Word style tab's "Spacecraft notation" and "Physical vectors" also set how the kinds are

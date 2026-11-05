@@ -199,6 +199,12 @@ export const connector = new ConnectorClient();
 /** Opens an equation from Word for editing: main window (double-click) or floating editor (panel). */
 export async function activateEquation(params: ConnectorToApp["equationActivated"]["params"]) {
   const app = useApp.getState();
+  // The wrapper holds more than one equation (or text): never open it, never write to it.
+  if (params.problem) {
+    void bringToFront();
+    const { showWrapperProblem } = await import("./numbering");
+    return showWrapperProblem(params.problem);
+  }
   const read = readOmml(params.flatOpc);
   if (!read || read.root.children.length === 0) {
     // A linked copy does not need Word's content: the library has it.
@@ -222,7 +228,10 @@ export async function activateEquation(params: ConnectorToApp["equationActivated
     void import("./repair").then((m) => m.repairDocument(undefined, { quiet: true }));
     app.notify("This pasted equation was a plain picture to Word; it is a MathBlocks equation again (with its own identity).");
   }
-  const linked = await import("./linking").then((m) => m.openLinkedForEditing(params.tag)).catch(() => false);
+  // A linked copy opens from the library only while Word shows that very version; otherwise Word's
+  // content is what is opened (never another equation's content under this one's identity).
+  const wordLatex = serializeLatex(read.root);
+  const linked = await import("./linking").then((m) => m.openLinkedForEditing(params.tag, wordLatex)).catch(() => false);
   if (!linked) {
     useLibraryClose();
     let latex = serializeLatex(read.root);
@@ -248,7 +257,10 @@ export async function activateEquation(params: ConnectorToApp["equationActivated
       }
     }
     app.setLatex(latex, "external");
-    app.setEditing({ tag: params.tag, adopted: !!params.adopted });
+    app.setEditing({ tag: params.tag, adopted: !!params.adopted, fingerprint: params.fingerprint, opened: latex });
+  } else {
+    const ed = useApp.getState().editing;
+    if (ed) app.setEditing({ ...ed, fingerprint: params.fingerprint, opened: useApp.getState().latex });
   }
   app.setDisplay(read.display || !!params.number);
   app.setNumbered(!!params.number);

@@ -21,18 +21,18 @@ function requireAddin(method: string) {
 }
 
 /** Puts an equation that is already in Word into its own numbered paragraph. */
-export async function numberInWord(tag: string, latex: string) {
+export async function numberInWord(tag: string, latex: string, expect?: string) {
   if (!requireAddin("numberEquation")) return null;
   const { flatOpc } = await buildInsertion(latex, false, currentProfile(), tag, undefined, true);
   const style = useApp.getState().numberStyle;
-  return connector.request("numberEquation", { tag, flatOpc, ...numberFormat(style) }, SLOW);
+  return connector.request("numberEquation", { tag, flatOpc, expect, ...numberFormat(style) }, SLOW);
 }
 
 /** Removes an equation's number; it becomes a display (or inline) equation. */
-export async function unnumberInWord(tag: string, latex: string, display: boolean) {
+export async function unnumberInWord(tag: string, latex: string, display: boolean, expect?: string) {
   if (!requireAddin("unnumberEquation")) return null;
   const { flatOpc } = await buildInsertion(latex, display, currentProfile(), tag);
-  return connector.request("unnumberEquation", { tag, flatOpc }, SLOW);
+  return connector.request("unnumberEquation", { tag, flatOpc, expect }, SLOW);
 }
 
 export async function updateNumbers() {
@@ -48,23 +48,37 @@ export async function updateNumbers() {
 }
 
 /** Ribbon "Number equation": toggles the number of the equation the cursor is in. */
-export async function toggleNumberFromRibbon(params: { tag?: string; flatOpc?: string; numbered?: boolean } = {}) {
+export async function toggleNumberFromRibbon(params: { tag?: string; flatOpc?: string; numbered?: boolean; fingerprint?: string; problem?: string } = {}) {
   const notify = useApp.getState().notify;
+  if (params.problem) return showWrapperProblem(params.problem);
   if (!params.tag || !params.flatOpc) return notify("Click into a MathBlocks equation in Word first, then press Number equation.", "error");
   const read = readOmml(params.flatOpc);
   if (!read || !read.root.children.length) return notify("Could not read that equation.", "error");
   const latex = serializeLatex(read.root);
   try {
+    // The content read from that equation goes back to that equation, verified by its fingerprint.
     if (params.numbered) {
-      await unnumberInWord(params.tag, latex, true);
+      await unnumberInWord(params.tag, latex, true, params.fingerprint);
       notify("Number removed");
     } else {
-      const r = await numberInWord(params.tag, latex);
+      const r = await numberInWord(params.tag, latex, params.fingerprint);
       if (r) notify(`Numbered ${r.number}`);
     }
   } catch (e) {
     notify(e instanceof Error ? e.message : String(e), "error");
   }
+}
+
+/** A wrapper that does not hold exactly one equation: say what it holds and offer Repair equations. */
+export function showWrapperProblem(problem: string) {
+  const app = useApp.getState();
+  app.setNotice({
+    text: `${problem} Nothing was changed. Repair equations gives every equation its own wrapper and moves text out.`,
+    actions: [
+      { label: "Repair equations", run: () => void import("./repair").then((m) => m.repairDocument()).then(() => useApp.getState().setNotice(null)) },
+      { label: "Dismiss", run: () => useApp.getState().setNotice(null) },
+    ],
+  });
 }
 
 // ------------------------------------------------------------------ reference picker
