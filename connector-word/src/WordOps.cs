@@ -31,14 +31,10 @@ namespace MathBlocks.WordConnector
             throw new RpcException(Rpc.NoDocument, "Open a document in Word first.");
         }
 
-        private static List<Word.ContentControl> FindByTag(Word.Document doc, string tag)
-        {
-            var list = new List<Word.ContentControl>();
-            foreach (Word.ContentControl cc in doc.SelectContentControlsByTag(tag)) list.Add(cc);
-            return list;
-        }
-
-        /// <summary>Inserts a Flat OPC package (one paragraph holding a tagged content control) at the selection.</summary>
+        /// <summary>
+        /// Inserts an equation at the selection: a Classic picture (its ID becomes its title) or a native
+        /// equation in its tagged wrapper.
+        /// </summary>
         public Dictionary<string, object> InsertEquation(Dictionary<string, object> p)
         {
             var flatOpc = Rpc.GetString(p, "flatOpc");
@@ -50,9 +46,11 @@ namespace MathBlocks.WordConnector
 
             var undo = _app.UndoRecord;
             undo.StartCustomRecord(undoLabel);
+            int at = range.Start;
             try
             {
                 range.InsertXML(flatOpc);
+                FinishInserted(doc, flatOpc, at, tag);
             }
             catch (COMException ex)
             {
@@ -64,16 +62,14 @@ namespace MathBlocks.WordConnector
             }
 
             var found = FindByTag(doc, tag);
-            // Keep the identity wrapper but do not draw its box/label around Word's own equation frame
-            // (Word 2013+). Set here rather than in the XML so that an unexpected XML element can never
-            // make Word reject the insertion.
-            foreach (var cc in found) Secure(cc);
+            // A native equation's wrapper: no box or label around Word's own equation frame (Word 2013+).
+            foreach (var e in found) if (!e.IsPicture) Secure(e.Control);
             if (found.Count == 1)
             {
                 try
                 {
                     // Put the cursor just after the new equation so typing continues naturally.
-                    var end = found[0].Range.End + 1;
+                    var end = found[0].After;
                     doc.Range(end, end).Select();
                 }
                 catch (COMException)
@@ -96,13 +92,13 @@ namespace MathBlocks.WordConnector
             var undoLabel = p.TryGetValue("undoLabel", out var u) && u is string s ? s : "Update equation";
             var doc = ActiveDocument();
             // Exactly one clean equation with this ID, and still the one the app read.
-            var cc = VerifyForWrite(doc, tag, p, "replaceEquation");
+            var eq = VerifyForWrite(doc, tag, p, "replaceEquation");
 
             var undo = _app.UndoRecord;
             undo.StartCustomRecord(undoLabel);
             try
             {
-                ReplaceControl(doc, cc, flatOpc);
+                ReplaceEquationContent(doc, eq, flatOpc, tag);
             }
             catch (COMException ex)
             {
@@ -114,7 +110,7 @@ namespace MathBlocks.WordConnector
             }
 
             var after = FindByTag(doc, tag);
-            foreach (var c in after) Secure(c);
+            foreach (var e in after) if (!e.IsPicture) Secure(e.Control);
             Log.Info("replaceEquation " + tag + " -> found " + after.Count);
             return new Dictionary<string, object> { ["found"] = after.Count };
         }
@@ -179,21 +175,17 @@ namespace MathBlocks.WordConnector
             var tag = Rpc.GetString(p, "tag");
             var found = FindByTag(ActiveDocument(), tag);
             if (found.Count == 0) throw new RpcException(Rpc.NotFound, "No equation with tag " + tag);
-            var cc = found[0];
-            var xml = cc.Range.WordOpenXML;
+            var eq = found[0];
+            var xml = eq.Xml;
             LogMathStructure("readEquation " + tag, xml);
-            return new Dictionary<string, object> { ["flatOpc"] = xml, ["locked"] = cc.LockContents, ["number"] = NumberInfo(cc) };
+            return new Dictionary<string, object> { ["flatOpc"] = xml, ["locked"] = false, ["number"] = NumberInfo(eq) };
         }
 
         public Dictionary<string, object> DocumentInfo()
         {
             var doc = ActiveDocument();
             var tags = new List<string>();
-            foreach (Word.ContentControl cc in doc.ContentControls)
-            {
-                var t = cc.Tag;
-                if (t != null && t.StartsWith(TagPrefix, StringComparison.Ordinal)) tags.Add(t);
-            }
+            foreach (var e in AllEquations(doc)) tags.Add(e.Tag);
             return new Dictionary<string, object>
             {
                 ["name"] = doc.Name,

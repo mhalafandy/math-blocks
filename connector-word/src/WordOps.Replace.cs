@@ -12,6 +12,26 @@ namespace MathBlocks.WordConnector
         /// only the control then leaves an empty equation box behind. So when an equation encloses
         /// the control, the whole equation goes.
         /// </summary>
+        /// <summary>
+        /// Replaces an equation by new content with the same ID, at the same place: a picture is replaced
+        /// by the new picture (its title set to the ID); a wrapper is removed and the new content inserted
+        /// (an older wrapped Classic equation thereby becomes a titled picture).
+        /// </summary>
+        internal void ReplaceEquationContent(Word.Document doc, Eq eq, string flatOpc, string tag)
+        {
+            if (eq.IsPicture)
+            {
+                int at = eq.Range.Start;
+                eq.Picture.Delete();
+                doc.Range(at, at).InsertXML(flatOpc);
+                FinishInserted(doc, flatOpc, at, tag);
+                return;
+            }
+            int start = Math.Max(0, eq.Control.Range.Start - 1);
+            ReplaceControl(doc, eq.Control, flatOpc);
+            FinishInserted(doc, flatOpc, start, tag);
+        }
+
         internal void ReplaceControl(Word.Document doc, Word.ContentControl cc, string flatOpc)
         {
             cc.LockContents = false;

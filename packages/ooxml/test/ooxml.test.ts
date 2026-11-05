@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { unzipSync, strFromU8 } from "fflate";
 import { XMLValidator } from "fast-xml-parser";
-import { buildDocx, contentControl, flatOpc, formatTag, newBlockId, newInstanceId, paragraph, parseTag, randomId } from "../src";
+import { buildDocx, contentControl, flatOpc, formatTag, newBlockId, newInstanceId, paragraph, parseTag, randomId, vmlPictureRun } from "../src";
 
 describe("ids and tags", () => {
   it("generates base62 ids of the requested length", () => {
@@ -46,5 +46,15 @@ describe("WordprocessingML", () => {
       expect(zip[part], part).toBeDefined();
       expect(XMLValidator.validate(strFromU8(zip[part]!)), part).toBe(true);
     }
+  });
+});
+
+describe("Classic picture identity", () => {
+  it("puts the equation ID in the picture title (escaped) next to the alt text", () => {
+    const run = vmlPictureRun({ rId: "rId1", widthPt: 10, heightPt: 8, depthPt: 2, id: 5, alt: "MathBlocks display: a<b", title: "mb1|-|abc123DEF456" });
+    expect(run).toContain(`title="mb1|-|abc123DEF456"`);
+    expect(run).toContain(`alt="MathBlocks display: a&lt;b"`);
+    expect(XMLValidator.validate(`<x xmlns:w="w" xmlns:v="v" xmlns:o="o" xmlns:r="r">${run}</x>`)).toBe(true);
+    expect(vmlPictureRun({ rId: "rId1", widthPt: 1, heightPt: 1, depthPt: 0, id: 1, alt: "x" })).not.toContain(" title=");
   });
 });

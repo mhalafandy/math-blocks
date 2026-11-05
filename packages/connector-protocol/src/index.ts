@@ -250,6 +250,11 @@ export interface AppToConnector {
       otherPictures: number;
       /** Floating MathBlocks pictures (pasted as floating) put back in line with the text. */
       inlined?: number;
+      /** Classic equations of an older build (picture in a content control) converted to titled pictures. */
+      converted?: number;
+      /** Left untouched: native Word equations (they keep their wrapper) and MathType objects. */
+      native?: number;
+      mathType?: number;
       /** Wrappers that held more than one equation, text or nested wrappers, split back into one per equation. */
       split?: { tag: string; equations: number; text: number; nested: number; otherPictures: number }[];
     };

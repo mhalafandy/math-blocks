@@ -53,15 +53,15 @@ namespace MathBlocks.WordConnector
                 catch (Exception)
                 {
                 }
-                // Documents already open: a previous build locked wrappers; unlock them.
+                // Documents already open: the same checks as when a document opens.
                 try
                 {
                     foreach (Word.Document d in _app.Documents)
-                        if (WordOps.HasEquations(d)) _ops.UnlockAll(d);
+                        if (WordOps.HasEquations(d)) _ops.OnOpen(d);
                 }
                 catch (Exception ex)
                 {
-                    Log.Error("unlocking wrappers at start", ex);
+                    Log.Error("checking equations at start", ex);
                 }
 
                 _pipe = new PipeClient(PipeClient.DefaultPipeName());
@@ -199,7 +199,7 @@ namespace MathBlocks.WordConnector
                 {
                     // The MathBlocks equation the cursor is in.
                     var doc = _app.ActiveDocument;
-                    var cc = WordOps.WrapperAt(doc, _app.Selection.Range);
+                    var cc = _ops.EquationAt(doc, _app.Selection.Range);
                     if (cc != null)
                     {
                         var problem = _ops.PrepareRead(doc, ref cc, "number command", out var fingerprint);
@@ -280,19 +280,12 @@ namespace MathBlocks.WordConnector
             {
                 if (_pipe == null || !_pipe.IsConnected) return;
                 var doc = _app.ActiveDocument;
-                // A floating MathBlocks picture (pasted floating): Word's own shape menu cannot be suppressed,
-                // so exactly one menu shows — Word's. The picture is put back in line and wrapped; the next
-                // right-click opens the floating editor.
-                if (FloatingMathBlocksSelected(sel))
-                {
-                    var adopted = AdoptPastedPicture(sel);
-                    _app.StatusBar = adopted != null ? "MathBlocks: the equation is back in line with the text — right-click it again to edit it." : "MathBlocks: this picture could not be put back in line.";
-                    return;
-                }
-                var cc = WordOps.WrapperAt(doc, sel.Range);
+                // A floating MathBlocks picture is normally put back in line as soon as it is selected
+                // (selection change); if one is still floating here, it goes back in line now and opens.
+                var cc = FloatingMathBlocksSelected(sel) ? AdoptPastedPicture(sel) : _ops.EquationAt(doc, sel.Range);
                 if (cc == null)
                 {
-                    // A pasted MathBlocks picture that lost its wrapper: wrap it again (new identity).
+                    // A pasted MathBlocks picture without its ID title: identified again (copy → new ID).
                     cc = AdoptPastedPicture(sel);
                     if (cc == null) return;
                 }
@@ -312,7 +305,7 @@ namespace MathBlocks.WordConnector
         /// equation (and giving a copied wrapper its own ID). A wrapper holding more is not opened:
         /// the app is told what it holds, and offers Repair equations.
         /// </summary>
-        private void SendActivated(Word.Document doc, Word.ContentControl cc, string what, Dictionary<string, object> extra)
+        private void SendActivated(Word.Document doc, Eq cc, string what, Dictionary<string, object> extra)
         {
             var problem = _ops.PrepareRead(doc, ref cc, what, out var fingerprint);
             var prm = new Dictionary<string, object> { ["tag"] = cc.Tag, ["number"] = WordOps.NumberInfo(cc), ["fingerprint"] = fingerprint };
@@ -342,13 +335,27 @@ namespace MathBlocks.WordConnector
 
         private bool _guarding;
 
-        /// <summary>Keeps the caret out of a wrapper's edges, where Word would put typed or pasted text inside it.</summary>
+        /// <summary>
+        /// On every selection change: a selected floating MathBlocks picture goes back in line at once;
+        /// after a paste, drop or deletion (picture counts changed) floating pictures go back in line and
+        /// duplicated IDs near the selection are resolved; the caret is kept out of a native wrapper's edges.
+        /// </summary>
         private void OnWindowSelectionChange(Word.Selection sel)
         {
             if (_guarding) return;
             try
             {
                 _guarding = true;
+                if (FloatingMathBlocksSelected(sel))
+                {
+                    var eq = AdoptPastedPicture(sel);
+                    if (eq != null)
+                    {
+                        eq.Range.Select();
+                        _app.StatusBar = "MathBlocks: the pasted equation was put back in line with the text.";
+                    }
+                }
+                _ops.WatchChanges(sel);
                 _ops.GuardCaret(sel);
             }
             catch (Exception ex)
@@ -361,8 +368,8 @@ namespace MathBlocks.WordConnector
             }
         }
 
-        /// <summary>Wraps the MathBlocks picture under the selection if it lost its content control; null otherwise.</summary>
-        private Word.ContentControl AdoptPastedPicture(Word.Selection sel)
+        /// <summary>The MathBlocks picture under the selection that is floating or has no ID title, identified again; null otherwise.</summary>
+        private Eq AdoptPastedPicture(Word.Selection sel)
         {
             try
             {
@@ -373,7 +380,8 @@ namespace MathBlocks.WordConnector
                 var block = json != null ? System.Text.RegularExpressions.Regex.Match(json, "\"block\"\\s*:\\s*\"([0-9A-Za-z]{16})\"").Groups[1].Value : null;
                 var tag = _ops.AdoptPicture(doc, shape, block);
                 Log.Info("pasted picture (" + how + ") adopted as " + tag);
-                foreach (Word.ContentControl c in doc.SelectContentControlsByTag(tag)) return c;
+                var found = WordOps.FindByTag(doc, tag);
+                if (found.Count > 0) return found[0];
             }
             catch (Exception ex)
             {
@@ -402,7 +410,7 @@ namespace MathBlocks.WordConnector
             {
                 if (_pipe == null || !_pipe.IsConnected) return;
                 var doc = _app.ActiveDocument;
-                var cc = WordOps.WrapperAt(doc, sel.Range);
+                var cc = _ops.EquationAt(doc, sel.Range);
                 if (cc != null)
                 {
                     cancel = true;
@@ -477,14 +485,14 @@ namespace MathBlocks.WordConnector
         {
             try
             {
-                // A previous build locked wrappers: unlock them so Delete, Cut, drag and Number work.
+                // Floating equations back in line, copied IDs resolved, wrappers unlocked (an older build locked them).
                 try
                 {
-                    if (WordOps.HasEquations(doc)) _ops.UnlockAll(doc);
+                    if (WordOps.HasEquations(doc)) _ops.OnOpen(doc);
                 }
                 catch (Exception ex)
                 {
-                    Log.Error("unlocking wrappers", ex);
+                    Log.Error("checking equations on open", ex);
                 }
                 if (_pipe == null || !_pipe.IsConnected) return;
                 if (!WordOps.HasEquations(doc)) return;

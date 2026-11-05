@@ -43,9 +43,27 @@ namespace MathBlocks.WordConnector
         }
 
         /// <summary>Everything a wrapper holds: equations, other pictures, nested wrappers, text.</summary>
-        internal EquationIdentity.WrapperContents Inspect(Word.Document doc, Word.ContentControl cc)
+        internal EquationIdentity.WrapperContents Inspect(Word.Document doc, Word.ContentControl cc) => Inspect(doc, new Eq(cc));
+
+        /// <summary>What an equation holds: a Classic picture is always exactly itself; a wrapper may hold more.</summary>
+        internal EquationIdentity.WrapperContents Inspect(Word.Document doc, Eq eq)
         {
             var c = new EquationIdentity.WrapperContents();
+            if (eq.IsPicture)
+            {
+                var src = PictureSource(eq.Picture.Range.WordOpenXML);
+                if (src != null) c.PictureSources.Add(src);
+                else c.OtherPictures++;
+                try
+                {
+                    c.SameTag = FindByTag(doc, eq.Tag).Count;
+                }
+                catch (COMException)
+                {
+                }
+                return c;
+            }
+            var cc = eq.Control;
             var r = cc.Range;
             foreach (Word.InlineShape s in r.InlineShapes)
             {
@@ -283,20 +301,12 @@ namespace MathBlocks.WordConnector
         /// (identity first); returns the problem that blocks reading (null when it can be read) and
         /// fills the fingerprint.
         /// </summary>
-        internal string PrepareRead(Word.Document doc, ref Word.ContentControl cc, string what, out string fingerprint)
+        internal string PrepareRead(Word.Document doc, ref Eq cc, string what, out string fingerprint)
         {
-            Unlock(cc);
+            if (!cc.IsPicture) Unlock(cc.Control);
+            // Copies first: the original keeps the ID, copies get their own — before the app sees any ID.
+            if (FindByTag(doc, cc.Tag).Count > 1) ResolveDuplicates(doc, cc.Tag);
             var c = Inspect(doc, cc);
-            if (c.SameTag > 1)
-            {
-                var old = cc.Tag;
-                var parts = old.Split('|');
-                cc.LockContents = false;
-                cc.Tag = "mb1|" + (parts.Length == 3 ? parts[1] : "-") + "|" + RandomId(12);
-                Secure(cc);
-                Log.Info(what + ": " + old + " was shared by " + c.SameTag + " wrappers; this one is now " + cc.Tag);
-                c.SameTag = 1;
-            }
             fingerprint = EquationIdentity.Fingerprint(c);
             var problem = EquationIdentity.Problem(c);
             Log.Info(what + " resolved to " + EquationIdentity.Describe(cc.Tag, c) + (problem != null ? " — refused: " + problem : ""));
@@ -304,10 +314,16 @@ namespace MathBlocks.WordConnector
         }
 
         /// <summary>The wrapper a write is for, verified (one equation, no text, unique ID, unchanged); throws otherwise.</summary>
-        internal Word.ContentControl VerifyForWrite(Word.Document doc, string tag, Dictionary<string, object> p, string what)
+        internal Eq VerifyForWrite(Word.Document doc, string tag, Dictionary<string, object> p, string what)
         {
             var found = FindByTag(doc, tag);
             if (found.Count == 0) throw new RpcException(Rpc.NotFound, "The equation is no longer in the document.");
+            // Copies that appeared since the equation was opened get their own ID; the original keeps it.
+            if (found.Count > 1)
+            {
+                ResolveDuplicates(doc, tag);
+                found = FindByTag(doc, tag);
+            }
             var cc = found[0];
             // Nothing in the paragraph may be locked for our own write (number, update, repair).
             try
@@ -317,7 +333,7 @@ namespace MathBlocks.WordConnector
             catch (COMException)
             {
             }
-            Unlock(cc);
+            if (!cc.IsPicture) Unlock(cc.Control);
             var c = Inspect(doc, cc);
             c.SameTag = found.Count;
             var expect = p != null && p.TryGetValue("expect", out var e) ? e as string : null;
@@ -435,6 +451,14 @@ namespace MathBlocks.WordConnector
 
         private void WrapRange(Word.Document doc, Word.Range range, string tag)
         {
+            // A Classic picture needs no wrapper: its title is its ID.
+            if (range.InlineShapes.Count == 1 && range.OMaths.Count == 0)
+            {
+                var pic = range.InlineShapes[1];
+                pic.Title = tag ?? "mb1|-|" + RandomId(12);
+                Log.Info("repair: split off one Classic equation as the titled picture " + pic.Title);
+                return;
+            }
             object r = range;
             var cc = doc.ContentControls.Add(Word.WdContentControlType.wdContentControlRichText, ref r);
             cc.Tag = tag ?? "mb1|-|" + RandomId(12);

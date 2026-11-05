@@ -42,10 +42,9 @@ namespace MathBlocks.WordConnector
         }
 
         /// <summary>Puts a numbered equation's number (and bookmarks) after its content control.</summary>
-        private void InsertNumber(Word.Document doc, Word.ContentControl cc, NumberFields.NumberFormat f, string name)
+        private void InsertNumber(Word.Document doc, Eq cc, NumberFields.NumberFormat f, string name)
         {
-            var para = cc.Range.Paragraphs[1];
-            int pos = cc.Range.End + 1;
+            int pos = cc.After;
             doc.Range(pos, pos).InsertXML(NumberFields.Package("<w:r><w:tab/></w:r>" + NumberFields.NumberRuns(f, name, NumberOnlyName(name), f.Source == "markers" && InAppendix(doc, pos))));
         }
 
@@ -61,32 +60,32 @@ namespace MathBlocks.WordConnector
             var tag = Rpc.GetString(p, "tag");
             var flatOpc = Rpc.GetString(p, "flatOpc");
             var fmt = NumberFields.NumberFormat.From(p);
-            var found = new List<Word.ContentControl> { VerifyForWrite(doc, tag, p, "numberEquation") };
+            var found = new List<Eq> { VerifyForWrite(doc, tag, p, "numberEquation") };
 
             var undo = _app.UndoRecord;
             undo.StartCustomRecord("Number equation");
             try
             {
                 RemoveNumber(doc, found[0]);
-                ReplaceControl(doc, FindByTag(doc, tag)[0], flatOpc);
+                ReplaceEquationContent(doc, FindByTag(doc, tag)[0], flatOpc, tag);
                 var cc = FindByTag(doc, tag)[0];
-                Secure(cc);
+                if (!cc.IsPicture) Secure(cc.Control);
 
                 // Own paragraph: split off text before and after.
                 var para = cc.Range.Paragraphs[1];
-                int ccStart = cc.Range.Start - 1, ccEnd = cc.Range.End + 1;
+                int ccStart = cc.Before, ccEnd = cc.After;
                 if (!IsBlank(doc.Range(para.Range.Start, ccStart).Text)) doc.Range(ccStart, ccStart).InsertParagraphBefore();
                 cc = FindByTag(doc, tag)[0];
                 para = cc.Range.Paragraphs[1];
-                ccEnd = cc.Range.End + 1;
+                ccEnd = cc.After;
                 if (!IsBlank(doc.Range(ccEnd, para.Range.End - 1).Text)) doc.Range(ccEnd, ccEnd).InsertParagraphAfter();
 
                 // Only the equation is left in the paragraph (plus blanks): clear those.
                 cc = FindByTag(doc, tag)[0];
                 para = cc.Range.Paragraphs[1];
-                ccEnd = cc.Range.End + 1;
+                ccEnd = cc.After;
                 if (para.Range.End - 1 > ccEnd) doc.Range(ccEnd, para.Range.End - 1).Delete();
-                ccStart = cc.Range.Start - 1;
+                ccStart = cc.Before;
                 if (ccStart > para.Range.Start) doc.Range(para.Range.Start, ccStart).Delete();
 
                 // Tab stops: centre of the text column, right margin.
@@ -127,14 +126,14 @@ namespace MathBlocks.WordConnector
             var doc = ResolveDocument(p);
             var tag = Rpc.GetString(p, "tag");
             var flatOpc = Rpc.GetString(p, "flatOpc");
-            var found = new List<Word.ContentControl> { VerifyForWrite(doc, tag, p, "unnumberEquation") };
+            var found = new List<Eq> { VerifyForWrite(doc, tag, p, "unnumberEquation") };
             var undo = _app.UndoRecord;
             undo.StartCustomRecord("Remove equation number");
             try
             {
                 RemoveNumber(doc, found[0]);
-                ReplaceControl(doc, FindByTag(doc, tag)[0], flatOpc);
-                foreach (var cc in FindByTag(doc, tag)) Secure(cc);
+                ReplaceEquationContent(doc, FindByTag(doc, tag)[0], flatOpc, tag);
+                foreach (var cc in FindByTag(doc, tag)) if (!cc.IsPicture) Secure(cc.Control);
                 UpdateNumberFields(doc);
             }
             finally
@@ -145,7 +144,7 @@ namespace MathBlocks.WordConnector
         }
 
         /// <summary>Deletes the number, tabs and bookmark around a numbered equation (if any).</summary>
-        private static void RemoveNumber(Word.Document doc, Word.ContentControl cc)
+        private static void RemoveNumber(Word.Document doc, Eq cc)
         {
             var para = cc.Range.Paragraphs[1];
             if (!HasNumberField(para.Range)) return;
@@ -160,7 +159,7 @@ namespace MathBlocks.WordConnector
             {
                 doc.Bookmarks.ShowHidden = hidden;
             }
-            int ccEnd = cc.Range.End + 1, ccStart = cc.Range.Start - 1;
+            int ccEnd = cc.After, ccStart = cc.Before;
             if (para.Range.End - 1 > ccEnd) doc.Range(ccEnd, para.Range.End - 1).Delete();
             if (ccStart > para.Range.Start) doc.Range(para.Range.Start, ccStart).Delete();
             para.TabStops.ClearAll();
@@ -177,7 +176,7 @@ namespace MathBlocks.WordConnector
         }
 
         /// <summary>Number of the equation's paragraph, for the editor: null when not numbered.</summary>
-        internal static Dictionary<string, object> NumberInfo(Word.ContentControl cc)
+        internal static Dictionary<string, object> NumberInfo(Eq cc)
         {
             try
             {
@@ -243,13 +242,25 @@ namespace MathBlocks.WordConnector
                     if (!ours && !name.StartsWith(MathTypeBookmarkPrefix, StringComparison.Ordinal)) continue;
                     var para = bm.Range.Paragraphs[1].Range;
                     string tag = null, flatOpc = null;
-                    foreach (Word.ContentControl cc in para.ContentControls)
+                    foreach (Word.InlineShape s in para.InlineShapes)
                     {
-                        if (cc.Tag != null && cc.Tag.StartsWith(TagPrefix, StringComparison.Ordinal))
+                        if (IsTag(TitleOf(s)) && !InsideMathBlocksControl(s.Range))
                         {
-                            tag = cc.Tag;
-                            if (includeContent) flatOpc = cc.Range.WordOpenXML;
+                            tag = TitleOf(s);
+                            if (includeContent) flatOpc = s.Range.WordOpenXML;
                             break;
+                        }
+                    }
+                    if (tag == null)
+                    {
+                        foreach (Word.ContentControl cc in para.ContentControls)
+                        {
+                            if (cc.Tag != null && cc.Tag.StartsWith(TagPrefix, StringComparison.Ordinal))
+                            {
+                                tag = cc.Tag;
+                                if (includeContent) flatOpc = cc.Range.WordOpenXML;
+                                break;
+                            }
                         }
                     }
                     int page = 0;
@@ -374,7 +385,7 @@ namespace MathBlocks.WordConnector
             if (own) undo.StartCustomRecord("Upgrade equation numbering");
             try
             {
-                foreach (var cc0 in MathBlocksControls(doc))
+                foreach (var cc0 in AllEquations(doc))
                 {
                     var tag = cc0.Tag;
                     var para = cc0.Range.Paragraphs[1].Range;

@@ -97,6 +97,8 @@ export interface VmlPictureOptions {
   /** Shape id, unique in the document. */
   id: number;
   alt: string;
+  /** Title (Word: Format Picture → Alt Text → Title); a MathBlocks equation's ID (mb1|block|instance). */
+  title?: string;
 }
 
 /**
@@ -112,7 +114,7 @@ export function vmlPictureRun(o: VmlPictureOptions): string {
     `<v:path o:extrusionok="f" gradientshapeok="t" o:connecttype="rect"/><o:lock v:ext="edit" aspectratio="t"/></v:shapetype>`;
   return (
     `<w:r>${position}<w:pict>${shapetype}` +
-    `<v:shape id="_x0000_mb${o.id}" type="#_x0000_t75" alt="${escapeXml(o.alt)}" style="width:${o.widthPt.toFixed(2)}pt;height:${o.heightPt.toFixed(2)}pt">` +
+    `<v:shape id="_x0000_mb${o.id}" type="#_x0000_t75" alt="${escapeXml(o.alt)}"${o.title ? ` title="${escapeXml(o.title)}"` : ""} style="width:${o.widthPt.toFixed(2)}pt;height:${o.heightPt.toFixed(2)}pt">` +
     `<v:imagedata r:id="${o.rId}" o:title=""/></v:shape></w:pict></w:r>`
   );
 }

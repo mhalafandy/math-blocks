@@ -6,9 +6,10 @@ import { readRegistry, writeBlock, writeRegistry } from "./linking";
 import { useApp } from "./store";
 
 /**
- * Repair equations (Bug 1): after copy, cut and paste a MathBlocks equation can lose its identity.
- * The add-in gives duplicated copies new instance ids, wraps pictures that still carry MathBlocks
- * data (EMF comment / alt text) in a new content control, and bookmarks numbered copies. The app
+ * Repair equations: after copy, cut and paste a MathBlocks equation can lose its identity.
+ * The add-in puts floating pictures back in line, converts older wrapped Classic equations to
+ * titled pictures, identifies pictures that still carry MathBlocks data (EMF source / alt text),
+ * gives copies (not originals) new instance ids, and bookmarks numbered copies. The app
  * then carries over what lives in the document registry: the source of native equations with
  * notation kinds (to the new id), and the definition of linked copies (from the library), or
  * makes a copy unlinked when its definition is nowhere.
@@ -19,6 +20,11 @@ export interface RepairReport {
   inlined: number;
   /** Wrappers that held several equations, text or nested wrappers, split into one per equation. */
   split: number;
+  /** Older wrapped Classic equations converted to titled pictures (no wrapper). */
+  converted: number;
+  /** Untouched: native Word equations and MathType objects. */
+  native: number;
+  mathType: number;
   renamed: number;
   wrapped: number;
   fromAlt: number;
@@ -33,13 +39,16 @@ export async function repairDocument(document?: string, o: { quiet?: boolean; fr
   if (!addinSupports("repairEquations")) return null;
   const target = document ? { document } : {};
   const dry = await connector.request("repairEquations", { ...target, dryRun: true }, 120_000);
-  const changes = (dry.inlined ?? 0) + (dry.split?.length ?? 0) + dry.renamed.length + dry.wrapped.length + dry.bookmarks;
-  const report: RepairReport = { inlined: 0, split: 0, renamed: 0, wrapped: 0, fromAlt: 0, bookmarks: 0, linkedAdded: 0, unlinked: 0, otherPictures: dry.otherPictures };
+  const changes = (dry.inlined ?? 0) + (dry.split?.length ?? 0) + (dry.converted ?? 0) + dry.renamed.length + dry.wrapped.length + dry.bookmarks;
+  const report: RepairReport = { inlined: 0, split: 0, converted: 0, native: dry.native ?? 0, mathType: dry.mathType ?? 0, renamed: 0, wrapped: 0, fromAlt: 0, bookmarks: 0, linkedAdded: 0, unlinked: 0, otherPictures: dry.otherPictures };
   if (changes > 0) {
     report.backup = await backupIfMany(dry.document, changes);
     const r = await connector.request("repairEquations", target, 300_000);
     report.inlined = r.inlined ?? 0;
     report.split = r.split?.length ?? 0;
+    report.converted = r.converted ?? 0;
+    report.native = r.native ?? report.native;
+    report.mathType = r.mathType ?? report.mathType;
     report.renamed = r.renamed.length;
     report.wrapped = r.wrapped.length;
     report.fromAlt = r.wrapped.filter((w) => w.source === "alt").length;
@@ -88,12 +97,14 @@ export function describeRepair(r: RepairReport): string {
   const parts: string[] = [];
   if (r.inlined) parts.push(`${r.inlined} floating picture(s) put back in line with the text`);
   if (r.split) parts.push(`${r.split} wrapper(s) holding several equations or text split into one per equation (text moved out)`);
+  if (r.converted) parts.push(`${r.converted} Classic equation(s) converted to the new form (picture without wrapper)`);
   if (r.renamed) parts.push(`${r.renamed} copied equation(s) got their own identity`);
-  if (r.wrapped) parts.push(`${r.wrapped} pasted picture(s) became MathBlocks equations again${r.fromAlt ? ` (${r.fromAlt} from their alt text only)` : ""}`);
+  if (r.wrapped) parts.push(`${r.wrapped} pasted picture(s) were identified as MathBlocks equations again${r.fromAlt ? ` (${r.fromAlt} from their alt text only)` : ""}`);
   if (r.bookmarks) parts.push(`${r.bookmarks} numbered copy/copies got a number bookmark`);
   if (r.linkedAdded) parts.push(`${r.linkedAdded} linked copy/copies registered in this document`);
   if (r.unlinked) parts.push(`${r.unlinked} linked copy/copies kept as unlinked (definition not found)`);
   const head = parts.length ? `Repaired: ${parts.join("; ")}.` : "Every MathBlocks equation is intact.";
   const other = r.otherPictures ? ` ${r.otherPictures} other picture(s) carry no MathBlocks data (ordinary pictures, or equations pasted as "Picture").` : "";
-  return head + other + (r.backup ? ` Backup: ${r.backup.split(/[\\/]/).pop()}` : "");
+  const untouched = r.native || r.mathType ? ` Left untouched: ${r.native} native Word equation(s), ${r.mathType} MathType object(s).` : "";
+  return head + other + untouched + (r.backup ? ` Backup: ${r.backup.split(/[\\/]/).pop()}` : "");
 }

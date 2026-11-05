@@ -134,6 +134,14 @@ static class Program
         Check(EquationIdentity.Fingerprint(W(2)) != fp, "identity: the fingerprint sees a second equation");
         Check(EquationIdentity.FirstLatex("{\"latex\":\"\\\\pvec{r}_2\",\"mode\":\"display\"}") == "\\pvec{r}_2", "identity: first LaTeX read from the source JSON");
         Check(EquationIdentity.Describe("mb1|-|abc", W(2, text: 5)).Contains("pictures 2+0") , "identity: log line counts pictures and text");
+        // Hybrid identity: the ID in a picture's hidden source, and which duplicate keeps the ID.
+        Check(EquationIdentity.SourceTag("{\"latex\":\"x\",\"mode\":\"display\",\"tag\":\"mb1|-|abc123DEF456\"}") == "mb1|-|abc123DEF456", "hybrid: ID read from the hidden source");
+        Check(EquationIdentity.SourceTag("{\"latex\":\"x\",\"block\":\"BLOCK1BLOCK1BLOC\",\"tag\":\"mb1|BLOCK1BLOCK1BLOC|inst00000001\"}") == "mb1|BLOCK1BLOCK1BLOC|inst00000001", "hybrid: linked copy's ID read from the hidden source");
+        Check(EquationIdentity.SourceTag("{\"latex\":\"x\"}") == null, "hybrid: no ID in an older source");
+        Check(EquationIdentity.SourceTag("{\"latex\":\"\\\\text{tag}\",\"tag\":\"oops\"}") == null, "hybrid: a malformed ID is not taken");
+        Check(EquationIdentity.ChooseKeeper(new[] { false, true }, out var why1) == 1 && why1.Contains("bookmark"), "hybrid: the copy pasted BEFORE the numbered original does not take its ID");
+        Check(EquationIdentity.ChooseKeeper(new[] { true, false, false }, out _) == 0, "hybrid: the numbered original keeps its ID, both copies are renamed");
+        Check(EquationIdentity.ChooseKeeper(new[] { false, false }, out var why2) == 0 && why2.Contains("earliest"), "hybrid: unnumbered duplicates — the earliest keeps the ID (logged)");
         Console.WriteLine(failures == 0 ? "all number-field checks passed" : failures + " check(s) failed");
         return failures == 0 ? 0 : 1;
     }

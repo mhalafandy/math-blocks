@@ -156,7 +156,7 @@ function convertPartXml(
         const item: MediaOut = { part, svgId: `rIdMbS${n}`, pngId: `rIdMbP${n}`, name: `mathblocks-${uid}`, data: pic };
         media.push(item);
         const drawing = pic.emf
-          ? vmlPictureRun({ rId: item.pngId, widthPt: pic.widthPt, heightPt: pic.heightPt, depthPt: pic.depthPt, id: 90000 + n, alt: `MathBlocks ${display ? (entry.number ? "numbered" : "display") : "inline"}: ${latex}` })
+          ? vmlPictureRun({ rId: item.pngId, widthPt: pic.widthPt, heightPt: pic.heightPt, depthPt: pic.depthPt, id: 90000 + n, alt: `MathBlocks ${display ? (entry.number ? "numbered" : "display") : "inline"}: ${latex}`, title: entry.tag })
           : pictureRun({
           svgRId: item.svgId,
           pngRId: item.pngId,
@@ -167,7 +167,8 @@ function convertPartXml(
           name: `MathBlocks equation ${n}`,
           description: `MathBlocks ${display ? (entry.number ? "numbered" : "display") : "inline"}: ${latex}`,
         });
-        return sdt(drawing, hasW15, entry.tag, true);
+        // A Classic (EMF) picture is the equation: its ID is its title, no content control.
+        return pic.emf ? drawing : sdt(drawing, hasW15, entry.tag, true);
       }
       const omml = toOmml(parsed.root, { profile, display: false });
       return sdt(omml, hasW15, entry.tag);

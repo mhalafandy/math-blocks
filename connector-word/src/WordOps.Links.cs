@@ -27,41 +27,11 @@ namespace MathBlocks.WordConnector
             return ActiveDocument();
         }
 
-        private static List<Word.ContentControl> MathBlocksControls(Word.Document doc)
-        {
-            var list = new List<Word.ContentControl>();
-            foreach (Word.ContentControl cc in doc.ContentControls)
-            {
-                var t = cc.Tag;
-                if (t != null && t.StartsWith(TagPrefix, StringComparison.Ordinal)) list.Add(cc);
-            }
-            return list;
-        }
+        /// <summary>Wrappers only (native equations, older Classic ones); equations of every form: AllEquations.</summary>
+        private static List<Word.ContentControl> MathBlocksControls(Word.Document doc) => WrapperControls(doc);
 
-        /// <summary>
-        /// Copying an equation in Word copies its tag. Give every duplicate (all but the first) a new
-        /// instance id; the block id stays, so the copy remains linked.
-        /// </summary>
-        private List<Dictionary<string, object>> Dedupe(Word.Document doc, bool collect = false)
-        {
-            var seen = new HashSet<string>(StringComparer.Ordinal);
-            var pairs = new List<Dictionary<string, object>>();
-            int fixedCount = 0;
-            foreach (var cc in MathBlocksControls(doc))
-            {
-                var tag = cc.Tag;
-                if (seen.Add(tag)) continue;
-                var parts = tag.Split('|');
-                if (parts.Length != 3) continue;
-                var newTag = parts[0] + "|" + parts[1] + "|" + RandomId(12);
-                cc.Tag = newTag;
-                seen.Add(newTag);
-                fixedCount++;
-                pairs.Add(new Dictionary<string, object> { ["from"] = tag, ["to"] = newTag });
-            }
-            if (fixedCount > 0) Log.Info("gave " + fixedCount + " copied equation(s) new instance ids in " + doc.Name);
-            return pairs;
-        }
+        /// <summary>Copies get their own ID (the original keeps it: see ResolveDuplicates). Returns the renamed pairs.</summary>
+        private List<Dictionary<string, object>> Dedupe(Word.Document doc, bool collect = false) => ResolveDuplicates(doc);
 
         private IEnumerable<Word.Document> TargetDocuments(Dictionary<string, object> p)
         {
@@ -88,14 +58,14 @@ namespace MathBlocks.WordConnector
                 {
                     Dedupe(doc);
                     var items = new List<object>();
-                    foreach (var cc in MathBlocksControls(doc))
+                    foreach (var eq in AllEquations(doc))
                     {
-                        var tag = cc.Tag;
+                        var tag = eq.Tag;
                         if (blockFilter != null && tag.Split('|')[1] != blockFilter) continue;
                         var item = light
                             ? new Dictionary<string, object> { ["tag"] = tag, ["page"] = 0, ["context"] = "" }
-                            : new Dictionary<string, object> { ["tag"] = tag, ["page"] = PageOf(cc), ["context"] = ContextOf(cc), ["number"] = NumberInfo(cc)?["number"] };
-                        if (includeContent) item["flatOpc"] = cc.Range.WordOpenXML;
+                            : new Dictionary<string, object> { ["tag"] = tag, ["page"] = PageOf(eq), ["context"] = ContextOf(eq), ["number"] = NumberInfo(eq)?["number"] };
+                        if (includeContent) item["flatOpc"] = eq.Xml;
                         items.Add(item);
                     }
                     docs.Add(new Dictionary<string, object> { ["name"] = doc.Name, ["fullName"] = doc.FullName, ["instances"] = items });
@@ -108,7 +78,7 @@ namespace MathBlocks.WordConnector
             return new Dictionary<string, object> { ["documents"] = docs };
         }
 
-        private static int PageOf(Word.ContentControl cc)
+        private static int PageOf(Eq cc)
         {
             try
             {
@@ -122,7 +92,7 @@ namespace MathBlocks.WordConnector
         }
 
         /// <summary>Plain text of the paragraph around the equation, for the instance list.</summary>
-        private static string ContextOf(Word.ContentControl cc)
+        private static string ContextOf(Eq cc)
         {
             try
             {
@@ -163,7 +133,7 @@ namespace MathBlocks.WordConnector
                     if (!(o is Dictionary<string, object> item)) continue;
                     var tag = Rpc.GetString(item, "tag");
                     var flatOpc = Rpc.GetString(item, "flatOpc");
-                    Word.ContentControl target;
+                    Eq target;
                     try
                     {
                         // One clean equation with this ID, unchanged since it was read; otherwise it is left alone.
@@ -175,8 +145,8 @@ namespace MathBlocks.WordConnector
                         else refused.Add(new Dictionary<string, object> { ["tag"] = tag, ["reason"] = ex.Message });
                         continue;
                     }
-                    ReplaceControl(doc, target, flatOpc);
-                    foreach (var c in FindByTag(doc, tag)) Secure(c);
+                    ReplaceEquationContent(doc, target, flatOpc, tag);
+                    foreach (var c in FindByTag(doc, tag)) if (!c.IsPicture) Secure(c.Control);
                     replaced++;
                 }
             }
@@ -199,7 +169,11 @@ namespace MathBlocks.WordConnector
             var tag = Rpc.GetString(p, "tag");
             var newTag = Rpc.GetString(p, "newTag");
             var found = FindByTag(doc, tag);
-            foreach (var cc in found) cc.Tag = newTag;
+            foreach (var eq in found)
+            {
+                if (!eq.IsPicture) Unlock(eq.Control);
+                eq.Tag = newTag;
+            }
             return new Dictionary<string, object> { ["found"] = found.Count };
         }
 
@@ -258,14 +232,25 @@ namespace MathBlocks.WordConnector
             int n = 0;
             foreach (Word.Document doc in _app.Documents)
             {
-                foreach (var cc in MathBlocksControls(doc))
+                foreach (var eq in AllEquations(doc))
                 {
-                    var parts = cc.Tag.Split('|');
+                    var parts = eq.Tag.Split('|');
                     if (parts.Length != 3 || parts[1] == "-") continue;
                     try
                     {
-                        cc.Appearance = on ? Word.WdContentControlAppearance.wdContentControlBoundingBox : Word.WdContentControlAppearance.wdContentControlHidden;
-                        if (on) cc.Color = Word.WdColor.wdColorBlue;
+                        if (eq.IsPicture)
+                        {
+                            // A picture has no wrapper box: a temporary blue border instead.
+                            var b = eq.Picture.Borders;
+                            b.OutsideLineStyle = on ? Word.WdLineStyle.wdLineStyleSingle : Word.WdLineStyle.wdLineStyleNone;
+                            if (on) b.OutsideColor = Word.WdColor.wdColorBlue;
+                        }
+                        else
+                        {
+                            var cc = eq.Control;
+                            cc.Appearance = on ? Word.WdContentControlAppearance.wdContentControlBoundingBox : Word.WdContentControlAppearance.wdContentControlHidden;
+                            if (on) cc.Color = Word.WdColor.wdColorBlue;
+                        }
                         n++;
                     }
                     catch (COMException)
@@ -278,6 +263,20 @@ namespace MathBlocks.WordConnector
         }
 
         /// <summary>True when the document holds MathBlocks equations.</summary>
-        public static bool HasEquations(Word.Document doc) => MathBlocksControls(doc).Count > 0;
+        public static bool HasEquations(Word.Document doc)
+        {
+            if (WrapperControls(doc).Count > 0) return true;
+            foreach (Word.InlineShape s in doc.InlineShapes)
+                if (LooksLikeEquation(s)) return true;
+            try
+            {
+                foreach (Word.Shape sh in doc.Shapes)
+                    if (IsMathBlocksShape(sh)) return true;
+            }
+            catch (COMException)
+            {
+            }
+            return false;
+        }
     }
 }

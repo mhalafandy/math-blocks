@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace MathBlocks.WordConnector
 {
@@ -12,6 +13,33 @@ namespace MathBlocks.WordConnector
     /// </summary>
     internal static class EquationIdentity
     {
+        private static readonly Regex SourceTagRe = new Regex("\"tag\"\\s*:\\s*\"(mb1\\|[^\"|]+\\|[0-9A-Za-z]+)\"", RegexOptions.Compiled);
+
+        /// <summary>The equation ID kept in a picture's hidden source (EMF comment JSON), or null.</summary>
+        public static string SourceTag(string source)
+        {
+            if (source == null) return null;
+            var m = SourceTagRe.Match(source);
+            return m.Success ? m.Groups[1].Value : null;
+        }
+
+        /// <summary>
+        /// Which of several equations sharing an ID is the original (keeps the ID); the others are copies.
+        /// The one whose paragraph holds the number bookmark (so the references point at it) wins;
+        /// otherwise the earliest in the document. `hasBookmark` is in document order.
+        /// </summary>
+        public static int ChooseKeeper(IList<bool> hasBookmark, out string reason)
+        {
+            for (int i = 0; i < hasBookmark.Count; i++)
+            {
+                if (!hasBookmark[i]) continue;
+                reason = "its number bookmark (and references) belong to it";
+                return i;
+            }
+            reason = "no number bookmark decides it: the earliest in the document";
+            return 0;
+        }
+
         internal sealed class WrapperContents
         {
             /// <summary>MathBlocks Classic pictures (their source, from the EMF comment or alt text).</summary>

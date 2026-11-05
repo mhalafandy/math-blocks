@@ -1,7 +1,8 @@
 # Classic equation identity: wrapper or not (evaluation, round 5)
 
-**Status:** proposal, waiting for the user's choice. Interim build: wrappers unlocked (no lock may
-block editing), empty wrappers removed after Delete/Cut, caret guard and read/write checks kept.
+**Status:** decided — the hybrid (c) is built: Classic = titled picture, native = unlocked guarded
+wrapper. Implementation: `WordOps.Equations.cs` (the `Eq` handle), `EquationIdentity.ChooseKeeper`
+and `SourceTag` (tested without Word). Older documents are converted by Repair equations.
 
 ## Where we are
 
