@@ -150,6 +150,7 @@ namespace MathBlocks.WordConnector
             if (!p.TryGetValue("items", out var raw) || !(raw is IEnumerable list)) throw new RpcException(Rpc.InvalidParams, "Missing items");
             int replaced = 0;
             var missing = new List<object>();
+            var refused = new List<object>();
             var undo = _app.UndoRecord;
             // Inside a document-wide operation the operation's undo record covers every batch.
             var ownUndo = !undo.IsRecordingCustomRecord;
@@ -162,14 +163,20 @@ namespace MathBlocks.WordConnector
                     if (!(o is Dictionary<string, object> item)) continue;
                     var tag = Rpc.GetString(item, "tag");
                     var flatOpc = Rpc.GetString(item, "flatOpc");
-                    var found = FindByTag(doc, tag);
-                    if (found.Count == 0)
+                    Word.ContentControl target;
+                    try
                     {
-                        missing.Add(tag);
+                        // One clean equation with this ID, unchanged since it was read; otherwise it is left alone.
+                        target = VerifyForWrite(doc, tag, item, "replaceMany");
+                    }
+                    catch (RpcException ex)
+                    {
+                        if (ex.Code == Rpc.NotFound) missing.Add(tag);
+                        else refused.Add(new Dictionary<string, object> { ["tag"] = tag, ["reason"] = ex.Message });
                         continue;
                     }
-                    ReplaceControl(doc, found[0], flatOpc);
-                    foreach (var c in FindByTag(doc, tag)) TryHide(c);
+                    ReplaceControl(doc, target, flatOpc);
+                    foreach (var c in FindByTag(doc, tag)) Secure(c);
                     replaced++;
                 }
             }
@@ -181,8 +188,8 @@ namespace MathBlocks.WordConnector
             {
                 if (ownUndo) undo.EndCustomRecord();
             }
-            Log.Info("replaceMany in " + doc.Name + ": " + replaced + " replaced, " + missing.Count + " missing, " + clock.ElapsedMilliseconds + " ms (" + (clock.ElapsedMilliseconds / Math.Max(1, replaced)) + " ms each)");
-            return new Dictionary<string, object> { ["replaced"] = replaced, ["missing"] = missing };
+            Log.Info("replaceMany in " + doc.Name + ": " + replaced + " replaced, " + missing.Count + " missing, " + refused.Count + " refused, " + clock.ElapsedMilliseconds + " ms (" + (clock.ElapsedMilliseconds / Math.Max(1, replaced)) + " ms each)");
+            return new Dictionary<string, object> { ["replaced"] = replaced, ["missing"] = missing, ["refused"] = refused };
         }
 
         /// <summary>Changes a control's tag (used to unlink: mb1|block|id → mb1|-|id).</summary>

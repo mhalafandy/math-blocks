@@ -82,6 +82,12 @@ export interface EquationActivatedParams {
   number?: NumberInfo | null;
   /** Right-click: show the floating editor next to the equation (screen pixels). */
   panel?: ScreenRect;
+  /** Fingerprint of the equation's content when it was read; sent back (expect) with any write to it. */
+  fingerprint?: string;
+  /** The wrapper does not hold exactly one equation (and nothing else): not opened, flatOpc is empty. */
+  problem?: string;
+  /** A pasted picture that had lost its wrapper and was wrapped again. */
+  repaired?: boolean;
 }
 
 export interface ScreenRect {
@@ -151,7 +157,7 @@ export interface ConnectorToApp {
   equationActivated: { params: EquationActivatedParams; result: void };
   mathTypeActivated: { params: MathTypeActivatedParams; result: void };
   /** Ribbon buttons handled by the app: convertMathType, insertReference, numberEquation. */
-  runCommand: { params: { command: string; document?: string; tag?: string; flatOpc?: string; numbered?: boolean }; result: void };
+  runCommand: { params: { command: string; document?: string; tag?: string; flatOpc?: string; numbered?: boolean; fingerprint?: string; problem?: string }; result: void };
   /** Ribbon button "Open MathBlocks". */
   showApp: { params: Record<string, never>; result: void };
 }
@@ -193,6 +199,8 @@ export interface ReplaceEquationParams {
   /** Flat OPC package with one paragraph holding a content control with the same tag. */
   flatOpc: string;
   undoLabel: string;
+  /** The fingerprint read with the equation: the add-in refuses when Word's equation is no longer that one. */
+  expect?: string;
 }
 
 /** Optional target document (Word's FullName); default: the active document. */
@@ -226,14 +234,23 @@ export interface AppToConnector {
     result: { documents: DocumentInstances[] };
   };
   /** Replaces several equations (by tag) in one undo step. */
-  replaceMany: { params: DocTarget & { items: { tag: string; flatOpc: string }[]; undoLabel: string }; result: { replaced: number; missing: string[] } };
+  replaceMany: { params: DocTarget & { items: { tag: string; flatOpc: string; expect?: string }[]; undoLabel: string }; result: { replaced: number; missing: string[]; refused?: { tag: string; reason: string }[] } };
   /**
    * Repairs identities: duplicated instance ids get new ones, MathBlocks pictures that lost their
    * content control are wrapped again, numbered copies get a number bookmark.
    */
   repairEquations: {
     params: DocTarget & { dryRun?: boolean };
-    result: { document: string; renamed: { from: string; to: string }[]; wrapped: { tag: string; source: "emf" | "alt" }[]; wrappedOk: number; bookmarks: number; otherPictures: number };
+    result: {
+      document: string;
+      renamed: { from: string; to: string }[];
+      wrapped: { tag: string; source: "emf" | "alt" }[];
+      wrappedOk: number;
+      bookmarks: number;
+      otherPictures: number;
+      /** Wrappers that held more than one equation, text or nested wrappers, split back into one per equation. */
+      split?: { tag: string; equations: number; text: number; nested: number; otherPictures: number }[];
+    };
   };
   /** Whole-document backup (Flat OPC .xml in %LOCALAPPDATA%\MathBlocks\backups). */
   backupDocument: { params: DocTarget; result: { path: string } };
@@ -257,9 +274,9 @@ export interface AppToConnector {
   replaceParagraphs: { params: DocTarget & { items: MathTypeParagraph[]; undoLabel: string }; result: { replaced: number; skipped: number } };
   activateObject: { params: DocTarget & { start: number; end: number; index: number }; result: { ok: true } };
   /** Puts the equation in its own numbered paragraph; flatOpc is its inline version. */
-  numberEquation: { params: DocTarget & NumberFormat & { tag: string; flatOpc: string }; result: { bookmark: string; number: string } };
+  numberEquation: { params: DocTarget & NumberFormat & { tag: string; flatOpc: string; expect?: string }; result: { bookmark: string; number: string } };
   /** Removes the number; flatOpc is the display version. */
-  unnumberEquation: { params: DocTarget & { tag: string; flatOpc: string }; result: { ok: true } };
+  unnumberEquation: { params: DocTarget & { tag: string; flatOpc: string; expect?: string }; result: { ok: true } };
   listNumbered: { params: DocTarget & { includeContent?: boolean }; result: { name: string; fullName: string; equations: NumberedEquation[] } };
   insertReference: { params: { bookmark: string; numberOnly?: boolean }; result: { text: string } };
   /** Hidden chapter/section(/appendix) marker at the cursor (markers numbering source). */
@@ -272,7 +289,7 @@ export interface AppToConnector {
   /** What is at the cursor: a MathBlocks equation, selected text, or a LaTeX span around it. */
   selectionInfo: {
     params: Record<string, never>;
-    result: { document: string; rect: ScreenRect | null; tag?: string; flatOpc?: string; number?: NumberInfo | null; text?: string; start?: number; end?: number };
+    result: { document: string; rect: ScreenRect | null; tag?: string; flatOpc?: string; number?: NumberInfo | null; text?: string; start?: number; end?: number; fingerprint?: string; problem?: string };
   };
   /** LaTeX spans ($…$, $$…$$, \(…\), \[…\]) in the document text. */
   findLatex: { params: DocTarget; result: { name: string; fullName: string; items: { start: number; end: number; text: string; alone: boolean }[]; skippedInside?: number; notLocated?: number } };

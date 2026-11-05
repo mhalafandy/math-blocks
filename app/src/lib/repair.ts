@@ -15,6 +15,8 @@ import { useApp } from "./store";
  */
 
 export interface RepairReport {
+  /** Wrappers that held several equations, text or nested wrappers, split into one per equation. */
+  split: number;
   renamed: number;
   wrapped: number;
   fromAlt: number;
@@ -29,11 +31,12 @@ export async function repairDocument(document?: string, o: { quiet?: boolean } =
   if (!addinSupports("repairEquations")) return null;
   const target = document ? { document } : {};
   const dry = await connector.request("repairEquations", { ...target, dryRun: true }, 120_000);
-  const changes = dry.renamed.length + dry.wrapped.length + dry.bookmarks;
-  const report: RepairReport = { renamed: 0, wrapped: 0, fromAlt: 0, bookmarks: 0, linkedAdded: 0, unlinked: 0, otherPictures: dry.otherPictures };
+  const changes = (dry.split?.length ?? 0) + dry.renamed.length + dry.wrapped.length + dry.bookmarks;
+  const report: RepairReport = { split: 0, renamed: 0, wrapped: 0, fromAlt: 0, bookmarks: 0, linkedAdded: 0, unlinked: 0, otherPictures: dry.otherPictures };
   if (changes > 0) {
     report.backup = await backupIfMany(dry.document, changes);
     const r = await connector.request("repairEquations", target, 300_000);
+    report.split = r.split?.length ?? 0;
     report.renamed = r.renamed.length;
     report.wrapped = r.wrapped.length;
     report.fromAlt = r.wrapped.filter((w) => w.source === "alt").length;
@@ -77,6 +80,7 @@ async function carryOverRegistry(document: string, renamed: { from: string; to: 
 
 export function describeRepair(r: RepairReport): string {
   const parts: string[] = [];
+  if (r.split) parts.push(`${r.split} wrapper(s) holding several equations or text split into one per equation (text moved out)`);
   if (r.renamed) parts.push(`${r.renamed} copied equation(s) got their own identity`);
   if (r.wrapped) parts.push(`${r.wrapped} pasted picture(s) became MathBlocks equations again${r.fromAlt ? ` (${r.fromAlt} from their alt text only)` : ""}`);
   if (r.bookmarks) parts.push(`${r.bookmarks} numbered copy/copies got a number bookmark`);

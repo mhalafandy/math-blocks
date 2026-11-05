@@ -1,3 +1,4 @@
+import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { TUNED_PROFILE, WORD_DEFAULT_PROFILE } from "@mathblocks/math-omml";
 import { formatTag, newInstanceId, parseRegistry, serializeRegistry, type Registry } from "@mathblocks/ooxml";
 import type { DocumentInstances } from "@mathblocks/connector-protocol";
@@ -199,7 +200,7 @@ export async function importBlock(id: string, reg: Registry): Promise<Equation |
 }
 
 /** Called when an equation is double-clicked in Word: opens linked copies as their library equation. */
-export async function openLinkedForEditing(tag: string): Promise<boolean> {
+export async function openLinkedForEditing(tag: string, wordLatex?: string): Promise<boolean> {
   const link = linkOf(tag);
   if (!link) return false;
   const lib = useLibrary.getState();
@@ -209,6 +210,14 @@ export async function openLinkedForEditing(tag: string): Promise<boolean> {
     q = (await importBlock(link.blockId, reg)) ?? undefined;
   }
   if (!q) return false;
+  if (wordLatex !== undefined) {
+    const norm = (l: string) => serializeLatex(parseLatex(l).root);
+    if (norm(wordLatex) !== norm(q.latex)) {
+      // Word shows something else under this linked ID: open Word's content, say so.
+      useApp.getState().notify(`This copy differs from its library version “${q.name}”; Word's content is opened. Update everywhere would replace every copy.`, "error");
+      return false;
+    }
+  }
   lib.openEquation(q);
   useApp.getState().setEditing({ tag, adopted: false, blockId: q.id });
   return true;

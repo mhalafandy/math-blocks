@@ -108,7 +108,7 @@ namespace MathBlocks.WordConnector
                 var cc = doc.ContentControls.Add(Word.WdContentControlType.wdContentControlRichText, ref range);
                 cc.Tag = tag;
                 cc.Title = "MathBlocks equation";
-                TryHide(cc);
+                Secure(cc);
             }
             finally
             {
@@ -130,6 +130,8 @@ namespace MathBlocks.WordConnector
             var dry = Rpc.GetBool(p, "dryRun");
             var renamed = new List<object>();
             var wrapped = new List<object>();
+            var splitReport = new List<object>();
+            int split = 0, secured = 0;
             int wrappedOk = 0, plainPictures = 0, bookmarks = 0;
             bool screen = _app.ScreenUpdating;
             var undo = _app.UndoRecord;
@@ -138,6 +140,8 @@ namespace MathBlocks.WordConnector
             try
             {
                 _app.ScreenUpdating = false;
+                // Wrappers that grew (several equations, text, nested wrappers): one wrapper per equation again.
+                split = SplitWrappers(doc, dry, splitReport);
                 if (dry)
                 {
                     var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -164,17 +168,19 @@ namespace MathBlocks.WordConnector
                     wrapped.Add(new Dictionary<string, object> { ["tag"] = tag, ["source"] = how });
                 }
                 bookmarks = BookmarkNumberedEquations(doc, dry);
+                if (!dry) secured = SecureAll(doc);
             }
             finally
             {
                 _app.ScreenUpdating = screen;
                 if (own) undo.EndCustomRecord();
             }
-            Log.Info("repair in " + doc.Name + ": " + renamed.Count + " new ids, " + wrapped.Count + " re-wrapped, " + bookmarks + " bookmarks, " + plainPictures + " other pictures");
+            Log.Info("repair in " + doc.Name + ": " + split + " wrapper(s) split, " + renamed.Count + " new ids, " + wrapped.Count + " re-wrapped, " + bookmarks + " bookmarks, " + secured + " locked, " + plainPictures + " other pictures");
             return new Dictionary<string, object>
             {
                 ["document"] = doc.FullName,
                 ["renamed"] = renamed,
+                ["split"] = splitReport,
                 ["wrapped"] = wrapped,
                 ["wrappedOk"] = wrappedOk,
                 ["bookmarks"] = bookmarks,

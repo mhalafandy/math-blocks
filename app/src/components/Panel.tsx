@@ -52,7 +52,11 @@ export function PanelApp() {
     else document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
-  const hide = async () => (await import("@tauri-apps/api/window")).getCurrentWindow().hide();
+  const hide = async () => {
+    // The main window ends the edit target the floating editor opened (no stale target).
+    void import("@tauri-apps/api/event").then((m) => m.emitTo("main", "panel:closed", null)).catch(() => undefined);
+    return (await import("@tauri-apps/api/window")).getCurrentWindow().hide();
+  };
   const apply = async () => {
     if (eq.errors > 0) return useApp.getState().notify("Fix the LaTeX errors first.", "error");
     const st = useApp.getState();

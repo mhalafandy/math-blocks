@@ -41,6 +41,7 @@ namespace MathBlocks.WordConnector
 
                 _app.WindowBeforeDoubleClick += OnWindowBeforeDoubleClick;
                 _app.WindowBeforeRightClick += OnWindowBeforeRightClick;
+                _app.WindowSelectionChange += OnWindowSelectionChange;
                 _app.DocumentOpen += OnDocumentOpen;
                 _app.DocumentBeforeSave += OnDocumentBeforeSave;
 
@@ -65,6 +66,7 @@ namespace MathBlocks.WordConnector
                 {
                     _app.WindowBeforeDoubleClick -= OnWindowBeforeDoubleClick;
                     _app.WindowBeforeRightClick -= OnWindowBeforeRightClick;
+                    _app.WindowSelectionChange -= OnWindowSelectionChange;
                     _app.DocumentOpen -= OnDocumentOpen;
                     _app.DocumentBeforeSave -= OnDocumentBeforeSave;
                 }
@@ -169,14 +171,16 @@ namespace MathBlocks.WordConnector
                 if (command == "numberEquation")
                 {
                     // The MathBlocks equation the cursor is in.
-                    var cc = _app.Selection.Range.ParentContentControl;
-                    if (cc == null)
-                        foreach (Word.ContentControl c in _app.Selection.Range.ContentControls) { cc = c; break; }
-                    if (cc?.Tag != null && cc.Tag.StartsWith(WordOps.TagPrefix, StringComparison.Ordinal))
+                    var doc = _app.ActiveDocument;
+                    var cc = WordOps.WrapperAt(doc, _app.Selection.Range);
+                    if (cc != null)
                     {
+                        var problem = _ops.PrepareRead(doc, ref cc, "number command", out var fingerprint);
                         prm["tag"] = cc.Tag;
-                        prm["flatOpc"] = cc.Range.WordOpenXML;
+                        prm["fingerprint"] = fingerprint;
                         prm["numbered"] = WordOps.NumberInfo(cc) != null;
+                        if (problem != null) prm["problem"] = "This equation cannot be numbered safely: " + problem + ".";
+                        else prm["flatOpc"] = cc.Range.WordOpenXML;
                     }
                 }
                 SendRequest("runCommand", prm);
@@ -234,33 +238,62 @@ namespace MathBlocks.WordConnector
             try
             {
                 if (_pipe == null || !_pipe.IsConnected) return;
-                var cc = sel.Range.ParentContentControl;
+                var doc = _app.ActiveDocument;
+                var cc = WordOps.WrapperAt(doc, sel.Range);
                 if (cc == null)
-                    foreach (Word.ContentControl c in sel.Range.ContentControls) { cc = c; break; }
-                var tag = cc?.Tag;
-                if (tag == null || !tag.StartsWith(WordOps.TagPrefix, StringComparison.Ordinal))
                 {
                     // A pasted MathBlocks picture that lost its wrapper: wrap it again (new identity).
                     cc = AdoptPastedPicture(sel);
-                    tag = cc?.Tag;
-                    if (tag == null) return;
+                    if (cc == null) return;
                 }
                 cancel = true;
-                var xml = cc.Range.WordOpenXML;
-                WordOps.LogMathStructure("panel", xml);
                 var rect = ScreenRect(cc.Range);
-                Log.Info("panel for " + tag + " at " + (rect == null ? "?" : rect["left"] + "," + rect["top"]));
-                SendRequest("equationActivated", new Dictionary<string, object>
-                {
-                    ["tag"] = tag,
-                    ["flatOpc"] = xml,
-                    ["number"] = WordOps.NumberInfo(cc),
-                    ["panel"] = rect ?? new Dictionary<string, object> { ["left"] = 200, ["top"] = 200, ["width"] = 0, ["height"] = 0 },
-                });
+                var panel = rect ?? new Dictionary<string, object> { ["left"] = 200, ["top"] = 200, ["width"] = 0, ["height"] = 0 };
+                SendActivated(doc, cc, "panel", new Dictionary<string, object> { ["panel"] = panel });
             }
             catch (Exception ex)
             {
                 Log.Error("right-click handler failed", ex);
+            }
+        }
+
+        /// <summary>
+        /// Sends the equation in a wrapper to the app, after checking the wrapper holds exactly one
+        /// equation (and giving a copied wrapper its own ID). A wrapper holding more is not opened:
+        /// the app is told what it holds, and offers Repair equations.
+        /// </summary>
+        private void SendActivated(Word.Document doc, Word.ContentControl cc, string what, Dictionary<string, object> extra)
+        {
+            var problem = _ops.PrepareRead(doc, ref cc, what, out var fingerprint);
+            var prm = new Dictionary<string, object> { ["tag"] = cc.Tag, ["number"] = WordOps.NumberInfo(cc), ["fingerprint"] = fingerprint };
+            if (extra != null) foreach (var kv in extra) prm[kv.Key] = kv.Value;
+            if (problem != null)
+            {
+                prm["flatOpc"] = "";
+                prm["problem"] = "This equation cannot be opened safely: " + problem + ".";
+            }
+            else prm["flatOpc"] = cc.Range.WordOpenXML;
+            SendRequest("equationActivated", prm);
+        }
+
+        private bool _guarding;
+
+        /// <summary>Keeps the caret out of a wrapper's edges, where Word would put typed or pasted text inside it.</summary>
+        private void OnWindowSelectionChange(Word.Selection sel)
+        {
+            if (_guarding) return;
+            try
+            {
+                _guarding = true;
+                _ops.GuardCaret(sel);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("caret guard", ex);
+            }
+            finally
+            {
+                _guarding = false;
             }
         }
 
@@ -304,15 +337,12 @@ namespace MathBlocks.WordConnector
             try
             {
                 if (_pipe == null || !_pipe.IsConnected) return;
-                var cc = sel.Range.ParentContentControl;
-                var tag = cc?.Tag;
-                if (tag != null && tag.StartsWith(WordOps.TagPrefix, StringComparison.Ordinal))
+                var doc = _app.ActiveDocument;
+                var cc = WordOps.WrapperAt(doc, sel.Range);
+                if (cc != null)
                 {
                     cancel = true;
-                    var xml = cc.Range.WordOpenXML;
-                    Log.Info("equationActivated " + tag + " (" + xml.Length + " chars, has math: " + xml.Contains("oMath") + ")");
-                    WordOps.LogMathStructure("equationActivated", xml);
-                    SendRequest("equationActivated", new Dictionary<string, object> { ["tag"] = tag, ["flatOpc"] = xml, ["number"] = WordOps.NumberInfo(cc) });
+                    SendActivated(doc, cc, "double-click", null);
                     return;
                 }
                 // A pasted MathBlocks picture that lost its wrapper: wrap it again (new identity).
@@ -320,7 +350,7 @@ namespace MathBlocks.WordConnector
                 if (adopted != null)
                 {
                     cancel = true;
-                    SendRequest("equationActivated", new Dictionary<string, object> { ["tag"] = adopted.Tag, ["flatOpc"] = adopted.Range.WordOpenXML, ["number"] = WordOps.NumberInfo(adopted), ["repaired"] = true });
+                    SendActivated(doc, adopted, "double-click (re-wrapped)", new Dictionary<string, object> { ["repaired"] = true });
                     return;
                 }
                 // A MathType equation: offer to convert it and edit it in MathBlocks.

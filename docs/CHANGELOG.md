@@ -25,6 +25,36 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed (testing round 3, priority 0: the app acted on the wrong equation)
+- **Root cause:** Word puts text typed or pasted at a content control's edge *inside* it, and a
+  copied equation keeps its wrapper's ID. MathBlocks' wrappers were neither locked nor guarded, and
+  insertion did not check whether the cursor was inside one: wrappers grew to hold several
+  equations and text (connector.log: wrappers with both a VML and a DrawingML picture, 94k–166k
+  characters; updates finding 2–3 controls with one ID). Reading took the wrapper's first picture
+  (r₂), and Number replaced the whole wrapper with it.
+- **Wrappers cannot grow:** Classic wrappers are content-locked after every insert, update, adoption
+  and repair (Word refuses typing or pasting into them); the caret is moved out of a wrapper's edge
+  whenever it lands there (not inside native equations, which stay editable with Word's tools); a
+  new equation is never inserted inside a wrapper or over a selected equation.
+- **Every read and write is verified:** a wrapper is opened only when it holds exactly one equation
+  and no text (otherwise the app says what it holds and offers Repair equations); a copied wrapper
+  sharing an ID gets its own ID when opened; every write (update, number, un-number, restyle)
+  carries the fingerprint read with the equation and is refused on a mismatch, a duplicate ID or a
+  wrapper that is not one clean equation. Nothing is overwritten with another equation's content.
+- **Repair equations** splits wrappers holding several equations, other pictures, nested wrappers
+  or text (one wrapper per equation, text outside; the first equation keeps the ID), gives
+  duplicated IDs new ones, and locks every clean Classic wrapper.
+- **The edit target ends when the edit ends** (after Update, after Apply or closing the floating
+  editor, when the editor is cleared); the button reads "Insert into Word" or "Update in Word", and
+  the editing bar shows the target (its ID and the equation it held when opened). A linked copy
+  whose Word content differs from its library version opens with Word's content.
+- **connector.log** records for every command the wrapper it resolved to: ID, pictures (MathBlocks
+  + other), native equations, nested wrappers, text characters, wrappers sharing the ID, and the
+  first characters of the LaTeX — and whether a write was verified or refused.
+- Tests: identity rules (connector-word/tests); several equations opened, edited, updated and
+  numbered in turn against a simulated document, a grown wrapper, text in a wrapper, a changed
+  equation and a duplicated ID (app/src/lib/identity.test.ts).
+
 ### Changed (testing round 2, priority 3: editing experience)
 - **The main editor is a visible field:** border, focus ring, placeholder "Type here, or press Space Space
   for commands", blinking caret; focused on launch and on New.

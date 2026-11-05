@@ -33,10 +33,8 @@ namespace MathBlocks.WordConnector
             var doc = ActiveDocument();
             var sel = _app.Selection;
             var result = new Dictionary<string, object> { ["document"] = doc.FullName, ["rect"] = RectOf(sel.Range) };
-            var cc = sel.Range.ParentContentControl;
+            var cc = WrapperAt(doc, sel.Range);
             if (cc == null)
-                foreach (Word.ContentControl c in sel.Range.ContentControls) { cc = c; break; }
-            if (cc?.Tag == null || !cc.Tag.StartsWith(TagPrefix, StringComparison.Ordinal))
             {
                 // A pasted MathBlocks picture that lost its wrapper (Ctrl+Alt+M on it): wrap it again.
                 var shape = UnwrappedPictureAt(doc, sel.Range, out _);
@@ -48,10 +46,17 @@ namespace MathBlocks.WordConnector
                     foreach (Word.ContentControl c in doc.SelectContentControlsByTag(tag)) cc = c;
                 }
             }
-            if (cc?.Tag != null && cc.Tag.StartsWith(TagPrefix, StringComparison.Ordinal))
+            if (cc != null && IsMathBlocks(cc))
             {
+                var problem = PrepareRead(doc, ref cc, "Ctrl+Alt+M", out var fingerprint);
                 result["tag"] = cc.Tag;
-                result["flatOpc"] = cc.Range.WordOpenXML;
+                result["fingerprint"] = fingerprint;
+                if (problem != null)
+                {
+                    result["problem"] = "This equation cannot be opened safely: " + problem + ".";
+                    result["flatOpc"] = "";
+                }
+                else result["flatOpc"] = cc.Range.WordOpenXML;
                 result["number"] = NumberInfo(cc);
                 result["rect"] = RectOf(cc.Range) ?? result["rect"];
                 return result;
@@ -212,7 +217,7 @@ namespace MathBlocks.WordConnector
                         skipped++;
                     }
                 }
-                foreach (var cc in MathBlocksControls(doc)) TryHide(cc);
+                foreach (var cc in MathBlocksControls(doc)) Secure(cc);
             }
             finally
             {

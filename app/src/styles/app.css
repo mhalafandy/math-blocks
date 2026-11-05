@@ -777,3 +777,6 @@ html.panel-window, html.panel-window body, html.panel-window #root { height: aut
 .panel-chip-search { margin-left: auto; width: 140px; padding: 3px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); color: var(--text); font: inherit; font-size: 12px; }
 .panel-foot2 { display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 12px; border-top: 1px solid var(--border); }
 .panel-grip { width: 10px; align-self: stretch; margin-right: -8px; cursor: ew-resize; background: linear-gradient(90deg, transparent 3px, var(--border) 3px, var(--border) 4px, transparent 4px, transparent 6px, var(--border) 6px, var(--border) 7px, transparent 7px); }
+.editing-target { display: inline-flex; align-items: center; gap: 6px; max-width: 40%; overflow: hidden; white-space: nowrap; padding: 0 6px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); font-size: 12px; }
+.editing-target code { color: var(--text-3); font-size: 11px; }
+.editing-target .math-preview { font-size: 13px; }
