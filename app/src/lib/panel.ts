@@ -25,6 +25,10 @@ export interface PanelResult {
   latex: string;
   display: boolean;
   numbered: boolean;
+  /** The notation the floating editor drew with: the main window inserts with exactly this. */
+  notationProfile?: import("@mathblocks/math-core").NotationProfile;
+  customKinds?: import("@mathblocks/math-core").CustomKind[];
+  accentRules?: import("@mathblocks/math-render").AccentRules;
 }
 
 /** The equation the floating editor was opened for (its target ends when it closes). */
@@ -91,6 +95,11 @@ export async function initPanelBridge() {
   });
   await listen<PanelResult>("panel:apply", async (e) => {
     const app = useApp.getState();
+    // What Word gets is what the floating editor showed: its notation first, then the equation.
+    const { notationProfile, customKinds, accentRules } = e.payload;
+    if (customKinds && JSON.stringify(customKinds) !== JSON.stringify(app.customKinds)) app.setPrefs({ customKinds });
+    if (notationProfile && JSON.stringify(notationProfile) !== JSON.stringify(useApp.getState().notationProfile)) app.setPrefs({ notationProfile });
+    if (accentRules && JSON.stringify(accentRules) !== JSON.stringify(app.accentRules)) app.setPrefs({ accentRules });
     app.setLatex(e.payload.latex, "external");
     app.setDisplay(e.payload.display);
     app.setNumbered(e.payload.numbered);

@@ -48,9 +48,13 @@ export async function updateNumbers() {
 }
 
 /** Ribbon "Number equation": toggles the number of the equation the cursor is in. */
-export async function toggleNumberFromRibbon(params: { tag?: string; flatOpc?: string; numbered?: boolean; fingerprint?: string; problem?: string } = {}) {
-  const notify = useApp.getState().notify;
-  if (params.problem) return showWrapperProblem(params.problem);
+export async function toggleNumberFromRibbon(params: { tag?: string; flatOpc?: string; numbered?: boolean; fingerprint?: string; problem?: string } = {}, fromWord = false) {
+  const { tell } = await import("./wordUi");
+  const notify = (text: string, kind: "info" | "error" = "info") => tell(text, kind, fromWord);
+  if (params.problem) {
+    if (fromWord) notify(`${params.problem} Nothing was changed. Use Repair equations (MathBlocks tab) first.`, "error");
+    return showWrapperProblem(params.problem);
+  }
   if (!params.tag || !params.flatOpc) return notify("Click into a MathBlocks equation in Word first, then press Number equation.", "error");
   const read = readOmml(params.flatOpc);
   if (!read || !read.root.children.length) return notify("Could not read that equation.", "error");

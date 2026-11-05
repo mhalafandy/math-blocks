@@ -30,8 +30,11 @@
                   screentip="Turn this document's MathType equations into native, editable MathBlocks equations (one undo step)"
                   onAction="OnConvertMathType" />
           <button id="mbConvertLatex" keytip="L" label="Convert LaTeX" size="large" imageMso="EquationInsertGallery"
-                  screentip="Turn LaTeX written in the text ($…$, $$…$$, \(…\), \[…\]) into MathBlocks equations (one undo step). Ctrl+Alt+L converts just the one at the cursor."
+                  screentip="Turn LaTeX written in the text ($…$, $$…$$, \(…\), \[…\]) into MathBlocks equations: the selection when there is one, otherwise the whole document (one undo step). Ctrl+Alt+L converts just the one at the cursor."
                   onAction="OnConvertLatex" />
+          <button id="mbRepair" keytip="P" label="Repair equations" imageMso="ReviewAcceptChange"
+                  screentip="Give every MathBlocks equation its own wrapper again: splits wrappers holding several equations or text, gives copies their own ID, re-wraps pasted pictures and puts floating ones back in line (one undo step, backup)."
+                  onAction="OnRepairEquations" />
         </group>
       </tab>
     </tabs>

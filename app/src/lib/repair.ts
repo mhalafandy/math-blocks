@@ -15,6 +15,8 @@ import { useApp } from "./store";
  */
 
 export interface RepairReport {
+  /** Floating MathBlocks pictures put back in line with the text. */
+  inlined: number;
   /** Wrappers that held several equations, text or nested wrappers, split into one per equation. */
   split: number;
   renamed: number;
@@ -27,15 +29,16 @@ export interface RepairReport {
   backup?: string;
 }
 
-export async function repairDocument(document?: string, o: { quiet?: boolean } = {}): Promise<RepairReport | null> {
+export async function repairDocument(document?: string, o: { quiet?: boolean; fromWord?: boolean } = {}): Promise<RepairReport | null> {
   if (!addinSupports("repairEquations")) return null;
   const target = document ? { document } : {};
   const dry = await connector.request("repairEquations", { ...target, dryRun: true }, 120_000);
-  const changes = (dry.split?.length ?? 0) + dry.renamed.length + dry.wrapped.length + dry.bookmarks;
-  const report: RepairReport = { split: 0, renamed: 0, wrapped: 0, fromAlt: 0, bookmarks: 0, linkedAdded: 0, unlinked: 0, otherPictures: dry.otherPictures };
+  const changes = (dry.inlined ?? 0) + (dry.split?.length ?? 0) + dry.renamed.length + dry.wrapped.length + dry.bookmarks;
+  const report: RepairReport = { inlined: 0, split: 0, renamed: 0, wrapped: 0, fromAlt: 0, bookmarks: 0, linkedAdded: 0, unlinked: 0, otherPictures: dry.otherPictures };
   if (changes > 0) {
     report.backup = await backupIfMany(dry.document, changes);
     const r = await connector.request("repairEquations", target, 300_000);
+    report.inlined = r.inlined ?? 0;
     report.split = r.split?.length ?? 0;
     report.renamed = r.renamed.length;
     report.wrapped = r.wrapped.length;
@@ -43,7 +46,10 @@ export async function repairDocument(document?: string, o: { quiet?: boolean } =
     report.bookmarks = r.bookmarks;
     await carryOverRegistry(r.document, r.renamed, r.wrapped.map((w) => w.tag), report);
   }
-  if (!o.quiet || changes > 0) useApp.getState().notify(describeRepair(report));
+  if (!o.quiet || changes > 0) {
+    const { tell } = await import("./wordUi");
+    tell(describeRepair(report), "info", !!o.fromWord);
+  }
   return report;
 }
 
@@ -80,6 +86,7 @@ async function carryOverRegistry(document: string, renamed: { from: string; to: 
 
 export function describeRepair(r: RepairReport): string {
   const parts: string[] = [];
+  if (r.inlined) parts.push(`${r.inlined} floating picture(s) put back in line with the text`);
   if (r.split) parts.push(`${r.split} wrapper(s) holding several equations or text split into one per equation (text moved out)`);
   if (r.renamed) parts.push(`${r.renamed} copied equation(s) got their own identity`);
   if (r.wrapped) parts.push(`${r.wrapped} pasted picture(s) became MathBlocks equations again${r.fromAlt ? ` (${r.fromAlt} from their alt text only)` : ""}`);

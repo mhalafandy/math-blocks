@@ -344,6 +344,18 @@ export function insertIntoVisual(template: string) {
   const mf = activeField;
   if (!mf) return false;
   mf.focus();
+  // Text (\text{…} from the palette or the commands sheet): a text zone at the caret, ready to type in.
+  const text = /^\\(?:text|mbox|textrm)\{(#\?|#0)?\}$/.exec(template.trim());
+  if (text) {
+    if (!mf.selectionIsCollapsed) {
+      // Selected letters become the text.
+      const sel = mf.getValue(mf.selection, "latex").replace(/\\[A-Za-z]+\s?/g, "").replace(/[{}^_]/g, "");
+      mf.executeCommand(["insert", `\\text{${sel}}`, { insertionMode: "replaceSelection", selectionMode: "after" }]);
+      return true;
+    }
+    mf.executeCommand(["switchMode", "text"] as never);
+    return true;
+  }
   if (!mf.selectionIsCollapsed) {
     mf.executeCommand(["insert", toMathLive(template), { selectionMode: "placeholder" }]);
     return true;

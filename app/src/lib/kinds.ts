@@ -38,6 +38,8 @@ function containsKind(r: Row): boolean {
   let found = false;
   const visit = (n: MathNode) => {
     if (n.kind === "notation") found = true;
+    // A group ({…}) is a row inside the row: its children are visited too, at any depth.
+    if (n.kind === "row") return n.children.forEach(visit);
     eachRow(n, (x) => x.children.forEach(visit));
   };
   r.children.forEach(visit);
@@ -69,6 +71,8 @@ function wrapKinds(r: Row, profile: NotationProfile): Row {
       const inner = serializeLatex(wrapKinds(expanded, profile)).replaceAll(`${SLOT}${SLOT}`, `${SLOT}\\,${SLOT}`).replaceAll(SLOT, "\\placeholder{}");
       return { kind: "raw", latex: `\\class{${CLASS_PREFIX}${n.name}}{${inner}}` } as MathNode;
     }
+    // A group ({\pvec{r}_2}): its contents are converted like the row's own.
+    if (n.kind === "row") return wrapKinds(n, profile) as MathNode;
     const copy = { ...n } as MathNode;
     for (const [k, v] of Object.entries(copy)) {
       if (k === "meta") continue;

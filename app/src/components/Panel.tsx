@@ -60,7 +60,7 @@ export function PanelApp() {
   const apply = async () => {
     if (eq.errors > 0) return useApp.getState().notify("Fix the LaTeX errors first.", "error");
     const st = useApp.getState();
-    const result: PanelResult = { latex: st.latex, display: st.display, numbered: st.numbered };
+    const result: PanelResult = { latex: st.latex, display: st.display, numbered: st.numbered, notationProfile: st.notationProfile, customKinds: st.customKinds, accentRules: st.accentRules };
     const { emitTo } = await import("@tauri-apps/api/event");
     await emitTo("main", "panel:apply", result);
     await hide();

@@ -106,7 +106,7 @@ namespace MathBlocks.WordConnector
             "numberEquation", "unnumberEquation", "listNumbered", "insertReference", "updateNumbers",
             "showWordMenu", "selectionInfo", "findLatex", "replaceRanges", "equationToText",
             "backupDocument", "beginOperation", "operationProgress", "endOperation", "repairEquations",
-            "insertNumberMarker", "upgradeNumbering", "textWidth",
+            "insertNumberMarker", "upgradeNumbering", "textWidth", "confirm", "showMessage",
         };
 
         // ------------------------------------------------------------ ribbon
@@ -168,6 +168,14 @@ namespace MathBlocks.WordConnector
                     return;
                 }
                 var prm = new Dictionary<string, object> { ["command"] = command, ["document"] = _app.ActiveDocument.FullName };
+                try
+                {
+                    // Commands such as Convert LaTeX act on the selection when there is one (as MathType's Alt+\).
+                    prm["hasSelection"] = _app.Selection.Start != _app.Selection.End;
+                }
+                catch (COMException)
+                {
+                }
                 if (command == "numberEquation")
                 {
                     // The MathBlocks equation the cursor is in.
@@ -193,7 +201,21 @@ namespace MathBlocks.WordConnector
 
         public void OnConvertMathType(IRibbonControl control) => RunAppCommand("convertMathType");
         public void OnConvertLatex(IRibbonControl control) => RunAppCommand("convertLatex");
-        public void OnInsertReference(IRibbonControl control) => RunAppCommand("insertReference");
+        /// <summary>Ribbon "Insert reference": handled in Word (picker over Word), the app is not needed.</summary>
+        public void OnInsertReference(IRibbonControl control)
+        {
+            try
+            {
+                _ops.PickAndInsertReference(false);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("insert reference failed", ex);
+                MessageBox.Show(ex.Message, "MathBlocks", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        public void OnRepairEquations(IRibbonControl control) => RunAppCommand("repair");
         public void OnListOfSymbols(IRibbonControl control) => RunAppCommand("listOfSymbols");
         public void OnNumberEquation(IRibbonControl control) => RunAppCommand("numberEquation");
 
@@ -521,6 +543,8 @@ namespace MathBlocks.WordConnector
                     case "insertNumberMarker": result = _ops.InsertNumberMarker(p); break;
                     case "upgradeNumbering": result = _ops.UpgradeNumbering(p); break;
                     case "textWidth": result = _ops.TextWidth(p); break;
+                    case "confirm": result = _ops.Confirm(p); break;
+                    case "showMessage": result = _ops.ShowMessage(p); break;
                     case "beginOperation": result = _ops.BeginOperation(p); break;
                     case "operationProgress": result = _ops.OperationProgress(p); break;
                     case "endOperation": result = _ops.EndOperation(p); break;

@@ -130,6 +130,8 @@ function completeGroup(v: string): boolean {
 }
 
 let lastSpace = 0;
+/** \text{ was just typed: a } right after it keeps the caret inside the (empty) text. */
+let textJustOpened = false;
 
 /** The command palette: the main window's, or the floating editor's command line. */
 function openCommands() {
@@ -161,7 +163,43 @@ export function handleEditorKey(e: KeyboardEvent): boolean {
   }
   // Typing a LaTeX command (\pvec…): Enter, Space or Tab finish it. A kind's macro becomes the
   // kind, with its slots to fill; any other command is left to the editor.
-  if ((mf as unknown as { mode?: string }).mode === "latex") {
+  const mode = (mf as unknown as { mode?: string }).mode;
+  // Inside text (\text{…}): Space types spaces; Enter, Tab or Esc go back to maths.
+  if (mode === "text") {
+    if (e.key === "}" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      // "\text{}" typed in full: the caret stays inside, ready to type; a later } closes the text.
+      if (textJustOpened) textJustOpened = false;
+      else mf.executeCommand(["switchMode", "math"] as never);
+      return true;
+    }
+    textJustOpened = false;
+    if ((e.key === "Enter" || e.key === "Tab" || e.key === "Escape") && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      mf.executeCommand(["switchMode", "math"] as never);
+      return true;
+    }
+    if (e.key === " ") return false;
+  }
+  if (mode === "latex") {
+    // \text (\mbox, \textrm…) then {, Space, Enter or Tab: a text zone at the caret, ready to type in.
+    if ((e.key === "{" || e.key === "Enter" || e.key === " " || e.key === "Tab") && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const pos = mf.position;
+      for (let k = 2; k <= 10 && k <= pos; k++) {
+        const v = mf.getValue(pos - k, pos, "latex");
+        if (!/^\\[A-Za-z]+$/.test(v)) continue;
+        if (!/^\\(text|mbox|textrm|textnormal|textit|mathrm)$/.test(v) || v === "\\mathrm") break;
+        e.preventDefault();
+        e.stopPropagation();
+        mf.selection = { ranges: [[pos - k, Math.min(mf.lastOffset, pos + 1)]], direction: "forward" };
+        mf.executeCommand("deleteBackward");
+        mf.executeCommand(["switchMode", "text"] as never);
+        textJustOpened = e.key === "{";
+        return true;
+      }
+    }
     if ((e.key === "Enter" || e.key === " " || e.key === "Tab") && !e.ctrlKey && !e.metaKey && !e.altKey) {
       const pos = mf.position;
       let name = "";
@@ -189,7 +227,7 @@ export function handleEditorKey(e: KeyboardEvent): boolean {
   }
   // Enter in a display equation: a new line at the cursor (aligned at the relation, gathered…).
   if (e.key === "Enter" && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
-    if (!useApp.getState().display) return false;
+    if (!useApp.getState().display || mode !== "math") return false;
     e.preventDefault();
     e.stopPropagation();
     rewriteAtCaret(mf, breakLineAt);
@@ -221,7 +259,7 @@ export function handleEditorKey(e: KeyboardEvent): boolean {
     lastSpace = mode === "math" ? now : 0;
   } else lastSpace = 0;
   // Space inside a notation kind leaves it (caret right after the kind, the kind unchanged).
-  if (e.key === " " && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && mf.selectionIsCollapsed && exitKind(mf as unknown as KindField, "Space")) {
+  if (e.key === " " && mode === "math" && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && mf.selectionIsCollapsed && exitKind(mf as unknown as KindField, "Space")) {
     e.preventDefault();
     e.stopPropagation();
     return true;

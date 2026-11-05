@@ -178,12 +178,17 @@ class ConnectorClient {
       case "runCommand": {
         if (isRequest(msg)) this.reply(msg.id, null);
         const params = msg.params as ConnectorToApp["runCommand"]["params"];
-        void bringToFront();
-        if (params.command === "convertMathType") void import("./convertMathType").then((m) => m.convertOpenDocument(params.document));
-        else if (params.command === "convertLatex") void import("./wordShortcuts").then((m) => m.convertAllLatex(params.document));
-        else if (params.command === "insertReference") void import("./numbering").then((m) => m.openReferencePicker());
-        else if (params.command === "listOfSymbols") void import("../components/NomenclatureDialog").then((m) => m.openNomenclature());
-        else if (params.command === "numberEquation") void import("./numbering").then((m) => m.toggleNumberFromRibbon(params));
+        // Commands that need no window of the app finish in Word (questions and results over Word).
+        if (params.command === "convertLatex") void import("./wordShortcuts").then((m) => m.convertAllLatex(params.document, { fromWord: true, selectionOnly: !!params.hasSelection }));
+        else if (params.command === "numberEquation") void import("./numbering").then((m) => m.toggleNumberFromRibbon(params, true));
+        else if (params.command === "repair") void import("./repair").then((m) => m.repairDocument(params.document, { fromWord: true }));
+        else {
+          // These show a dialog of the app (conversion report, list of symbols; the reference picker for an older add-in).
+          void bringToFront();
+          if (params.command === "convertMathType") void import("./convertMathType").then((m) => m.convertOpenDocument(params.document));
+          else if (params.command === "insertReference") void import("./numbering").then((m) => m.openReferencePicker());
+          else if (params.command === "listOfSymbols") void import("../components/NomenclatureDialog").then((m) => m.openNomenclature());
+        }
         break;
       }
       default:

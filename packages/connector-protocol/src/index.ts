@@ -157,7 +157,7 @@ export interface ConnectorToApp {
   equationActivated: { params: EquationActivatedParams; result: void };
   mathTypeActivated: { params: MathTypeActivatedParams; result: void };
   /** Ribbon buttons handled by the app: convertMathType, insertReference, numberEquation. */
-  runCommand: { params: { command: string; document?: string; tag?: string; flatOpc?: string; numbered?: boolean; fingerprint?: string; problem?: string }; result: void };
+  runCommand: { params: { command: string; document?: string; tag?: string; flatOpc?: string; numbered?: boolean; fingerprint?: string; problem?: string; hasSelection?: boolean }; result: void };
   /** Ribbon button "Open MathBlocks". */
   showApp: { params: Record<string, never>; result: void };
 }
@@ -248,6 +248,8 @@ export interface AppToConnector {
       wrappedOk: number;
       bookmarks: number;
       otherPictures: number;
+      /** Floating MathBlocks pictures (pasted as floating) put back in line with the text. */
+      inlined?: number;
       /** Wrappers that held more than one equation, text or nested wrappers, split back into one per equation. */
       split?: { tag: string; equations: number; text: number; nested: number; otherPictures: number }[];
     };
@@ -292,7 +294,14 @@ export interface AppToConnector {
     result: { document: string; rect: ScreenRect | null; tag?: string; flatOpc?: string; number?: NumberInfo | null; text?: string; start?: number; end?: number; fingerprint?: string; problem?: string };
   };
   /** LaTeX spans ($…$, $$…$$, \(…\), \[…\]) in the document text. */
-  findLatex: { params: DocTarget; result: { name: string; fullName: string; items: { start: number; end: number; text: string; alone: boolean }[]; skippedInside?: number; notLocated?: number } };
+  findLatex: {
+    params: DocTarget & { selectionOnly?: boolean };
+    result: { name: string; fullName: string; items: { start: number; end: number; text: string; alone: boolean }[]; skippedInside?: number; notLocated?: number; insideWrapper?: number; selection?: boolean };
+  };
+  /** A confirmation over Word (Enter confirms); commands started from Word finish in Word. */
+  confirm: { params: { title: string; text: string; ok?: string; offerDontAsk?: boolean }; result: { ok: boolean; dontAsk: boolean } };
+  /** A result in Word's status bar, or a problem in a message over Word. */
+  showMessage: { params: { text: string; kind?: "info" | "error" }; result: { ok: true } };
   /** Replaces ranges (still holding `expect`) by Flat OPC or text, one undo step. */
   replaceRanges: {
     params: DocTarget & { items: { start: number; end: number; expect?: string; flatOpc?: string; text?: string }[]; undoLabel: string };

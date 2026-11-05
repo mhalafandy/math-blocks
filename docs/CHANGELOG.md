@@ -25,6 +25,29 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed (testing round 3, priority 1)
+- **Convert LaTeX in a real document:** the "inside equations or fields" spans were LaTeX typed into
+  grown equation wrappers. Each span's own range is now tested and logged ("text inside the wrapper
+  of …", "inside a Word equation", "contains a field" or "plain text → convert"); LaTeX trapped in a
+  wrapper is moved out (Repair) and then converted.
+- **Commands started from Word finish in Word:** Convert LaTeX asks in a small dialog over Word (Enter
+  confirms, "Don't ask again"; also a setting in the Word style tab) and reports in Word's status
+  bar; with a selection only the selection is converted (as MathType's Alt+\); Number equation and
+  the new ribbon button Repair equations report in Word; Insert reference is a picker over Word
+  (type to filter, Enter inserts, "number only"). The app stays in the background.
+- **Pasted equations that came in floating** (Word's "Insert/paste pictures as" setting applies to
+  pastes) are recognised by their alt text and put back in line with the text by right-click,
+  double-click, Ctrl+Alt+M and Repair equations, then wrapped.
+- **Restyling reaches Word:** Apply in the floating editor sends the notation it drew with, and every
+  notation change is broadcast between the main window and the floating editor (the storage event
+  alone is not guaranteed between WebView2 windows), so Word gets the style shown in the editor.
+- **Kinds inside groups** (`{\pvec{r}_2}`, double groups, fractions, brackets) are recognised in the
+  visual editor (80 more cases in the CI round trip).
+- **\text{}**: typing `\text{` (or `\text` then Space/Enter/Tab) or inserting text from the palette or
+  the commands sheet opens a text zone at the caret; `\text{}` typed in full keeps the caret inside;
+  Space types spaces; Enter, Tab, Esc or a closing } return to maths. Multi-line Enter, Space Space and
+  kind exits act only in maths.
+
 ### Fixed (testing round 3, priority 0: the app acted on the wrong equation)
 - **Root cause:** Word puts text typed or pasted at a content control's edge *inside* it, and a
   copied equation keeps its wrapper's ID. MathBlocks' wrappers were neither locked nor guarded, and
