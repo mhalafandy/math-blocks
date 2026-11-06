@@ -110,6 +110,24 @@ describe("document conversion", () => {
     expect(mathTypeObjectToLatex(eq1).latex).toBe("\\mathbf{F}=m\\mathbf{a}");
   });
 
+  it("Classic pictures keep the planned IDs: in the alt text, the title and (via the picture callback) the hidden source", () => {
+    const input = docx([numberedParagraph(1, "A.1"), `<w:p><w:r><w:t xml:space="preserve">where </w:t></w:r>${objectRun(2)}</w:p>`], [eq1, eq2]);
+    const plan = convertDocx(input);
+    const tags = plan.equations.map((e) => e.tag);
+    expect(tags.every((t) => t && parseTag(t))).toBe(true);
+    const seen: string[] = [];
+    const pic = { emf: new Uint8Array([1, 2, 3, 4]), svg: "<svg/>", png: new Uint8Array(), widthPt: 10, heightPt: 12, depthPt: 3 };
+    const r = convertDocx(input, { tags, picture: (_l, _d, tag) => (seen.push(tag), pic) });
+    expect(seen).toEqual(tags); // the picture is typeset with the ID that ends up on it
+    expect(r.equations.map((e) => e.tag)).toEqual(tags);
+    const doc = strFromU8(unzipSync(r.docx)["word/document.xml"]!);
+    for (const t of tags) {
+      expect(doc).toContain(`(${t}): `); // alt text "MathBlocks numbered (mb1|-|…): …"
+      expect(doc).toContain(`title="${t}"`);
+    }
+    expect(doc).not.toContain("<w:sdt"); // a Classic picture is the equation, no content control
+  });
+
   it("replaces MathType objects by native equations, keeping numbers and bookmarks", () => {
     const input = docx(
       [

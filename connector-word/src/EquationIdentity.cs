@@ -23,6 +23,56 @@ namespace MathBlocks.WordConnector
             return m.Success ? m.Groups[1].Value : null;
         }
 
+        // ---- Classic picture identity. Word does not implement InlineShape.Title for VML pictures (the
+        // MathType-like frame), so the ID is kept in the alt text, "MathBlocks display (mb1|-|id): LaTeX",
+        // and in the EMF source; the title holds it too where Word supports one.
+
+        private static readonly Regex AltRe = new Regex("^MathBlocks (display|inline|numbered)(?: \\((mb1\\|[^|()\\s]+\\|[0-9A-Za-z]+)\\))?: ", RegexOptions.Compiled);
+
+        /// <summary>True for MathBlocks alt text (with or without an ID).</summary>
+        public static bool IsEquationAlt(string alt) => alt != null && AltRe.IsMatch(alt);
+
+        /// <summary>The ID in MathBlocks alt text, or null.</summary>
+        public static string AltTag(string alt)
+        {
+            if (alt == null) return null;
+            var m = AltRe.Match(alt);
+            return m.Success && m.Groups[2].Success ? m.Groups[2].Value : null;
+        }
+
+        /// <summary>Mode ("display", "inline", "numbered") and LaTeX of MathBlocks alt text, or null.</summary>
+        public static string[] AltParts(string alt)
+        {
+            if (alt == null) return null;
+            var m = AltRe.Match(alt);
+            return m.Success ? new[] { m.Groups[1].Value, alt.Substring(m.Length) } : null;
+        }
+
+        /// <summary>Alt text carrying this ID; rebuilt from mode and LaTeX (the source) when the alt text was edited.</summary>
+        public static string AltWithTag(string alt, string tag, string mode = null, string latex = null)
+        {
+            var parts = AltParts(alt);
+            var md = parts?[0] ?? mode ?? "inline";
+            var lx = parts?[1] ?? latex ?? "";
+            return "MathBlocks " + md + " (" + tag + "): " + lx;
+        }
+
+        /// <summary>
+        /// A picture's ID from whatever survived: the title, else the alt text, else the hidden source.
+        /// `from` says which ("title", "alt", "source"); null when none holds an ID.
+        /// </summary>
+        public static string ResolvePictureTag(string title, string alt, string source, out string from)
+        {
+            if (IsTagText(title)) { from = "title"; return title; }
+            var a = AltTag(alt);
+            if (a != null) { from = "alt"; return a; }
+            var t = SourceTag(source);
+            from = t != null ? "source" : null;
+            return t;
+        }
+
+        private static bool IsTagText(string t) => t != null && SourceTagRe.IsMatch("\"tag\":\"" + t + "\"") && t.StartsWith("mb1|", StringComparison.Ordinal);
+
         /// <summary>
         /// Which of several equations sharing an ID is the original (keeps the ID); the others are copies.
         /// The one whose paragraph holds the number bookmark (so the references point at it) wins;

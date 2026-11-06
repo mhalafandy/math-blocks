@@ -25,6 +25,23 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed (round 6 — the hybrid build could not edit any Classic equation)
+- **Root cause:** Word does not implement `InlineShape.Title` for VML pictures (the MathType-like frame
+  Classic equations use). Reading or writing it throws `NotImplementedException`, which the add-in
+  did not catch (it caught only `COMException`), so insert, right-click, double-click, Number, Repair,
+  listing and the caret guard all stopped at the first title access (connector.log: 44 such errors).
+- **The ID now lives in the alt text** ("MathBlocks inline (mb1|-|id): LaTeX") and in the EMF's hidden
+  source; the title is used only where Word supports it. A picture is recognised from whichever
+  survives, and the others are restored.
+- **Caret and typed text:** after inserting, the caret is to the right of the equation and typed text
+  sits on the line (the insertion point gets no lowering; only the picture's own run is lowered).
+- **Baseline and padding:** pictures get MathType's padding (measured on Appendix A: about 2 pt around the
+  ink at 12 pt), and depth, height and width are whole points as in MathType, so the run's lowering
+  equals the depth exactly for every letter.
+- **Converted MathType equations** carry their ID in the alt text and in the hidden source.
+- connector.log error lines now say where they failed.
+- CI: a .docx built from the add-in's own insertion XML is read back with the add-in's detection code.
+
 ### Changed (round 5 — hybrid equation identity)
 - **A Classic equation is now just a picture** (like a MathType equation): no content control. Its ID
   (`mb1|block|instance`) is the picture's title; the hidden source in the EMF also carries the ID,

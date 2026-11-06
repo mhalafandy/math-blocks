@@ -63,6 +63,60 @@ static class Program
     static NumberFields.NumberFormat F(string parts, string source = "headings", string open = "(", string close = ")", string sep = ".", string restart = "chapter") =>
         new NumberFields.NumberFormat { Parts = parts, Source = source, Open = open, Close = close, Separator = sep, Restart = restart };
 
+    /// <summary>
+    /// Reads back the .docx written by app/src/lib/wordInsertion.test.ts (the add-in's own insertion
+    /// XML) with the add-in's detection code, as the click handlers see each picture: Word gives no
+    /// title for a VML picture, the alt text as AlternativeText, the picture's XML as WordOpenXML.
+    /// </summary>
+    static void ReadBack()
+    {
+        var dir = System.IO.Path.Combine(AppContext.BaseDirectory, "../../../out");
+        var docx = System.IO.Path.Combine(dir, "classic-insertions.docx");
+        if (!System.IO.File.Exists(docx))
+        {
+            var required = Environment.GetEnvironmentVariable("CI") == "true";
+            Console.WriteLine((required ? "FAIL  " : "skip  ") + "read-back: " + docx + " missing (run pnpm test first)");
+            if (required) failures++;
+            return;
+        }
+        var expected = System.IO.File.ReadAllLines(System.IO.Path.Combine(dir, "classic-insertions.expected.txt")).Where(l => l.Length > 0).Select(l => l.Split('\t')).ToList();
+        using (var zip = System.IO.Compression.ZipFile.OpenRead(docx))
+        {
+            string Text(string name) { using (var r = new System.IO.StreamReader(zip.GetEntry(name).Open())) return r.ReadToEnd(); }
+            byte[] Bytes(string name) { using (var ms = new System.IO.MemoryStream()) { zip.GetEntry(name).Open().CopyTo(ms); return ms.ToArray(); } }
+            var doc = Text("word/document.xml");
+            var rels = Regex.Matches(Text("word/_rels/document.xml.rels"), "<Relationship [^>]*>").Cast<Match>()
+                .ToDictionary(m => Regex.Match(m.Value, "Id=\"([^\"]+)\"").Groups[1].Value, m => Regex.Match(m.Value, "Target=\"([^\"]+)\"").Groups[1].Value);
+            var paragraphs = Regex.Matches(doc, "<w:p\\b.*?</w:p>", RegexOptions.Singleline).Cast<Match>().Select(m => m.Value).ToList();
+            Check(paragraphs.Count == expected.Count, "read-back: one paragraph per inserted equation (" + paragraphs.Count + ")");
+            Check(!doc.Contains("<w:sdt"), "read-back: no content control around Classic equations");
+            for (int i = 0; i < Math.Min(paragraphs.Count, expected.Count); i++)
+            {
+                var p = paragraphs[i];
+                var tag = expected[i][0];
+                var latex = expected[i][1];
+                var run = Regex.Match(p, "<w:r>(?:(?!</w:r>).)*?<v:shape\\b.*?</w:r>", RegexOptions.Singleline).Value;
+                var shape = Regex.Match(run, "<v:shape\\b[^>]*>").Value;
+                string Attr(string n) { var m = Regex.Match(shape, "\\b" + n + "=\"([^\"]*)\""); return m.Success ? System.Net.WebUtility.HtmlDecode(m.Groups[1].Value) : null; }
+                var alt = Attr("alt");
+                var rid = Regex.Match(run, "r:id=\"([^\"]+)\"").Groups[1].Value;
+                var emf = Bytes("word/" + rels[rid]);
+                // As Range.WordOpenXML gives it: the run plus the image part.
+                var xml = "<pkg:package><pkg:part pkg:name=\"/word/document.xml\"><pkg:xmlData>" + run + "</pkg:xmlData></pkg:part>" +
+                          "<pkg:part pkg:name=\"/word/media/image1.emf\" pkg:contentType=\"image/x-emf\" pkg:compression=\"store\"><pkg:binaryData>" + Convert.ToBase64String(emf, Base64FormattingOptions.InsertLineBreaks) + "</pkg:binaryData></pkg:part></pkg:package>";
+                Check(PictureXml.Identify(null, alt, xml, out var how) == tag && how == "alt", "read-back " + latex + ": recognised by its alt text (no title, as Word gives for VML)");
+                Check(PictureXml.Identify(null, "edited by the user", xml, out how) == tag && how == "source", "read-back " + latex + ": still recognised with its alt text edited (hidden source)");
+                Check(PictureXml.Identify(Attr("title"), null, xml, out how) == tag && how == "title", "read-back " + latex + ": recognised by its title where Word keeps one");
+                Check(EquationIdentity.FirstLatex(PictureXml.Source(xml)) == latex, "read-back " + latex + ": the source gives the LaTeX back");
+                // Baseline: the picture's run alone is lowered (whole points); the text typed after it is not.
+                var pos = Regex.Match(run, "<w:position w:val=\"(-?\\d+)\"/>");
+                Check(!pos.Success || int.Parse(pos.Groups[1].Value) % 2 == 0, "read-back " + latex + ": lowering in whole points (" + (pos.Success ? pos.Groups[1].Value : "0") + " half-points)");
+                var after = p.Substring(p.IndexOf(run, StringComparison.Ordinal) + run.Length);
+                Check(after.Contains("words after") && !after.Contains("<w:position"), "read-back " + latex + ": text after the equation is not lowered");
+            }
+        }
+    }
+
     static int Main()
     {
         var cases = new (string label, NumberFields.NumberFormat f, bool appendix, string display, string[] mustCodes)[]
@@ -142,6 +196,15 @@ static class Program
         Check(EquationIdentity.ChooseKeeper(new[] { false, true }, out var why1) == 1 && why1.Contains("bookmark"), "hybrid: the copy pasted BEFORE the numbered original does not take its ID");
         Check(EquationIdentity.ChooseKeeper(new[] { true, false, false }, out _) == 0, "hybrid: the numbered original keeps its ID, both copies are renamed");
         Check(EquationIdentity.ChooseKeeper(new[] { false, false }, out var why2) == 0 && why2.Contains("earliest"), "hybrid: unnumbered duplicates — the earliest keeps the ID (logged)");
+        // Alt text carries the ID (Word has no title on VML pictures).
+        Check(EquationIdentity.AltTag("MathBlocks inline (mb1|-|abc123DEF456): \\beta") == "mb1|-|abc123DEF456", "alt: ID read from the alt text");
+        Check(EquationIdentity.AltTag("MathBlocks inline: \\beta") == null && EquationIdentity.IsEquationAlt("MathBlocks inline: \\beta"), "alt: older alt text without ID is still ours");
+        Check(EquationIdentity.AltWithTag("my own description", "mb1|-|x1", "display", "a=b") == "MathBlocks display (mb1|-|x1): a=b", "alt: edited alt text rebuilt from the source");
+        Check(EquationIdentity.AltWithTag("MathBlocks inline (mb1|-|old): f", "mb1|-|new") == "MathBlocks inline (mb1|-|new): f", "alt: a copy's alt text gets its new ID");
+        Check(EquationIdentity.ResolvePictureTag(null, "MathBlocks inline (mb1|-|a1): f", "{\"tag\":\"mb1|-|s1\"}", out var from1) == "mb1|-|a1" && from1 == "alt", "identity: no title (VML) → the alt text");
+        Check(EquationIdentity.ResolvePictureTag(null, "edited", "{\"tag\":\"mb1|-|s1\"}", out var from2) == "mb1|-|s1" && from2 == "source", "identity: alt text edited → the hidden source");
+        Check(EquationIdentity.ResolvePictureTag("Figure 3", "MathBlocks inline (mb1|-|a1): f", null, out _) == "mb1|-|a1", "identity: a title that is not an ID is ignored");
+        ReadBack();
         Console.WriteLine(failures == 0 ? "all number-field checks passed" : failures + " check(s) failed");
         return failures == 0 ? 0 : 1;
     }

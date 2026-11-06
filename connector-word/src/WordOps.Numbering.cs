@@ -244,9 +244,9 @@ namespace MathBlocks.WordConnector
                     string tag = null, flatOpc = null;
                     foreach (Word.InlineShape s in para.InlineShapes)
                     {
-                        if (IsTag(TitleOf(s)) && !InsideMathBlocksControl(s.Range))
+                        if (IsTag(TagOf(s)) && !InsideMathBlocksControl(s.Range))
                         {
-                            tag = TitleOf(s);
+                            tag = TagOf(s);
                             if (includeContent) flatOpc = s.Range.WordOpenXML;
                             break;
                         }

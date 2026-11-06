@@ -10,5 +10,6 @@
     <Compile Include="../src/NumberFields.cs" />
     <Compile Include="../src/LatexText.cs" />
     <Compile Include="../src/EquationIdentity.cs" />
+    <Compile Include="../src/PictureXml.cs" />
   </ItemGroup>
 </Project>

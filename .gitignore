@@ -11,3 +11,4 @@ connector-word/**/obj/
 connector-word/.vs/
 *.user
 *.pfx
+connector-word/tests/out/

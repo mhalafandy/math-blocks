@@ -32,7 +32,7 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium && pnpm tsx tools/kinds-roundtrip.ts
       - name: Snippets in the real editor (every kind under every prefix; whole trigger replaced)
         run: pnpm tsx tools/snippet-check.ts
-      - name: Equation number and reference field structure, LaTeX spans (connector-word/tests)
+      - name: Add-in Word-free tests (number fields, LaTeX spans, identity, read-back of the Classic insertion .docx)
         run: dotnet run --project connector-word/tests
       - name: Compile the .tex export of every notation kind under every preset (Tectonic)
         run: |

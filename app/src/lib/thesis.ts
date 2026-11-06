@@ -92,8 +92,8 @@ export function docxEquations(bytes: Uint8Array, chapter: Chapter): ChapterRead 
       at: start,
     } as ChapterEquation & { at: number });
   }
-  // Classic equations: a picture whose title is the ID (VML v:shape title, or DrawingML wp:docPr title).
-  for (const m of xml.matchAll(/<(?:v:shape|wp:docPr)\b[^>]*\btitle="(mb1\|[^"]*)"/g)) {
+  // Classic equations: a picture whose alt text (or title, where Word keeps one) holds the ID.
+  for (const m of xml.matchAll(/<(?:v:shape|wp:docPr)\b[^>]*?\b(?:title="(mb1\|[^"]*)"|(?:alt|descr)="MathBlocks [a-z]+ \((mb1\|[^)"]*)\))/g)) {
     const start = Math.max(xml.lastIndexOf("<w:r>", m.index), xml.lastIndexOf("<w:r ", m.index));
     if (start < 0 || seen.has(start)) continue;
     // Inside a wrapper already read above.
@@ -105,7 +105,7 @@ export function docxEquations(bytes: Uint8Array, chapter: Chapter): ChapterRead 
     const runEnd = end + "</w:r>".length;
     const read = readEquationXml(WRAP(xml.slice(start, runEnd)));
     if (!read || !read.root.children.length) continue;
-    const tag = decode(m[1]!);
+    const tag = decode(m[1] ?? m[2]!);
     equations.push({
       tag,
       page: 0,

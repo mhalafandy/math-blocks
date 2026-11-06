@@ -9,7 +9,7 @@ const numbered = (tag: string, latex: string, n: string) =>
   `<w:p><w:r><w:tab/></w:r>${sdt(tag, latex, "numbered")}<w:r><w:tab/></w:r><w:r><w:t>(</w:t></w:r><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText> SEQ MBEq \\* ARABIC </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>${n}</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r><w:r><w:t>)</w:t></w:r></w:p>`;
 /** A Classic equation in the new form: the picture is the equation, its title is the ID (no wrapper). */
 const titled = (tag: string, latex: string, mode = "display") =>
-  `<w:r><w:pict><v:shape id="_x0000_mb1" alt="MathBlocks ${mode}: ${latex.replace(/&/g, "&amp;")}" title="${tag}"/></w:pict></w:r>`;
+  `<w:r><w:pict><v:shape id="_x0000_mb1" alt="MathBlocks ${mode} (${tag}): ${latex.replace(/&/g, "&amp;")}"/></w:pict></w:r>`;
 const docx = (body: string) => zipSync({ "word/document.xml": strToU8(`<?xml version="1.0"?><w:document xmlns:w="w"><w:body>${body}</w:body></w:document>`) });
 
 const linked = formatTag({ blockId: "BLOCK1BLOCK1BLOC", instanceId: "inst00000001" });

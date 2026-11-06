@@ -14,7 +14,7 @@ export interface ReadEquation {
   fallback?: string;
 }
 
-const ALT = /(?:descr|alt)="MathBlocks (display|inline|numbered): ([^"]*)"/;
+const ALT = /(?:descr|alt)="MathBlocks (display|inline|numbered)(?: \([^)"]*\))?: ([^"]*)"/;
 
 /** The source a MathBlocks picture carries inside its EMF (a GDI comment), if any. */
 function emfSource(xml: string): { latex: string; mode: string; fallback?: string } | null {
