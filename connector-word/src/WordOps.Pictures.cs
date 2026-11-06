@@ -15,46 +15,8 @@ namespace MathBlocks.WordConnector
     /// </summary>
     internal sealed partial class WordOps
     {
-        private static readonly Regex AltMark = new Regex("(?:alt|descr)=\"MathBlocks (?:display|inline|numbered):", RegexOptions.Compiled);
-        private static readonly Regex EmfPart = new Regex("<pkg:part [^>]*pkg:contentType=\"image/x-emf\"[^>]*>\\s*<pkg:binaryData>([^<]*)</pkg:binaryData>", RegexOptions.Compiled);
-        private static readonly byte[] EmfMarker = Encoding.ASCII.GetBytes("MathBlocks1:");
-
         /// <summary>What MathBlocks data a picture's XML carries: "emf", "alt", or null.</summary>
-        internal static string MathBlocksData(string xml, out string emfJson)
-        {
-            emfJson = null;
-            if (string.IsNullOrEmpty(xml)) return null;
-            foreach (Match m in EmfPart.Matches(xml))
-            {
-                try
-                {
-                    var bytes = Convert.FromBase64String(Regex.Replace(m.Groups[1].Value, "\\s+", ""));
-                    var at = IndexOf(bytes, EmfMarker);
-                    if (at < 0) continue;
-                    // The JSON runs to the end of the comment record: take up to the first NUL.
-                    int end = at + EmfMarker.Length;
-                    while (end < bytes.Length && bytes[end] != 0) end++;
-                    emfJson = Encoding.UTF8.GetString(bytes, at + EmfMarker.Length, end - at - EmfMarker.Length);
-                    return "emf";
-                }
-                catch (FormatException)
-                {
-                    // Not base64: not ours.
-                }
-            }
-            return AltMark.IsMatch(xml) ? "alt" : null;
-        }
-
-        private static int IndexOf(byte[] hay, byte[] needle)
-        {
-            for (int i = 0; i + needle.Length <= hay.Length; i++)
-            {
-                int k = 0;
-                while (k < needle.Length && hay[i + k] == needle[k]) k++;
-                if (k == needle.Length) return i;
-            }
-            return -1;
-        }
+        internal static string MathBlocksData(string xml, out string emfJson) => PictureXml.Data(xml, out emfJson);
 
         private static bool InsideMathBlocksControl(Word.Range r)
         {
@@ -141,11 +103,11 @@ namespace MathBlocks.WordConnector
                 if (tag == null)
                 {
                     tag = "mb1|" + (string.IsNullOrEmpty(blockId) ? "-" : blockId) + "|" + RandomId(12);
-                    shape.Title = tag;
+                    SetPictureTag(shape, tag);
                 }
                 // A copy keeps its source's ID: the original keeps it, this one gets its own.
                 if (FindByTag(doc, tag).Count > 1) ResolveDuplicates(doc, tag);
-                tag = TitleOf(shape);
+                tag = TagOf(shape);
             }
             finally
             {
@@ -194,7 +156,7 @@ namespace MathBlocks.WordConnector
             if (dry) return true;
             var tag = cc.Tag;
             Unlock(cc);
-            picture.Title = tag;
+            SetPictureTag(picture, tag);
             cc.Delete(false);
             Log.Info(why + ": the wrapped Classic equation " + tag + " is now a titled picture");
             return true;
@@ -268,7 +230,7 @@ namespace MathBlocks.WordConnector
                 foreach (Word.InlineShape s in doc.InlineShapes) shapes.Add(s);
                 foreach (var s in shapes)
                 {
-                    if (InsideMathBlocksControl(s.Range) || IsTag(TitleOf(s)))
+                    if (InsideMathBlocksControl(s.Range) || IsTag(TagOf(s)))
                     {
                         ok++;
                         continue;

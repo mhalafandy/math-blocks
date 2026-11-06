@@ -77,7 +77,8 @@ export async function convertMathTypeDocument() {
       // Classic: typeset every equation, then convert again placing the pictures.
       const pics = await renderAll(plan.equations, (done) => ui.set({ progress: `Typesetting equations… ${done} / ${plan.converted}` }));
       let k = 0;
-      docx = convertDocx(bytes, { profile: currentProfile(), picture: () => pics[k++] ?? null }).docx;
+      // Same IDs as the planning run: each picture's hidden source already carries its ID.
+      docx = convertDocx(bytes, { profile: currentProfile(), picture: () => pics[k++] ?? null, tags: plan.equations.map((e) => e.tag) }).docx;
     }
     if (result.equations.length === 0) {
       ui.set({ busy: false });
@@ -142,7 +143,8 @@ async function renderAll(equations: ConvertedEquation[], progress?: (done: numbe
   const out: PictureData[] = [];
   for (const e of equations) {
     if (e.status !== "converted" || !e.latex) continue;
-    const p = await renderPicture(e.latex, e.display, size, e.display ? (e.number ? "numbered" : "display") : "inline");
+    // The ID goes into the hidden source too, so the equation is still known if its alt text is edited.
+    const p = await renderPicture(e.latex, e.display, size, e.display ? (e.number ? "numbered" : "display") : "inline", false, { tag: e.tag ?? null });
     out.push({ emf: p.emf, svg: p.svg, png: p.png, widthPt: p.widthPt, heightPt: p.heightPt, depthPt: p.depthPt });
     if (progress && out.length % 10 === 0) progress(out.length);
   }
@@ -163,7 +165,7 @@ async function convertParagraphs(paragraphs: MathTypeParagraph[], equations: Con
     if (useApp.getState().look === "classic" && r.flatOpc) {
       const pics = await renderAll(r.equations);
       let k = 0;
-      r = convertFlatOpc(p.flatOpc, { profile, picture: () => pics[k++] ?? null });
+      r = convertFlatOpc(p.flatOpc, { profile, picture: () => pics[k++] ?? null, tags: r.equations.map((e) => e.tag) });
     }
     for (const e of r.equations) equations.push({ ...e, index: equations.length + 1 });
     if (r.flatOpc) items.push({ ...p, flatOpc: r.flatOpc });

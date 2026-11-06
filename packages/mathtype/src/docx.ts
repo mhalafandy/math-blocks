@@ -18,7 +18,12 @@ export interface ConvertOptions {
    * Picture mode: equations become MathBlocks pictures (SVG with a PNG fallback) instead of
    * native Word equations. Returns null to fall back to a native equation.
    */
-  picture?: (latex: string, display: boolean) => PictureData | null;
+  picture?: (latex: string, display: boolean, tag: string) => PictureData | null;
+  /**
+   * IDs to give the equations, by index (from a first, planning run): the pictures are typeset
+   * before the final run and carry the ID in their hidden source, so it must stay the same.
+   */
+  tags?: (string | undefined)[];
 }
 
 export interface PictureData {
@@ -92,7 +97,7 @@ export function convertDocx(input: Uint8Array, options: ConvertOptions = {}): Co
     const rels = zip[relsName] ? parseRels(strFromU8(zip[relsName]!)) : new Map<string, string>();
     const xml = strFromU8(zip[part]!);
     if (!xml.includes("<w:object")) continue;
-    const out = convertPartXml(part, xml, rels, (path) => zip[path], profile, equations, options.picture, media);
+    const out = convertPartXml(part, xml, rels, (path) => zip[path], profile, equations, options.picture, media, options.tags);
     zip[part] = strToU8(out.xml);
     if (out.dropped.size) removedRels.set(relsName, out.dropped);
   }
@@ -113,6 +118,7 @@ function convertPartXml(
   equations: ConvertedEquation[],
   picture?: ConvertOptions["picture"],
   media?: MediaOut[],
+  tags?: ConvertOptions["tags"],
 ): { xml: string; dropped: Set<string> } {
   const hasW15 = source.includes(`xmlns:w15="${W15}"`);
   const dropped = new Set<string>();
@@ -148,15 +154,15 @@ function convertPartXml(
       entry.messages.push(...warnings, ...parsed.diagnostics.map((x) => x.message));
       entry.status = "converted";
       for (const m of run.matchAll(/\br:id="([^"]+)"/g)) dropped.add(m[1]!);
-      entry.tag = formatTag({ blockId: null, instanceId: newInstanceId() });
-      const pic = picture && media ? picture(latex, display) : null;
+      entry.tag = tags?.[entry.index - 1] || formatTag({ blockId: null, instanceId: newInstanceId() });
+      const pic = picture && media ? picture(latex, display, entry.tag) : null;
       if (pic && media) {
         const n = media.length + 1;
         const uid = newInstanceId();
         const item: MediaOut = { part, svgId: `rIdMbS${n}`, pngId: `rIdMbP${n}`, name: `mathblocks-${uid}`, data: pic };
         media.push(item);
         const drawing = pic.emf
-          ? vmlPictureRun({ rId: item.pngId, widthPt: pic.widthPt, heightPt: pic.heightPt, depthPt: pic.depthPt, id: 90000 + n, alt: `MathBlocks ${display ? (entry.number ? "numbered" : "display") : "inline"}: ${latex}`, title: entry.tag })
+          ? vmlPictureRun({ rId: item.pngId, widthPt: pic.widthPt, heightPt: pic.heightPt, depthPt: pic.depthPt, id: 90000 + n, alt: `MathBlocks ${display ? (entry.number ? "numbered" : "display") : "inline"} (${entry.tag}): ${latex}`, title: entry.tag })
           : pictureRun({
           svgRId: item.svgId,
           pngRId: item.pngId,
@@ -213,7 +219,7 @@ export function convertFlatOpc(flat: string, options: ConvertOptions = {}): Flat
     return b64 ? base64ToBytes(b64) : undefined;
   };
   const media: MediaOut[] = [];
-  const out = convertPartXml(docName, xmlData[1]!, rels, getBinary, profile, equations, options.picture, media);
+  const out = convertPartXml(docName, xmlData[1]!, rels, getBinary, profile, equations, options.picture, media, options.tags);
   if (!equations.some((e) => e.status === "converted")) return { flatOpc: null, equations };
   const body = doc.body.replace(xmlData[1]!, () => out.xml);
   let result = flat.slice(0, doc.start) + `<pkg:part${doc.attrs}>${body}</pkg:part>` + flat.slice(doc.end);

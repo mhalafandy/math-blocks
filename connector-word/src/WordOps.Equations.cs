@@ -26,10 +26,10 @@ namespace MathBlocks.WordConnector
 
         public string Tag
         {
-            get => IsPicture ? Picture.Title : Control.Tag;
+            get => IsPicture ? WordOps.TagOf(Picture) : Control.Tag;
             set
             {
-                if (IsPicture) Picture.Title = value;
+                if (IsPicture) WordOps.SetPictureTag(Picture, value);
                 else Control.Tag = value;
             }
         }
@@ -54,17 +54,31 @@ namespace MathBlocks.WordConnector
 
         internal static bool IsTag(string t) => t != null && t.StartsWith(TagPrefix, StringComparison.Ordinal);
 
-        internal static string TitleOf(Word.InlineShape s)
+        /// <summary>
+        /// The picture's title. Word does not implement Title for VML pictures (it throws
+        /// NotImplementedException, not a COMException): then null.
+        /// </summary>
+        internal static string RawTitleOf(Word.InlineShape s)
         {
+            if (_noTitles) return null;
             try
             {
                 return s.Title;
             }
-            catch (COMException)
+            catch (NotImplementedException)
+            {
+                // VML pictures (ours, MathType's): asked once, then not again this session (exceptions are slow).
+                _noTitles = true;
+                Log.Info("Word has no title on these pictures (VML): equation IDs are read from the alt text and the hidden source");
+                return null;
+            }
+            catch (Exception)
             {
                 return null;
             }
         }
+
+        private static bool _noTitles;
 
         internal static string AltOf(Word.InlineShape s)
         {
@@ -72,19 +86,40 @@ namespace MathBlocks.WordConnector
             {
                 return s.AlternativeText;
             }
-            catch (COMException)
+            catch (Exception)
             {
                 return null;
             }
         }
 
-        /// <summary>A picture that is a Classic equation, judged without reading its XML (title or alt text).</summary>
-        internal static bool LooksLikeEquation(Word.InlineShape s)
+        /// <summary>A picture's ID from its properties, without reading XML: title, else alt text. Null if neither.</summary>
+        internal static string TagOf(Word.InlineShape s) => EquationIdentity.ResolvePictureTag(RawTitleOf(s), AltOf(s), null, out _);
+
+        /// <summary>Writes the ID to every place that can hold it: the alt text (always) and the title (where Word supports it).</summary>
+        internal static void SetPictureTag(Word.InlineShape s, string tag, string mode = null, string latex = null)
         {
-            if (IsTag(TitleOf(s))) return true;
-            var alt = AltOf(s) ?? "";
-            return alt.StartsWith("MathBlocks display:", StringComparison.Ordinal) || alt.StartsWith("MathBlocks inline:", StringComparison.Ordinal) || alt.StartsWith("MathBlocks numbered:", StringComparison.Ordinal);
+            var alt = AltOf(s);
+            var want = EquationIdentity.AltWithTag(alt, tag, mode, latex);
+            try
+            {
+                if (alt != want) s.AlternativeText = want;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("could not write the ID " + tag + " into the picture's alt text", ex);
+            }
+            try
+            {
+                if (!_noTitles && RawTitleOf(s) != tag) s.Title = tag;
+            }
+            catch (Exception)
+            {
+                // VML picture: no title; the alt text and the hidden source carry the ID.
+            }
         }
+
+        /// <summary>A picture that is a Classic equation, judged without reading its XML (ID or MathBlocks alt text).</summary>
+        internal static bool LooksLikeEquation(Word.InlineShape s) => TagOf(s) != null || EquationIdentity.IsEquationAlt(AltOf(s));
 
         /// <summary>The ID stored in a picture's hidden source (EMF comment JSON), if any.</summary>
         internal static string SourceTag(string source) => EquationIdentity.SourceTag(source);
@@ -104,7 +139,7 @@ namespace MathBlocks.WordConnector
             var list = new List<Eq>();
             foreach (Word.InlineShape s in doc.InlineShapes)
             {
-                if (!IsTag(TitleOf(s))) continue;
+                if (!IsTag(TagOf(s))) continue;
                 if (InsideMathBlocksControl(s.Range)) continue; // an older wrapped equation: listed by its wrapper
                 list.Add(new Eq(s));
             }
@@ -159,7 +194,7 @@ namespace MathBlocks.WordConnector
         {
             var list = new List<Eq>();
             foreach (Word.InlineShape s in doc.InlineShapes)
-                if (TitleOf(s) == tag && !InsideMathBlocksControl(s.Range)) list.Add(new Eq(s));
+                if (TagOf(s) == tag && !InsideMathBlocksControl(s.Range)) list.Add(new Eq(s));
             foreach (Word.ContentControl cc in doc.SelectContentControlsByTag(tag)) list.Add(new Eq(cc));
             return WithoutTrackedDeletions(doc, list).OrderBy(e => SafeStart(e)).ToList();
         }
@@ -171,14 +206,24 @@ namespace MathBlocks.WordConnector
         }
 
         /// <summary>
-        /// A picture's ID: its title; if the title was edited or lost, the ID in its hidden source
-        /// (and the title is restored); a MathBlocks picture with neither gets a new ID. Null when the
-        /// picture is not a MathBlocks equation.
+        /// A picture's ID from whatever survived — title, alt text, hidden source (EMF), else the number
+        /// bookmark of its paragraph — written back to the places that lost it. A MathBlocks picture with
+        /// none of these gets a new ID. Null when the picture is not a MathBlocks equation.
         /// </summary>
         internal string EnsurePictureTag(Word.InlineShape s)
         {
-            var title = TitleOf(s);
-            if (IsTag(title)) return title;
+            var title = RawTitleOf(s);
+            var alt = AltOf(s);
+            var known = EquationIdentity.ResolvePictureTag(title, alt, null, out var from);
+            if (known != null)
+            {
+                if (from == "title" && EquationIdentity.AltTag(alt) == null && EquationIdentity.IsEquationAlt(alt))
+                {
+                    SetPictureTag(s, known);
+                    Log.Info("picture ID " + known + ": alt text restored from the title");
+                }
+                return known;
+            }
             var source = PictureSource(s.Range.WordOpenXML);
             if (source == null) return null;
             var tag = SourceTag(source);
@@ -186,8 +231,8 @@ namespace MathBlocks.WordConnector
             var block = Regex.Match(source, "\"block\"\\s*:\\s*\"([0-9A-Za-z]{16})\"").Groups[1].Value;
             if (tag == null)
             {
-                // No ID in the source (e.g. converted from MathType): the number bookmark in its paragraph, if
-                // no other equation already has that ID, keeps the equation tied to its number and references.
+                // No ID in the source (older pictures): the number bookmark in its paragraph, if no other
+                // equation already has that ID, keeps the equation tied to its number and references.
                 var id = BookmarkedInstance(s);
                 if (id != null)
                 {
@@ -204,8 +249,9 @@ namespace MathBlocks.WordConnector
                 tag = "mb1|" + (string.IsNullOrEmpty(block) ? "-" : block) + "|" + RandomId(12);
                 why = "new (no ID in its source)";
             }
-            s.Title = tag;
-            Log.Info("picture ID " + why + ": " + tag + (string.IsNullOrEmpty(title) ? "" : " (its title was \"" + title + "\")"));
+            var mode = Regex.Match(source, "\"mode\"\\s*:\\s*\"(display|inline|numbered)\"").Groups[1].Value;
+            SetPictureTag(s, tag, string.IsNullOrEmpty(mode) ? null : mode, EquationIdentity.FirstLatex(source));
+            Log.Info("picture ID " + why + ": " + tag + " (title \"" + (title ?? "n/a") + "\", alt \"" + Short(alt ?? "") + "\")");
             return tag;
         }
 
@@ -217,7 +263,7 @@ namespace MathBlocks.WordConnector
                 var para = s.Range.Paragraphs[1].Range;
                 int pictures = 0;
                 foreach (Word.InlineShape o in para.InlineShapes)
-                    if (LooksLikeEquation(o) || IsTag(TitleOf(o))) pictures++;
+                    if (LooksLikeEquation(o) || IsTag(TagOf(o))) pictures++;
                 if (pictures != 1) return null;
                 var doc = s.Range.Document;
                 bool hidden = doc.Bookmarks.ShowHidden;
@@ -352,7 +398,7 @@ namespace MathBlocks.WordConnector
             int n = 0;
             foreach (Word.InlineShape s in range.InlineShapes)
             {
-                if (IsTag(TitleOf(s)) || InsideMathBlocksControl(s.Range)) continue;
+                if (IsTag(TagOf(s)) || InsideMathBlocksControl(s.Range)) continue;
                 if (!LooksLikeEquation(s)) continue;
                 if (EnsurePictureTag(s) != null) n++;
             }
@@ -366,17 +412,17 @@ namespace MathBlocks.WordConnector
             Word.InlineShape candidate = null;
             foreach (Word.InlineShape s in near.InlineShapes)
             {
-                var title = TitleOf(s);
+                var title = TagOf(s);
                 if (title == tag) return new Eq(s);
                 if (candidate == null && !IsTag(title) && LooksLikeEquation(s)) candidate = s;
             }
             if (candidate == null)
             {
                 foreach (Word.InlineShape s in doc.InlineShapes)
-                    if (TitleOf(s) == tag) return new Eq(s);
+                    if (TagOf(s) == tag) return new Eq(s);
                 return null;
             }
-            candidate.Title = tag;
+            SetPictureTag(candidate, tag);
             return new Eq(candidate);
         }
 
@@ -402,7 +448,7 @@ namespace MathBlocks.WordConnector
                     foreach (Word.InlineShape s in probe.InlineShapes)
                     {
                         if (InsideMathBlocksControl(s.Range)) continue;
-                        if (!IsTag(TitleOf(s)) && !LooksLikeEquation(s) && PictureSource(s.Range.WordOpenXML) == null) continue;
+                        if (!IsTag(TagOf(s)) && !LooksLikeEquation(s) && PictureSource(s.Range.WordOpenXML) == null) continue;
                         var tag = EnsurePictureTag(s);
                         if (tag != null) return new Eq(s);
                     }
@@ -467,7 +513,7 @@ namespace MathBlocks.WordConnector
                 }
                 foreach (Word.InlineShape s in near.InlineShapes)
                 {
-                    var tag = TitleOf(s);
+                    var tag = TagOf(s);
                     try
                     {
                         // Paste diagnosis: what a pasted picture kept (title, alt text, hidden source, format).

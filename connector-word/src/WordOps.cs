@@ -71,8 +71,10 @@ namespace MathBlocks.WordConnector
                     // Put the cursor just after the new equation so typing continues naturally.
                     var end = found[0].After;
                     doc.Range(end, end).Select();
+                    // Typed text continues on the line, not lowered like the picture's run.
+                    CleanTypingFormat(_app.Selection);
                 }
-                catch (COMException)
+                catch (Exception)
                 {
                     // Cursor placement is cosmetic.
                 }

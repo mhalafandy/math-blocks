@@ -15,8 +15,6 @@ namespace MathBlocks.WordConnector
     /// </summary>
     internal sealed partial class WordOps
     {
-        private static readonly Regex AltSource = new Regex("(?:alt|descr)=\"(MathBlocks (?:display|inline|numbered):[^\"]*)\"", RegexOptions.Compiled);
-
         internal static bool IsMathBlocks(Word.ContentControl cc)
         {
             try
@@ -30,17 +28,7 @@ namespace MathBlocks.WordConnector
         }
 
         /// <summary>The source a picture carries (EMF comment JSON, else its alt text); null when it is not ours.</summary>
-        internal static string PictureSource(string xml)
-        {
-            var how = MathBlocksData(xml, out var json);
-            if (how == "emf") return json;
-            if (how == "alt")
-            {
-                var m = AltSource.Match(xml);
-                return m.Success ? m.Groups[1].Value : "alt";
-            }
-            return null;
-        }
+        internal static string PictureSource(string xml) => PictureXml.Source(xml);
 
         /// <summary>Everything a wrapper holds: equations, other pictures, nested wrappers, text.</summary>
         internal EquationIdentity.WrapperContents Inspect(Word.Document doc, Word.ContentControl cc) => Inspect(doc, new Eq(cc));
@@ -223,9 +211,30 @@ namespace MathBlocks.WordConnector
         /// The caret was placed at a wrapper's edge (where Word would put typed text inside it): move
         /// it just outside. Not inside a native equation (Word's own editing) and not on a selection.
         /// </summary>
-        internal void GuardCaret(Word.Selection sel)
+/// <summary>
+        /// Text typed right after an inline equation takes the formatting of the character before it —
+        /// the picture's run, lowered by the equation's depth. The insertion point gets position 0, so
+        /// typed text sits on the line (only the picture's own run is lowered). Not a document change.
+        /// </summary>
+        internal static void CleanTypingFormat(Word.Selection sel)
+        {
+            try
+            {
+                if (sel.Start == 0 || sel.Start != sel.End) return;
+                var before = sel.Document.Range(sel.Start - 1, sel.Start);
+                if (before.InlineShapes.Count != 1 || !LooksLikeEquation(before.InlineShapes[1])) return;
+                if (sel.Font.Position != 0) sel.Font.Position = 0;
+            }
+            catch (Exception)
+            {
+                // Cosmetic.
+            }
+        }
+
+                internal void GuardCaret(Word.Selection sel)
         {
             if (sel == null || sel.Start != sel.End) return;
+            CleanTypingFormat(sel);
             // Our own commands run inside an undo record: leave the caret to them.
             try
             {
@@ -350,10 +359,9 @@ namespace MathBlocks.WordConnector
         {
             try
             {
-                var alt = sh.AlternativeText ?? "";
-                return alt.StartsWith("MathBlocks display:", StringComparison.Ordinal) || alt.StartsWith("MathBlocks inline:", StringComparison.Ordinal) || alt.StartsWith("MathBlocks numbered:", StringComparison.Ordinal);
+                return EquationIdentity.IsEquationAlt(sh.AlternativeText);
             }
-            catch (COMException)
+            catch (Exception)
             {
                 return false;
             }
@@ -455,8 +463,9 @@ namespace MathBlocks.WordConnector
             if (range.InlineShapes.Count == 1 && range.OMaths.Count == 0)
             {
                 var pic = range.InlineShapes[1];
-                pic.Title = tag ?? "mb1|-|" + RandomId(12);
-                Log.Info("repair: split off one Classic equation as the titled picture " + pic.Title);
+                var newTag = tag ?? "mb1|-|" + RandomId(12);
+                SetPictureTag(pic, newTag);
+                Log.Info("repair: split off one Classic equation as the picture " + newTag);
                 return;
             }
             object r = range;

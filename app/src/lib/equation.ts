@@ -82,7 +82,7 @@ export async function buildInsertion(
     heightPt: pic.heightPt,
     depthPt: pic.depthPt,
     id: Date.now() % 1_000_000_000 + n,
-    alt: altText(latex, mode),
+    alt: altText(latex, mode, tag),
     // The picture is the equation: its ID is its title (no content control around it).
     title: tag,
   });

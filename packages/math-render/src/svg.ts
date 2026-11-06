@@ -11,6 +11,13 @@ export interface RenderOptions {
   sizePt?: number;
   /** Extra margin around the ink, em. */
   margin?: number;
+  /**
+   * Picture padding around the ink in points, like MathType's (measured on its WMF pictures:
+   * about 2 pt left/right/below and 2.3 pt above at 12 pt), with the depth below the baseline,
+   * the height above it and the width rounded up to whole points as MathType does — so the run's
+   * lowering (half-points) is exact. Overrides `margin`.
+   */
+  padding?: PicturePadding;
   /** Notation profile for kind objects (\pvec…); default: Hughes. */
   notation?: NotationProfile;
 }
@@ -128,15 +135,39 @@ export function thinOutline(cmds: PathCmd[], d: number): PathCmd[] {
 }
 
 /** Typesets an equation into a standalone SVG of glyph outlines (no fonts needed to view it). */
+export interface PicturePadding {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+  /** Round depth, height and width up to whole points. */
+  wholePoints?: boolean;
+}
+
+/** MathType's picture padding at 12 pt (measured), scaled with the equation size. */
+export const mathTypePadding = (sizePt: number): PicturePadding => {
+  const k = sizePt / 12;
+  return { left: 2 * k, right: 2 * k, top: 2.3 * k, bottom: 2 * k, wholePoints: true };
+};
+
 export function renderSvg(root: Row, o: RenderOptions): RenderResult {
   const style = o.style ?? CLASSIC;
   const used = new Set<GlyphSource>();
   const box = layout(root, { fonts: o.fonts, style, display: o.display ?? true, notation: o.notation, used });
-  const m = o.margin ?? 0.04;
   const sizePt = o.sizePt ?? 12;
-  const w = box.w + 2 * m;
-  const h = box.h + m;
-  const d = box.d + m;
+  const pad = o.padding;
+  const mm = o.margin ?? 0.04;
+  // Left margin (x offset of the drawing) and the box: width, height above and depth below the baseline (em).
+  const m = pad ? pad.left / sizePt : mm;
+  let w = box.w + (pad ? (pad.left + pad.right) / sizePt : 2 * mm);
+  let h = (pad ? Math.max(box.h, 0) + pad.top / sizePt : box.h + mm);
+  let d = (pad ? Math.max(box.d, 0) + pad.bottom / sizePt : box.d + mm);
+  if (pad?.wholePoints) {
+    const up = (em: number) => Math.ceil(em * sizePt - 1e-6) / sizePt;
+    w = up(w);
+    h = up(h);
+    d = up(d);
+  }
   const paths: string[] = [];
   const ops: PaintOp[] = [];
   const byColor = new Map<string, string[]>();

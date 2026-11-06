@@ -1,5 +1,5 @@
 import { parseLatex } from "@mathblocks/math-latex";
-import { CLASSIC, loadFont, renderEmf, renderSvg, type FontSet, type RenderResult, type RenderStyle } from "@mathblocks/math-render";
+import { CLASSIC, loadFont, renderEmf, renderSvg, mathTypePadding, type FontSet, type RenderResult, type RenderStyle } from "@mathblocks/math-render";
 import { useApp } from "./store";
 import stixUrl from "@fontsource/stix-two-math/files/stix-two-math-latin-400-normal.woff?url";
 import { isDesktop } from "./connector";
@@ -127,7 +127,8 @@ export const notationProfile = () => useApp.getState().notationProfile;
 
 export async function renderPicture(latex: string, display: boolean, sizePt: number, mode: PictureMode = display ? "display" : "inline", withPng = false, extra: { block?: string | null; tag?: string | null } = {}): Promise<Picture> {
   const fonts = await loadFonts();
-  const r = renderSvg(parseLatex(latex).root, { fonts, style: classicStyle(), display, sizePt, notation: notationProfile() });
+  // Picture padding like MathType's (2 pt around the ink at 12 pt, whole-point depth: exact baseline).
+  const r = renderSvg(parseLatex(latex).root, { fonts, style: classicStyle(), display, sizePt, notation: notationProfile(), padding: mathTypePadding(sizePt) });
   const fallback = fallbackOf(r.sources);
   if (fallback === "stix" && !fonts.extra && fonts.symbol) warnNoExtra();
   const source: PictureSource = { latex, mode, style: CLASSIC.id, sizePt, ...(fallback ? { fallback } : {}), ...(extra.block ? { block: extra.block } : {}), ...(extra.tag ? { tag: extra.tag } : {}) };
@@ -143,4 +144,8 @@ export function toBase64(bytes: Uint8Array) {
 }
 
 /** Alt text that carries the equation's source, so it can be edited again. */
-export const altText = (latex: string, mode: "display" | "inline" | "numbered") => `MathBlocks ${mode}: ${latex}`;
+/**
+ * Alt text of a Classic picture: "MathBlocks display (mb1|-|id): LaTeX". The ID is kept here because
+ * Word cannot store a title on VML pictures; screen readers still get the LaTeX.
+ */
+export const altText = (latex: string, mode: "display" | "inline" | "numbered", tag?: string) => `MathBlocks ${mode}${tag ? ` (${tag})` : ""}: ${latex}`;
