@@ -227,6 +227,9 @@ export interface DocumentInstances {
 }
 
 export interface AppToConnector {
+  /** Word self-test operations (ribbon → Run Word self-test): type, paste, move, undo, inspect. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  smoke: { params: { op: string; [key: string]: unknown }; result: Record<string, any> };
   /** MathBlocks equations per document; copies sharing a tag get new instance ids first. */
   listInstances: {
     /** light: no page numbers / context (they make Word lay out the document). */
@@ -255,6 +258,10 @@ export interface AppToConnector {
       /** Left untouched: native Word equations (they keep their wrapper) and MathType objects. */
       native?: number;
       mathType?: number;
+      /** Classic pictures whose baseline lowering was restored from their source. */
+      lowered?: number;
+      /** Classic pictures whose hidden source lacks the ID or the depth: the app redraws them once. */
+      redraw?: { tag: string; latex: string; mode: "display" | "inline" | "numbered" }[];
       /** Wrappers that held more than one equation, text or nested wrappers, split back into one per equation. */
       split?: { tag: string; equations: number; text: number; nested: number; otherPictures: number }[];
     };

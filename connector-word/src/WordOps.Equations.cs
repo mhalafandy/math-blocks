@@ -355,7 +355,7 @@ namespace MathBlocks.WordConnector
             try
             {
                 foreach (Word.Shape sh in only != null ? only.ShapeRange : (System.Collections.IEnumerable)doc.Shapes)
-                    if (IsMathBlocksShape(sh)) list.Add(sh);
+                    if (IsMathBlocksShape(sh) && !IsInlineWrap(sh)) list.Add(sh);
             }
             catch (COMException)
             {
@@ -390,6 +390,18 @@ namespace MathBlocks.WordConnector
                 if (own) undo.EndCustomRecord();
             }
             return n;
+        }
+
+        private static bool IsInlineWrap(Word.Shape sh)
+        {
+            try
+            {
+                return sh.WrapFormat.Type == Word.WdWrapType.wdWrapInline;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         /// <summary>Pictures with MathBlocks alt text but no ID title (just inserted or pasted): their ID (title).</summary>

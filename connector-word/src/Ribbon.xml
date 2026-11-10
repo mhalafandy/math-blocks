@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<customUI xmlns="http://schemas.microsoft.com/office/2006/01/customui">
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
   <ribbon>
     <tabs>
       <tab id="MathBlocksTab" label="MathBlocks" keytip="Q">
@@ -33,10 +33,29 @@
                   screentip="Turn LaTeX written in the text ($…$, $$…$$, \(…\), \[…\]) into MathBlocks equations: the selection when there is one, otherwise the whole document (one undo step). Ctrl+Alt+L converts just the one at the cursor."
                   onAction="OnConvertLatex" />
           <button id="mbRepair" keytip="P" label="Repair equations" imageMso="ReviewAcceptChange"
-                  screentip="Give every MathBlocks equation its own wrapper again: splits wrappers holding several equations or text, gives copies their own ID, re-wraps pasted pictures and puts floating ones back in line (one undo step, backup)."
+                  screentip="Checks every MathBlocks equation: floating pictures back in line, copies get their own ID, pasted pictures recognised again, older documents converted, IDs and baseline written into each picture (one undo step, backup)."
                   onAction="OnRepairEquations" />
+          <button id="mbSelfTest" label="Run Word self-test" imageMso="ReviewSpellingAndGrammar"
+                  screentip="Runs the MathBlocks checks in Word: inserts, opens, numbers, pastes, moves and undoes equations in new test documents and writes a report (MathBlocks app must be running). Your documents are not touched."
+                  onAction="OnSelfTest" />
         </group>
       </tab>
     </tabs>
   </ribbon>
+  <!-- Word ignores Cancel on right-click for pictures: a Classic equation's menu is Word's own picture
+       menu, with these items added (only on MathBlocks pictures), as MathType does. -->
+  <contextMenus>
+    <contextMenu idMso="ContextMenuPicture">
+      <button id="mbMenuEdit1" label="Edit equation (MathBlocks)" imageMso="EquationInsertGallery"
+              getVisible="GetMenuVisible" onAction="OnMenuEdit" />
+      <button id="mbMenuNumber1" label="Number / unnumber equation" imageMso="EquationProfessional"
+              getVisible="GetMenuVisible" onAction="OnMenuNumber" />
+    </contextMenu>
+    <contextMenu idMso="ContextMenuShape">
+      <button id="mbMenuEdit2" label="Edit equation (MathBlocks)" imageMso="EquationInsertGallery"
+              getVisible="GetMenuVisible" onAction="OnMenuEdit" />
+      <button id="mbMenuNumber2" label="Number / unnumber equation" imageMso="EquationProfessional"
+              getVisible="GetMenuVisible" onAction="OnMenuNumber" />
+    </contextMenu>
+  </contextMenus>
 </customUI>

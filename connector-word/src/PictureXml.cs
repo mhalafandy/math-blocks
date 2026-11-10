@@ -71,6 +71,22 @@ namespace MathBlocks.WordConnector
             return EquationIdentity.ResolvePictureTag(null, null, Source(xml), out from);
         }
 
+        /// <summary>The equation's depth below its baseline (pt), stored in the source since round 6; null in older pictures.</summary>
+        public static double? DepthPt(string json)
+        {
+            if (json == null) return null;
+            var m = Regex.Match(json, "\"depthPt\"\\s*:\\s*(-?[0-9.]+)");
+            return m.Success && double.TryParse(m.Groups[1].Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var d) ? d : (double?)null;
+        }
+
+        /// <summary>"display", "inline" or "numbered" from the source; null if absent.</summary>
+        public static string Mode(string json)
+        {
+            if (json == null) return null;
+            var m = Regex.Match(json, "\"mode\"\\s*:\\s*\"(display|inline|numbered)\"");
+            return m.Success ? m.Groups[1].Value : null;
+        }
+
         private static int IndexOf(byte[] hay, byte[] needle)
         {
             for (int i = 0; i + needle.Length <= hay.Length; i++)

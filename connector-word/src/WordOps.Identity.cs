@@ -27,6 +27,27 @@ namespace MathBlocks.WordConnector
             }
         }
 
+        /// <summary>The picture's MathBlocks alt text when it is ours (read through Word, not the XML); else null.</summary>
+        internal static string AltSourceOf(Word.InlineShape s)
+        {
+            var alt = AltOf(s);
+            return EquationIdentity.IsEquationAlt(alt) ? alt : null;
+        }
+
+        /// <summary>
+        /// The XML sent to the app for a picture: Word's own, or — when it carries neither the EMF nor the
+        /// alt text (seen after some pastes) — a minimal package with the alt text, so the app reads the LaTeX.
+        /// </summary>
+        internal static string PictureXmlForApp(Eq eq)
+        {
+            var xml = eq.Xml;
+            if (!eq.IsPicture || PictureXml.Data(xml, out _) != null) return xml;
+            var alt = AltSourceOf(eq.Picture);
+            if (alt == null) return xml;
+            Log.Info("picture " + eq.Tag + ": its XML has no MathBlocks data (VML " + xml.Contains("<v:imagedata") + ", DrawingML " + xml.Contains("<pic:pic") + ", EMF " + xml.Contains("image/x-emf") + ", PNG " + xml.Contains("image/png") + ", " + xml.Length + " chars) — read from its alt text");
+            return "<pkg:package xmlns:pkg=\"http://schemas.microsoft.com/office/2006/xmlPackage\"><pkg:part pkg:name=\"/word/document.xml\"><pkg:xmlData><w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:v=\"urn:schemas-microsoft-com:vml\"><w:body><w:p><w:r><w:pict><v:shape alt=\"" + System.Security.SecurityElement.Escape(alt) + "\"/></w:pict></w:r></w:p></w:body></w:document></pkg:xmlData></pkg:part></pkg:package>";
+        }
+
         /// <summary>The source a picture carries (EMF comment JSON, else its alt text); null when it is not ours.</summary>
         internal static string PictureSource(string xml) => PictureXml.Source(xml);
 
@@ -39,7 +60,9 @@ namespace MathBlocks.WordConnector
             var c = new EquationIdentity.WrapperContents();
             if (eq.IsPicture)
             {
-                var src = PictureSource(eq.Picture.Range.WordOpenXML);
+                // A pasted picture's XML may lack the EMF (Word re-encodes some pastes); its alt text still
+                // identifies it and gives its LaTeX.
+                var src = PictureSource(eq.Picture.Range.WordOpenXML) ?? AltSourceOf(eq.Picture);
                 if (src != null) c.PictureSources.Add(src);
                 else c.OtherPictures++;
                 try
@@ -208,10 +231,6 @@ namespace MathBlocks.WordConnector
         }
 
         /// <summary>
-        /// The caret was placed at a wrapper's edge (where Word would put typed text inside it): move
-        /// it just outside. Not inside a native equation (Word's own editing) and not on a selection.
-        /// </summary>
-/// <summary>
         /// Text typed right after an inline equation takes the formatting of the character before it —
         /// the picture's run, lowered by the equation's depth. The insertion point gets position 0, so
         /// typed text sits on the line (only the picture's own run is lowered). Not a document change.
@@ -221,9 +240,27 @@ namespace MathBlocks.WordConnector
             try
             {
                 if (sel.Start == 0 || sel.Start != sel.End) return;
-                var before = sel.Document.Range(sel.Start - 1, sel.Start);
-                if (before.InlineShapes.Count != 1 || !LooksLikeEquation(before.InlineShapes[1])) return;
+                var doc = sel.Document;
+                var before = doc.Range(sel.Start - 1, sel.Start);
+                if (before.InlineShapes.Count != 1) return;
+                var pic = before.InlineShapes[1];
+                if (!LooksLikeEquation(pic)) return;
+                // Word applies formatting at a caret inside a word to the whole word — the picture's own
+                // run would lose its lowering (round 6: α β γ above the line). Only when the caret is at a
+                // word's end: before a space, tab, line or paragraph end, or the end of the document.
+                if (sel.End < doc.Content.End - 1)
+                {
+                    var next = doc.Range(sel.Start, sel.Start + 1).Text ?? "";
+                    if (next.Length > 0 && " \t\r\n\v\a\u00a0".IndexOf(next[0]) < 0) return;
+                }
+                var keep = pic.Range.Font.Position;
                 if (sel.Font.Position != 0) sel.Font.Position = 0;
+                // Safety net: if Word changed the picture anyway, its lowering comes back.
+                if (pic.Range.Font.Position != keep)
+                {
+                    pic.Range.Font.Position = keep;
+                    Log.Info("typing reset touched the equation's lowering; restored to " + keep + " pt");
+                }
             }
             catch (Exception)
             {
@@ -231,7 +268,11 @@ namespace MathBlocks.WordConnector
             }
         }
 
-                internal void GuardCaret(Word.Selection sel)
+        /// <summary>
+        /// The caret was placed at a wrapper's edge (where Word would put typed text inside it): move
+        /// it just outside. Not inside a native equation (Word's own editing) and not on a selection.
+        /// </summary>
+        internal void GuardCaret(Word.Selection sel)
         {
             if (sel == null || sel.Start != sel.End) return;
             CleanTypingFormat(sel);

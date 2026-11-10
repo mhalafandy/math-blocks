@@ -25,6 +25,12 @@ namespace MathBlocks.WordConnector
         private WordOps _ops;
         private PipeClient _pipe;
         private Control _ui; // marshals work from the pipe thread onto Word's main thread
+        private Timer _idle; // selection-change work, run once Word is idle (never inside Word's own operations)
+
+        [DllImport("user32.dll")]
+        private static extern short GetAsyncKeyState(int key);
+
+        private static bool MouseButtonDown() => (GetAsyncKeyState(0x01) & 0x8000) != 0 || (GetAsyncKeyState(0x02) & 0x8000) != 0;
         private int _nextId = 1;
 
         // ------------------------------------------------------------ IDTExtensibility2
@@ -35,7 +41,10 @@ namespace MathBlocks.WordConnector
             {
                 _app = (Word.Application)application;
                 _ops = new WordOps(_app);
+                _ops.IdleChecks = IdleChecks;
                 _ui = new Control();
+                _idle = new Timer { Interval = 400 };
+                _idle.Tick += (o, e) => OnIdle();
                 _ui.CreateControl();
                 _ = _ui.Handle; // force handle creation on this (main) thread
 
@@ -125,7 +134,7 @@ namespace MathBlocks.WordConnector
             "numberEquation", "unnumberEquation", "listNumbered", "insertReference", "updateNumbers",
             "showWordMenu", "selectionInfo", "findLatex", "replaceRanges", "equationToText",
             "backupDocument", "beginOperation", "operationProgress", "endOperation", "repairEquations",
-            "insertNumberMarker", "upgradeNumbering", "textWidth", "confirm", "showMessage",
+            "insertNumberMarker", "upgradeNumbering", "textWidth", "confirm", "showMessage", "smoke",
         };
 
         // ------------------------------------------------------------ ribbon
@@ -207,7 +216,7 @@ namespace MathBlocks.WordConnector
                         prm["fingerprint"] = fingerprint;
                         prm["numbered"] = WordOps.NumberInfo(cc) != null;
                         if (problem != null) prm["problem"] = "This equation cannot be numbered safely: " + problem + ".";
-                        else prm["flatOpc"] = cc.Range.WordOpenXML;
+                        else prm["flatOpc"] = WordOps.PictureXmlForApp(cc);
                     }
                 }
                 SendRequest("runCommand", prm);
@@ -235,6 +244,7 @@ namespace MathBlocks.WordConnector
         }
 
         public void OnRepairEquations(IRibbonControl control) => RunAppCommand("repair");
+        public void OnSelfTest(IRibbonControl control) => RunAppCommand("selfTest");
         public void OnListOfSymbols(IRibbonControl control) => RunAppCommand("listOfSymbols");
         public void OnNumberEquation(IRibbonControl control) => RunAppCommand("numberEquation");
 
@@ -271,34 +281,63 @@ namespace MathBlocks.WordConnector
         // ------------------------------------------------------------ Word events
 
         /// <summary>
-        /// Right-click on a MathBlocks equation: instead of Word's menu, the app shows its floating
-        /// editor next to the equation (the panel has a "Word menu" button for cut/copy/paste).
+        /// Right-click on a MathBlocks equation.
+        /// - Classic equation (a picture): Word ignores Cancel for pictures, so cancelling and opening our
+        ///   floating editor showed two menus. Word's own picture menu shows instead, with "Edit equation"
+        ///   and "Number equation" at the top (Ribbon.xml contextMenus); double-click opens the editor.
+        /// - Native equation (in its wrapper): Cancel works, the floating editor opens instead of the menu.
+        /// Nothing in the document changes here.
         /// </summary>
         private void OnWindowBeforeRightClick(Word.Selection sel, ref bool cancel)
         {
             try
             {
                 if (_pipe == null || !_pipe.IsConnected) return;
+                if (FloatingMathBlocksSelected(sel)) return; // Word's menu (with our items); it goes in line when idle
                 var doc = _app.ActiveDocument;
-                // A floating MathBlocks picture is normally put back in line as soon as it is selected
-                // (selection change); if one is still floating here, it goes back in line now and opens.
-                var cc = FloatingMathBlocksSelected(sel) ? AdoptPastedPicture(sel) : _ops.EquationAt(doc, sel.Range);
-                if (cc == null)
-                {
-                    // A pasted MathBlocks picture without its ID title: identified again (copy → new ID).
-                    cc = AdoptPastedPicture(sel);
-                    if (cc == null) return;
-                }
+                var cc = _ops.EquationAt(doc, sel.Range);
+                if (cc == null || cc.IsPicture) return;
                 cancel = true;
-                var rect = ScreenRect(cc.Range);
-                var panel = rect ?? new Dictionary<string, object> { ["left"] = 200, ["top"] = 200, ["width"] = 0, ["height"] = 0 };
-                SendActivated(doc, cc, "panel", new Dictionary<string, object> { ["panel"] = panel });
+                OpenPanel(doc, cc);
             }
             catch (Exception ex)
             {
                 Log.Error("right-click handler failed", ex);
             }
         }
+
+        private void OpenPanel(Word.Document doc, Eq cc)
+        {
+            var rect = ScreenRect(cc.Range);
+            var panel = rect ?? new Dictionary<string, object> { ["left"] = 200, ["top"] = 200, ["width"] = 0, ["height"] = 0 };
+            SendActivated(doc, cc, "panel", new Dictionary<string, object> { ["panel"] = panel });
+        }
+
+        /// <summary>Word's picture menu → "Edit equation": the floating editor on the selected equation.</summary>
+        public void OnMenuEdit(IRibbonControl control)
+        {
+            try
+            {
+                if (_pipe == null || !_pipe.IsConnected)
+                {
+                    OnOpenApp(control);
+                    return;
+                }
+                var doc = _app.ActiveDocument;
+                var sel = _app.Selection;
+                var cc = FloatingMathBlocksSelected(sel) ? AdoptPastedPicture(sel) : _ops.EquationAt(doc, sel.Range) ?? AdoptPastedPicture(sel);
+                if (cc != null) OpenPanel(doc, cc);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("menu: edit equation failed", ex);
+            }
+        }
+
+        public void OnMenuNumber(IRibbonControl control) => RunAppCommand("numberEquation");
+
+        /// <summary>The MathBlocks items show in Word's picture menu only when the picture is a MathBlocks equation.</summary>
+        public bool GetMenuVisible(IRibbonControl control) => WordOps.MenuVisible(_app.Selection);
 
         /// <summary>
         /// Sends the equation in a wrapper to the app, after checking the wrapper holds exactly one
@@ -307,27 +346,25 @@ namespace MathBlocks.WordConnector
         /// </summary>
         private void SendActivated(Word.Document doc, Eq cc, string what, Dictionary<string, object> extra)
         {
-            var problem = _ops.PrepareRead(doc, ref cc, what, out var fingerprint);
-            var prm = new Dictionary<string, object> { ["tag"] = cc.Tag, ["number"] = WordOps.NumberInfo(cc), ["fingerprint"] = fingerprint };
+            var prm = _ops.Activation(doc, cc, what);
             if (extra != null) foreach (var kv in extra) prm[kv.Key] = kv.Value;
-            if (problem != null)
-            {
-                prm["flatOpc"] = "";
-                prm["problem"] = "This equation cannot be opened safely: " + problem + ".";
-            }
-            else prm["flatOpc"] = cc.Range.WordOpenXML;
             SendRequest("equationActivated", prm);
         }
 
+        /// <summary>A floating (not in-line) MathBlocks picture is selected. An in-line picture never counts.</summary>
         private static bool FloatingMathBlocksSelected(Word.Selection sel)
         {
             try
             {
+                if (sel.Type != Word.WdSelectionType.wdSelectionShape) return false;
                 if (sel.ShapeRange.Count == 0) return false;
                 foreach (Word.Shape sh in sel.ShapeRange)
+                {
+                    if (sh.WrapFormat.Type == Word.WdWrapType.wdWrapInline) continue;
                     if (WordOps.IsMathBlocksShape(sh)) return true;
+                }
             }
-            catch (System.Runtime.InteropServices.COMException)
+            catch (Exception)
             {
             }
             return false;
@@ -336,31 +373,64 @@ namespace MathBlocks.WordConnector
         private bool _guarding;
 
         /// <summary>
-        /// On every selection change: a selected floating MathBlocks picture goes back in line at once;
-        /// after a paste, drop or deletion (picture counts changed) floating pictures go back in line and
-        /// duplicated IDs near the selection are resolved; the caret is kept out of a native wrapper's edges.
+        /// Selection change also fires in the middle of Word's own operations (drag and drop, paste,
+        /// typing): changing the document or the selection then can make Word delete the wrong text
+        /// (a drag removes its source by position). So nothing happens here but (re)starting a short
+        /// idle timer; the work runs when Word is idle and no mouse button is down.
         /// </summary>
         private void OnWindowSelectionChange(Word.Selection sel)
         {
-            if (_guarding) return;
             try
             {
-                _guarding = true;
-                if (FloatingMathBlocksSelected(sel))
-                {
-                    var eq = AdoptPastedPicture(sel);
-                    if (eq != null)
-                    {
-                        eq.Range.Select();
-                        _app.StatusBar = "MathBlocks: the pasted equation was put back in line with the text.";
-                    }
-                }
-                _ops.WatchChanges(sel);
-                _ops.GuardCaret(sel);
+                if (_guarding || _idle == null) return;
+                _idle.Stop();
+                _idle.Start();
             }
             catch (Exception ex)
             {
-                Log.Error("caret guard", ex);
+                Log.Error("selection change", ex);
+            }
+        }
+
+        /// <summary>
+        /// Once idle after a selection change: a selected floating MathBlocks picture goes back in line;
+        /// after a paste, drop or deletion (picture counts changed) floating pictures go back in line and
+        /// duplicated IDs near the selection are resolved; the caret is kept out of a native wrapper's
+        /// edges; typing after an equation is not lowered.
+        /// </summary>
+        /// <summary>What runs once Word is idle after a selection change (also called by the self-test).</summary>
+        private void IdleChecks()
+        {
+            var sel = _app.Selection;
+            if (FloatingMathBlocksSelected(sel))
+            {
+                var eq = AdoptPastedPicture(sel);
+                if (eq != null) _app.StatusBar = "MathBlocks: the pasted equation was put back in line with the text.";
+            }
+            _ops.WatchChanges(sel);
+            _ops.GuardCaret(sel);
+        }
+
+        private void OnIdle()
+        {
+            _idle.Stop();
+            if (_guarding) return;
+            try
+            {
+                if (MouseButtonDown())
+                {
+                    _idle.Start(); // a drag or a selection in progress: later
+                    return;
+                }
+                if (_app.Documents.Count == 0) return;
+                if (_app.UndoRecord.IsRecordingCustomRecord) return; // our own command is running
+                if (_ops.Testing) return; // the self-test runs these checks itself, at known moments
+                _guarding = true;
+                IdleChecks();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("idle checks", ex);
             }
             finally
             {
@@ -625,6 +695,7 @@ namespace MathBlocks.WordConnector
                     case "findLatex": result = _ops.FindLatex(p); break;
                     case "replaceRanges": result = _ops.ReplaceRanges(p); break;
                     case "equationToText": result = _ops.EquationToText(p); break;
+                    case "smoke": result = _ops.Smoke(p); break;
                     case "showWordMenu":
                         // Word's own context menu at the mouse (late-bound: CommandBars lives in office.dll).
                         ((dynamic)_app).CommandBars["Text"].ShowPopup();

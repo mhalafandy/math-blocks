@@ -64,6 +64,8 @@ export interface PictureSource {
   block?: string;
   /** The equation's ID (mb1|block|instance): identifies it when its picture title is edited or lost. */
   tag?: string;
+  /** Depth below the baseline (pt): Repair restores the picture's lowering from it. */
+  depthPt?: number;
 }
 
 /** Which fallback font a drawing used. */
@@ -131,7 +133,7 @@ export async function renderPicture(latex: string, display: boolean, sizePt: num
   const r = renderSvg(parseLatex(latex).root, { fonts, style: classicStyle(), display, sizePt, notation: notationProfile(), padding: mathTypePadding(sizePt) });
   const fallback = fallbackOf(r.sources);
   if (fallback === "stix" && !fonts.extra && fonts.symbol) warnNoExtra();
-  const source: PictureSource = { latex, mode, style: CLASSIC.id, sizePt, ...(fallback ? { fallback } : {}), ...(extra.block ? { block: extra.block } : {}), ...(extra.tag ? { tag: extra.tag } : {}) };
+  const source: PictureSource = { latex, mode, style: CLASSIC.id, sizePt, ...(fallback ? { fallback } : {}), ...(extra.block ? { block: extra.block } : {}), ...(extra.tag ? { tag: extra.tag } : {}), depthPt: Math.round(r.depthPt * 1000) / 1000 };
   const emf = renderEmf(r, { comment: JSON.stringify(source) });
   const png = withPng ? await rasterise(r) : new Uint8Array();
   return { ...r, png, emf };

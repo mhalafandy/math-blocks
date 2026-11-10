@@ -43,11 +43,12 @@ namespace MathBlocks.WordConnector
             try
             {
                 var sel = _app.Selection;
-                if (sel.ShapeRange.Count > 0)
+                if (sel.Type == Word.WdSelectionType.wdSelectionShape && sel.ShapeRange.Count > 0)
                 {
                     foreach (Word.Shape sh in sel.ShapeRange)
                     {
-                        if (!IsMathBlocksShape(sh)) continue;
+                        // Only a really floating picture: an in-line one is never converted.
+                        if (sh.WrapFormat.Type == Word.WdWrapType.wdWrapInline || !IsMathBlocksShape(sh)) continue;
                         string wrap = "?";
                         try { wrap = sh.WrapFormat.Type.ToString(); } catch (COMException) { }
                         Log.Info("a pasted MathBlocks picture is floating (" + wrap + "); putting it back in line");
@@ -211,7 +212,8 @@ namespace MathBlocks.WordConnector
             var wrapped = new List<object>();
             var splitReport = new List<object>();
             int split = 0, unlocked = 0, inlined = 0, converted = 0;
-            int ok = 0, plainPictures = 0, bookmarks = 0;
+            int ok = 0, plainPictures = 0, bookmarks = 0, lowered = 0;
+            var redraw = new List<object>();
             bool screen = _app.ScreenUpdating;
             var undo = _app.UndoRecord;
             var own = !dry && !undo.IsRecordingCustomRecord;
@@ -251,6 +253,38 @@ namespace MathBlocks.WordConnector
                 }
                 else foreach (var pair in ResolveDuplicates(doc)) renamed.Add(pair);
                 bookmarks = BookmarkNumberedEquations(doc, dry);
+                // Every Classic picture: its baseline lowering back from its source (depth); pictures whose
+                // hidden source lacks the ID or the depth (converted from MathType, older builds) are listed
+                // for the app to redraw — the app writes both into the picture once.
+                foreach (var e in AllEquations(doc))
+                {
+                    if (!e.IsPicture) continue;
+                    try
+                    {
+                        PictureXml.Data(e.Xml, out var json);
+                        var src = json ?? PictureSource(e.Xml);
+                        var depth = PictureXml.DepthPt(json);
+                        if (depth != null)
+                        {
+                            var want = -(int)Math.Round(depth.Value);
+                            if ((int)Math.Round((double)e.Range.Font.Position) != want)
+                            {
+                                lowered++;
+                                if (!dry) e.Range.Font.Position = want;
+                            }
+                        }
+                        if (json == null || SourceTag(json) != e.Tag || depth == null)
+                        {
+                            var latex = EquationIdentity.FirstLatex(json) ?? EquationIdentity.AltParts(AltOf(e.Picture))?[1];
+                            var mode = PictureXml.Mode(json) ?? EquationIdentity.AltParts(AltOf(e.Picture))?[0] ?? "inline";
+                            if (!string.IsNullOrEmpty(latex)) redraw.Add(new Dictionary<string, object> { ["tag"] = e.Tag, ["latex"] = latex, ["mode"] = mode });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("repair: checking a picture's source", ex);
+                    }
+                }
                 if (!dry) unlocked = UnlockAll(doc);
             }
             finally
@@ -268,7 +302,7 @@ namespace MathBlocks.WordConnector
             catch (COMException)
             {
             }
-            Log.Info("repair in " + doc.Name + (dry ? " (dry run)" : "") + ": " + inlined + " floating picture(s) put in line, " + split + " wrapper(s) split, " + converted + " wrapped Classic equation(s) converted, " + wrapped.Count + " picture(s) identified, " + renamed.Count + " copies given their own ID, " + bookmarks + " bookmarks, " + unlocked + " unlocked, " + plainPictures + " other pictures; untouched: " + native + " native, " + mathType + " MathType");
+            Log.Info("repair in " + doc.Name + (dry ? " (dry run)" : "") + ": " + inlined + " floating picture(s) put in line, " + split + " wrapper(s) split, " + converted + " wrapped Classic equation(s) converted, " + wrapped.Count + " picture(s) identified, " + renamed.Count + " copies given their own ID, " + bookmarks + " bookmarks, " + unlocked + " unlocked, " + plainPictures + " other pictures, " + lowered + " baselines restored, " + redraw.Count + " to redraw (ID/depth missing in the source); untouched: " + native + " native, " + mathType + " MathType");
             return new Dictionary<string, object>
             {
                 ["document"] = doc.FullName,
@@ -278,6 +312,8 @@ namespace MathBlocks.WordConnector
                 ["converted"] = converted,
                 ["native"] = native,
                 ["mathType"] = mathType,
+                ["lowered"] = lowered,
+                ["redraw"] = redraw,
                 ["wrapped"] = wrapped,
                 ["wrappedOk"] = ok,
                 ["bookmarks"] = bookmarks,

@@ -178,7 +178,7 @@ namespace MathBlocks.WordConnector
             var found = FindByTag(ActiveDocument(), tag);
             if (found.Count == 0) throw new RpcException(Rpc.NotFound, "No equation with tag " + tag);
             var eq = found[0];
-            var xml = eq.Xml;
+            var xml = PictureXmlForApp(eq);
             LogMathStructure("readEquation " + tag, xml);
             return new Dictionary<string, object> { ["flatOpc"] = xml, ["locked"] = false, ["number"] = NumberInfo(eq) };
         }

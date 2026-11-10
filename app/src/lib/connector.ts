@@ -182,6 +182,7 @@ class ConnectorClient {
         if (params.command === "convertLatex") void import("./wordShortcuts").then((m) => m.convertAllLatex(params.document, { fromWord: true, selectionOnly: !!params.hasSelection }));
         else if (params.command === "numberEquation") void import("./numbering").then((m) => m.toggleNumberFromRibbon(params, true));
         else if (params.command === "repair") void import("./repair").then((m) => m.repairDocument(params.document, { fromWord: true }));
+        else if (params.command === "selfTest") void import("./selfTest").then((m) => m.runWordSelfTest());
         else {
           // These show a dialog of the app (conversion report, list of symbols; the reference picker for an older add-in).
           void bringToFront();

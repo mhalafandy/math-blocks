@@ -198,3 +198,15 @@ Keep connector.log for the paste rows (lines `document changed …` and `near th
 | 26 | Close and reopen the test document | No dialog; log: `on open: …` only if copies were found; every equation opens | |
 
 Please send connector.log after rows 8–15 (the paste rows) — I will fix the cause from what each paste kept.
+
+---
+
+# Round 7 — run first
+
+1. Install the build, restart Word, start MathBlocks.
+2. MathBlocks tab → **Run Word self-test**. Do not type in Word while it runs (about a minute).
+   Explorer opens the folder with **report.txt** and the two test documents: send me report.txt.
+3. Then the manual checks listed at the end of the report (one menu on right-click, drag with the mouse,
+   Paste Special → Picture (PNG), how the baseline looks).
+4. On a copy of a converted document: **Repair equations**. Expected: "N equation(s) redrawn with their ID and
+   depth inside" the first time (one undo step, backup), nothing to redraw the second time.

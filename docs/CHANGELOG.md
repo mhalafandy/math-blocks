@@ -25,6 +25,29 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added (round 7)
+- **Word self-test** (ribbon → Run Word self-test, or the command palette): new test documents; inline
+  α, β, γ, f, p and a fraction with text typed after each; display and numbered equations; opening
+  through the click paths; number, reference, insert above, update, unnumber; every paste mode within
+  and between documents; cut/paste and a move; undo after each. Writes report.txt and the documents to
+  %LOCALAPPDATA%\MathBlocks\self-test\<date>\, with a list of what only a person can check.
+
+### Fixed (round 7)
+- **Baseline:** resetting the formatting for typed text after an equation made Word reformat the
+  whole "word" — the picture included — when the next character was not a space; the picture lost its
+  lowering. Now only before a space or paragraph end, and the picture's lowering is restored if Word
+  touched it anyway. The depth is stored in the hidden source; Repair restores lowerings.
+- **One menu:** Word ignores Cancel on right-click for pictures. A Classic equation's right-click
+  shows Word's own picture menu with "Edit equation (MathBlocks)" and "Number / unnumber equation";
+  double-click opens the editor; native equations keep the floating editor on right-click.
+- **Pasted equations open** even when Word's XML for the pasted picture lacks the EMF data: the alt
+  text identifies the equation and gives its LaTeX.
+- **Drag:** the add-in no longer changes the document or the selection from Word's selection-change
+  event (which also fires in the middle of a drag); its checks run on an idle timer, never with a
+  mouse button down. An in-line picture is never treated as floating.
+- **Repair** redraws, once, pictures whose hidden source lacks the ID or the depth (converted MathType
+  equations), so they no longer depend on the number bookmark.
+
 ### Fixed (round 6 — the hybrid build could not edit any Classic equation)
 - **Root cause:** Word does not implement `InlineShape.Title` for VML pictures (the MathType-like frame
   Classic equations use). Reading or writing it throws `NotImplementedException`, which the add-in

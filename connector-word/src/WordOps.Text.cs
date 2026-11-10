@@ -58,7 +58,7 @@ namespace MathBlocks.WordConnector
                     result["problem"] = "This equation cannot be opened safely: " + problem + ".";
                     result["flatOpc"] = "";
                 }
-                else result["flatOpc"] = cc.Range.WordOpenXML;
+                else result["flatOpc"] = PictureXmlForApp(cc);
                 result["number"] = NumberInfo(cc);
                 result["rect"] = RectOf(cc.Range) ?? result["rect"];
                 return result;

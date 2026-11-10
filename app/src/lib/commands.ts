@@ -143,6 +143,13 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => import("./repair").then((m) => void m.repairDocument()),
     },
     {
+      id: "word.selfTest",
+      title: "Run Word self-test (inserts, opens, numbers, pastes, moves, undoes in test documents; writes a report)",
+      group: "Word",
+      keywords: "self test smoke check verify report word paste drag undo baseline",
+      run: () => import("./selfTest").then((m) => void m.runWordSelfTest()),
+    },
+    {
       id: "app.fontCompare",
       title: "Compare symbol fonts on this PC (STIX / thinned / MT Extra)…",
       group: "View",
