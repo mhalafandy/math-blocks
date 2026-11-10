@@ -24,6 +24,9 @@ namespace MathBlocks.WordConnector
 
         public bool IsPicture => Picture != null;
 
+        /// <summary>A MathBlocks embedded object (the Classic form since the object build).</summary>
+        public bool IsObject => Picture != null && WordOps.IsMathBlocksObject(Picture);
+
         public string Tag
         {
             get => IsPicture ? WordOps.TagOf(Picture) : Control.Tag;
@@ -93,7 +96,20 @@ namespace MathBlocks.WordConnector
         }
 
         /// <summary>A picture's ID from its properties, without reading XML: title, else alt text. Null if neither.</summary>
-        internal static string TagOf(Word.InlineShape s) => EquationIdentity.ResolvePictureTag(RawTitleOf(s), AltOf(s), null, out _);
+        internal static string TagOf(Word.InlineShape s)
+        {
+            var t = EquationIdentity.ResolvePictureTag(RawTitleOf(s), AltOf(s), null, out _);
+            if (t != null) return t;
+            // A MathBlocks object whose alt text was edited or lost: the ID in its own data.
+            try
+            {
+                if (s.Type == Word.WdInlineShapeType.wdInlineShapeEmbeddedOLEObject && IsMathBlocksObject(s)) return ObjectDataTag(s);
+            }
+            catch (Exception)
+            {
+            }
+            return null;
+        }
 
         /// <summary>Writes the ID to every place that can hold it: the alt text (always) and the title (where Word supports it).</summary>
         internal static void SetPictureTag(Word.InlineShape s, string tag, string mode = null, string latex = null)

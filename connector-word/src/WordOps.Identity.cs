@@ -253,25 +253,48 @@ namespace MathBlocks.WordConnector
                     var next = doc.Range(sel.Start, sel.Start + 1).Text ?? "";
                     if (next.Length > 0 && " \t\r\n\v\a\u00a0".IndexOf(next[0]) < 0) return;
                 }
-                var keep = pic.Range.Font.Position;
-                // Like Ctrl+Space at the caret: the next typed text gets the paragraph's normal formatting.
-                // (Word reports the paragraph mark's formatting here — 0 — while typing would take the
-                // picture run's lowering, so the reset is always applied, not only when it reads non-zero.)
-                sel.Font.Reset();
-                // Word records an explicit insertion-point format only when the value changes from what
-                // it reports (0 at a paragraph end): set a different value first, then 0.
-                sel.Font.Position = 1;
-                sel.Font.Position = 0;
-                // Safety net: if Word changed the picture anyway, its lowering comes back.
-                if (pic.Range.Font.Position != keep)
+                // The equation's own lowering, from the depth stored in it — read before any change:
+                // reading the document after the reset can drop the reset (self-test 0.1.88).
+                var want = WantedLowering(pic);
+                int pos = sel.Start;
+                for (int attempt = 0; attempt < 2; attempt++)
                 {
-                    pic.Range.Font.Position = keep;
-                    Log.Info("typing reset touched the equation's lowering; restored to " + keep + " pt");
+                    // Word records an explicit insertion-point format only when the value changes from
+                    // what it reports (0 at a paragraph end): a different value first, then 0. The probe
+                    // (0.1.88) showed this gives typed text 0 pt.
+                    sel.Font.Position = 1;
+                    sel.Font.Position = 0;
+                    if (want == null) return;
+                    var now = (double)pic.Range.Font.Position;
+                    if ((int)Math.Round(now) == want.Value) return;
+                    // Word applied the caret's format to the equation as well (its whole-word rule): the
+                    // equation's lowering first, then the caret's reset again — the reset stays the last change.
+                    pic.Range.Font.Position = want.Value;
+                    sel.SetRange(pos, pos);
+                    Log.Info("typing reset reached the equation (" + now + " pt); its lowering restored to " + want.Value + " pt, caret reset again");
                 }
+                Log.Info("typing reset: Word keeps applying the caret's format to the equation; its lowering is kept");
             }
             catch (Exception ex)
             {
                 Log.Error("resetting the typing format after an equation", ex);
+            }
+        }
+
+        /// <summary>The run lowering an equation picture or object should have (−depth in pt), from its stored depth; null if unknown.</summary>
+        internal static int? WantedLowering(Word.InlineShape pic)
+        {
+            try
+            {
+                PictureXml.Data(pic.Range.WordOpenXML, out var json);
+                var depth = PictureXml.DepthPt(json);
+                if (depth != null) return -(int)Math.Round(depth.Value);
+                var cur = (double)pic.Range.Font.Position;
+                return cur > -1000 && cur < 1000 ? (int?)(int)Math.Round(cur) : null;
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 

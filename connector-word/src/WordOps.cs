@@ -71,8 +71,6 @@ namespace MathBlocks.WordConnector
                     // Put the cursor just after the new equation so typing continues naturally.
                     var end = found[0].After;
                     doc.Range(end, end).Select();
-                    // Typed text continues on the line, not lowered like the picture's run.
-                    CleanTypingFormat(_app.Selection);
                 }
                 catch (Exception)
                 {
@@ -80,6 +78,9 @@ namespace MathBlocks.WordConnector
                 }
             }
             Log.Info("insertEquation " + (found.Count > 0 ? EquationIdentity.Describe(tag, Inspect(doc, found[0])) : tag) + " -> found " + found.Count);
+            // Last change of the insert, with nothing read from the document after it: typed text after
+            // the equation sits on the line (only the equation's own run is lowered).
+            if (found.Count == 1) CleanTypingFormat(_app.Selection);
             return new Dictionary<string, object> { ["found"] = found.Count };
         }
 
@@ -114,6 +115,8 @@ namespace MathBlocks.WordConnector
             var after = FindByTag(doc, tag);
             foreach (var e in after) if (!e.IsPicture) Secure(e.Control);
             Log.Info("replaceEquation " + tag + " -> found " + after.Count);
+            // Last change: if the caret rests right after the updated equation, typed text sits on the line.
+            CleanTypingFormat(_app.Selection);
             return new Dictionary<string, object> { ["found"] = after.Count };
         }
 

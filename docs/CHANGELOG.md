@@ -25,6 +25,21 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Embedded objects — step 1 (object as an equation kind, typing reset, self-test lookup)
+- The add-in recognises a MathBlocks object by Word's class name (Word returns an empty ProgID for
+  an unregistered class), else the object's XML; identifies it by the alt-text ID, else the ID in
+  the object's own data. Objects of other classes (MathType) are answered from Word's ProgID without
+  reading their XML.
+- The app reads an object's own data first (full LaTeX and mode), then its picture's source, then
+  its alt text.
+- Typed text after an equation: the equation's lowering is taken from its stored depth before any
+  change; the caret reset (the method the probe showed works) is the last change of insert and
+  update; if Word applies it to the equation too, the equation is restored first and the caret reset
+  again. Nothing is read from the document after it.
+- Self-test: types right after the add-in's insert with nothing in between; spike objects inserted
+  by the add-in's own insert; pasted copies found by scanning the whole document; the document's
+  object count before and after each paste; each object's run checked for mixed formatting.
+
 ### Fixed (from the first self-test report)
 - **Text typed after an inline equation was lowered** with it (and so were paragraph marks): at the end
   of a paragraph Word reports the caret's formatting as 0, so the reset was skipped. The add-in now

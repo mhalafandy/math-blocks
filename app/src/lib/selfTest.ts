@@ -123,14 +123,13 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       await step(`insert ${c.name}`, async () => {
         await smoke("typeText", { text: `Case ${c.name}: ` });
         const { tag, found } = await insert(c.latex, false);
+        // Typed right after the insert, as a user does — nothing read from Word in between.
+        const typed = ", words after";
+        const caret = await smoke("typeText", { text: typed });
         check(`${c.name}: inserted and found by its ID`, found === 1, `found ${found}`);
-        const caret = await smoke("caret");
-        let info = await smoke("pictureInfo", { tag });
-        check(`${c.name}: caret lands right of the equation`, caret.start === info.after, `caret ${caret.start}, equation ends ${info.after}`);
+        const info = await smoke("pictureInfo", { tag });
+        check(`${c.name}: caret lands right of the equation`, caret.caret - typed.length === info.after, `typing started at ${caret.caret - typed.length}, equation ends ${info.after}`);
         check(`${c.name}: ID in the alt text and the hidden source`, String(info.alt).includes(`(${tag})`) && info.sourceTag === tag, `alt "${info.alt}", source ID ${info.sourceTag}`);
-        // Typed right after it, starting with a comma (Word treats picture + comma as one word).
-        await smoke("typeText", { text: ", words after" });
-        info = await smoke("pictureInfo", { tag });
         const want = -Math.round(Number(info.depthPt ?? NaN));
         check(`${c.name}: its run is lowered by its depth`, Math.round(info.positionPt) === want, `run position ${info.positionPt} pt, depth ${info.depthPt} pt`);
         check(`${c.name}: text typed after it sits on the line`, Math.round(info.nextPositionPt) === 0, `next "${info.nextText}" at ${info.nextPositionPt} pt`);
@@ -351,6 +350,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
         setSection: (x) => (section = x),
         step,
         insertPicture: (latex, display) => insert(latex, display),
+        insertPackage: async (flatOpc, tag, display) => connector.request("insertEquation", { flatOpc, tag, display, undoLabel: "Insert equation" }, SLOW),
         insertReference: (bookmark) => connector.request("insertReference", { bookmark, numberOnly: false }, SLOW),
       }).catch((e) => {
         check("the spike stopped early", false, `in "${section}": ${e instanceof Error ? e.message : String(e)}`);

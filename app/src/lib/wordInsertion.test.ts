@@ -150,4 +150,16 @@ describe("Classic insertion as Word receives it", async () => {
     expect(readCfb(bytes).has("Equation Native")).toBe(true);
     expect(mathTypeObjectToLatex(bytes).latex.length).toBeGreaterThan(0);
   });
+
+  it("object build: the app reads a MathBlocks object from its own data first", async () => {
+    const { buildObjectInsertion } = await import("./equation");
+    const { readEquationXml } = await import("./readEquation");
+    const { serializeLatex } = await import("@mathblocks/math-latex");
+    const b = await buildObjectInsertion("\\frac{a}{b}+\\beta", false, "mb1|-|readobject01");
+    // Even with the presentation picture's source and the alt text removed, the object's data gives the LaTeX.
+    const stripped = b.flatOpc.replace(/<pkg:part pkg:name="\/word\/media\/[^"]+"[\s\S]*?<\/pkg:part>/, "").replace(/alt="[^"]*"/, 'alt=""');
+    const r = readEquationXml(stripped);
+    expect(r && serializeLatex(r.root)).toBe("\\frac{a}{b}+\\beta");
+    expect(r!.display).toBe(false);
+  });
 });

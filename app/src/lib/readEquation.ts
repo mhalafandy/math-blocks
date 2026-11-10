@@ -2,6 +2,7 @@ import type { Row } from "@mathblocks/math-core";
 import { parseLatex } from "@mathblocks/math-latex";
 import { decodeEntities, readOmml } from "@mathblocks/math-omml";
 import { emfComment } from "@mathblocks/math-render";
+import { readCfb } from "@mathblocks/mathtype";
 
 export interface ReadEquation {
   root: Row;
@@ -35,11 +36,33 @@ function emfSource(xml: string): { latex: string; mode: string; fallback?: strin
   return null;
 }
 
+/** The data inside a MathBlocks embedded object ("MathBlocks" stream of its compound file), if any. */
+function objectSource(xml: string): { latex: string; mode: string } | null {
+  if (!/ProgID="MathBlocks\.Equation/.test(xml)) return null;
+  for (const m of xml.matchAll(/<pkg:part\b[^>]*pkg:contentType="application\/vnd\.openxmlformats-officedocument\.oleObject"[^>]*>\s*<pkg:binaryData>([\s\S]*?)<\/pkg:binaryData>/g)) {
+    try {
+      const bin = atob(m[1]!.replace(/\s+/g, ""));
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const s = readCfb(bytes).get("MathBlocks");
+      if (!s) continue;
+      const src = JSON.parse(new TextDecoder().decode(s.data)) as { latex?: string; mode?: string };
+      if (typeof src.latex === "string") return { latex: src.latex, mode: src.mode ?? "inline" };
+    } catch {
+      // Damaged: the picture's own source or alt text below.
+    }
+  }
+  return null;
+}
+
 /**
  * Reads an equation from Word's XML: a native equation (OMML), or a MathBlocks picture whose
  * alt text carries its LaTeX. Null when the XML holds neither.
  */
 export function readEquationXml(xml: string): ReadEquation | null {
+  // A MathBlocks embedded object: its own data first (it holds the full source).
+  const obj = objectSource(xml);
+  if (obj) return { root: parseLatex(obj.latex).root, display: obj.mode !== "inline", numbered: obj.mode === "numbered", unknown: [], kind: "picture" };
   const emf = emfSource(xml);
   if (emf) return { root: parseLatex(emf.latex).root, display: emf.mode !== "inline", numbered: emf.mode === "numbered", unknown: [], kind: "picture", ...(emf.fallback ? { fallback: emf.fallback } : {}) };
   const pic = ALT.exec(xml);

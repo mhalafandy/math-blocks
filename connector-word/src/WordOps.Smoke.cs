@@ -54,6 +54,22 @@ namespace MathBlocks.WordConnector
         }
 
         private static string SmokeFolder;
+
+        private static int CountObjects(Word.Document d)
+        {
+            int n = 0;
+            foreach (Word.InlineShape s in d.InlineShapes)
+            {
+                try
+                {
+                    if (s.Type == Word.WdInlineShapeType.wdInlineShapeEmbeddedOLEObject && IsMathBlocksObject(s)) n++;
+                }
+                catch (Exception)
+                {
+                }
+            }
+            return n;
+        }
         private bool? _smartCut;
 
         /// <summary>The selection to act on: in the named document (activated, its window's selection) or the active one.</summary>
@@ -348,7 +364,8 @@ namespace MathBlocks.WordConnector
             var d = sel.Document;
             int at = sel.Start;
             int beforePictures = d.InlineShapes.Count, beforeShapes = d.Shapes.Count;
-            var r = new Dictionary<string, object> { ["mode"] = mode };
+            int objectsBefore = CountObjects(d);
+            var r = new Dictionary<string, object> { ["mode"] = mode, ["objectsBefore"] = objectsBefore };
             try
             {
                 try
@@ -377,11 +394,20 @@ namespace MathBlocks.WordConnector
             IdleChecks?.Invoke();
             r["afterIdleFloating"] = d.Shapes.Count - beforeShapes;
             // The pasted picture: the in-line picture closest after the paste position.
+            r["objectsAfter"] = CountObjects(d);
+            // The pasted shape: found by scanning the whole document for a shape starting at the paste
+            // position (Word's range lookup missed pasted objects in 0.1.88).
             Word.InlineShape pasted = null;
-            foreach (Word.InlineShape s in d.Range(Math.Max(0, at - 1), Math.Min(d.Content.End, sel.End + 1)).InlineShapes)
+            int end = Math.Max(sel.End, at) + 1;
+            foreach (Word.InlineShape s in d.InlineShapes)
             {
-                pasted = s;
-                break;
+                int st;
+                try { st = s.Range.Start; } catch (Exception) { continue; }
+                if (st >= at - 1 && st <= end)
+                {
+                    pasted = s;
+                    break;
+                }
             }
             if (pasted == null)
             {

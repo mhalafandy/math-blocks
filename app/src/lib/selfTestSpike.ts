@@ -17,6 +17,8 @@ export interface SpikeContext {
   setSection: (s: string) => void;
   step: <T>(name: string, run: () => Promise<T>) => Promise<T | undefined>;
   insertPicture: (latex: string, display: boolean) => Promise<{ tag: string; found: number }>;
+  /** The add-in's own insert (insertEquation), as the app's Insert button uses it. */
+  insertPackage: (flatOpc: string, tag: string, display: boolean) => Promise<{ found: number }>;
   insertReference: (bookmark: string) => Promise<{ text: string }>;
 }
 
@@ -116,14 +118,23 @@ export async function runObjectSpike(c: SpikeContext) {
     await step(`object ${latex}`, async () => {
       await smoke("caretTo", { where: "end" });
       await smoke("typeText", { text: `Object ${latex}: ` });
-      const b = await insertObject(latex, false);
-      await smoke("caretTo", { where: "after", tag: b.tag });
-      await smoke("idle"); // what the add-in does when the caret rests after an equation
-      await smoke("typeText", { text: " words after" });
+      // The add-in's own insert, then typing right away — nothing read from Word in between.
+      const b = await buildObjectInsertion(latex, false);
+      const ins = await c.insertPackage(b.flatOpc, b.tag, false);
+      const typedText = ", words after";
+      const typed = await smoke("typeText", { text: typedText });
       const info = await smoke("objectInfo", { tag: b.tag });
+      check(`${latex}: inserted by the add-in's insert and found by its ID`, ins.found === 1 && info.count === 1, `found ${ins.found}, objects with its ID ${info.count}`);
+      check(`${latex}: caret lands right of the object`, typed.caret - typedText.length === info.after, `typing started at ${typed.caret - typedText.length}, object ends ${info.after}`);
       check(`${latex}: an embedded object (simple frame), in line`, info.count === 1 && info.objectElement && info.oleObject && info.vml && !info.drawingml && info.kind === "wdInlineShapeEmbeddedOLEObject", `kind ${info.kind}, <w:object> ${info.objectElement}, VML ${info.vml}, DrawingML ${info.drawingml}, ProgID ${info.progId}`);
       check(`${latex}: run lowered by its depth`, Math.round(info.positionPt) === -Math.round(b.data.depthPt), `run ${info.positionPt} pt, depth ${b.data.depthPt} pt`);
-      check(`${latex}: text after it sits on the line`, Math.round(info.nextPositionPt) === 0, `next "${info.nextText}" at ${info.nextPositionPt} pt (typed with the caret placed after the object)`);
+      check(`${latex}: its run has one lowering (no mixed formatting)`, Math.abs(info.positionPt) < 1000, `run ${info.positionPt} pt`);
+      check(`${latex}: text typed right after the insert sits on the line`, Math.round(info.nextPositionPt) === 0, `next "${info.nextText}" at ${info.nextPositionPt} pt`);
+      // The caret placed right after it again and the idle checks run: its lowering stays.
+      await smoke("caretTo", { where: "after", tag: b.tag });
+      await smoke("idle");
+      const again = await smoke("objectInfo", { tag: b.tag });
+      check(`${latex}: lowering kept when the caret returns next to it`, Math.round(again.positionPt) === -Math.round(b.data.depthPt), `run ${again.positionPt} pt`);
       check(`${latex}: size as drawn`, Math.abs(info.widthPt - b.data.widthPt) < 0.6 && Math.abs(info.heightPt - b.data.heightPt) < 0.6, `${info.widthPt}×${info.heightPt} pt, drawn ${b.data.widthPt}×${b.data.heightPt}`);
       const d = await readObjectData(info.embedding);
       check(`${latex}: the object's own data holds LaTeX, ID, mode, depth and style`, dataOk(d, latex, b.tag), d ? `latex ${d.latex}, ID ${d.tag}, mode ${d.mode}, depth ${d.depthPt}, style ${d.style}` : "no data read from the object");
@@ -140,6 +151,7 @@ export async function runObjectSpike(c: SpikeContext) {
   c.setSection("Spike: copy and paste the object (within and between documents)");
   const pasteCheck = async (mode: string, label: string, sourceTag: string) => {
     const r = await smoke("paste", { mode });
+    check(`${label} ${mode}: MathBlocks objects in the document before → after the paste`, null, `${r.objectsBefore} → ${r.objectsAfter}${r.error ? ` (${r.error})` : ""}`);
     const d = r.isObject ? await readObjectData(r.embedding) : null;
     const orig = await smoke("objectInfo", { tag: sourceTag });
     const same = r.isObject && r.objectElement && r.progId === MB_OBJECT_PROGID && Math.abs(r.widthPt - orig.widthPt) < 0.3 && Math.abs(r.heightPt - orig.heightPt) < 0.3 && Math.round(r.positionPt) === Math.round(orig.positionPt) && dataOk(d, one.latex);
@@ -176,6 +188,7 @@ export async function runObjectSpike(c: SpikeContext) {
       await smoke("copy", { tag: one.tag, name: docO.name });
       await smoke("caretTo", { where: "end", name: docP.name });
       const r = await smoke("paste", { mode, name: docP.name });
+      check(`into another document ${mode}: MathBlocks objects there before → after`, null, `${r.objectsBefore} → ${r.objectsAfter}${r.error ? ` (${r.error})` : ""}`);
       const d = r.isObject ? await readObjectData(r.embedding) : null;
       check(`into another document ${mode}: still a MathBlocks object with its data`, r.isObject && dataOk(d, one.latex) ? true : mode === "ctrlV" || mode === "keepSource" || mode === "merge" ? false : null, `object ${r.isObject ? "yes" : "no"}, data ${d ? d.latex : "none"}`);
       await smoke("newParagraph", { name: docP.name });

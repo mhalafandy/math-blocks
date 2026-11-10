@@ -38,7 +38,17 @@ namespace MathBlocks.WordConnector
             catch (Exception)
             {
             }
-            if (!string.IsNullOrEmpty(fromWord) && fromWord.StartsWith(ObjectProgIdPrefix, StringComparison.Ordinal)) return fromWord;
+            // Word knows the ProgID (a registered class, e.g. MathType's): that is the answer, no XML read.
+            if (!string.IsNullOrEmpty(fromWord)) return fromWord;
+            // For a class not registered on the PC Word returns an empty ProgID but the right class name.
+            try
+            {
+                var cls = s.OLEFormat.ClassType;
+                if (!string.IsNullOrEmpty(cls) && cls.StartsWith(ObjectProgIdPrefix, StringComparison.Ordinal)) return cls;
+            }
+            catch (Exception)
+            {
+            }
             try
             {
                 var m = Regex.Match(s.Range.WordOpenXML, "ProgID=\"([^\"]+)\"");
@@ -115,6 +125,23 @@ namespace MathBlocks.WordConnector
                 if (EquationIdentity.AltTag(AltOf(s)) == tag || EmbeddingHolds(s, tag)) list.Add(s);
             }
             return list;
+        }
+
+        /// <summary>The ID in a MathBlocks object's own data ("MathBlocks" stream), or null.</summary>
+        internal static string ObjectDataTag(Word.InlineShape s)
+        {
+            try
+            {
+                var m = OleEmbedding.Match(s.Range.WordOpenXML);
+                if (!m.Success) return null;
+                var bytes = Convert.FromBase64String(Regex.Replace(m.Groups[1].Value, "\\s+", ""));
+                var t = Regex.Match(Encoding.ASCII.GetString(bytes), "\"tag\":\"(mb1\\|[^\"|]+\\|[0-9A-Za-z]+)\"");
+                return t.Success ? t.Groups[1].Value : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>The object's own data holds this ID (when Word drops the alt text of objects).</summary>
