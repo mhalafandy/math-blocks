@@ -245,6 +245,7 @@ namespace MathBlocks.WordConnector
 
         public void OnRepairEquations(IRibbonControl control) => RunAppCommand("repair");
         public void OnSelfTest(IRibbonControl control) => RunAppCommand("selfTest");
+        public void OnSelfTestSpike(IRibbonControl control) => RunAppCommand("selfTestSpike");
         public void OnListOfSymbols(IRibbonControl control) => RunAppCommand("listOfSymbols");
         public void OnNumberEquation(IRibbonControl control) => RunAppCommand("numberEquation");
 
@@ -294,6 +295,15 @@ namespace MathBlocks.WordConnector
             {
                 if (_pipe == null || !_pipe.IsConnected) return;
                 if (FloatingMathBlocksSelected(sel)) return; // Word's menu (with our items); it goes in line when idle
+                // Spike: a MathBlocks embedded object — does Word honour Cancel for objects?
+                var obj = WordOps.MathBlocksObjectIn(sel);
+                if (obj != null)
+                {
+                    cancel = true;
+                    _app.StatusBar = "MathBlocks spike: the add-in asked Word NOT to show its menu on this MathBlocks object. Note whether a menu appeared.";
+                    Log.Info("spike: right-click on a MathBlocks object — Cancel set");
+                    return;
+                }
                 var doc = _app.ActiveDocument;
                 var cc = _ops.EquationAt(doc, sel.Range);
                 if (cc == null || cc.IsPicture) return;
@@ -479,6 +489,16 @@ namespace MathBlocks.WordConnector
             try
             {
                 if (_pipe == null || !_pipe.IsConnected) return;
+                // Spike: a MathBlocks embedded object — intercept before Word activates it (no prompt, no server).
+                var obj = WordOps.MathBlocksObjectIn(sel);
+                if (obj != null)
+                {
+                    cancel = true;
+                    Log.Info("spike: double-click on a MathBlocks object intercepted");
+                    _app.StatusBar = "MathBlocks spike: double-click on a MathBlocks object intercepted; it opens read-only in MathBlocks.";
+                    SendRequest("equationActivated", WordOps.ObjectActivation(obj));
+                    return;
+                }
                 var doc = _app.ActiveDocument;
                 var cc = _ops.EquationAt(doc, sel.Range);
                 if (cc != null)

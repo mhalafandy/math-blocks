@@ -125,4 +125,17 @@ describe("Classic insertion as Word receives it", async () => {
     writeFileSync(join(out, "classic-insertions.expected.txt"), built.map((b) => `${b.tag}\t${b.latex}`).join("\n") + "\n");
     expect(Object.keys(media).length).toBe(built.length);
   });
+
+  it("spike: an embedded MathBlocks object carries everything in its own data", async () => {
+    const { buildObjectInsertion, readObjectData, MB_OBJECT_PROGID } = await import("./equation");
+    const b = await buildObjectInsertion("\\beta", false, "mb1|-|objectspike1");
+    expect(b.flatOpc).toContain("<w:object ");
+    expect(b.flatOpc).toContain(`ProgID="${MB_OBJECT_PROGID}"`);
+    expect(b.flatOpc).toContain('Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/oleObject"');
+    expect(b.flatOpc).toMatch(/<w:position w:val="-\d+"\/>/);
+    const bin = partsOf(b.flatOpc).find((p) => p.type === "application/vnd.openxmlformats-officedocument.oleObject")!;
+    const data = await readObjectData(/<pkg:binaryData>([\s\S]*?)<\/pkg:binaryData>/.exec(bin.body)![1]!);
+    expect(data).toMatchObject({ latex: "\\beta", tag: "mb1|-|objectspike1", mode: "inline", style: expect.any(String) });
+    expect(data!.depthPt).toBe(b.data.depthPt);
+  });
 });

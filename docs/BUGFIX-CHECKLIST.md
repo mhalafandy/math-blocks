@@ -210,3 +210,15 @@ Please send connector.log after rows 8–15 (the paste rows) — I will fix the 
    Paste Special → Picture (PNG), how the baseline looks).
 4. On a copy of a converted document: **Repair equations**. Expected: "N equation(s) redrawn with their ID and
    depth inside" the first time (one undo step, backup), nothing to redraw the second time.
+
+---
+
+# Embedded-object spike (after the plain self-test)
+
+1. MathBlocks tab → **Run Word self-test** (current design, pictures). Send report.txt.
+2. MathBlocks tab → **Self-test + object spike**. Do not type in Word while it runs. If Word shows any
+   dialog or warning during the run, note its exact text (screenshot) before clicking it away.
+   Send the new report.txt; its "Spike:" sections say which insertion route Word accepted and what
+   each paste, cut, move, delete, undo/redo, numbering, save/reopen and PDF did to the object.
+3. Do the spike's manual checks at the end of that report (frame, double-click, right-click menu,
+   prompts, add-in disabled, PDF look). Only test documents are used; your pictures are not converted.

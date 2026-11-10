@@ -55,7 +55,7 @@ export const MANUAL_CHECKS = [
   "Look: inline α, β, γ, f, p and a fraction sit on the text baseline at 100 % and 200 % zoom, and in print.",
 ];
 
-export async function runWordSelfTest(): Promise<string | null> {
+export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }): Promise<string | null> {
   const app = useApp.getState();
   if (!app.connector.connected) {
     app.notify("Word is not connected. Start Word with the MathBlocks add-in.", "error");
@@ -323,12 +323,34 @@ export async function runWordSelfTest(): Promise<string | null> {
     await smoke("activate", { name: docB.name });
     const b = await step("save B", () => smoke("save", { file: "self-test B.docx" }));
     check("test documents saved", !!a && !!b, [a?.path, b?.path].filter(Boolean).join(" ; "));
+
+    // ------------------------------------------------------------ embedded-object spike (test documents only)
+    if (o.spike) {
+      const { runObjectSpike } = await import("./selfTestSpike");
+      await runObjectSpike({
+        smoke,
+        check,
+        setSection: (x) => (section = x),
+        step,
+        insertPicture: (latex, display) => insert(latex, display),
+        insertReference: (bookmark) => connector.request("insertReference", { bookmark, numberOnly: false }, SLOW),
+      });
+    }
   } finally {
     await smoke("end").catch(() => undefined);
   }
 
   const fails = checks.filter((c) => c.status === "FAIL").length;
-  lines.push(`MathBlocks Word self-test — ${new Date().toLocaleString()}`, `Word ${begin.word}; look ${useApp.getState().look}; equation size ${useApp.getState().equationSizePt} pt`, `${checks.length} checks: ${checks.length - fails - checks.filter((c) => c.status === "INFO").length} passed, ${fails} failed`, "");
+  const count = (list: Check[]) => `${list.length} checks: ${list.filter((c) => c.status === "PASS").length} passed, ${list.filter((c) => c.status === "FAIL").length} failed, ${list.filter((c) => c.status === "INFO").length} for information`;
+  const main = checks.filter((c) => !c.section.startsWith("Spike"));
+  const spike = checks.filter((c) => c.section.startsWith("Spike"));
+  lines.push(
+    `MathBlocks Word self-test — ${new Date().toLocaleString()}`,
+    `Word ${begin.word}; look ${useApp.getState().look}; equation size ${useApp.getState().equationSizePt} pt`,
+    `Current design (pictures): ${count(main)}`,
+    ...(spike.length ? [`Embedded-object spike: ${count(spike)}`] : []),
+    "",
+  );
   let last = "";
   for (const c of checks) {
     if (c.section !== last) {
@@ -337,7 +359,8 @@ export async function runWordSelfTest(): Promise<string | null> {
     }
     lines.push(`${c.status}  ${c.name}${c.detail ? `  — ${c.detail}` : ""}`);
   }
-  lines.push("", "== Manual checks (Word's object model cannot do these)", ...MANUAL_CHECKS.map((m) => `[ ]  ${m}`));
+  const { SPIKE_MANUAL_CHECKS } = await import("./selfTestSpike");
+  lines.push("", "== Manual checks (Word's object model cannot do these)", ...MANUAL_CHECKS.map((m) => `[ ]  ${m}`), ...(o.spike ? SPIKE_MANUAL_CHECKS.map((m) => `[ ]  ${m}`) : []));
   const report = lines.join("\n") + "\n";
   const written = await smoke("writeReport", { text: report, show: true }).catch(() => null);
   app.notify(`Word self-test: ${fails === 0 ? "all checks passed" : `${fails} check(s) failed`}. Report: ${written?.path ?? begin.folder}`, fails ? "error" : "info");

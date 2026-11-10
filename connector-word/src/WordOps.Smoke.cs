@@ -98,8 +98,8 @@ namespace MathBlocks.WordConnector
                     else if (where == "end") pos = d.Content.End - 1;
                     else
                     {
-                        var eq = One(d, Rpc.GetString(p, "tag"));
-                        pos = where == "before" ? eq.Before : where == "paragraphStart" ? eq.Paragraph.Start : eq.After;
+                        var r = RangeOf(d, Rpc.GetString(p, "tag"));
+                        pos = where == "before" ? r.Start : where == "paragraphStart" ? r.Paragraphs[1].Range.Start : r.End;
                     }
                     d.Range(pos, pos).Select();
                     return new Dictionary<string, object> { ["caret"] = pos };
@@ -129,10 +129,10 @@ namespace MathBlocks.WordConnector
                 case "snapshot":
                     return Snapshot(_app.ActiveDocument);
                 case "copy":
-                    One(_app.ActiveDocument, Rpc.GetString(p, "tag")).Range.Copy();
+                    RangeOf(_app.ActiveDocument, Rpc.GetString(p, "tag")).Copy();
                     return new Dictionary<string, object> { ["ok"] = true };
                 case "cut":
-                    One(_app.ActiveDocument, Rpc.GetString(p, "tag")).Range.Cut();
+                    RangeOf(_app.ActiveDocument, Rpc.GetString(p, "tag")).Cut();
                     return new Dictionary<string, object> { ["ok"] = true };
                 case "paste":
                     return Paste(Rpc.GetString(p, "mode"));
@@ -141,12 +141,12 @@ namespace MathBlocks.WordConnector
                     // The nearest COM equivalent of a drag: the equation's formatted content placed at the
                     // target, then the source removed (Word's own move does both in one action).
                     var d = _app.ActiveDocument;
-                    var eq = One(d, Rpc.GetString(p, "tag"));
+                    var tag = Rpc.GetString(p, "tag");
                     var to = Rpc.GetInt(p, "to");
-                    var src = eq.Range;
+                    var src = RangeOf(d, tag);
                     var target = d.Range(to, to);
                     target.FormattedText = src.FormattedText;
-                    One(d, Rpc.GetString(p, "tag"), preferNotAt: to).Range.Delete();
+                    RangeOf(d, tag, preferNotAt: to).Delete();
                     return new Dictionary<string, object> { ["ok"] = true };
                 }
                 case "undo":
@@ -170,7 +170,7 @@ namespace MathBlocks.WordConnector
                     return new Dictionary<string, object> { ["path"] = path };
                 }
                 default:
-                    throw new RpcException(Rpc.InvalidParams, "Unknown self-test operation " + op);
+                    return SpikeOp(op, p);
             }
         }
 
@@ -225,7 +225,14 @@ namespace MathBlocks.WordConnector
             var text = d.Content.Text ?? "";
             var sb = new System.Text.StringBuilder();
             int at = 0;
-            var spans = eqs.Select(e => new { e.Tag, Start = e.Range.Start, End = e.Range.End }).Where(e => e.Start >= 0).OrderBy(e => e.Start).ToList();
+            var spans = eqs.Select(e => new { e.Tag, Start = e.Range.Start, End = e.Range.End }).Where(e => e.Start >= 0).ToList();
+            // Embedded MathBlocks objects (spike): marked by the ID in their alt text.
+            foreach (Word.InlineShape s in d.InlineShapes)
+            {
+                var t = EquationIdentity.AltTag(AltOf(s));
+                if (t != null && IsMathBlocksObject(s)) spans.Add(new { Tag = "obj:" + t, Start = s.Range.Start, End = s.Range.End });
+            }
+            spans = spans.OrderBy(e => e.Start).ToList();
             foreach (var e in spans)
             {
                 if (e.Start < at) continue;
@@ -306,6 +313,15 @@ namespace MathBlocks.WordConnector
             r["heightPt"] = (double)pasted.Height;
             r["positionPt"] = (double)pasted.Range.Font.Position;
             r["sourceJson"] = json;
+            r["isObject"] = IsMathBlocksObject(pasted);
+            if ((bool)r["isObject"])
+            {
+                var oi = ObjectInfo(d, pasted);
+                r["objectTag"] = oi["tag"];
+                r["progId"] = oi["progId"];
+                r["embedding"] = oi["embedding"];
+                r["objectElement"] = oi["objectElement"];
+            }
             var eq = EquationAt(d, pasted.Range);
             r["recognisedAs"] = null;
             if (eq != null)

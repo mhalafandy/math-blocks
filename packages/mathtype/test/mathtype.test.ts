@@ -190,3 +190,21 @@ describe("document conversion", () => {
     expect(convertFlatOpc(flat.replace(/<w:object[\s\S]*<\/w:object>/, "")).flatOpc).toBeNull();
   });
 });
+
+describe("compound file writer (embedded MathBlocks objects)", () => {
+  it("writes streams the reader gets back: small (mini stream) and large, with the class id", async () => {
+    const { writeCfb, oleStream, compObjStream } = await import("@mathblocks/ooxml");
+    const big = new Uint8Array(9000).map((_, i) => i % 251);
+    const json = new TextEncoder().encode(JSON.stringify({ latex: "\\beta", tag: "mb1|-|abc123DEF456", mode: "inline", depthPt: 3 }));
+    const clsid = "{B1E5A2C4-6D3F-4E8A-9C21-7F4D0A6B3E15}";
+    const bin = writeCfb({ "\u0001Ole": oleStream(), "\u0001CompObj": compObjStream("MathBlocks Equation", "MathBlocks.Equation.1", clsid), MathBlocks: json, Big: big }, clsid);
+    const back = readCfb(bin);
+    expect([...back.keys()].sort()).toEqual(["\u0001CompObj", "\u0001Ole", "Big", "MathBlocks"].sort());
+    expect(JSON.parse(new TextDecoder().decode(back.get("MathBlocks")!.data)).tag).toBe("mb1|-|abc123DEF456");
+    expect(back.get("Big")!.data).toEqual(big);
+    expect(back.get("\u0001Ole")!.data.length).toBe(20);
+    expect(new TextDecoder("latin1").decode(back.get("\u0001CompObj")!.data)).toContain("MathBlocks.Equation.1");
+    // Class id in the root entry (directory sector, offset 0x50 of entry 0).
+    expect(bin.length % 512).toBe(0);
+  });
+});

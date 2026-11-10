@@ -182,7 +182,8 @@ class ConnectorClient {
         if (params.command === "convertLatex") void import("./wordShortcuts").then((m) => m.convertAllLatex(params.document, { fromWord: true, selectionOnly: !!params.hasSelection }));
         else if (params.command === "numberEquation") void import("./numbering").then((m) => m.toggleNumberFromRibbon(params, true));
         else if (params.command === "repair") void import("./repair").then((m) => m.repairDocument(params.document, { fromWord: true }));
-        else if (params.command === "selfTest") void import("./selfTest").then((m) => m.runWordSelfTest());
+        else if (params.command === "selfTest") void import("./selfTest").then((m) => m.runWordSelfTest({ spike: false }));
+        else if (params.command === "selfTestSpike") void import("./selfTest").then((m) => m.runWordSelfTest({ spike: true }));
         else {
           // These show a dialog of the app (conversion report, list of symbols; the reference picker for an older add-in).
           void bringToFront();
@@ -263,7 +264,11 @@ export async function activateEquation(params: ConnectorToApp["equationActivated
       }
     }
     app.setLatex(latex, "external");
-    app.setEditing({ tag: params.tag, adopted: !!params.adopted, fingerprint: params.fingerprint, opened: latex });
+    if (params.spike) {
+      // Embedded-object spike: shown, not edited (Update would not find it yet).
+      app.setEditing(null);
+      app.notify(`Spike: the MathBlocks object (${params.tag}) opened from Word — read-only; editing objects is not built yet.`);
+    } else app.setEditing({ tag: params.tag, adopted: !!params.adopted, fingerprint: params.fingerprint, opened: latex });
   } else {
     const ed = useApp.getState().editing;
     if (ed) app.setEditing({ ...ed, fingerprint: params.fingerprint, opened: useApp.getState().latex });

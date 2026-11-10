@@ -147,7 +147,14 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       title: "Run Word self-test (inserts, opens, numbers, pastes, moves, undoes in test documents; writes a report)",
       group: "Word",
       keywords: "self test smoke check verify report word paste drag undo baseline",
-      run: () => import("./selfTest").then((m) => void m.runWordSelfTest()),
+      run: () => import("./selfTest").then((m) => void m.runWordSelfTest({ spike: false })),
+    },
+    {
+      id: "word.selfTestSpike",
+      title: "Run Word self-test with the embedded-object spike (test documents only)",
+      group: "Word",
+      keywords: "self test spike ole object embedded mathtype frame",
+      run: () => import("./selfTest").then((m) => void m.runWordSelfTest({ spike: true })),
     },
     {
       id: "app.fontCompare",

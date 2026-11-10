@@ -25,6 +25,17 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added (embedded-object spike, self-test only)
+- "Self-test + object spike" (ribbon) / command palette: MathBlocks equations as embedded OLE objects
+  "MathBlocks.Equation.1" (as MathType stores Equation.DSMT4), in the self-test's own documents only.
+  The object's compound file holds the full LaTeX, ID, mode, depth, size and style; the Classic EMF is
+  its cached picture. Insertion routes tried: Range.InsertXML, Range.InsertFile (Word XML and .docx),
+  copy/paste from a hidden document. Checks frame, baseline, data, every paste mode within and between
+  documents, cut, move, delete, undo/redo, a number and reference beside it, save/close/reopen, PDF,
+  and file size against pictures. Double-click on such an object is intercepted (opens read-only);
+  right-click asks Word to suppress its menu (manual check whether it does).
+- Self-test: each pasted copy's representation is compared with the original.
+
 ### Added (round 7)
 - **Word self-test** (ribbon → Run Word self-test, or the command palette): new test documents; inline
   α, β, γ, f, p and a fraction with text typed after each; display and numbered equations; opening

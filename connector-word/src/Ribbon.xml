@@ -38,6 +38,9 @@
           <button id="mbSelfTest" label="Run Word self-test" imageMso="ReviewSpellingAndGrammar"
                   screentip="Runs the MathBlocks checks in Word: inserts, opens, numbers, pastes, moves and undoes equations in new test documents and writes a report (MathBlocks app must be running). Your documents are not touched."
                   onAction="OnSelfTest" />
+          <button id="mbSelfTestSpike" label="Self-test + object spike" imageMso="EquationInsertGallery"
+                  screentip="The self-test, then the embedded-object spike (MathBlocks equations as embedded objects, like MathType's) in its own test documents. Your documents are not touched."
+                  onAction="OnSelfTestSpike" />
         </group>
       </tab>
     </tabs>

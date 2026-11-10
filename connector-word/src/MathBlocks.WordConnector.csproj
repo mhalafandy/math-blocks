@@ -29,6 +29,9 @@
   <ItemGroup>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Web.Extensions" />
+    <!-- Self-test spike: writes a temporary .docx (ZipArchive). -->
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Xml.Linq" />
     <!-- Late binding (dynamic) for the few Office-shared APIs, e.g. CustomXMLParts, so office.dll is not needed. -->
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>

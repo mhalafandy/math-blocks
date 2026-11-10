@@ -101,21 +101,56 @@ export interface VmlPictureOptions {
   title?: string;
 }
 
+/** VML shape type 75 (picture frame), declared before the first picture or object that uses it. */
+const SHAPETYPE_75 =
+  `<v:shapetype id="_x0000_t75" coordsize="21600,21600" o:spt="75" o:preferrelative="t" path="m@4@5l@4@11@9@11@9@5xe" filled="f" stroked="f">` +
+  `<v:stroke joinstyle="miter"/><v:formulas><v:f eqn="if lineDrawn pixelLineWidth 0"/><v:f eqn="sum @0 1 0"/><v:f eqn="sum 0 0 @1"/><v:f eqn="prod @2 1 2"/><v:f eqn="prod @3 21600 pixelWidth"/><v:f eqn="prod @3 21600 pixelHeight"/><v:f eqn="sum @0 0 1"/><v:f eqn="prod @6 1 2"/><v:f eqn="prod @7 21600 pixelWidth"/><v:f eqn="sum @8 21600 0"/><v:f eqn="prod @7 21600 pixelHeight"/><v:f eqn="sum @10 21600 0"/></v:formulas>` +
+  `<v:path o:extrusionok="f" gradientshapeok="t" o:connecttype="rect"/><o:lock v:ext="edit" aspectratio="t"/></v:shapetype>`;
+
 /**
  * A picture in Word's classic (VML) form, like MathType's equations: Word shows the simple
  * object frame when it is selected (no rotation handle or layout button) and draws the EMF as
  * vector graphics in every version.
  */
 export function vmlPictureRun(o: VmlPictureOptions): string {
+  const shapetype = SHAPETYPE_75;
   const position = o.depthPt ? `<w:rPr><w:position w:val="${-Math.round(o.depthPt * 2)}"/></w:rPr>` : "";
-  const shapetype =
-    `<v:shapetype id="_x0000_t75" coordsize="21600,21600" o:spt="75" o:preferrelative="t" path="m@4@5l@4@11@9@11@9@5xe" filled="f" stroked="f">` +
-    `<v:stroke joinstyle="miter"/><v:formulas><v:f eqn="if lineDrawn pixelLineWidth 0"/><v:f eqn="sum @0 1 0"/><v:f eqn="sum 0 0 @1"/><v:f eqn="prod @2 1 2"/><v:f eqn="prod @3 21600 pixelWidth"/><v:f eqn="prod @3 21600 pixelHeight"/><v:f eqn="sum @0 0 1"/><v:f eqn="prod @6 1 2"/><v:f eqn="prod @7 21600 pixelWidth"/><v:f eqn="sum @8 21600 0"/><v:f eqn="prod @7 21600 pixelHeight"/><v:f eqn="sum @10 21600 0"/></v:formulas>` +
-    `<v:path o:extrusionok="f" gradientshapeok="t" o:connecttype="rect"/><o:lock v:ext="edit" aspectratio="t"/></v:shapetype>`;
   return (
     `<w:r>${position}<w:pict>${shapetype}` +
     `<v:shape id="_x0000_mb${o.id}" type="#_x0000_t75" alt="${escapeXml(o.alt)}"${o.title ? ` title="${escapeXml(o.title)}"` : ""} style="width:${o.widthPt.toFixed(2)}pt;height:${o.heightPt.toFixed(2)}pt">` +
     `<v:imagedata r:id="${o.rId}" o:title=""/></v:shape></w:pict></w:r>`
+  );
+}
+
+export interface OleObjectRunOptions {
+  /** Relationship id of the presentation picture (EMF). */
+  imageRId: string;
+  /** Relationship id of the embedded object (word/embeddings/…bin). */
+  oleRId: string;
+  progId: string;
+  widthPt: number;
+  heightPt: number;
+  depthPt: number;
+  /** Shape id number, unique in the document. */
+  id: number;
+  alt: string;
+}
+
+/**
+ * An embedded OLE object run as Word stores MathType's: <w:object> with a VML shape showing the
+ * cached picture and an o:OLEObject pointing to the object's compound file. Word keeps embedded
+ * objects in this form (no DrawingML equivalent), with the simple frame, in every paste.
+ */
+export function oleObjectRun(o: OleObjectRunOptions): string {
+  const position = o.depthPt ? `<w:rPr><w:position w:val="${-Math.round(o.depthPt * 2)}"/></w:rPr>` : "";
+  const shapeId = `_x0000_i${o.id}`;
+  const objectId = `_${String(1000000000 + (o.id % 1000000000)).slice(0, 10)}`;
+  return (
+    `<w:r>${position}<w:object w:dxaOrig="${Math.round(o.widthPt * 20)}" w:dyaOrig="${Math.round(o.heightPt * 20)}">${SHAPETYPE_75}` +
+    `<v:shape id="${shapeId}" type="#_x0000_t75" alt="${escapeXml(o.alt)}" style="width:${o.widthPt.toFixed(2)}pt;height:${o.heightPt.toFixed(2)}pt" o:ole="">` +
+    `<v:imagedata r:id="${o.imageRId}" o:title=""/></v:shape>` +
+    `<o:OLEObject Type="Embed" ProgID="${escapeXml(o.progId)}" ShapeID="${shapeId}" DrawAspect="Content" ObjectID="${objectId}" r:id="${o.oleRId}"/>` +
+    `</w:object></w:r>`
   );
 }
 
@@ -153,7 +188,11 @@ export interface FlatOpcMedia {
   contentType: string;
   /** Base64 content. */
   base64: string;
+  /** Relationship type URI (default: image). */
+  relType?: string;
 }
+
+export const REL_OLE_OBJECT = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/oleObject";
 
 export function flatOpc(bodyParagraphs: string[], media: FlatOpcMedia[] = []): string {
   const doc = documentXml(bodyParagraphs).replace(/^<\?xml[^>]*\?>/, "");
@@ -161,7 +200,7 @@ export function flatOpc(bodyParagraphs: string[], media: FlatOpcMedia[] = []): s
   const mediaParts = media.length
     ? `<pkg:part pkg:name="/word/_rels/document.xml.rels" pkg:contentType="application/vnd.openxmlformats-package.relationships+xml"><pkg:xmlData>` +
       `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
-      media.map((m) => `<Relationship Id="${m.rId}" Type="${IMG}" Target="${m.target}"/>`).join("") +
+      media.map((m) => `<Relationship Id="${m.rId}" Type="${m.relType ?? IMG}" Target="${m.target}"/>`).join("") +
       `</Relationships></pkg:xmlData></pkg:part>` +
       media.map((m) => `<pkg:part pkg:name="/word/${m.target}" pkg:contentType="${m.contentType}" pkg:compression="store"><pkg:binaryData>${m.base64}</pkg:binaryData></pkg:part>`).join("")
     : "";

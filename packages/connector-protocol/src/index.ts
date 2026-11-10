@@ -74,6 +74,8 @@ export interface HelloParams {
  */
 export interface EquationActivatedParams {
   tag: string;
+  /** Embedded-object spike: opened read-only (editing objects is not built). */
+  spike?: boolean;
   /** true when the connector just wrapped a native Word equation. */
   adopted?: boolean;
   /** Full WordprocessingML (Flat OPC) of the content control's range. */

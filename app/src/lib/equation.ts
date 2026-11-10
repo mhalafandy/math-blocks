@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { countNodes } from "@mathblocks/math-core";
 import { parseLatex, type Diagnostic } from "@mathblocks/math-latex";
 import { toOmml, TUNED_PROFILE, WORD_DEFAULT_PROFILE, type StyleProfile } from "@mathblocks/math-omml";
-import { contentControl, flatOpc, formatTag, newInstanceId, paragraph, parseTag, vmlPictureRun } from "@mathblocks/ooxml";
+import { compObjStream, contentControl, flatOpc, formatTag, newInstanceId, oleObjectRun, oleStream, paragraph, parseTag, REL_OLE_OBJECT, vmlPictureRun, writeCfb } from "@mathblocks/ooxml";
 import { useApp } from "./store";
 
 /** The Word style profile from the current preferences (outside React). */
@@ -91,4 +91,74 @@ export async function buildInsertion(
     tag,
     flatOpc: flatOpc([body], [{ rId: "rIdMbE1", target: `media/mathblocks${n}.emf`, contentType: "image/x-emf", base64: toBase64(pic.emf) }]),
   };
+}
+
+// ------------------------------------------------------------------ embedded object (spike)
+
+/** Class of the MathBlocks embedded object (spike; not registered on the PC). */
+export const MB_OBJECT_CLSID = "{B1E5A2C4-6D3F-4E8A-9C21-7F4D0A6B3E15}";
+export const MB_OBJECT_PROGID = "MathBlocks.Equation.1";
+
+/** What the object's own "MathBlocks" stream holds: enough to recover the equation from the object alone. */
+export interface ObjectData {
+  version: 1;
+  latex: string;
+  mode: "display" | "inline" | "numbered";
+  tag: string;
+  depthPt: number;
+  widthPt: number;
+  heightPt: number;
+  sizePt: number;
+  style: string;
+  block: string | null;
+}
+
+/**
+ * A Classic equation as an embedded OLE object, as MathType stores its equations: the cached
+ * picture (our Classic EMF) in the VML shape, the data in the object's compound file. Spike only:
+ * used by the Word self-test in its own test documents.
+ */
+export async function buildObjectInsertion(latex: string, display: boolean, existingTag?: string, typesetDisplay = display) {
+  const { renderPicture, toBase64, altText } = await import("./render");
+  const tag = existingTag ?? formatTag({ blockId: null, instanceId: newInstanceId() });
+  const mode = display ? "display" : typesetDisplay ? "numbered" : "inline";
+  const sizePt = useApp.getState().equationSizePt;
+  const pic = await renderPicture(latex, typesetDisplay, sizePt, mode, false, { block: parseTag(tag)?.blockId, tag });
+  const { CLASSIC } = await import("@mathblocks/math-render");
+  const data: ObjectData = { version: 1, latex, mode, tag, depthPt: pic.depthPt, widthPt: pic.widthPt, heightPt: pic.heightPt, sizePt, style: CLASSIC.id, block: parseTag(tag)?.blockId ?? null };
+  const bin = writeCfb(
+    {
+      "\u0001Ole": oleStream(),
+      "\u0001CompObj": compObjStream("MathBlocks Equation", MB_OBJECT_PROGID, MB_OBJECT_CLSID),
+      MathBlocks: new TextEncoder().encode(JSON.stringify(data)),
+    },
+    MB_OBJECT_CLSID,
+  );
+  const n = ++pictureCounter;
+  const run = oleObjectRun({ imageRId: "rIdMbE1", oleRId: "rIdMbO1", progId: MB_OBJECT_PROGID, widthPt: pic.widthPt, heightPt: pic.heightPt, depthPt: pic.depthPt, id: (Date.now() % 1_000_000) * 10 + (n % 10), alt: altText(latex, mode, tag) });
+  const body = display ? `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${run}</w:p>` : paragraph(run);
+  return {
+    tag,
+    data,
+    flatOpc: flatOpc(
+      [body],
+      [
+        { rId: "rIdMbE1", target: `media/mathblocks${n}.emf`, contentType: "image/x-emf", base64: toBase64(pic.emf) },
+        { rId: "rIdMbO1", target: `embeddings/mathblocks${n}.bin`, contentType: "application/vnd.openxmlformats-officedocument.oleObject", base64: toBase64(bin), relType: REL_OLE_OBJECT },
+      ],
+    ),
+  };
+}
+
+/** The data of a MathBlocks object read back from its compound file (base64), or null. */
+export async function readObjectData(base64: string | null | undefined): Promise<ObjectData | null> {
+  if (!base64) return null;
+  try {
+    const { readCfb } = await import("@mathblocks/mathtype");
+    const bytes = Uint8Array.from(atob(base64.replace(/\s+/g, "")), (c) => c.charCodeAt(0));
+    const s = readCfb(bytes).get("MathBlocks");
+    return s ? (JSON.parse(new TextDecoder().decode(s.data)) as ObjectData) : null;
+  } catch {
+    return null;
+  }
 }
