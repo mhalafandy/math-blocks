@@ -78,6 +78,14 @@ export async function runObjectSpike(c: SpikeContext) {
         mtKept,
         `what Word inserted: ${Object.entries(ci).map(([k, v]) => `${k}=${typeof v === "string" ? JSON.stringify(v) : v}`).join(" ")}${cres.error ? `, error: ${cres.error}` : ""}`,
       );
+      // Detection versus route: what Word holds (raw type and ProgID) against what the add-in recognised.
+      const ow = (res.inserted ?? {}) as R;
+      const wordKept = ow.type === "wdInlineShapeEmbeddedOLEObject" && /MathBlocks\.Equation/.test(`${ow.oleProgId} ${ow.xmlProgId}`);
+      check(
+        `${r}: Word kept our object / the add-in recognised it`,
+        wordKept && accepted ? true : wordKept && !accepted ? false : null,
+        `Word: ${wordKept ? "an embedded MathBlocks object" : `not an object (type ${ow.type ?? "?"}, ProgID ${ow.oleProgId ?? "?"} / ${ow.xmlProgId ?? "?"})`}; add-in: ${accepted ? "recognised" : "not recognised"}${wordKept && !accepted ? " → detection bug in the add-in" : !wordKept ? " → the route (or Word) changed it" : ""}`,
+      );
       check(
         `${r}: verdict`,
         null,
