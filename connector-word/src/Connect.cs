@@ -295,18 +295,12 @@ namespace MathBlocks.WordConnector
             {
                 if (_pipe == null || !_pipe.IsConnected) return;
                 if (FloatingMathBlocksSelected(sel)) return; // Word's menu (with our items); it goes in line when idle
-                // Spike: a MathBlocks embedded object — does Word honour Cancel for objects?
-                var obj = WordOps.MathBlocksObjectIn(sel);
-                if (obj != null)
-                {
-                    cancel = true;
-                    _app.StatusBar = "MathBlocks spike: the add-in asked Word NOT to show its menu on this MathBlocks object. Note whether a menu appeared.";
-                    Log.Info("spike: right-click on a MathBlocks object — Cancel set");
-                    return;
-                }
                 var doc = _app.ActiveDocument;
                 var cc = _ops.EquationAt(doc, sel.Range);
-                if (cc == null || cc.IsPicture) return;
+                // A Classic equation is an embedded object: Word honours Cancel for objects (round 7),
+                // so the floating editor opens instead of Word's menu. An older Classic picture keeps
+                // Word's picture menu (Word ignores Cancel there) with our items.
+                if (cc == null || (cc.IsPicture && !cc.IsObject)) return;
                 cancel = true;
                 OpenPanel(doc, cc);
             }
@@ -489,14 +483,14 @@ namespace MathBlocks.WordConnector
             try
             {
                 if (_pipe == null || !_pipe.IsConnected) return;
-                // Spike: a MathBlocks embedded object — intercept before Word activates it (no prompt, no server).
+                // A MathBlocks embedded object: intercepted before Word tries to activate it (no server, no prompt).
                 var obj = WordOps.MathBlocksObjectIn(sel);
                 if (obj != null)
                 {
                     cancel = true;
-                    Log.Info("spike: double-click on a MathBlocks object intercepted");
-                    _app.StatusBar = "MathBlocks spike: double-click on a MathBlocks object intercepted; it opens read-only in MathBlocks.";
-                    SendRequest("equationActivated", WordOps.ObjectActivation(obj));
+                    var eq = _ops.EquationAt(_app.ActiveDocument, sel.Range);
+                    if (eq != null) SendActivated(_app.ActiveDocument, eq, "double-click", null);
+                    else Log.Info("double-click on a MathBlocks object that has no ID yet");
                     return;
                 }
                 var doc = _app.ActiveDocument;

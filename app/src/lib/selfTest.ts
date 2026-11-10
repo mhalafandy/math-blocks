@@ -47,9 +47,9 @@ const PASTE_MODES = ["ctrlV", "keepSource", "merge", "pictureEmf", "picturePng",
 const MUST_KEEP = new Set(["ctrlV", "keepSource", "merge"]);
 
 export const MANUAL_CHECKS = [
-  "Right-click a Classic equation: exactly one menu (Word's), with 'Edit equation (MathBlocks)' and 'Number / unnumber equation'; Edit opens the floating editor on that equation.",
+  "Right-click a Classic equation (now an embedded object): only the floating editor opens on it, no Word menu; edit it and Apply — it stays an object (simple frame) with the new content.",
   "Right-click a native Word equation: only the floating editor, no Word menu.",
-  "Double-click a Classic equation: the floating editor or main window opens on it.",
+  "Double-click a Classic equation: MathBlocks opens it for editing (no prompt); Update in Word replaces it, still an object.",
   "Drag an equation with the mouse to another line, then to another document: only the equation moves; no other text changes; Ctrl+Z restores.",
   "Home → Paste → Paste Special → 'Picture (PNG)' (the self-test can only paste a bitmap, the nearest the object model offers).",
   "Look: inline α, β, γ, f, p and a fraction sit on the text baseline at 100 % and 200 % zoom, and in print.",
@@ -92,8 +92,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     const { flatOpc } = await buildInsertion(latex, true, profile, tag, "classic");
     return connector.request("unnumberEquation", { tag, flatOpc }, SLOW);
   };
-  const snap = () => smoke("snapshot") as Promise<{ text: string; tags: string[]; pictures: number; floating: number }>;
-  const without = (text: string, tags: string[]) => tags.reduce((t, tag) => t.split(`⟦${tag}⟧`).join(""), text);
+  const snap = () => smoke("snapshot") as Promise<{ text: string; plain: string; tags: string[]; pictures: number; floating: number }>;
   /** Undo until the document's text equals `target` again (at most 4 steps); returns the steps used, or -1. */
   const undoTo = async (target: string) => {
     for (let n = 1; n <= 4; n++) {
@@ -315,7 +314,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
         const after = await snap();
         check("cut/paste: the equation keeps its ID", after.tags.filter((t) => t === moved.tag).length === 1, `${after.tags.filter((t) => t === moved.tag).length} with its ID`);
         check("cut/paste: same equations before and after", [...before.tags].sort().join() === [...after.tags].sort().join(), `${before.tags.length} → ${after.tags.length}`);
-        check("cut/paste: no other text changed", without(before.text, before.tags) === without(after.text, after.tags), diffHint(without(before.text, before.tags), without(after.text, after.tags)));
+        check("cut/paste: no other text changed", before.plain === after.plain, diffHint(before.plain, after.plain));
         const steps = await undoTo(before.text);
         check("cut/paste: Ctrl+Z restores the document", steps > 0, steps > 0 ? `${steps} undo step(s)` : "not restored in 4 steps");
       });
@@ -328,7 +327,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
         await smoke("idle");
         const after = await snap();
         check("move: the equation keeps its ID", after.tags.filter((t) => t === moved.tag).length === 1, `${after.tags.filter((t) => t === moved.tag).length} with its ID`);
-        check("move: no other text changed", without(before.text, before.tags) === without(after.text, after.tags), diffHint(without(before.text, before.tags), without(after.text, after.tags)));
+        check("move: no other text changed", before.plain === after.plain, diffHint(before.plain, after.plain));
         const steps = await undoTo(before.text);
         check("move: Ctrl+Z restores the document", steps > 0, steps > 0 ? `${steps} undo step(s)` : "not restored in 4 steps");
       });

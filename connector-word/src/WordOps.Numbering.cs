@@ -361,7 +361,9 @@ namespace MathBlocks.WordConnector
             placeholder.InsertXML(package);
             try
             {
-                if (doc.Paragraphs.Count == before + 1 && (doc.Range(start, start + 1).Text ?? "") == "\r")
+                // The placeholder was a character in the paragraph: a paragraph mark now at its place was
+                // added by Word (seen at the end of the last paragraph).
+                if ((doc.Range(start, start + 1).Text ?? "") == "\r")
                 {
                     doc.Range(start, start + 1).Delete();
                     Log.Info("insert: removed the paragraph mark Word added before inserted runs");

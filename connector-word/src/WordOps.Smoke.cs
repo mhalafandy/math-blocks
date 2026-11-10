@@ -330,6 +330,9 @@ namespace MathBlocks.WordConnector
                 ["pictures"] = pictures,
                 ["floating"] = d.Shapes.Count,
                 ["characters"] = text.Length,
+                // The text with every object/picture character removed: an embedded object is a field
+                // whose hidden characters shift positions, so "nothing else changed" compares this.
+                ["plain"] = text.Replace("\u0001", "").Replace("/", ""),
             };
         }
 
@@ -365,6 +368,9 @@ namespace MathBlocks.WordConnector
             int at = sel.Start;
             int beforePictures = d.InlineShapes.Count, beforeShapes = d.Shapes.Count;
             int objectsBefore = CountObjects(d);
+            // The add-in notices a paste by a change in the picture count since it last looked; the test
+            // undoes pastes without it looking, so the count is noted now.
+            NoteCounts(d);
             var r = new Dictionary<string, object> { ["mode"] = mode, ["objectsBefore"] = objectsBefore };
             try
             {

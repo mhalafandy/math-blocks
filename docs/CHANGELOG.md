@@ -25,6 +25,19 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Embedded objects — step 2 (the app writes objects; clicks)
+- Every Classic insert, update, number/unnumber, Convert LaTeX, Apply notation, linked copy and
+  Repair redraw now writes an embedded MathBlocks object (buildInsertion); the VML picture form stays
+  only for older documents.
+- Double-click on an object opens it for editing (intercepted before Word activates it); right-click
+  opens the floating editor — Word honours Cancel for objects, so no Word menu appears.
+- An object's own data is its primary source (opening, fingerprint, Repair); its picture's EMF and
+  its alt text are fallbacks.
+- A reference inserted at the end of a paragraph: the paragraph mark Word adds there is removed.
+- Self-test measurement: an object's lowering is read from Word's XML for its run when the field's
+  hidden characters make Word report mixed formatting; the picture count is noted before each paste;
+  "nothing else changed" compares the text without equation characters.
+
 ### Embedded objects — step 1 (object as an equation kind, typing reset, self-test lookup)
 - The add-in recognises a MathBlocks object by Word's class name (Word returns an empty ProgID for
   an unregistered class), else the object's XML; identifies it by the alt-text ID, else the ID in

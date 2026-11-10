@@ -47,9 +47,33 @@ namespace MathBlocks.WordConnector
             return Encoding.UTF8.GetString(bytes, at + EmfMarker.Length, end - at - EmfMarker.Length);
         }
 
-        /// <summary>The source a picture carries (EMF comment JSON, else its alt text); null when it is not ours.</summary>
+        private static readonly Regex OleEmbeddingPart = new Regex("<pkg:part [^>]*pkg:contentType=\"application/vnd\\.openxmlformats-officedocument\\.oleObject\"[^>]*>\\s*<pkg:binaryData>([^<]*)</pkg:binaryData>", RegexOptions.Compiled);
+        private static readonly Regex ObjectJson = new Regex("\\{\"version\":1,[^\\x00{}]*\\}", RegexOptions.Compiled);
+
+        /// <summary>The JSON in a MathBlocks embedded object's own data ("MathBlocks" stream), or null.</summary>
+        public static string ObjectSource(string xml)
+        {
+            if (string.IsNullOrEmpty(xml) || xml.IndexOf("MathBlocks.Equation", StringComparison.Ordinal) < 0) return null;
+            foreach (Match m in OleEmbeddingPart.Matches(xml))
+            {
+                try
+                {
+                    var text = Encoding.UTF8.GetString(Convert.FromBase64String(Regex.Replace(m.Groups[1].Value, "\\s+", "")));
+                    var j = ObjectJson.Match(text);
+                    if (j.Success) return j.Value;
+                }
+                catch (FormatException)
+                {
+                }
+            }
+            return null;
+        }
+
+        /// <summary>The source an equation carries: an object's own data, else its picture's EMF comment JSON, else its alt text; null when it is not ours.</summary>
         public static string Source(string xml)
         {
+            var obj = ObjectSource(xml);
+            if (obj != null) return obj;
             var how = Data(xml, out var json);
             if (how == "emf") return json;
             if (how == "alt")

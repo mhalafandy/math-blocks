@@ -4,7 +4,6 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { strToU8, zipSync } from "fflate";
 import { describe, expect, it, vi } from "vitest";
-import { TUNED_PROFILE } from "@mathblocks/math-omml";
 import { emfComment } from "@mathblocks/math-render";
 
 /**
@@ -41,9 +40,9 @@ const partsOf = (flat: string) =>
   }));
 
 describe("Classic insertion as Word receives it", async () => {
-  const { buildInsertion } = await import("./equation");
+  const { buildPictureInsertion } = await import("./equation");
   const built: { latex: string; display: boolean; tag: string; flatOpc: string }[] = [];
-  for (const c of CASES) built.push({ ...c, ...(await buildInsertion(c.latex, c.display, TUNED_PROFILE, c.tag, "classic")) });
+  for (const c of CASES) built.push({ ...c, ...(await buildPictureInsertion(c.latex, c.display, c.tag)) });
 
   it("is a picture alone: no content control, the ID in the alt text, the title and the EMF source", () => {
     for (const b of built) {

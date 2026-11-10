@@ -71,6 +71,23 @@ export async function buildInsertion(
   typesetDisplay = display,
 ) {
   if (look === "native") return buildNativeInsertion(latex, display, profile, existingTag);
+  // Classic: an embedded MathBlocks object, as MathType stores its equations (Word keeps it as an
+  // object, with the simple frame, through copy and paste; its data holds the full source).
+  const { tag, flatOpc } = await buildObjectInsertion(latex, display, existingTag, typesetDisplay);
+  return { tag, flatOpc };
+}
+
+/**
+ * A Classic equation as a plain VML picture (the form before embedded objects): kept for older
+ * documents' tests and comparisons; new equations are objects (buildInsertion).
+ */
+export async function buildPictureInsertion(
+  latex: string,
+  display: boolean,
+  existingTag?: string,
+  /** Typeset in display style although placed inline (numbered equations). */
+  typesetDisplay = display,
+) {
   const { renderPicture, toBase64, altText } = await import("./render");
   const tag = existingTag ?? formatTag({ blockId: null, instanceId: newInstanceId() });
   const mode = display ? "display" : typesetDisplay ? "numbered" : "inline";

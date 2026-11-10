@@ -328,6 +328,15 @@ namespace MathBlocks.WordConnector
                     var cv = (double)c.Font.Position;
                     if (cv > -1000 && cv < 1000) return cv;
                 }
+                // Still mixed (the field's hidden characters): what Word saves and renders — the
+                // lowering of the run that holds the object (or picture) in the range's XML.
+                var xml = r.WordOpenXML;
+                var m = System.Text.RegularExpressions.Regex.Match(xml, "<w:r\\b[^>]*>(?:(?!</w:r>).)*?(?:<w:object|<w:pict|<w:drawing)", System.Text.RegularExpressions.RegexOptions.Singleline);
+                if (m.Success)
+                {
+                    var pm = System.Text.RegularExpressions.Regex.Match(m.Value, "<w:position w:val=\"(-?\\d+)\"");
+                    return pm.Success ? int.Parse(pm.Groups[1].Value) / 2.0 : 0;
+                }
             }
             catch (Exception)
             {

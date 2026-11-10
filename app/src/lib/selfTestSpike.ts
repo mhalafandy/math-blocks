@@ -38,8 +38,7 @@ const PASTES = ["ctrlV", "keepSource", "merge", "pictureEmf", "picturePng", "kee
 
 export async function runObjectSpike(c: SpikeContext) {
   const { smoke, check, step } = c;
-  const snap = () => smoke("snapshot") as Promise<{ text: string; tags: string[] }>;
-  const without = (text: string, tags: string[]) => tags.reduce((t, tag) => t.split(`⟦${tag}⟧`).join(""), text);
+  const snap = () => smoke("snapshot") as Promise<{ text: string; plain: string; tags: string[] }>;
   const undoTo = async (target: string) => {
     for (let n = 1; n <= 4; n++) {
       await smoke("undo", { times: 1 });
@@ -216,7 +215,7 @@ export async function runObjectSpike(c: SpikeContext) {
       const r = await smoke("paste", { mode: "ctrlV" });
       const after = await snap();
       check("cut/paste: still the same object (data and ID)", r.isObject && r.objectTag === mv.tag, `object ${r.isObject}, ID ${r.objectTag}`);
-      check("cut/paste: no other text changed", without(before.text, before.tags) === without(after.text, after.tags), diffHint(without(before.text, before.tags), without(after.text, after.tags)));
+      check("cut/paste: no other text changed", before.plain === after.plain, diffHint(before.plain, after.plain));
       const steps = await undoTo(before.text);
       check("cut/paste: Ctrl+Z restores", steps > 0, `${steps} step(s)`);
     });
@@ -228,7 +227,7 @@ export async function runObjectSpike(c: SpikeContext) {
       await smoke("moveFormatted", { tag: mv.tag, to });
       const after = await snap();
       check("move: the object keeps its ID and data", after.tags.filter((t) => t === objKey).length === 1, `${after.tags.filter((t) => t === objKey).length} with its ID`);
-      check("move: no other text changed", without(before.text, before.tags) === without(after.text, after.tags), diffHint(without(before.text, before.tags), without(after.text, after.tags)));
+      check("move: no other text changed", before.plain === after.plain, diffHint(before.plain, after.plain));
       const steps = await undoTo(before.text);
       check("move: Ctrl+Z restores", steps > 0, `${steps} step(s)`);
     });
@@ -236,7 +235,7 @@ export async function runObjectSpike(c: SpikeContext) {
       const before = await snap();
       await smoke("delete", { tag: mv.tag });
       const gone = await snap();
-      check("delete removes the object completely", !gone.tags.includes(objKey) && without(before.text, before.tags) === without(gone.text, gone.tags), `${gone.tags.includes(objKey) ? "the object is still there; " : ""}${diffHint(without(before.text, before.tags), without(gone.text, gone.tags))}`);
+      check("delete removes the object completely", !gone.tags.includes(objKey) && before.plain === gone.plain, `${gone.tags.includes(objKey) ? "the object is still there; " : ""}${diffHint(before.plain, gone.plain)}`);
       await smoke("undo", { times: 1 });
       const back = await snap();
       check("Ctrl+Z brings it back with its data", back.text === before.text && (await readObjectData((await smoke("objectInfo", { tag: mv.tag })).embedding))?.tag === mv.tag, "");

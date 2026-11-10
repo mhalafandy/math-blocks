@@ -595,6 +595,18 @@ namespace MathBlocks.WordConnector
             }
         }
 
+        /// <summary>Records the document's current picture/control counts (the self-test, before a paste after an undo).</summary>
+        internal void NoteCounts(Word.Document doc)
+        {
+            try
+            {
+                _counts[doc.FullName] = (doc.InlineShapes.Count, doc.Shapes.Count, doc.ContentControls.Count);
+            }
+            catch (Exception)
+            {
+            }
+        }
+
         /// <summary>When a document opens: floating pictures back in line, duplicated IDs resolved, wrappers unlocked.</summary>
         internal void OnOpen(Word.Document doc)
         {
