@@ -51,7 +51,7 @@ export async function runObjectSpike(c: SpikeContext) {
 
   // ------------------------------------------------------------ insertion routes
   c.setSection("Spike: inserting a MathBlocks object (each route Word offers)");
-  const docO = await smoke("newDocument");
+  let docO = await smoke("newDocument");
   await smoke("typeText", { text: "Embedded-object spike." });
   await smoke("newParagraph");
   let route: string | null = null;
@@ -97,6 +97,8 @@ export async function runObjectSpike(c: SpikeContext) {
   }
   await step("save the routes document", async () => {
     const sv = await smoke("save", { file: "spike routes.docx" });
+    // Save As renamed the document: later steps address it by its new name.
+    docO = { ...docO, name: sv.name ?? docO.name };
     check("routes document saved (send it with the report)", null, sv.path);
   });
   check("an insertion route works", route !== null, route ? `using ${route} for the rest of the spike` : "Word refused the object by every route → fall back to pictures");

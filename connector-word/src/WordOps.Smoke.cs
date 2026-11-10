@@ -222,7 +222,8 @@ namespace MathBlocks.WordConnector
                     var d = _app.ActiveDocument;
                     var path = Path.Combine(SmokeFolder ?? Path.GetTempPath(), Rpc.GetString(p, "file"));
                     d.SaveAs2(path, Word.WdSaveFormat.wdFormatXMLDocument);
-                    return new Dictionary<string, object> { ["path"] = path };
+                    // Save As renames the open document: callers that address it by name use this one.
+                    return new Dictionary<string, object> { ["path"] = path, ["name"] = d.Name };
                 }
                 case "writeReport":
                 {

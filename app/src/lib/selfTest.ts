@@ -352,8 +352,13 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
         step,
         insertPicture: (latex, display) => insert(latex, display),
         insertReference: (bookmark) => connector.request("insertReference", { bookmark, numberOnly: false }, SLOW),
+      }).catch((e) => {
+        check("the spike stopped early", false, `in "${section}": ${e instanceof Error ? e.message : String(e)}`);
       });
     }
+  } catch (e) {
+    // Whatever stops the run, the report is still written with everything checked so far.
+    check("the self-test stopped early", false, `in "${section}": ${e instanceof Error ? e.message : String(e)}`);
   } finally {
     await smoke("end").catch(() => undefined);
   }
@@ -382,6 +387,12 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
   lines.push("", "== Manual checks (Word's object model cannot do these)", ...MANUAL_CHECKS.map((m) => `[ ]  ${m}`), ...(o.spike ? SPIKE_MANUAL_CHECKS.map((m) => `[ ]  ${m}`) : []));
   const report = lines.join("\n") + "\n";
   const written = await smoke("writeReport", { text: report, show: true }).catch(() => null);
+  if (!written) {
+    // Word could not write it (stuck on a dialog?): the report goes to the clipboard instead.
+    await navigator.clipboard?.writeText(report).catch(() => undefined);
+    app.notify("Word self-test: Word could not save report.txt — the report is on the clipboard; paste it into a text file and send it.", "error");
+    return report;
+  }
   app.notify(`Word self-test: ${fails === 0 ? "all checks passed" : `${fails} check(s) failed`}. Report: ${written?.path ?? begin.folder}`, fails ? "error" : "info");
   return report;
 }
