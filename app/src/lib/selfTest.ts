@@ -213,12 +213,29 @@ export async function runWordSelfTest(): Promise<string | null> {
           await smoke("caretTo", { where: "end" });
           await smoke("typeText", { text: `Paste ${mode}: ` });
           const pre = await snap();
+          const orig = await smoke("pictureInfo", { tag: src.tag });
           await smoke("copy", { tag: src.tag });
           await smoke("caretTo", { where: "end" });
           const r = await smoke("paste", { mode });
           const kept = `picture ${r.picture ? "yes" : "no"}, alt "${r.alt ?? ""}", source ${r.hasSource ? (r.sourceTag ? "with ID" : "without ID") : "none"}, VML ${r.vml}, DrawingML ${r.drawingml}, EMF ${r.emf}, PNG ${r.png}${r.error ? `, ${r.error}` : ""}`;
           const opensAs = r.opensFlatOpc ? latexOf(r.opensFlatOpc) : null;
           const origStill = (await smoke("pictureInfo", { tag: src.tag }).catch(() => null)) != null;
+          // Same representation as a freshly inserted equation: object kind (VML picture, not a modern
+          // DrawingML picture), in line, same size, same lowering, alt text and hidden source kept.
+          if (r.picture) {
+            const o = orig;
+            const diffs: string[] = [];
+            if (r.vml !== o.vml || r.drawingml !== o.drawingml) diffs.push(`format ${r.vml ? "VML" : r.drawingml ? "DrawingML" : "?"} (original ${o.vml ? "VML" : "DrawingML"})`);
+            if (r.kind !== o.kind) diffs.push(`kind ${r.kind} (original ${o.kind})`);
+            if ((r.afterIdleFloating ?? 0) !== 0 || (r.newFloating ?? 0) !== 0) diffs.push(`floating ${r.newFloating}`);
+            if (Math.abs(r.widthPt - o.widthPt) > 0.2 || Math.abs(r.heightPt - o.heightPt) > 0.2) diffs.push(`size ${r.widthPt}×${r.heightPt} (original ${o.widthPt}×${o.heightPt})`);
+            if (Math.round(r.positionPt) !== Math.round(o.positionPt)) diffs.push(`lowering ${r.positionPt} pt (original ${o.positionPt})`);
+            const altBody = (a: string) => a.replace(/\(mb1\|[^)]*\)/, "");
+            if (altBody(r.alt ?? "") !== altBody(o.alt ?? "")) diffs.push(`alt "${r.alt}"`);
+            if (!r.hasSource) diffs.push("hidden source lost");
+            const strict = MUST_KEEP.has(mode) || mode === "pictureEmf";
+            check(`${mode}: same representation as the original (format, frame, wrap, size, lowering, alt text, hidden source)`, diffs.length === 0 ? true : strict ? false : null, diffs.length ? diffs.join("; ") : "identical");
+          }
           if (MUST_KEEP.has(mode)) {
             check(`${mode}: the copy is an equation with its own ID and opens`, !!r.recognisedAs && r.recognisedAs !== src.tag && !r.opensProblem && opensAs === norm(src.latex), `${kept}; recognised as ${r.recognisedAs}; opens ${opensAs}${r.opensProblem ? `, problem: ${r.opensProblem}` : ""}`);
           } else if (mode === "pictureEmf") {

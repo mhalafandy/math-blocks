@@ -205,6 +205,7 @@ namespace MathBlocks.WordConnector
                 r["title"] = RawTitleOf(eq.Picture) ?? "";
                 r["heightPt"] = (double)eq.Picture.Height;
                 r["widthPt"] = (double)eq.Picture.Width;
+                r["kind"] = eq.Picture.Type.ToString();
             }
             // The next character after the equation (text typed after it).
             var next = d.Range(eq.After, Math.Min(eq.After + 1, d.Content.End));
@@ -299,6 +300,12 @@ namespace MathBlocks.WordConnector
             r["drawingml"] = xml.Contains("<pic:pic");
             r["emf"] = xml.Contains("image/x-emf");
             r["png"] = xml.Contains("image/png");
+            // Representation, compared with the original by the self-test: object kind, size, lowering.
+            r["kind"] = pasted.Type.ToString();
+            r["widthPt"] = (double)pasted.Width;
+            r["heightPt"] = (double)pasted.Height;
+            r["positionPt"] = (double)pasted.Range.Font.Position;
+            r["sourceJson"] = json;
             var eq = EquationAt(d, pasted.Range);
             r["recognisedAs"] = null;
             if (eq != null)
