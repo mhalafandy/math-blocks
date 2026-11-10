@@ -273,7 +273,7 @@ namespace MathBlocks.WordConnector
         private Dictionary<string, object> PictureInfo(Word.Document d, Eq eq)
         {
             var r = new Dictionary<string, object> { ["tag"] = eq.Tag, ["isPicture"] = eq.IsPicture, ["before"] = eq.Before, ["after"] = eq.After };
-            r["positionPt"] = (double)eq.Range.Font.Position;
+            r["positionPt"] = eq.IsPicture ? (LoweringOf(eq.Picture) ?? 9999999) : (double)eq.Range.Font.Position;
             var xml = eq.Xml;
             PictureXml.Data(xml, out var json);
             r["depthPt"] = PictureXml.DepthPt(json);
@@ -428,7 +428,7 @@ namespace MathBlocks.WordConnector
             r["kind"] = pasted.Type.ToString();
             r["widthPt"] = (double)pasted.Width;
             r["heightPt"] = (double)pasted.Height;
-            r["positionPt"] = (double)pasted.Range.Font.Position;
+            r["positionPt"] = LoweringOf(pasted) ?? 9999999;
             r["sourceJson"] = json;
             r["frame"] = FrameOf(pasted);
             r["isObject"] = IsMathBlocksObject(pasted);

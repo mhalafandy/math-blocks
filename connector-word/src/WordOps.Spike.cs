@@ -183,7 +183,7 @@ namespace MathBlocks.WordConnector
                 ["tag"] = EquationIdentity.AltTag(AltOf(s)),
                 ["widthPt"] = (double)s.Width,
                 ["heightPt"] = (double)s.Height,
-                ["positionPt"] = (double)s.Range.Font.Position,
+                ["positionPt"] = LoweringOf(s) ?? 9999999,
                 ["start"] = s.Range.Start,
                 ["after"] = s.Range.End,
                 ["objectElement"] = xml.Contains("<w:object"),

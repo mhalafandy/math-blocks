@@ -570,12 +570,12 @@ namespace MathBlocks.WordConnector
         {
             try
             {
-                PictureXml.Data(s.Range.WordOpenXML, out var json);
-                var depth = PictureXml.DepthPt(json);
+                var depth = DepthOf(s); // picture's source, else the object's own data
                 if (depth == null) return;
                 var want = -(int)Math.Round(depth.Value);
                 var r = s.Range;
-                if ((int)Math.Round((double)r.Font.Position) == want) return;
+                var cur = LoweringOf(s);
+                if (cur != null && (int)Math.Round(cur.Value) == want) return;
                 var undo = _app.UndoRecord;
                 var own = !undo.IsRecordingCustomRecord;
                 if (own) undo.StartCustomRecord("Restore equation baseline");

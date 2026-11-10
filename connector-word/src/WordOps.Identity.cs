@@ -265,8 +265,8 @@ namespace MathBlocks.WordConnector
                     sel.Font.Position = 1;
                     sel.Font.Position = 0;
                     if (want == null) return;
-                    var now = (double)pic.Range.Font.Position;
-                    if ((int)Math.Round(now) == want.Value) return;
+                    var now = LoweringOf(pic) ?? double.NaN;
+                    if (!double.IsNaN(now) && (int)Math.Round(now) == want.Value) return;
                     // Word applied the caret's format to the equation as well (its whole-word rule): the
                     // equation's lowering first, then the caret's reset again — the reset stays the last change.
                     pic.Range.Font.Position = want.Value;
@@ -284,18 +284,55 @@ namespace MathBlocks.WordConnector
         /// <summary>The run lowering an equation picture or object should have (−depth in pt), from its stored depth; null if unknown.</summary>
         internal static int? WantedLowering(Word.InlineShape pic)
         {
+            var depth = DepthOf(pic);
+            if (depth != null) return -(int)Math.Round(depth.Value);
+            var cur = LoweringOf(pic);
+            return cur != null ? (int?)(int)Math.Round(cur.Value) : null;
+        }
+
+        /// <summary>The equation's depth (pt): from its picture's hidden source, else from an embedded object's own data.</summary>
+        internal static double? DepthOf(Word.InlineShape s)
+        {
             try
             {
-                PictureXml.Data(pic.Range.WordOpenXML, out var json);
+                var xml = s.Range.WordOpenXML;
+                PictureXml.Data(xml, out var json);
                 var depth = PictureXml.DepthPt(json);
-                if (depth != null) return -(int)Math.Round(depth.Value);
-                var cur = (double)pic.Range.Font.Position;
-                return cur > -1000 && cur < 1000 ? (int?)(int)Math.Round(cur) : null;
+                if (depth != null) return depth;
+                var m = System.Text.RegularExpressions.Regex.Match(xml, "<pkg:part [^>]*pkg:contentType=\"application/vnd\\.openxmlformats-officedocument\\.oleObject\"[^>]*>\\s*<pkg:binaryData>([^<]*)</pkg:binaryData>");
+                if (!m.Success) return null;
+                var bytes = Convert.FromBase64String(System.Text.RegularExpressions.Regex.Replace(m.Groups[1].Value, "\\s+", ""));
+                return PictureXml.DepthPt(System.Text.Encoding.ASCII.GetString(bytes));
             }
             catch (Exception)
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// The lowering of the equation's own character. An embedded object is an EMBED field whose range
+        /// also holds hidden field characters (Word reports "mixed", 9999999): then the character that
+        /// carries the object is read.
+        /// </summary>
+        internal static double? LoweringOf(Word.InlineShape s)
+        {
+            try
+            {
+                var r = s.Range;
+                var v = (double)r.Font.Position;
+                if (v > -1000 && v < 1000) return v;
+                foreach (Word.Range c in r.Characters)
+                {
+                    if (c.InlineShapes.Count == 0) continue;
+                    var cv = (double)c.Font.Position;
+                    if (cv > -1000 && cv < 1000) return cv;
+                }
+            }
+            catch (Exception)
+            {
+            }
+            return null;
         }
 
         /// <summary>
