@@ -138,6 +138,13 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
         inline.push({ ...c, tag });
       });
     }
+    // Which caret reset Word honours for typed text (data for the fix if the checks above fail).
+    if (inline[1]) {
+      await step("typing probe", async () => {
+        const pr = await smoke("typingProbe", { tag: inline[1]!.tag });
+        check("typing probe: lowering of a character typed right after β, per reset method", null, Object.entries(pr).map(([k, v]) => `${k}: ${v}`).join(", "));
+      });
+    }
 
     // ------------------------------------------------------------ display and numbered
     section = "Display and numbered equations";
@@ -195,7 +202,9 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
         const nAbove = list2.equations.find((x) => x.tag === above.tag);
         check("equation inserted above gets the earlier number", !!nAbove && !!n3b && list2.equations.indexOf(nAbove) < list2.equations.indexOf(n3b), `above ${nAbove?.number}, later ${n3b?.number}`);
         const after = await snap();
-        check("the reference shows the new number after Update", !!n3b && after.text.replace(/\s/g, "").includes(`See${n3b.number.replace(/\s/g, "")}`), `expected "See ${n3b?.number}"`);
+        const refs = n3b ? ((await smoke("refResults", { bookmark: n3b.bookmark })).results as string[]) : [];
+        check("the reference shows the new number after Update", !!n3b && refs.length > 0 && refs.every((t) => t.replace(/\s/g, "") === n3b.number.replace(/\s/g, "")), `reference shows ${JSON.stringify(refs)}, number ${n3b?.number}`);
+        check("the reference stays in the sentence (\"See (n)\" on one line)", after.text.includes("See \r") === false, after.text.includes("See \r") ? "the reference landed on the next line" : "");
         // Unnumber, then undo.
         const s0 = await snap();
         await unnumber(above.tag, "a^2+b^2=c^2");
@@ -293,6 +302,8 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       await step("cut and paste", async () => {
         const before = await snap();
         await smoke("cut", { tag: moved.tag });
+        const mid = await snap();
+        check("cut (selected, Ctrl+X) removes the equation", !mid.tags.includes(moved.tag), mid.tags.includes(moved.tag) ? "still there after Cut" : "");
         await smoke("caretTo", { where: "end" });
         await smoke("paste", { mode: "ctrlV" });
         await smoke("idle");

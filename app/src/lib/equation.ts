@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { countNodes } from "@mathblocks/math-core";
 import { parseLatex, type Diagnostic } from "@mathblocks/math-latex";
 import { toOmml, TUNED_PROFILE, WORD_DEFAULT_PROFILE, type StyleProfile } from "@mathblocks/math-omml";
-import { compObjStream, contentControl, flatOpc, formatTag, newInstanceId, oleObjectRun, oleStream, paragraph, parseTag, REL_OLE_OBJECT, vmlPictureRun, writeCfb } from "@mathblocks/ooxml";
+import { compObjStream, objInfoStream, contentControl, flatOpc, formatTag, newInstanceId, oleObjectRun, oleStream, paragraph, parseTag, REL_OLE_OBJECT, vmlPictureRun, writeCfb } from "@mathblocks/ooxml";
 import { useApp } from "./store";
 
 /** The Word style profile from the current preferences (outside React). */
@@ -129,6 +129,7 @@ export async function buildObjectInsertion(latex: string, display: boolean, exis
   const bin = writeCfb(
     {
       "\u0001Ole": oleStream(),
+      "\u0003ObjInfo": objInfoStream(),
       "\u0001CompObj": compObjStream("MathBlocks Equation", MB_OBJECT_PROGID, MB_OBJECT_CLSID),
       MathBlocks: new TextEncoder().encode(JSON.stringify(data)),
     },

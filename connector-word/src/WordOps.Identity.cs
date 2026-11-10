@@ -258,7 +258,10 @@ namespace MathBlocks.WordConnector
                 // (Word reports the paragraph mark's formatting here — 0 — while typing would take the
                 // picture run's lowering, so the reset is always applied, not only when it reads non-zero.)
                 sel.Font.Reset();
-                if (sel.Font.Position != 0) sel.Font.Position = 0;
+                // Word records an explicit insertion-point format only when the value changes from what
+                // it reports (0 at a paragraph end): set a different value first, then 0.
+                sel.Font.Position = 1;
+                sel.Font.Position = 0;
                 // Safety net: if Word changed the picture anyway, its lowering comes back.
                 if (pic.Range.Font.Position != keep)
                 {
@@ -266,9 +269,9 @@ namespace MathBlocks.WordConnector
                     Log.Info("typing reset touched the equation's lowering; restored to " + keep + " pt");
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Cosmetic.
+                Log.Error("resetting the typing format after an equation", ex);
             }
         }
 

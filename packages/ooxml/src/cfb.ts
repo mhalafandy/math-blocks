@@ -156,8 +156,11 @@ const u32 = (v: number) => {
 };
 const lpAnsi = (s: string) => concat([u32(s.length + 1), ascii(s), new Uint8Array(1)]);
 
-/** "\x01Ole" stream of an embedded object ([MS-OLEDS] 2.3.3): version, no flags, no moniker. */
-export const oleStream = () => concat([u32(0x02000001), u32(0), u32(0), u32(0), u32(0)]);
+/** "\x01Ole" stream of an embedded object ([MS-OLEDS] 2.3.3), as in MathType's objects (flags 8). */
+export const oleStream = () => concat([u32(0x02000001), u32(8), u32(0), u32(0), u32(0)]);
+
+/** "\x03ObjInfo" stream, as Word writes for embedded objects (MathType's: 00 00 03 00 04 00). */
+export const objInfoStream = () => Uint8Array.from([0x00, 0x00, 0x03, 0x00, 0x04, 0x00]);
 
 /** "\x01CompObj" stream ([MS-OLEDS] 2.3.8): user type name, no clipboard format, ProgID. */
 export function compObjStream(userType: string, progId: string, clsid: string): Uint8Array {

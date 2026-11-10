@@ -189,8 +189,13 @@ namespace MathBlocks.WordConnector
                     RangeOf(SelIn(p).Document, Rpc.GetString(p, "tag")).Copy();
                     return new Dictionary<string, object> { ["ok"] = true };
                 case "cut":
-                    RangeOf(_app.ActiveDocument, Rpc.GetString(p, "tag")).Cut();
+                {
+                    // As the user does: select the equation, Ctrl+X.
+                    var r0 = RangeOf(_app.ActiveDocument, Rpc.GetString(p, "tag"));
+                    r0.Select();
+                    _app.Selection.Cut();
                     return new Dictionary<string, object> { ["ok"] = true };
+                }
                 case "paste":
                     return Paste(Rpc.GetString(p, "mode"), SelIn(p));
                 case "moveFormatted":
@@ -311,6 +316,31 @@ namespace MathBlocks.WordConnector
             };
         }
 
+        private static void PasteOnce(Word.Selection sel, string mode)
+        {
+            switch (mode)
+            {
+                case "ctrlV": sel.Paste(); break;
+                case "keepSource": sel.PasteAndFormat(Word.WdRecoveryType.wdFormatOriginalFormatting); break;
+                case "merge": sel.PasteAndFormat(Word.WdRecoveryType.wdFormatSurroundingFormattingWithEmphasis); break;
+                case "keepTextOnly": sel.PasteAndFormat(Word.WdRecoveryType.wdFormatPlainText); break;
+                // In line, as the Paste Special dialog does by default ("Float over text" unticked).
+                case "pictureEmf": sel.PasteSpecial(DataType: Word.WdPasteDataType.wdPasteEnhancedMetafile, Placement: Word.WdOLEPlacement.wdInLine); break;
+                // Word's "Picture (PNG)" has no constant in the object model; a bitmap paste is the nearest.
+                case "picturePng":
+                    try
+                    {
+                        sel.PasteSpecial(DataType: Word.WdPasteDataType.wdPasteDeviceIndependentBitmap, Placement: Word.WdOLEPlacement.wdInLine);
+                    }
+                    catch (COMException)
+                    {
+                        sel.PasteSpecial(DataType: Word.WdPasteDataType.wdPasteBitmap, Placement: Word.WdOLEPlacement.wdInLine);
+                    }
+                    break;
+                default: throw new RpcException(Rpc.InvalidParams, "Unknown paste mode " + mode);
+            }
+        }
+
         /// <summary>Pastes at the selection in one of Word's paste modes; reports what arrived and what the add-in makes of it.</summary>
         private Dictionary<string, object> Paste(string mode, Word.Selection sel)
         {
@@ -320,26 +350,19 @@ namespace MathBlocks.WordConnector
             var r = new Dictionary<string, object> { ["mode"] = mode };
             try
             {
-                switch (mode)
+                try
                 {
-                    case "ctrlV": sel.Paste(); break;
-                    case "keepSource": sel.PasteAndFormat(Word.WdRecoveryType.wdFormatOriginalFormatting); break;
-                    case "merge": sel.PasteAndFormat(Word.WdRecoveryType.wdFormatSurroundingFormattingWithEmphasis); break;
-                    case "keepTextOnly": sel.PasteAndFormat(Word.WdRecoveryType.wdFormatPlainText); break;
-                    // In line, as the Paste Special dialog does by default ("Float over text" unticked).
-                    case "pictureEmf": sel.PasteSpecial(DataType: Word.WdPasteDataType.wdPasteEnhancedMetafile, Placement: Word.WdOLEPlacement.wdInLine); break;
-                    // Word's "Picture (PNG)" has no constant in the object model; a bitmap paste is the nearest.
-                    case "picturePng":
-                        try
-                        {
-                            sel.PasteSpecial(DataType: Word.WdPasteDataType.wdPasteDeviceIndependentBitmap, Placement: Word.WdOLEPlacement.wdInLine);
-                        }
-                        catch (COMException)
-                        {
-                            sel.PasteSpecial(DataType: Word.WdPasteDataType.wdPasteBitmap, Placement: Word.WdOLEPlacement.wdInLine);
-                        }
-                        break;
-                    default: throw new RpcException(Rpc.InvalidParams, "Unknown paste mode " + mode);
+                    PasteOnce(sel, mode);
+                }
+                catch (COMException ex) when (ex.Message.Contains("no text is selected"))
+                {
+                    // The window switch has not settled yet (between documents): once more.
+                    System.Windows.Forms.Application.DoEvents();
+                    System.Threading.Thread.Sleep(300);
+                    sel.Document.Activate();
+                    sel = sel.Document.ActiveWindow.Selection;
+                    PasteOnce(sel, mode);
+                    r["retried"] = true;
                 }
             }
             catch (COMException ex)

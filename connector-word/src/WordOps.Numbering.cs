@@ -321,18 +321,21 @@ namespace MathBlocks.WordConnector
                 InsertInline(doc, r, NumberFields.Package(NumberFields.ReferenceRuns(target)));
                 var inserted = doc.Range(start, _app.Selection.Range.End);
                 inserted.Fields.Update();
-                // The number shown is the REF field's result (inside GOTOBUTTON's display text).
+                // The number the reference shows: the bookmarked number's text (the REF field inside
+                // GOTOBUTTON's display text is not listed among the range's fields).
                 var text = "";
-                foreach (Word.Field f in inserted.Fields)
+                bool hid = doc.Bookmarks.ShowHidden;
+                doc.Bookmarks.ShowHidden = true;
+                try
                 {
-                    try
-                    {
-                        var code = f.Code.Text ?? "";
-                        if (code.Contains("REF ") && !code.Contains("GOTOBUTTON")) { text = f.Result.Text ?? ""; break; }
-                    }
-                    catch (COMException)
-                    {
-                    }
+                    if (doc.Bookmarks.Exists(target)) text = doc.Bookmarks[target].Range.Text ?? "";
+                }
+                catch (COMException)
+                {
+                }
+                finally
+                {
+                    doc.Bookmarks.ShowHidden = hid;
                 }
                 return new Dictionary<string, object> { ["text"] = text.Trim() };
             }
@@ -349,9 +352,13 @@ namespace MathBlocks.WordConnector
         /// </summary>
         internal static void InsertInline(Word.Document doc, Word.Range at, string package)
         {
+            // InsertXML over a placeholder character stays inside the paragraph (at an empty point at a
+            // paragraph's end Word adds a paragraph mark before the inserted runs).
             int start = at.Start;
+            doc.Range(start, start).InsertAfter("#");
+            var placeholder = doc.Range(start, start + 1);
             int before = doc.Paragraphs.Count;
-            at.InsertXML(package);
+            placeholder.InsertXML(package);
             try
             {
                 if (doc.Paragraphs.Count == before + 1 && (doc.Range(start, start + 1).Text ?? "") == "\r")

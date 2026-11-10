@@ -23,26 +23,57 @@ namespace MathBlocks.WordConnector
 
         private static readonly Regex OleEmbedding = new Regex("<pkg:part [^>]*pkg:contentType=\"application/vnd\\.openxmlformats-officedocument\\.oleObject\"[^>]*>\\s*<pkg:binaryData>([^<]*)</pkg:binaryData>", RegexOptions.Compiled);
 
+        /// <summary>
+        /// The ProgID of an embedded object. Word may return an empty or different ProgID for a class
+        /// that is not registered on the PC (instead of failing), so the object's XML is read as well.
+        /// </summary>
         internal static string ProgIdOf(Word.InlineShape s)
         {
+            string fromWord = null;
             try
             {
                 if (s.Type != Word.WdInlineShapeType.wdInlineShapeEmbeddedOLEObject) return null;
-                return s.OLEFormat.ProgID;
+                fromWord = s.OLEFormat.ProgID;
             }
             catch (Exception)
             {
-                // Class not registered on this PC: read the ProgID from the XML.
-                try
-                {
-                    var m = Regex.Match(s.Range.WordOpenXML, "ProgID=\"([^\"]+)\"");
-                    return m.Success ? m.Groups[1].Value : null;
-                }
-                catch (Exception)
-                {
-                    return null;
-                }
             }
+            if (!string.IsNullOrEmpty(fromWord) && fromWord.StartsWith(ObjectProgIdPrefix, StringComparison.Ordinal)) return fromWord;
+            try
+            {
+                var m = Regex.Match(s.Range.WordOpenXML, "ProgID=\"([^\"]+)\"");
+                if (m.Success) return m.Groups[1].Value;
+            }
+            catch (Exception)
+            {
+            }
+            return fromWord;
+        }
+
+        /// <summary>Everything Word says about an in-line shape (spike diagnosis: what did the insertion become?).</summary>
+        private static Dictionary<string, object> Describe(Word.InlineShape s)
+        {
+            var r = new Dictionary<string, object>();
+            try { r["type"] = s.Type.ToString(); } catch (Exception ex) { r["type"] = "? " + ex.Message; }
+            try { r["oleProgId"] = s.OLEFormat.ProgID; } catch (Exception ex) { r["oleProgId"] = "(" + ex.GetType().Name + ")"; }
+            try { r["oleClassType"] = s.OLEFormat.ClassType; } catch (Exception ex) { r["oleClassType"] = "(" + ex.GetType().Name + ")"; }
+            r["alt"] = AltOf(s) ?? "";
+            r["frame"] = FrameOf(s);
+            try
+            {
+                var xml = s.Range.WordOpenXML;
+                var m = Regex.Match(xml, "ProgID=\"([^\"]+)\"");
+                r["xmlProgId"] = m.Success ? m.Groups[1].Value : null;
+                r["xmlObject"] = xml.Contains("<w:object");
+                r["xmlOleObject"] = xml.Contains("<o:OLEObject");
+                r["xmlEmbedding"] = OleEmbedding.IsMatch(xml);
+                r["xmlPicture"] = xml.Contains("<pic:pic") ? "DrawingML" : xml.Contains("<v:imagedata") ? "VML" : "none";
+            }
+            catch (Exception ex)
+            {
+                r["xml"] = "(" + ex.GetType().Name + ")";
+            }
+            return r;
         }
 
         internal static bool IsMathBlocksObject(Word.InlineShape s)
@@ -79,8 +110,27 @@ namespace MathBlocks.WordConnector
         {
             var list = new List<Word.InlineShape>();
             foreach (Word.InlineShape s in d.InlineShapes)
-                if (EquationIdentity.AltTag(AltOf(s)) == tag && IsMathBlocksObject(s)) list.Add(s);
+            {
+                if (!IsMathBlocksObject(s)) continue;
+                if (EquationIdentity.AltTag(AltOf(s)) == tag || EmbeddingHolds(s, tag)) list.Add(s);
+            }
             return list;
+        }
+
+        /// <summary>The object's own data holds this ID (when Word drops the alt text of objects).</summary>
+        private static bool EmbeddingHolds(Word.InlineShape s, string tag)
+        {
+            try
+            {
+                var m = OleEmbedding.Match(s.Range.WordOpenXML);
+                if (!m.Success) return false;
+                var bytes = Convert.FromBase64String(Regex.Replace(m.Groups[1].Value, "\\s+", ""));
+                return Encoding.ASCII.GetString(bytes).Contains("\"tag\":\"" + tag + "\"");
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         /// <summary>The range of an equation (picture, wrapper) or MathBlocks object with this ID.</summary>
@@ -165,6 +215,57 @@ namespace MathBlocks.WordConnector
                     d.Bookmarks.Add(name, f.Result);
                     f.Update();
                     return new Dictionary<string, object> { ["bookmark"] = name, ["number"] = f.Result.Text ?? "" };
+                }
+                case "typingProbe":
+                {
+                    // Which way of resetting the caret's formatting does Word honour for typed text?
+                    // For each strategy: caret after the equation (end of its paragraph), apply it, type
+                    // one character, read its lowering, undo.
+                    var tag = Rpc.GetString(p, "tag");
+                    var results = new Dictionary<string, object>();
+                    foreach (var strategy in new[] { "none", "position0", "toggle", "reset", "resetToggle" })
+                    {
+                        try
+                        {
+                            var r0 = RangeOf(d, tag);
+                            var sel = _app.Selection;
+                            sel.SetRange(r0.End, r0.End);
+                            switch (strategy)
+                            {
+                                case "position0": sel.Font.Position = 0; break;
+                                case "toggle": sel.Font.Position = 1; sel.Font.Position = 0; break;
+                                case "reset": sel.Font.Reset(); break;
+                                case "resetToggle": sel.Font.Reset(); sel.Font.Position = 1; sel.Font.Position = 0; break;
+                            }
+                            sel.TypeText("x");
+                            var typed = d.Range(sel.Start - 1, sel.Start);
+                            results[strategy] = (double)typed.Font.Position;
+                            d.Undo(1);
+                        }
+                        catch (Exception ex)
+                        {
+                            results[strategy] = ex.GetType().Name + ": " + ex.Message;
+                        }
+                    }
+                    return results;
+                }
+                case "refResults":
+                {
+                    // What every REF field pointing at this bookmark shows (nested ones included).
+                    var name = Rpc.GetString(p, "bookmark");
+                    var list = new List<object>();
+                    foreach (Word.Field f in d.Fields)
+                    {
+                        try
+                        {
+                            var code = f.Code.Text ?? "";
+                            if (code.Contains("REF " + name)) list.Add((f.Result.Text ?? "").Trim());
+                        }
+                        catch (Exception)
+                        {
+                        }
+                    }
+                    return new Dictionary<string, object> { ["results"] = list };
                 }
                 case "updateFields":
                     d.Fields.Update();
@@ -282,6 +383,19 @@ namespace MathBlocks.WordConnector
             foreach (Word.InlineShape s in d.InlineShapes) if (IsMathBlocksObject(s)) after++;
             r["objectsAdded"] = after - before;
             r["picturesAdded"] = d.InlineShapes.Count - pictures;
+            // What the insertion became: the in-line shape just before the caret.
+            try
+            {
+                var at = _app.Selection.Start;
+                Word.InlineShape last = null;
+                foreach (Word.InlineShape s in d.Range(Math.Max(0, at - 3), Math.Min(d.Content.End, at + 1)).InlineShapes) last = s;
+                if (last == null && d.InlineShapes.Count > 0) last = d.InlineShapes[d.InlineShapes.Count];
+                if (last != null) r["inserted"] = Describe(last);
+            }
+            catch (Exception ex)
+            {
+                r["inserted"] = new Dictionary<string, object> { ["error"] = ex.Message };
+            }
             Log.Info("spike: insert by " + route + " → " + (after - before) + " object(s), " + (d.InlineShapes.Count - pictures) + " inline shape(s)" + (r.ContainsKey("error") ? " — " + r["error"] : ""));
             return r;
         }

@@ -63,12 +63,17 @@ export async function runObjectSpike(c: SpikeContext) {
       const res = await smoke("insertRoute", { route: r, flatOpc: b.flatOpc });
       const info = await smoke("objectInfo", { tag: b.tag });
       const accepted = info.count === 1 && info.objectElement === true;
-      check(`${r}: Word accepts the object`, accepted, `objects added ${res.objectsAdded}, inline shapes added ${res.picturesAdded}${res.error ? `, error: ${res.error}` : ""}; kind ${info.kind ?? "-"}, ProgID ${info.progId ?? "-"}, <w:object> ${info.objectElement ?? "-"}`);
+      const ins = res.inserted ? Object.entries(res.inserted as R).map(([k, v]) => `${k}=${typeof v === "string" ? JSON.stringify(v) : v}`).join(" ") : "nothing";
+      check(`${r}: Word accepts the object`, accepted, `objects added ${res.objectsAdded}, inline shapes added ${res.picturesAdded}${res.error ? `, error: ${res.error}` : ""}; found by ID: ${info.count}; what Word inserted: ${ins}`);
       if (accepted && !route) route = r;
       await smoke("caretTo", { where: "end" });
       await smoke("newParagraph");
     });
   }
+  await step("save the routes document", async () => {
+    const sv = await smoke("save", { file: "spike routes.docx" });
+    check("routes document saved (send it with the report)", null, sv.path);
+  });
   check("an insertion route works", route !== null, route ? `using ${route} for the rest of the spike` : "Word refused the object by every route → fall back to pictures");
   if (!route) return { docO };
   const insertObject = async (latex: string, display: boolean) => {
