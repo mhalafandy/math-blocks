@@ -254,6 +254,10 @@ namespace MathBlocks.WordConnector
                     if (next.Length > 0 && " \t\r\n\v\a\u00a0".IndexOf(next[0]) < 0) return;
                 }
                 var keep = pic.Range.Font.Position;
+                // Like Ctrl+Space at the caret: the next typed text gets the paragraph's normal formatting.
+                // (Word reports the paragraph mark's formatting here — 0 — while typing would take the
+                // picture run's lowering, so the reset is always applied, not only when it reads non-zero.)
+                sel.Font.Reset();
                 if (sel.Font.Position != 0) sel.Font.Position = 0;
                 // Safety net: if Word changed the picture anyway, its lowering comes back.
                 if (pic.Range.Font.Position != keep)

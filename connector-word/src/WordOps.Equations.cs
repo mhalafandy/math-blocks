@@ -541,7 +541,41 @@ namespace MathBlocks.WordConnector
                         if (!IsTag(tag)) continue;
                     }
                     if (FindByTag(doc, tag).Count > 1) ResolveDuplicates(doc, tag);
+                    RestoreLowering(s, "after a paste");
                 }
+            }
+        }
+
+        /// <summary>
+        /// A pasted picture whose run lost its lowering (Merge Formatting drops character formatting):
+        /// the lowering comes back from the depth in its hidden source. One undo step.
+        /// </summary>
+        internal void RestoreLowering(Word.InlineShape s, string why)
+        {
+            try
+            {
+                PictureXml.Data(s.Range.WordOpenXML, out var json);
+                var depth = PictureXml.DepthPt(json);
+                if (depth == null) return;
+                var want = -(int)Math.Round(depth.Value);
+                var r = s.Range;
+                if ((int)Math.Round((double)r.Font.Position) == want) return;
+                var undo = _app.UndoRecord;
+                var own = !undo.IsRecordingCustomRecord;
+                if (own) undo.StartCustomRecord("Restore equation baseline");
+                try
+                {
+                    r.Font.Position = want;
+                }
+                finally
+                {
+                    if (own) undo.EndCustomRecord();
+                }
+                Log.Info("baseline of " + TagOf(s) + " restored to " + want + " pt (" + why + ")");
+            }
+            catch (Exception ex)
+            {
+                Log.Error("restoring an equation's baseline", ex);
             }
         }
 

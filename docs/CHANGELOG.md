@@ -25,6 +25,22 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed (from the first self-test report)
+- **Text typed after an inline equation was lowered** with it (and so were paragraph marks): at the end
+  of a paragraph Word reports the caret's formatting as 0, so the reset was skipped. The add-in now
+  resets the caret's formatting like Ctrl+Space (paragraph's normal formatting), still only at a word's
+  end, still restoring the picture's lowering if Word touches it.
+- **Merge Formatting dropped the pasted equation's lowering:** restored from the depth in its source
+  right after the paste (one undo step).
+- **A reference inserted at the end of a paragraph landed on a new line:** the extra paragraph mark
+  Word adds there is removed; the reported number is the REF field's result.
+- Self-test: a plain number format in its own document (a chapter format shows Word's "Error! No text
+  of specified style" without numbered headings); Paste Special in line as the dialog does; no undo
+  when a paste brought nothing; steps between documents act in the named document's window; Word's
+  smart cut and paste is off during the test (it removes spaces around cut objects, which made "no
+  other text changed" fail) and restored after; pictures' frame (simple VML or modern DrawingML)
+  measured through Word, since WordOpenXML exports both as DrawingML.
+
 ### Added (embedded-object spike, self-test only)
 - "Self-test + object spike" (ribbon) / command palette: MathBlocks equations as embedded OLE objects
   "MathBlocks.Equation.1" (as MathType stores Equation.DSMT4), in the self-test's own documents only.

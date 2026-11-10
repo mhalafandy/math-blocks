@@ -126,9 +126,12 @@ export async function runObjectSpike(c: SpikeContext) {
       const pre = await snap();
       await smoke("copy", { tag: one.tag });
       await smoke("caretTo", { where: "end" });
-      await pasteCheck(mode, "same document", one.tag);
-      const steps = await undoTo(pre.text);
-      check(`same document ${mode}: Ctrl+Z removes the paste`, steps > 0, steps > 0 ? `${steps} undo step(s)` : "not restored in 4 steps");
+      const pr = await pasteCheck(mode, "same document", one.tag);
+      if ((await snap()).text === pre.text) check(`same document ${mode}: nothing was pasted, nothing to undo`, null, pr.error ?? "");
+      else {
+        const steps = await undoTo(pre.text);
+        check(`same document ${mode}: Ctrl+Z removes the paste`, steps > 0, steps > 0 ? `${steps} undo step(s)` : "not restored in 4 steps");
+      }
       await smoke("caretTo", { where: "end" });
       await smoke("newParagraph");
     });
@@ -138,23 +141,19 @@ export async function runObjectSpike(c: SpikeContext) {
   await smoke("newParagraph");
   for (const mode of PASTES.filter((m) => m !== "keepTextOnly")) {
     await step(`object A → B ${mode}`, async () => {
-      await smoke("activate", { name: docO.name });
-      await smoke("copy", { tag: one.tag });
-      await smoke("activate", { name: docP.name });
-      await smoke("caretTo", { where: "end" });
-      const r = await smoke("paste", { mode });
+      await smoke("copy", { tag: one.tag, name: docO.name });
+      await smoke("caretTo", { where: "end", name: docP.name });
+      const r = await smoke("paste", { mode, name: docP.name });
       const d = r.isObject ? await readObjectData(r.embedding) : null;
       check(`into another document ${mode}: still a MathBlocks object with its data`, r.isObject && dataOk(d, one.latex) ? true : mode === "ctrlV" || mode === "keepSource" || mode === "merge" ? false : null, `object ${r.isObject ? "yes" : "no"}, data ${d ? d.latex : "none"}`);
-      await smoke("newParagraph");
+      await smoke("newParagraph", { name: docP.name });
       if (mode === "ctrlV" && r.isObject && r.objectTag) {
-        await smoke("copy", { tag: r.objectTag });
-        await smoke("activate", { name: docO.name });
-        await smoke("caretTo", { where: "end" });
-        const back = await smoke("paste", { mode: "ctrlV" });
+        await smoke("copy", { tag: r.objectTag, name: docP.name });
+        await smoke("caretTo", { where: "end", name: docO.name });
+        const back = await smoke("paste", { mode: "ctrlV", name: docO.name });
         const db = back.isObject ? await readObjectData(back.embedding) : null;
         check("back into the first document Ctrl+V: still a MathBlocks object with its data", back.isObject && dataOk(db, one.latex), `object ${back.isObject ? "yes" : "no"}`);
-        await smoke("newParagraph");
-        await smoke("activate", { name: docP.name });
+        await smoke("newParagraph", { name: docO.name });
       }
     });
   }

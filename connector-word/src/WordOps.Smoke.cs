@@ -54,6 +54,39 @@ namespace MathBlocks.WordConnector
         }
 
         private static string SmokeFolder;
+        private bool? _smartCut;
+
+        /// <summary>The selection to act on: in the named document (activated, its window's selection) or the active one.</summary>
+        private Word.Selection SelIn(Dictionary<string, object> p)
+        {
+            if (!p.ContainsKey("name") || string.IsNullOrEmpty(Rpc.GetString(p, "name"))) return _app.Selection;
+            var d = DocNamed(p);
+            d.Activate();
+            d.ActiveWindow.Activate();
+            return d.ActiveWindow.Selection;
+        }
+
+        /// <summary>
+        /// Legacy VML picture (the simple, MathType-like frame) or modern DrawingML picture. WordOpenXML
+        /// cannot tell (it exports both as DrawingML); Word refuses Title on VML pictures, which can.
+        /// </summary>
+        internal static string FrameOf(Word.InlineShape s)
+        {
+            try
+            {
+                if (s.Type == Word.WdInlineShapeType.wdInlineShapeEmbeddedOLEObject) return "object";
+                var _ = s.Title;
+                return "modern";
+            }
+            catch (NotImplementedException)
+            {
+                return "legacy";
+            }
+            catch (Exception)
+            {
+                return "unknown";
+            }
+        }
 
         public Dictionary<string, object> Smoke(Dictionary<string, object> p)
         {
@@ -63,12 +96,29 @@ namespace MathBlocks.WordConnector
                 case "begin":
                 {
                     Testing = true;
+                    // Word's "smart cut and paste" adds and removes spaces around what is cut or pasted; off
+                    // during the test so "nothing else changed" means what it says. Restored at the end.
+                    try
+                    {
+                        _smartCut = _app.Options.SmartCutPaste;
+                        _app.Options.SmartCutPaste = false;
+                    }
+                    catch (Exception)
+                    {
+                    }
                     SmokeFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MathBlocks", "self-test", DateTime.Now.ToString("yyyy-MM-dd HH.mm.ss"));
                     Directory.CreateDirectory(SmokeFolder);
-                    return new Dictionary<string, object> { ["folder"] = SmokeFolder, ["word"] = _app.Build };
+                    return new Dictionary<string, object> { ["folder"] = SmokeFolder, ["word"] = _app.Build, ["smartCutPaste"] = _smartCut };
                 }
                 case "end":
                     Testing = false;
+                    try
+                    {
+                        if (_smartCut.HasValue) _app.Options.SmartCutPaste = _smartCut.Value;
+                    }
+                    catch (Exception)
+                    {
+                    }
                     return new Dictionary<string, object> { ["ok"] = true };
                 case "newDocument":
                 {
@@ -83,15 +133,22 @@ namespace MathBlocks.WordConnector
                     return new Dictionary<string, object> { ["ok"] = true };
                 }
                 case "typeText":
+                {
                     // As the user types: Word gives the text the formatting at the caret.
-                    _app.Selection.TypeText(Rpc.GetString(p, "text"));
-                    return new Dictionary<string, object> { ["caret"] = _app.Selection.Start };
+                    var sel = SelIn(p);
+                    sel.TypeText(Rpc.GetString(p, "text"));
+                    return new Dictionary<string, object> { ["caret"] = sel.Start };
+                }
                 case "newParagraph":
-                    _app.Selection.TypeParagraph();
-                    return new Dictionary<string, object> { ["caret"] = _app.Selection.Start };
+                {
+                    var sel = SelIn(p);
+                    sel.TypeParagraph();
+                    return new Dictionary<string, object> { ["caret"] = sel.Start };
+                }
                 case "caretTo":
                 {
-                    var d = _app.ActiveDocument;
+                    var sel0 = SelIn(p);
+                    var d = sel0.Document;
                     var where = Rpc.GetString(p, "where");
                     int pos;
                     if (where == "start") pos = 0;
@@ -101,7 +158,7 @@ namespace MathBlocks.WordConnector
                         var r = RangeOf(d, Rpc.GetString(p, "tag"));
                         pos = where == "before" ? r.Start : where == "paragraphStart" ? r.Paragraphs[1].Range.Start : r.End;
                     }
-                    d.Range(pos, pos).Select();
+                    sel0.SetRange(pos, pos);
                     return new Dictionary<string, object> { ["caret"] = pos };
                 }
                 case "caret":
@@ -129,13 +186,13 @@ namespace MathBlocks.WordConnector
                 case "snapshot":
                     return Snapshot(_app.ActiveDocument);
                 case "copy":
-                    RangeOf(_app.ActiveDocument, Rpc.GetString(p, "tag")).Copy();
+                    RangeOf(SelIn(p).Document, Rpc.GetString(p, "tag")).Copy();
                     return new Dictionary<string, object> { ["ok"] = true };
                 case "cut":
                     RangeOf(_app.ActiveDocument, Rpc.GetString(p, "tag")).Cut();
                     return new Dictionary<string, object> { ["ok"] = true };
                 case "paste":
-                    return Paste(Rpc.GetString(p, "mode"));
+                    return Paste(Rpc.GetString(p, "mode"), SelIn(p));
                 case "moveFormatted":
                 {
                     // The nearest COM equivalent of a drag: the equation's formatted content placed at the
@@ -206,6 +263,7 @@ namespace MathBlocks.WordConnector
                 r["heightPt"] = (double)eq.Picture.Height;
                 r["widthPt"] = (double)eq.Picture.Width;
                 r["kind"] = eq.Picture.Type.ToString();
+                r["frame"] = FrameOf(eq.Picture);
             }
             // The next character after the equation (text typed after it).
             var next = d.Range(eq.After, Math.Min(eq.After + 1, d.Content.End));
@@ -254,10 +312,9 @@ namespace MathBlocks.WordConnector
         }
 
         /// <summary>Pastes at the selection in one of Word's paste modes; reports what arrived and what the add-in makes of it.</summary>
-        private Dictionary<string, object> Paste(string mode)
+        private Dictionary<string, object> Paste(string mode, Word.Selection sel)
         {
-            var d = _app.ActiveDocument;
-            var sel = _app.Selection;
+            var d = sel.Document;
             int at = sel.Start;
             int beforePictures = d.InlineShapes.Count, beforeShapes = d.Shapes.Count;
             var r = new Dictionary<string, object> { ["mode"] = mode };
@@ -269,9 +326,19 @@ namespace MathBlocks.WordConnector
                     case "keepSource": sel.PasteAndFormat(Word.WdRecoveryType.wdFormatOriginalFormatting); break;
                     case "merge": sel.PasteAndFormat(Word.WdRecoveryType.wdFormatSurroundingFormattingWithEmphasis); break;
                     case "keepTextOnly": sel.PasteAndFormat(Word.WdRecoveryType.wdFormatPlainText); break;
-                    case "pictureEmf": sel.PasteSpecial(DataType: Word.WdPasteDataType.wdPasteEnhancedMetafile); break;
+                    // In line, as the Paste Special dialog does by default ("Float over text" unticked).
+                    case "pictureEmf": sel.PasteSpecial(DataType: Word.WdPasteDataType.wdPasteEnhancedMetafile, Placement: Word.WdOLEPlacement.wdInLine); break;
                     // Word's "Picture (PNG)" has no constant in the object model; a bitmap paste is the nearest.
-                    case "picturePng": sel.PasteSpecial(DataType: Word.WdPasteDataType.wdPasteDeviceIndependentBitmap); break;
+                    case "picturePng":
+                        try
+                        {
+                            sel.PasteSpecial(DataType: Word.WdPasteDataType.wdPasteDeviceIndependentBitmap, Placement: Word.WdOLEPlacement.wdInLine);
+                        }
+                        catch (COMException)
+                        {
+                            sel.PasteSpecial(DataType: Word.WdPasteDataType.wdPasteBitmap, Placement: Word.WdOLEPlacement.wdInLine);
+                        }
+                        break;
                     default: throw new RpcException(Rpc.InvalidParams, "Unknown paste mode " + mode);
                 }
             }
@@ -287,7 +354,7 @@ namespace MathBlocks.WordConnector
             r["afterIdleFloating"] = d.Shapes.Count - beforeShapes;
             // The pasted picture: the in-line picture closest after the paste position.
             Word.InlineShape pasted = null;
-            foreach (Word.InlineShape s in d.Range(Math.Max(0, at - 1), Math.Min(d.Content.End, _app.Selection.End + 1)).InlineShapes)
+            foreach (Word.InlineShape s in d.Range(Math.Max(0, at - 1), Math.Min(d.Content.End, sel.End + 1)).InlineShapes)
             {
                 pasted = s;
                 break;
@@ -313,6 +380,7 @@ namespace MathBlocks.WordConnector
             r["heightPt"] = (double)pasted.Height;
             r["positionPt"] = (double)pasted.Range.Font.Position;
             r["sourceJson"] = json;
+            r["frame"] = FrameOf(pasted);
             r["isObject"] = IsMathBlocksObject(pasted);
             if ((bool)r["isObject"])
             {

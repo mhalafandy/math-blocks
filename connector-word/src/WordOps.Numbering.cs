@@ -318,19 +318,50 @@ namespace MathBlocks.WordConnector
             {
                 var r = _app.Selection.Range;
                 int start = r.Start;
-                r.InsertXML(NumberFields.Package(NumberFields.ReferenceRuns(target)));
+                InsertInline(doc, r, NumberFields.Package(NumberFields.ReferenceRuns(target)));
                 var inserted = doc.Range(start, _app.Selection.Range.End);
                 inserted.Fields.Update();
+                // The number shown is the REF field's result (inside GOTOBUTTON's display text).
                 var text = "";
                 foreach (Word.Field f in inserted.Fields)
                 {
-                    try { if ((f.Code.Text ?? "").Contains("GOTOBUTTON")) { text = f.Result.Text ?? ""; break; } } catch (COMException) { }
+                    try
+                    {
+                        var code = f.Code.Text ?? "";
+                        if (code.Contains("REF ") && !code.Contains("GOTOBUTTON")) { text = f.Result.Text ?? ""; break; }
+                    }
+                    catch (COMException)
+                    {
+                    }
                 }
                 return new Dictionary<string, object> { ["text"] = text.Trim() };
             }
             finally
             {
                 undo.EndCustomRecord();
+            }
+        }
+
+        /// <summary>
+        /// InsertXML of a one-paragraph package at a point, staying in that paragraph: at the end of a
+        /// paragraph Word can add a paragraph mark before the inserted runs (self-test: a reference
+        /// typed after "See " landed on a new line); that mark is removed.
+        /// </summary>
+        internal static void InsertInline(Word.Document doc, Word.Range at, string package)
+        {
+            int start = at.Start;
+            int before = doc.Paragraphs.Count;
+            at.InsertXML(package);
+            try
+            {
+                if (doc.Paragraphs.Count == before + 1 && (doc.Range(start, start + 1).Text ?? "") == "\r")
+                {
+                    doc.Range(start, start + 1).Delete();
+                    Log.Info("insert: removed the paragraph mark Word added before inserted runs");
+                }
+            }
+            catch (COMException)
+            {
             }
         }
 

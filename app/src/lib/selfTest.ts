@@ -84,7 +84,9 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
   };
   const number = async (tag: string, latex: string) => {
     const { flatOpc } = await buildInsertion(latex, false, profile, tag, "classic", true);
-    return connector.request("numberEquation", { tag, flatOpc, ...numberFormat(useApp.getState().numberStyle) }, SLOW);
+    // Plain (1), (2): the test document has no numbered headings, so a chapter format would show
+    // Word's "Error! No text of specified style" (as it would in any document without them).
+    return connector.request("numberEquation", { tag, flatOpc, ...numberFormat(useApp.getState().numberStyle), chapter: false, parts: "eq" }, SLOW);
   };
   const unnumber = async (tag: string, latex: string) => {
     const { flatOpc } = await buildInsertion(latex, true, profile, tag, "classic");
@@ -225,7 +227,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
           if (r.picture) {
             const o = orig;
             const diffs: string[] = [];
-            if (r.vml !== o.vml || r.drawingml !== o.drawingml) diffs.push(`format ${r.vml ? "VML" : r.drawingml ? "DrawingML" : "?"} (original ${o.vml ? "VML" : "DrawingML"})`);
+            if (r.frame !== o.frame) diffs.push(`frame ${r.frame === "legacy" ? "simple (VML)" : r.frame === "modern" ? "modern picture (DrawingML: rotate handle, Picture Format)" : r.frame} (original ${o.frame === "legacy" ? "simple (VML)" : o.frame})`);
             if (r.kind !== o.kind) diffs.push(`kind ${r.kind} (original ${o.kind})`);
             if ((r.afterIdleFloating ?? 0) !== 0 || (r.newFloating ?? 0) !== 0) diffs.push(`floating ${r.newFloating}`);
             if (Math.abs(r.widthPt - o.widthPt) > 0.2 || Math.abs(r.heightPt - o.heightPt) > 0.2) diffs.push(`size ${r.widthPt}×${r.heightPt} (original ${o.widthPt}×${o.heightPt})`);
@@ -245,8 +247,11 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
           }
           check(`${mode}: the original keeps its ID and opens`, origStill, "");
           check(`${mode}: pasted in line (no floating picture left)`, (r.afterIdleFloating ?? 0) === 0, `floating after idle ${r.afterIdleFloating}`);
-          const steps = await undoTo(pre.text);
-          check(`${mode}: Ctrl+Z removes the paste`, steps > 0, steps > 0 ? `${steps} undo step(s)` : "not restored in 4 steps");
+          if ((await snap()).text === pre.text) check(`${mode}: nothing was pasted, nothing to undo`, null, r.error ?? "");
+          else {
+            const steps = await undoTo(pre.text);
+            check(`${mode}: Ctrl+Z removes the paste`, steps > 0, steps > 0 ? `${steps} undo step(s)` : "not restored in 4 steps");
+          }
           await smoke("caretTo", { where: "end" });
           await smoke("newParagraph");
         });
@@ -261,24 +266,20 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     if (src) {
       for (const mode of PASTE_MODES.filter((m) => m !== "keepTextOnly")) {
         await step(`A → B ${mode}`, async () => {
-          await smoke("activate", { name: docA.name });
-          await smoke("copy", { tag: src.tag });
-          await smoke("activate", { name: docB.name });
-          await smoke("caretTo", { where: "end" });
-          const r = await smoke("paste", { mode });
+          await smoke("copy", { tag: src.tag, name: docA.name });
+          await smoke("caretTo", { where: "end", name: docB.name });
+          const r = await smoke("paste", { mode, name: docB.name });
           const opensAs = r.opensFlatOpc ? latexOf(r.opensFlatOpc) : null;
           const ok = mode === "picturePng" ? null : !!r.recognisedAs && opensAs === norm(src.latex);
           check(`A → B ${mode}: recognised and opens in the other document`, ok, `alt "${r.alt ?? ""}", source ${r.hasSource ? "yes" : "no"}, recognised ${r.recognisedAs ?? "no"}, opens ${opensAs}`);
-          await smoke("newParagraph");
+          await smoke("newParagraph", { name: docB.name });
           if (mode === "ctrlV" && r.recognisedAs) {
             // And back into A: a copy there, with its own ID.
-            await smoke("copy", { tag: r.recognisedAs });
-            await smoke("activate", { name: docA.name });
-            await smoke("caretTo", { where: "end" });
-            const back = await smoke("paste", { mode: "ctrlV" });
+            await smoke("copy", { tag: r.recognisedAs, name: docB.name });
+            await smoke("caretTo", { where: "end", name: docA.name });
+            const back = await smoke("paste", { mode: "ctrlV", name: docA.name });
             check("B → A Ctrl+V: a copy with its own ID that opens", !!back.recognisedAs && back.recognisedAs !== src.tag && latexOf(back.opensFlatOpc) === norm(src.latex), `recognised ${back.recognisedAs}`);
-            await smoke("newParagraph");
-            await smoke("activate", { name: docB.name });
+            await smoke("newParagraph", { name: docA.name });
           }
         });
       }
@@ -346,7 +347,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
   const spike = checks.filter((c) => c.section.startsWith("Spike"));
   lines.push(
     `MathBlocks Word self-test — ${new Date().toLocaleString()}`,
-    `Word ${begin.word}; look ${useApp.getState().look}; equation size ${useApp.getState().equationSizePt} pt`,
+    `Word ${begin.word}; look ${useApp.getState().look}; equation size ${useApp.getState().equationSizePt} pt; Word's smart cut and paste ${begin.smartCutPaste ? "on (turned off during the test, restored after)" : "off"}`,
     `Current design (pictures): ${count(main)}`,
     ...(spike.length ? [`Embedded-object spike: ${count(spike)}`] : []),
     "",
