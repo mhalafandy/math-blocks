@@ -1,5 +1,5 @@
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
-import { buildObjectInsertion, MB_OBJECT_PROGID, readObjectData, type ObjectData } from "./equation";
+import { buildMathTypeControlInsertion, buildObjectInsertion, MB_OBJECT_PROGID, readObjectData, type ObjectData } from "./equation";
 
 /**
  * Embedded-object spike, part of the Word self-test: a Classic equation stored as an embedded OLE
@@ -66,6 +66,23 @@ export async function runObjectSpike(c: SpikeContext) {
       const ins = res.inserted ? Object.entries(res.inserted as R).map(([k, v]) => `${k}=${typeof v === "string" ? JSON.stringify(v) : v}`).join(" ") : "nothing";
       check(`${r}: Word accepts the object`, accepted, `objects added ${res.objectsAdded}, inline shapes added ${res.picturesAdded}${res.error ? `, error: ${res.error}` : ""}; found by ID: ${info.count}; what Word inserted: ${ins}`);
       if (accepted && !route) route = r;
+      await smoke("caretTo", { where: "end" });
+      await smoke("newParagraph");
+      // Control: a real MathType object (Equation.DSMT4, generated test object) by the same route.
+      await smoke("typeText", { text: `Control (MathType) ${r}: ` });
+      const cres = await smoke("insertRoute", { route: r, flatOpc: await buildMathTypeControlInsertion() });
+      const ci = (cres.inserted ?? {}) as R;
+      const mtKept = ci.type === "wdInlineShapeEmbeddedOLEObject" && /Equation\.DSMT4/.test(`${ci.oleProgId} ${ci.xmlProgId}`) && ci.xmlObject === true;
+      check(
+        `${r}: MathType control object kept as an object`,
+        mtKept,
+        `what Word inserted: ${Object.entries(ci).map(([k, v]) => `${k}=${typeof v === "string" ? JSON.stringify(v) : v}`).join(" ")}${cres.error ? `, error: ${cres.error}` : ""}`,
+      );
+      check(
+        `${r}: verdict`,
+        null,
+        accepted && mtKept ? "both kept as objects" : !accepted && mtKept ? "MathType's survives, ours does not → the fault is in our object" : !accepted && !mtKept ? "both lost → the route" : "ours kept, MathType's not",
+      );
       await smoke("caretTo", { where: "end" });
       await smoke("newParagraph");
     });

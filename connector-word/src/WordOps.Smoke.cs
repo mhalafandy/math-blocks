@@ -108,7 +108,7 @@ namespace MathBlocks.WordConnector
                     }
                     SmokeFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MathBlocks", "self-test", DateTime.Now.ToString("yyyy-MM-dd HH.mm.ss"));
                     Directory.CreateDirectory(SmokeFolder);
-                    return new Dictionary<string, object> { ["folder"] = SmokeFolder, ["word"] = _app.Build, ["smartCutPaste"] = _smartCut };
+                    return new Dictionary<string, object> { ["folder"] = SmokeFolder, ["word"] = _app.Build, ["addin"] = Connect.Version, ["smartCutPaste"] = _smartCut };
                 }
                 case "end":
                     Testing = false;

@@ -163,3 +163,17 @@ export async function readObjectData(base64: string | null | undefined): Promise
     return null;
   }
 }
+
+/** The MathType control object (a generated Equation.DSMT4), for the spike. */
+export async function buildMathTypeControlInsertion() {
+  const { MATHTYPE_CONTROL: c } = await import("./fixtures/mathtypeControl");
+  const n = ++pictureCounter;
+  const run = oleObjectRun({ imageRId: "rIdMtW1", oleRId: "rIdMtO1", progId: "Equation.DSMT4", widthPt: c.widthPt, heightPt: c.heightPt, depthPt: -c.positionHalfPt / 2, id: (Date.now() % 1_000_000) * 10 + (n % 10), alt: "" });
+  return flatOpc(
+    [paragraph(run)],
+    [
+      { rId: "rIdMtW1", target: `media/mathtype${n}.wmf`, contentType: "image/x-wmf", base64: c.wmfBase64 },
+      { rId: "rIdMtO1", target: `embeddings/mathtype${n}.bin`, contentType: "application/vnd.openxmlformats-officedocument.oleObject", base64: c.oleBase64, relType: REL_OLE_OBJECT },
+    ],
+  );
+}

@@ -114,7 +114,7 @@ namespace MathBlocks.WordConnector
         public void OnBeginShutdown(ref Array custom) { }
 
         /// <summary>Build version (CI stamps 0.1.&lt;build&gt;; the COM AssemblyVersion stays fixed).</summary>
-        private static string Version
+        internal static string Version
         {
             get
             {

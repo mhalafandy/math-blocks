@@ -103,6 +103,12 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     return -1;
   };
   const begin = await smoke("begin");
+  let appVersion = "browser preview";
+  try {
+    if ((await import("./connector")).isDesktop()) appVersion = await (await import("@tauri-apps/api/app")).getVersion();
+  } catch {
+    appVersion = "unknown";
+  }
   const lines: string[] = [];
   app.notify("Running the Word self-test… (Word will show test documents; do not type in Word until it finishes)");
 
@@ -358,6 +364,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
   const spike = checks.filter((c) => c.section.startsWith("Spike"));
   lines.push(
     `MathBlocks Word self-test — ${new Date().toLocaleString()}`,
+    `MathBlocks app ${appVersion}; Word add-in ${begin.addin ?? "unknown (older add-in)"}`,
     `Word ${begin.word}; look ${useApp.getState().look}; equation size ${useApp.getState().equationSizePt} pt; Word's smart cut and paste ${begin.smartCutPaste ? "on (turned off during the test, restored after)" : "off"}`,
     `Current design (pictures): ${count(main)}`,
     ...(spike.length ? [`Embedded-object spike: ${count(spike)}`] : []),
