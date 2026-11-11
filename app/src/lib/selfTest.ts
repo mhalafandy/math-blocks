@@ -404,7 +404,8 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     await step("whole-document operations", async () => {
       const docU = await smoke("newDocument");
       await smoke("typeText", { text: "Undo test: bold spread " });
-      await insert("\\mathbf{r_{i}}", false);
+      // Bold that spread onto the index (the parser already keeps \\mathbf{r_{i}} on the base).
+      await insert("\\mathbf{r}_{\\mathbf{i}}", false);
       await smoke("typeText", { text: " and a transpose " });
       await insert("\\mathbf{A}^{\\mathbf{T}}\\mathbf{x}", false);
       await smoke("typeText", { text: "." });

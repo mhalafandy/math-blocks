@@ -387,14 +387,27 @@ namespace MathBlocks.WordConnector
                 case "staleNumbers":
                 {
                     // Equation numbers out of date (as after moving equations), so Update numbers has work.
+                    // The shown counter is nested in the number's MACROBUTTON field: every field of the
+                    // document's range, nested ones included.
                     int n = 0;
-                    foreach (Word.Field f in d.Fields)
+                    foreach (Word.Field f in d.Content.Fields)
                     {
-                        string code;
-                        try { code = f.Code.Text ?? ""; } catch (Exception) { continue; }
-                        if (!code.Contains("SEQ MBEq")) continue;
-                        f.Result.Text = "9";
-                        n++;
+                        var all = new List<Word.Field> { f };
+                        try { foreach (Word.Field inner in f.Code.Fields) all.Add(inner); } catch (Exception) { }
+                        foreach (var g in all)
+                        {
+                            string code;
+                            try { code = g.Code.Text ?? ""; } catch (Exception) { continue; }
+                            if (!code.Contains("SEQ MBEq") || !code.Contains("\\c")) continue;
+                            try
+                            {
+                                g.Result.Text = "9";
+                                n++;
+                            }
+                            catch (Exception)
+                            {
+                            }
+                        }
                     }
                     return new Dictionary<string, object> { ["fields"] = n };
                 }
