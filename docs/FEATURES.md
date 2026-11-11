@@ -77,8 +77,9 @@ by meaning, numbering/references, MathType migration, precision mode, dependency
 1. **Embedded-object build**, remaining steps: 5 (menus and clicks) and 6 (self-test fully on objects:
    tracked changes, undo/redo, per-user class registration, PDF from Word and Acrobat).
 2. **Priority 2:** own notation kinds, quick-style bar, bold Greek, upright frame labels.
-3. **MathType parity and beyond** (below).
-4. 1c, then the Accents page.
+3. 1c.
+4. The Accents page.
+5. **MathType parity and beyond** (below).
 
 ### MathType parity and beyond (from the MathType Add-in for Microsoft 365)
 Not started. Ordered by value for the thesis.
