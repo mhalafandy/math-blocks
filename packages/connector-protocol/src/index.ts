@@ -245,6 +245,21 @@ export interface AppToConnector {
   };
   /** Replaces several equations (by tag) in one undo step. */
   replaceMany: { params: DocTarget & { items: { tag: string; flatOpc: string; expect?: string }[]; undoLabel: string; verified?: boolean }; result: { replaced: number; missing: string[]; refused?: { tag: string; reason: string }[] } };
+  /** LaTeX interchange: the paragraphs with LaTeX, equation numbers or numbering markers, and the number bookmarks already there. */
+  scanInterchange: {
+    params: DocTarget;
+    result: {
+      name: string;
+      fullName: string;
+      paragraphs: { start: number; end: number; text: string; style: string; numbered?: boolean; marker?: { chapter: number; appendix: boolean }; complex?: boolean }[];
+      bookmarks: string[];
+    };
+  };
+  /** LaTeX interchange: writes the planned items (one undo step), then updates numbers and references. */
+  convertInterchange: {
+    params: DocTarget & { items: (Record<string, unknown> & { id: number; kind: string; start: number; end: number; expect: string })[]; format: Record<string, unknown>; undoLabel: string };
+    result: { results: { id: number; ok: boolean; problem: string }[]; done: number; ms: number; numbers: number; references: number; undoBrokenAt?: string };
+  };
   /** The checks of replaceMany alone (before an operation opens its undo record: they read Word's XML, which ends it). */
   verifyMany: { params: DocTarget & { items: { tag: string; flatOpc: string; expect?: string }[]; undoLabel: string }; result: { replaced: number; missing: string[]; refused?: { tag: string; reason: string }[] } };
   /**

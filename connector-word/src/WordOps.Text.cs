@@ -177,7 +177,8 @@ namespace MathBlocks.WordConnector
             var r = para.Duplicate;
             var f = r.Find;
             f.ClearFormatting();
-            f.Text = text;
+            // ^ starts Word's special codes (^p, ^#…) even without wildcards: LaTeX's ^ is doubled.
+            f.Text = text.Replace("^", "^^");
             f.MatchWildcards = false;
             f.MatchCase = true;
             f.Forward = true;

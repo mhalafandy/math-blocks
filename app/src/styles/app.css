@@ -780,3 +780,10 @@ html.panel-window, html.panel-window body, html.panel-window #root { height: aut
 .editing-target { display: inline-flex; align-items: center; gap: 6px; max-width: 40%; overflow: hidden; white-space: nowrap; padding: 0 6px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); font-size: 12px; }
 .editing-target code { color: var(--text-3); font-size: 11px; }
 .editing-target .math-preview { font-size: 13px; }
+
+/* Convert LaTeX pre-flight / result list */
+.issue-list { margin: 8px 0; padding-left: 18px; font-size: 12.5px; }
+.issue-list li { margin: 4px 0; }
+.issue-list li.error strong { color: var(--bad); }
+.issue-list li.warning strong { color: var(--warn, #b26a00); }
+.issue-list code { display: inline-block; max-width: 100%; white-space: pre-wrap; word-break: break-word; opacity: 0.85; }

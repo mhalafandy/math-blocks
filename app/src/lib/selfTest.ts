@@ -3,6 +3,7 @@ import { addinSupports, connector } from "./connector";
 import { buildInsertion, buildPictureInsertion, currentProfile } from "./equation";
 import { numberFormat } from "./numbering";
 import { readEquationXml } from "./readEquation";
+import { planInterchange, type InterchangeScan } from "./latexInterchange";
 import { useApp } from "./store";
 
 /**
@@ -433,6 +434,81 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const { convertAllLatex } = await import("./wordShortcuts");
       await oneCtrlZ("Convert LaTeX", docU.name, () => convertAllLatex(undefined, { yes: true }));
       await smoke("save", { file: "undo test.docx" });
+    });
+
+    section = "Convert LaTeX: interchange convention document";
+    await step("interchange conversion", async () => {
+      const { interchangeDocx, INTERCHANGE_EXPECTED: X } = await import("./interchangeFixture");
+      const { toBase64 } = await import("./render");
+      const docI = await smoke("openDocx", { file: "interchange test.docx", base64: toBase64(interchangeDocx()) });
+      const { convertLatexDocument, describeResult } = await import("./latexInterchangeRun");
+      let res: Awaited<ReturnType<typeof convertLatexDocument>> = null;
+      await oneCtrlZ("Convert LaTeX (interchange document)", docI.name, async () => {
+        res = await convertLatexDocument({ yes: true });
+      });
+      const r = res as Awaited<ReturnType<typeof convertLatexDocument>>;
+      if (!r) {
+        check("interchange conversion ran", false, "the add-in does not support it");
+        return;
+      }
+      const c = r.plan.counts;
+      const errs = r.plan.issues.filter((i) => i.severity === "error").length;
+      const warns = r.plan.issues.filter((i) => i.severity === "warning").length;
+      check("pre-flight: the counts of the convention document", c.inline === X.inline && c.display === X.display && c.numbered === X.numbered && c.references === X.references && c.markers === X.markers, `${c.inline} inline, ${c.display} display, ${c.numbered} numbered, ${c.references} references, ${c.markers} markers`);
+      check("pre-flight: every deliberate error and warning is listed", errs === X.errors && warns === X.warnings, `${errs} error(s), ${warns} warning(s): ${r.plan.issues.map((i) => i.what.slice(0, 40)).join(" | ")}`);
+      check("every planned item was written", r.failed.length === 0 && r.written === r.planned, `${r.written}/${r.planned}${r.failed.length ? `; ${r.failed.map((f) => `${f.what}: ${f.problem}`).join("; ")}` : ""}`);
+      check("time per equation", null, describeResult(r));
+      check("Word kept the conversion in one undo record", !r.undoBrokenAt, r.undoBrokenAt ? `closed early at: ${r.undoBrokenAt}` : "intact");
+      // Bookmarks named from the labels, showing the computed numbers.
+      for (const bm of X.bookmarks) {
+        const label = bm.replace(/^_MBEq_/, "");
+        const t = await smoke("bookmarkText", { bookmark: bm });
+        check(`number of eq:${label}: bookmark ${bm} shows ${X.numbers[label]}`, t.exists && String(t.text).replace(/\s/g, "") === X.numbers[label], t.exists ? `shows "${t.text}"` : "no such bookmark");
+      }
+      // References, also after Update numbers.
+      const refsOk = async () => {
+        const a = (await smoke("refResults", { bookmark: "_MBEq_velocity" })).results as string[];
+        const b = (await smoke("refResults", { bookmark: "_MBEqN_velocity" })).results as string[];
+        const o = (await smoke("refResults", { bookmark: "_MBEq_oscillator" })).results as string[];
+        return { ok: a.length === 1 && a[0] === "(3.1)" && b.length === 1 && b[0] === "3.1" && o.length === 1 && o[0] === "(A.3)", detail: `\\eqref velocity ${JSON.stringify(a)}, \\ref velocity ${JSON.stringify(b)}, \\eqref oscillator ${JSON.stringify(o)}` };
+      };
+      const refs1 = await refsOk();
+      check("references show the numbers (\\eqref with brackets, \\ref without)", refs1.ok, refs1.detail);
+      await connector.request("updateNumbers", {}, SLOW);
+      const refs2 = await refsOk();
+      check("references still right after Update numbers", refs2.ok, refs2.detail);
+      // Layout of a numbered equation: centred, number at the right margin.
+      const at = await smoke("bookmarkPara", { bookmark: "_MBEq_position" });
+      if (at.exists) {
+        const pi = await smoke("paraInfo", { pos: at.start });
+        check("numbered equation: kept its MTDisplayEquation style", pi.style === "MTDisplayEquation", `style ${pi.style}`);
+        check("numbered equation: number at the right margin", Math.abs(Number(pi.numberEnd) - Number(pi.textRight)) < 3, `number ends at ${Number(pi.numberEnd).toFixed(1)} pt, right margin ${Number(pi.textRight).toFixed(1)} pt`);
+        check("numbered equation: centred on the text width", Math.abs(Number(pi.equationCenter) - Number(pi.textCenter)) < 3, `equation centre ${Number(pi.equationCenter).toFixed(1)} pt, text centre ${Number(pi.textCenter).toFixed(1)} pt`);
+      } else check("numbered equation layout", false, "bookmark _MBEq_position not found");
+      // Inline equations on the baseline, as objects.
+      const inline = r.tags.find((t) => t.kind === "inline");
+      if (inline) {
+        const info = await smoke("pictureInfo", { tag: inline.tag });
+        const want = -Math.round(Number(info.depthPt ?? NaN));
+        check("inline equation: an embedded object lowered by its depth", info.frame === "object" && Math.round(info.positionPt) === want, `frame ${info.frame}, run position ${info.positionPt} pt, depth ${info.depthPt} pt`);
+      }
+      // What is left: only the deliberate errors; markers became hidden marker paragraphs.
+      const again = planInterchange((await connector.request("scanInterchange", {}, SLOW)) as InterchangeScan);
+      const leftValid = again.equations.filter((e) => !e.invalid).length + again.markers.length + again.references.filter((x) => x.resolved).length;
+      check("a second run finds only the deliberate errors", leftValid === 0, `${leftValid} item(s) still to convert; ${again.issues.length} issue(s) left`);
+      const scan2 = (await connector.request("scanInterchange", {}, SLOW)) as InterchangeScan;
+      check("\\mbnumbering became numbering markers", scan2.paragraphs.filter((p) => p.marker).length === X.markers, `${scan2.paragraphs.filter((p) => p.marker).length} marker(s)`);
+      await smoke("save", { file: "interchange test (converted).docx" });
+    });
+    await step("interchange speed", async () => {
+      // Time per equation on a 150-equation document (100 numbered, 50 inline, 50 references).
+      const { interchangeDocx, interchangeSpeedParagraphs } = await import("./interchangeFixture");
+      const { toBase64 } = await import("./render");
+      await smoke("openDocx", { file: "interchange speed.docx", base64: toBase64(interchangeDocx(interchangeSpeedParagraphs())) });
+      const { convertLatexDocument, describeResult } = await import("./latexInterchangeRun");
+      const r = await convertLatexDocument({ yes: true });
+      check("150-equation document: all converted", !!r && r.equations === 150 && r.failed.length === 0, r ? `${r.equations} equation(s), ${r.failed.length} not written` : "did not run");
+      check("150-equation document: time per equation", null, r ? describeResult(r) : "");
     });
 
     section = "Repair: Classic pictures become embedded objects";

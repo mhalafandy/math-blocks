@@ -16,7 +16,8 @@
     "dev": "pnpm --filter @mathblocks/app dev",
     "app:dev": "pnpm --filter @mathblocks/app tauri dev",
     "app:build": "pnpm --filter @mathblocks/app tauri build",
-    "spike:precision": "tsx tools/make-precision-spike.ts"
+    "spike:precision": "tsx tools/make-precision-spike.ts",
+    "interchange:doc": "tsx tools/latex-interchange.ts"
   },
   "devDependencies": {
     "@mathblocks/math-core": "workspace:*",

@@ -25,6 +25,29 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added — LaTeX interchange: a transcribed document becomes finished equations in one Convert LaTeX
+- Convention for documents with math as LaTeX text (inline $…$; display TAB $$…$$ in
+  MTDisplayEquation; numbered with TAB \label{eq:KEY}; \eqref/\ref; \mbnumbering{3} / {A} after each
+  heading; notation-kind macros). docs/LATEX-INTERCHANGE.md states it with the exact LaTeX subset,
+  generated from the parser's real support (`pnpm interchange:doc`; CI fails when it is out of date).
+- Convert LaTeX on a whole document: a pre-flight report before anything is written (counts; every
+  parse error, unknown command, duplicate label, unresolved reference, malformed display paragraph and
+  typed number that differs, each with a snippet); stop, or convert the valid items.
+- Output: inline objects on the baseline; display equations as objects in the paragraph's own style,
+  centred; numbered ones with the number field at the right tab and a bookmark named from the label;
+  \mbnumbering as the hidden numbering marker; references as cross-reference fields, unresolved ones
+  highlighted and listed; numbers and references updated at the end. One Ctrl+Z, a backup for large
+  documents, the document stays in front; re-running converts only what is left.
+- Older forms: typed numbers "(A.n)" become number fields (warning when the computed one differs);
+  MathType-style \mathbf{\overset{…\rightharpoonup}{c}}, \vec{\mathbf{S}}, \vec{\mathbf{I}} and
+  \left[\begin{array}…\right] become \pvec, \vectrix, \dyadic and bmatrix.
+- Word's autocorrect inside LaTeX (smart quotes, dashes, minus sign, non-breaking spaces, line breaks,
+  soft hyphens, …) is undone before parsing.
+- Time per equation in the result; the self-test converts a synthetic convention document (checks:
+  counts, errors listed, bookmarks and numbers, references before and after Update numbers, number at
+  the right margin, centring, baseline, one Ctrl+Z, second run) and a 150-equation document (time).
+- Fix: finding LaTeX text with Word's Find no longer misreads ^ (Word's special codes).
+
 ### Fixed — one Ctrl+Z for every whole-document operation; add-in enabled mid-session
 - Convert MathType (open document), Convert LaTeX and Update numbers run inside one undo record with a
   steady busy pointer, and report where Word closed it early if it ever does. Update numbers had no

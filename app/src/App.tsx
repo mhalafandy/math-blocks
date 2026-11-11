@@ -32,6 +32,7 @@ import { ThesisDialog } from "./components/ThesisDialog";
 import { NormalizeBoldDialog } from "./components/NormalizeBoldDialog";
 import { FontCompareDialog } from "./components/FontCompareDialog";
 import { NumberMarkerDialog } from "./components/NumberMarkerDialog";
+import { InterchangeDialog } from "./components/InterchangeDialog";
 import { sendToWord } from "./lib/sendToWord";
 import { ConversionReport } from "./components/ConversionReport";
 import { SaveDialog } from "./components/SaveDialog";
@@ -314,6 +315,7 @@ export function App() {
       <NormalizeBoldDialog />
       <FontCompareDialog />
       <NumberMarkerDialog />
+      <InterchangeDialog />
       <ShortcutsDialog />
       <RecognitionDialog />
       <SnippetsDialog />

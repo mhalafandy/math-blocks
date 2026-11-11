@@ -115,6 +115,13 @@ export async function numberAtCursor() {
  * Started from Word, it finishes in Word: the question and the result appear over Word.
  */
 export async function convertAllLatex(document?: string, o: { fromWord?: boolean; selectionOnly?: boolean; /** No confirmation (the self-test). */ yes?: boolean } = {}) {
+  // A whole document: the interchange conversion (display paragraphs, numbers, labels, references,
+  // numbering markers; pre-flight report first). A selection keeps the simple conversion below.
+  if (!o.selectionOnly && addinSupports("scanInterchange")) {
+    const { convertLatexDocument } = await import("./latexInterchangeRun");
+    await convertLatexDocument({ ...(document ? { document } : {}), ...(o.fromWord ? { fromWord: true } : {}), ...(o.yes ? { yes: true } : {}) });
+    return;
+  }
   if (!ready("findLatex")) return;
   const fromWord = !!o.fromWord;
   const say = (text: string, kind: "info" | "error" = "info") => tell(text, kind, fromWord);

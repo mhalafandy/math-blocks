@@ -4,7 +4,8 @@ const word = vi.hoisted(() => ({ calls: [] as { method: string; params: Record<s
 
 vi.mock("./connector", () => ({
   isDesktop: () => false,
-  addinSupports: () => true,
+  // The simple conversion (the interchange path for whole documents has its own tests).
+  addinSupports: (m: string) => m !== "scanInterchange",
   activateEquation: vi.fn(async () => undefined),
   connector: {
     async request(method: string, params: Record<string, unknown>) {

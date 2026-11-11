@@ -409,6 +409,18 @@ namespace MathBlocks.WordConnector
         /// like MathType's "Equation Chapter n Section m": it sets the chapter and section counters
         /// and restarts the equation counter. "Appendix" makes the chapter number a letter.
         /// </summary>
+        internal static string MarkerRuns(int chapter, int section, bool appendix, bool restartEquations)
+        {
+            string hiddenInstr(string t) => "<w:r><w:rPr><w:vanish/></w:rPr><w:instrText xml:space=\"preserve\">" + SecurityElement.Escape(t) + "</w:instrText></w:r>";
+            string hb(string t) => "<w:r><w:rPr><w:vanish/></w:rPr><w:fldChar w:fldCharType=\"" + t + "\"/></w:r>";
+            var label = (appendix ? "Equation Appendix " : "Equation Chapter ") + chapter + " Section " + section;
+            return hb("begin") + hiddenInstr(" MACROBUTTON MBEquationSection ") + hiddenInstr(label)
+                + (restartEquations ? hb("begin") + hiddenInstr(" SEQ MBEq \\r 0 \\h \\* MERGEFORMAT ") + hb("end") : "")
+                + hb("begin") + hiddenInstr(" SEQ MBSec \\r " + section + " \\h \\* MERGEFORMAT ") + hb("end")
+                + hb("begin") + hiddenInstr(" SEQ MBChap \\r " + chapter + " \\h \\* MERGEFORMAT ") + hb("end")
+                + hb("end");
+        }
+
         public Dictionary<string, object> InsertNumberMarker(Dictionary<string, object> p)
         {
             var doc = ActiveDocument();
@@ -416,14 +428,7 @@ namespace MathBlocks.WordConnector
             int section = p.TryGetValue("section", out var s) ? Convert.ToInt32(s) : 1;
             bool appendix = Rpc.GetBool(p, "appendix");
             bool restartEquations = !p.ContainsKey("restartEquations") || Rpc.GetBool(p, "restartEquations");
-            string hiddenInstr(string t) => "<w:r><w:rPr><w:vanish/></w:rPr><w:instrText xml:space=\"preserve\">" + SecurityElement.Escape(t) + "</w:instrText></w:r>";
-            string hb(string t) => "<w:r><w:rPr><w:vanish/></w:rPr><w:fldChar w:fldCharType=\"" + t + "\"/></w:r>";
-            var label = (appendix ? "Equation Appendix " : "Equation Chapter ") + chapter + " Section " + section;
-            var runs = hb("begin") + hiddenInstr(" MACROBUTTON MBEquationSection ") + hiddenInstr(label)
-                + (restartEquations ? hb("begin") + hiddenInstr(" SEQ MBEq \\r 0 \\h \\* MERGEFORMAT ") + hb("end") : "")
-                + hb("begin") + hiddenInstr(" SEQ MBSec \\r " + section + " \\h \\* MERGEFORMAT ") + hb("end")
-                + hb("begin") + hiddenInstr(" SEQ MBChap \\r " + chapter + " \\h \\* MERGEFORMAT ") + hb("end")
-                + hb("end");
+            var runs = MarkerRuns(chapter, section, appendix, restartEquations);
             var undo = _app.UndoRecord;
             undo.StartCustomRecord("Insert equation chapter marker");
             try

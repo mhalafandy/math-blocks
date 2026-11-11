@@ -46,7 +46,7 @@ function useLibraryClose() {
 }
 
 /** Shows and focuses the app window (after a double-click in Word or the ribbon button). */
-async function bringToFront() {
+export async function bringToFront() {
   if (!isDesktop()) return;
   try {
     const { getCurrentWindow } = await import("@tauri-apps/api/window");

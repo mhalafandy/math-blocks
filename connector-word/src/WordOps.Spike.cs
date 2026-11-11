@@ -342,6 +342,31 @@ namespace MathBlocks.WordConnector
                     else d.Range(para.Range.End - 1, para.Range.End - 1).InsertAfter("\t" + number);
                     return new Dictionary<string, object> { ["start"] = para.Range.Start };
                 }
+                case "openDocx":
+                {
+                    // A test document the app generated (base64): saved in the test folder, then opened.
+                    var path = System.IO.Path.Combine(SmokeFolder ?? System.IO.Path.GetTempPath(), Rpc.GetString(p, "file"));
+                    System.IO.File.WriteAllBytes(path, Convert.FromBase64String(Rpc.GetString(p, "base64")));
+                    var opened = _app.Documents.Open(path, AddToRecentFiles: false);
+                    opened.Activate();
+                    return new Dictionary<string, object> { ["name"] = opened.Name, ["fullName"] = opened.FullName };
+                }
+                case "bookmarkPara":
+                {
+                    // Where a bookmark's paragraph starts (to measure the number's position there).
+                    var name = Rpc.GetString(p, "bookmark");
+                    bool hidden = d.Bookmarks.ShowHidden;
+                    d.Bookmarks.ShowHidden = true;
+                    try
+                    {
+                        if (!d.Bookmarks.Exists(name)) return new Dictionary<string, object> { ["exists"] = false };
+                        return new Dictionary<string, object> { ["exists"] = true, ["start"] = d.Bookmarks[name].Range.Paragraphs[1].Range.Start };
+                    }
+                    finally
+                    {
+                        d.Bookmarks.ShowHidden = hidden;
+                    }
+                }
                 case "staleNumbers":
                 {
                     // Equation numbers out of date (as after moving equations), so Update numbers has work.
