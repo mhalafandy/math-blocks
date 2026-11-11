@@ -25,6 +25,14 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Changed — self-test closes its documents; no flicker during long operations
+- The self-test saves every document it opened into its folder and closes them at the end; documents
+  that were open before the test stay open and untouched.
+- Long operations (Repair, Convert, restyling) no longer redraw the document while they run: faster,
+  and Word does not flicker. The screen is redrawn once at the end.
+- Self-test: an undo probe runs each call Repair makes alone inside an undo record and reports which
+  one ends it (Repair currently takes 6 Ctrl+Z: the record closes during the baseline step).
+
 ### Fixed — Repair did not restore the number position on converted documents
 - Word lists a paragraph's default tab stops (every 0.5") among its tab stops, so Repair took every
   numbered paragraph to have tab stops already and left it alone. Only custom tab stops count now.

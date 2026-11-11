@@ -71,6 +71,7 @@ namespace MathBlocks.WordConnector
             return n;
         }
         private bool? _smartCut;
+        private HashSet<string> _beforeTest;
 
         /// <summary>The selection to act on: in the named document (activated, its window's selection) or the active one.</summary>
         private Word.Selection SelIn(Dictionary<string, object> p)
@@ -122,6 +123,9 @@ namespace MathBlocks.WordConnector
                     catch (Exception)
                     {
                     }
+                    // Documents open before the test are the user's: only the others are closed at the end.
+                    _beforeTest = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (Word.Document od in _app.Documents) _beforeTest.Add(od.FullName);
                     SmokeFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MathBlocks", "self-test", DateTime.Now.ToString("yyyy-MM-dd HH.mm.ss"));
                     Directory.CreateDirectory(SmokeFolder);
                     return new Dictionary<string, object> { ["folder"] = SmokeFolder, ["word"] = _app.Build, ["addin"] = Connect.Version, ["smartCutPaste"] = _smartCut };
@@ -242,6 +246,42 @@ namespace MathBlocks.WordConnector
                     d.SaveAs2(path, Word.WdSaveFormat.wdFormatXMLDocument);
                     // Save As renames the open document: callers that address it by name use this one.
                     return new Dictionary<string, object> { ["path"] = path, ["name"] = d.Name };
+                }
+                case "closeTestDocuments":
+                {
+                    // Every document the test opened: saved into the test folder (unsaved ones under their
+                    // window name), then closed. The user's own documents stay open and untouched.
+                    int closed = 0;
+                    var saved = new List<object>();
+                    var docs = new List<Word.Document>();
+                    foreach (Word.Document od in _app.Documents) if (_beforeTest == null || !_beforeTest.Contains(od.FullName)) docs.Add(od);
+                    foreach (var od in docs)
+                    {
+                        try
+                        {
+                            if (string.IsNullOrEmpty(od.Path))
+                            {
+                                var name = od.Name;
+                                foreach (var c in Path.GetInvalidFileNameChars()) name = name.Replace(c, '_');
+                                var path = Path.Combine(SmokeFolder ?? Path.GetTempPath(), name + ".docx");
+                                for (int i = 2; File.Exists(path); i++) path = Path.Combine(SmokeFolder ?? Path.GetTempPath(), name + " (" + i + ").docx");
+                                od.SaveAs2(path, Word.WdSaveFormat.wdFormatXMLDocument);
+                                saved.Add(path);
+                            }
+                            else if (!od.Saved && !od.ReadOnly)
+                            {
+                                od.Save();
+                                saved.Add(od.FullName);
+                            }
+                            od.Close(Word.WdSaveOptions.wdDoNotSaveChanges);
+                            closed++;
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error("self-test: closing a test document", ex);
+                        }
+                    }
+                    return new Dictionary<string, object> { ["closed"] = closed, ["saved"] = saved };
                 }
                 case "writeReport":
                 {

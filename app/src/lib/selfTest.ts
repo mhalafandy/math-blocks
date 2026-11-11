@@ -47,6 +47,7 @@ const PASTE_MODES = ["ctrlV", "keepSource", "merge", "pictureEmf", "picturePng",
 const MUST_KEEP = new Set(["ctrlV", "keepSource", "merge"]);
 
 export const MANUAL_CHECKS = [
+  "The test documents are saved in this folder and closed: open 'self-test A.docx' for the checks below.",
   "Right-click a Classic equation (now an embedded object): only the floating editor opens on it, no Word menu; edit it and Apply — it stays an object (simple frame) with the new content.",
   "Right-click a native Word equation: only the floating editor, no Word menu.",
   "Double-click a Classic equation: MathBlocks opens it for editing (no prompt); Update in Word replaces it, still an object.",
@@ -102,6 +103,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     return -1;
   };
   const begin = await smoke("begin");
+  let closedDocs: { closed: number; saved: string[] } | null = null;
   let appVersion = "browser preview";
   try {
     if ((await import("./connector")).isDesktop()) appVersion = await (await import("@tauri-apps/api/app")).getVersion();
@@ -388,6 +390,9 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const before = await snap();
       const frames0 = await Promise.all(tags.map(async (t) => (await smoke("pictureInfo", { tag: t })).frame));
       check("before Repair: the three equations are Classic pictures", frames0.every((f) => f === "legacy" || f === "modern"), frames0.join(", "));
+      // Diagnosis: which call ends an undo record (each alone in a fresh record; nothing is changed).
+      const probe = (await smoke("undoProbe", { tag: pin.tag }).catch((e) => ({ error: String(e) }))) as Record<string, string>;
+      check("undo probe: calls that end Word's undo record", null, Object.entries(probe).map(([k, v]) => `${k}: ${v}`).join("; "));
       const { repairDocument } = await import("./repair");
       const rep = await repairDocument(undefined, { quiet: true });
       const front = (await smoke("activeName")).name as string;
@@ -467,6 +472,8 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     // Whatever stops the run, the report is still written with everything checked so far.
     check("the self-test stopped early", false, `in "${section}": ${e instanceof Error ? e.message : String(e)}`);
   } finally {
+    // Every document the test opened is saved in the test folder and closed (the user's stay open).
+    closedDocs = (await smoke("closeTestDocuments").catch(() => null)) as typeof closedDocs;
     await smoke("end").catch(() => undefined);
   }
 
@@ -480,6 +487,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     `Word ${begin.word}; look ${useApp.getState().look}; equation size ${useApp.getState().equationSizePt} pt; Word's smart cut and paste ${begin.smartCutPaste ? "on (turned off during the test, restored after)" : "off"}`,
     `Current design (pictures): ${count(main)}`,
     ...(spike.length ? [`Embedded-object spike: ${count(spike)}`] : []),
+    closedDocs ? `Test documents: ${(closedDocs as { closed: number }).closed} saved in this folder and closed` : "Test documents: not closed (older add-in, or Word refused)",
     "",
   );
   let last = "";

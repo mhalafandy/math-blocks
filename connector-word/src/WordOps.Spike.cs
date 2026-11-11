@@ -329,6 +329,53 @@ namespace MathBlocks.WordConnector
                     else d.Range(para.Range.End - 1, para.Range.End - 1).InsertAfter("\t" + number);
                     return new Dictionary<string, object> { ["start"] = para.Range.Start };
                 }
+                case "undoProbe":
+                {
+                    // Which call ends a custom undo record (Repair must be one Ctrl+Z): each runs alone inside
+                    // a fresh record; "kept" means Word was still recording afterwards. Nothing is changed.
+                    var eq = One(d, Rpc.GetString(p, "tag"));
+                    var shape = eq.Picture;
+                    var probes = new List<KeyValuePair<string, Action>>
+                    {
+                        new KeyValuePair<string, Action>("find equations", () => AllEquations(d)),
+                        new KeyValuePair<string, Action>("alt text", () => AltOf(shape)),
+                        new KeyValuePair<string, Action>("object data ID", () => ObjectDataTag(shape)),
+                        new KeyValuePair<string, Action>("equation range WordOpenXML", () => { var x = eq.Range.WordOpenXML; }),
+                        new KeyValuePair<string, Action>("picture range WordOpenXML", () => { var x = shape.Range.WordOpenXML; }),
+                        new KeyValuePair<string, Action>("paragraph WordOpenXML", () => { var x = eq.Range.Paragraphs[1].Range.WordOpenXML; }),
+                        new KeyValuePair<string, Action>("range XML (Word 2003)", () => { var x = eq.Range.get_XML(); }),
+                        new KeyValuePair<string, Action>("stored depth", () => DepthOf(shape)),
+                        new KeyValuePair<string, Action>("lowering", () => LoweringOf(shape)),
+                        new KeyValuePair<string, Action>("inspect for write", () => Inspect(d, eq)),
+                        new KeyValuePair<string, Action>("font position read", () => { var x = eq.Range.Font.Position; }),
+                        new KeyValuePair<string, Action>("font position set (same value)", () => { var r = shape.Range; var v = r.Font.Position; if (v != 9999999) r.Font.Position = v; }),
+                        new KeyValuePair<string, Action>("screen updating off/on", () => { var su = _app.ScreenUpdating; _app.ScreenUpdating = false; _app.ScreenUpdating = su; }),
+                        new KeyValuePair<string, Action>("window events", () => System.Windows.Forms.Application.DoEvents()),
+                    };
+                    var result = new Dictionary<string, object>();
+                    var undo = _app.UndoRecord;
+                    foreach (var pr in probes)
+                    {
+                        string state;
+                        try
+                        {
+                            if (undo.IsRecordingCustomRecord) undo.EndCustomRecord();
+                            undo.StartCustomRecord("MathBlocks undo probe");
+                            pr.Value();
+                            state = undo.IsRecordingCustomRecord ? "kept" : "ENDS THE RECORD";
+                        }
+                        catch (Exception ex)
+                        {
+                            state = "error: " + ex.Message;
+                        }
+                        finally
+                        {
+                            try { if (undo.IsRecordingCustomRecord) undo.EndCustomRecord(); } catch (Exception) { }
+                        }
+                        result[pr.Key] = state;
+                    }
+                    return result;
+                }
                 case "paraInfo":
                 {
                     // A paragraph's properties and layout: style, alignment, tab stops; where its first

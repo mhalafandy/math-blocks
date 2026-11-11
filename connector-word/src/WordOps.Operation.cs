@@ -95,6 +95,18 @@ namespace MathBlocks.WordConnector
             {
                 // Word 2010 has no Window.Hwnd: the window is then not owned (still on top of Word).
             }
+            // No redrawing while equations are replaced: faster, and the document does not flicker.
+            try
+            {
+                if (_operationScreen == null)
+                {
+                    _operationScreen = _app.ScreenUpdating;
+                    _app.ScreenUpdating = false;
+                }
+            }
+            catch (COMException)
+            {
+            }
             _progress = new ProgressForm(title, total);
             if (owner != IntPtr.Zero)
             {
@@ -167,6 +179,18 @@ namespace MathBlocks.WordConnector
                 }
                 _progress = null;
             }
+            if (_operationScreen != null)
+            {
+                try
+                {
+                    _app.ScreenUpdating = _operationScreen.Value;
+                    if (_operationScreen.Value) _app.ScreenRefresh();
+                }
+                catch (COMException)
+                {
+                }
+                _operationScreen = null;
+            }
             if (_operationWindow != null)
             {
                 try
@@ -183,6 +207,7 @@ namespace MathBlocks.WordConnector
         }
 
         private Word.Window _operationWindow;
+        private bool? _operationScreen;
 
         /// <summary>Where the operation's single undo record was found closed (diagnosis: one Ctrl+Z must undo it all).</summary>
         private string _undoBrokenAt;
