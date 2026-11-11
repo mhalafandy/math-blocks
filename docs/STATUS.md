@@ -24,8 +24,7 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
   section 3.1" check put its equation in the wrong section); the Update numbers undo check now makes numbers
   out of date; new check that later test steps leave the paragraphs with the deliberate errors unchanged.
 
-**Commits:** see the history of `docs/STATUS.md` and the commit after `779f808` ("Fix reading of equation
-numbers…").
+**Commits:** `31730e0` (fixes and this status), `779f808` (status file).
 
 ## What to test (next build after 0.1.109)
 
