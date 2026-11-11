@@ -189,6 +189,11 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
         const list = await connector.request("listNumbered", {}, SLOW);
         const mine = list.equations.filter((x) => x.tag === d2.tag || x.tag === d3.tag);
         check("two equations numbered", mine.length === 2, mine.map((x) => x.number).join(", "));
+        // Layout of a newly numbered equation: number at the right margin, equation centred.
+        const pos = (await smoke("caretTo", { where: "paragraphStart", tag: d2.tag })).caret as number;
+        const lay = await smoke("paraInfo", { pos });
+        check("numbered equation: the number ends at the right margin", Math.abs(Number(lay.numberEnd) - Number(lay.textRight)) < 3, `number ends at ${Number(lay.numberEnd).toFixed(1)} pt, right margin ${Number(lay.textRight).toFixed(1)} pt`);
+        check("numbered equation: the equation is centred on the text width", Math.abs(Number(lay.equationCenter) - Number(lay.textCenter)) < 3, `equation centre ${Number(lay.equationCenter).toFixed(1)} pt, text centre ${Number(lay.textCenter).toFixed(1)} pt`);
         const n3 = mine.find((x) => x.tag === d3.tag);
         if (!n3) return;
         await smoke("caretTo", { where: "end" });
@@ -334,6 +339,23 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       });
     }
 
+    // ------------------------------------------------------------ Convert MathType keeps the paragraph
+    section = "Convert MathType keeps the paragraph (number at the right margin)";
+    await step("convert a MathType paragraph", async () => {
+      await smoke("newDocument");
+      await smoke("typeText", { text: "Convert MathType test." });
+      const { buildMathTypeControlInsertion } = await import("./equation");
+      const made = await smoke("makeEquationParagraph", { flatOpc: await buildMathTypeControlInsertion(), number: "(1)" });
+      const p0 = await smoke("paraInfo", { pos: made.start });
+      const { convertOpenDocument } = await import("./convertMathType");
+      await convertOpenDocument(undefined, { quiet: true });
+      const p1 = await smoke("paraInfo", { pos: made.start });
+      check("the MathType equation became a MathBlocks object", /MathBlocks\.Equation/.test(String(p1.equationKind)), `before ${p0.equationKind}, after ${p1.equationKind}`);
+      check("the paragraph keeps its style, alignment and tab stops", p1.style === p0.style && p1.alignment === p0.alignment && JSON.stringify(p1.tabs) === JSON.stringify(p0.tabs), `before ${p0.style} ${p0.alignment} [${p0.tabs}], after ${p1.style} ${p1.alignment} [${p1.tabs}]`);
+      check("the number ends at the right margin", Math.abs(Number(p1.numberEnd) - Number(p1.textRight)) < 3, `number ends at ${Number(p1.numberEnd).toFixed(1)} pt, right margin ${Number(p1.textRight).toFixed(1)} pt`);
+      check("the equation is centred on the text width", Math.abs(Number(p1.equationCenter) - Number(p1.textCenter)) < 3, `equation centre ${Number(p1.equationCenter).toFixed(1)} pt, text centre ${Number(p1.textCenter).toFixed(1)} pt`);
+    });
+
     // ------------------------------------------------------------ Repair converts Classic pictures to objects
     section = "Repair: Classic pictures become embedded objects";
     await step("repair conversion", async () => {
@@ -388,6 +410,16 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const rep2 = await repairDocument(undefined, { quiet: true });
       const after2 = await snap();
       check("a second Repair changes nothing", !!rep2 && rep2.toObjects === 0 && rep2.redrawn === 0 && after2.text === again.text, rep2 ? `converted ${rep2.toObjects}, redrawn ${rep2.redrawn}, lowered ${rep2.lowered}, renamed ${rep2.renamed}` : "no report");
+      // A numbered equation paragraph that lost its style and tab stops (what an earlier Convert MathType
+      // left): Repair gives them back, so the number is at the right margin again.
+      const { buildObjectInsertion } = await import("./equation");
+      const lost = await buildObjectInsertion("E=mc^2", false, undefined, true, { keepParagraph: true, mode: "numbered" });
+      const made = await smoke("makeEquationParagraph", { flatOpc: lost.flatOpc, withoutTabs: true, numberField: true });
+      const l0 = await smoke("paraInfo", { pos: made.start });
+      const rep3 = await repairDocument(undefined, { quiet: true });
+      const l1 = await smoke("paraInfo", { pos: made.start });
+      check("Repair restores a numbered equation paragraph's lost style / tab stops", !!rep3 && rep3.styled >= 1 && (l1.tabs as string[]).length >= 2, `styled ${rep3?.styled}; before [${l0.tabs}] number at ${Number(l0.numberEnd).toFixed(1)}, after ${l1.style} [${l1.tabs}]`);
+      check("after Repair the number ends at the right margin again", Math.abs(Number(l1.numberEnd) - Number(l1.textRight)) < 3, `number ends at ${Number(l1.numberEnd).toFixed(1)} pt, right margin ${Number(l1.textRight).toFixed(1)} pt`);
       await smoke("save", { file: "repair test.docx" });
       void docR;
     });

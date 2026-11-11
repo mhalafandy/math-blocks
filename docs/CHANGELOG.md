@@ -25,6 +25,26 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed — Convert MathType dropped paragraph properties (number not at the right margin)
+- Cause: in the open document, Convert MathType rewrote each whole paragraph. Word exported the
+  paragraph without its mark — so without its <w:pPr> — and the rewrite took the paragraph's
+  properties from that XML: every numbered paragraph lost MTDisplayEquation and its tab stops, and the
+  number fell on Word's default tab right after the equation.
+- Now only the MathType objects are replaced, one by one (the new equation in front of the object, then
+  the object goes); the paragraph and its properties are never rewritten. File conversion was not
+  affected (it edits document.xml run by run).
+- Every in-place replacement (update, number/unnumber, Apply notation, Repair, conversion) inserts the
+  new equation's run only — the package's paragraph properties are removed first.
+- Repair equations gives numbered equation paragraphs that lost their style back MTDisplayEquation
+  (or, where the document has no such style, the numbering's centre and right tab stops); counted in
+  the report, inside the same single undo step.
+- Tests: a generated MathType test document (A.n numbers, MTDisplayEquation paragraphs, one inline
+  equation, two references): every paragraph's pPr byte-identical, the MTDisplayEquation count unchanged,
+  MathType's numbers, bookmarks and references kept. The same checks can run locally on a real document
+  (MB_MATHTYPE_DOCX=path). Self-test: after converting a MathType paragraph and after numbering a new equation, the
+  number ends at the right margin and the equation is centred; Repair restores a paragraph that lost
+  its tab stops.
+
 ### Embedded objects — step 4 (Repair converts Classic pictures to objects)
 - Repair equations converts every Classic picture (VML or pasted DrawingML) to an embedded object
   with the same ID, in place: the object's run only, so the paragraph — alignment, tabs, number

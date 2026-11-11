@@ -212,7 +212,7 @@ namespace MathBlocks.WordConnector
             var wrapped = new List<object>();
             var splitReport = new List<object>();
             int split = 0, unlocked = 0, inlined = 0, converted = 0;
-            int ok = 0, plainPictures = 0, bookmarks = 0, lowered = 0, toObjects = 0, idRewrites = 0;
+            int ok = 0, plainPictures = 0, bookmarks = 0, lowered = 0, toObjects = 0, idRewrites = 0, styled = 0;
             var redraw = new List<object>();
             bool screen = _app.ScreenUpdating;
             var undo = _app.UndoRecord;
@@ -253,6 +253,9 @@ namespace MathBlocks.WordConnector
                 }
                 else foreach (var pair in ResolveDuplicates(doc)) renamed.Add(pair);
                 bookmarks = BookmarkNumberedEquations(doc, dry);
+                // Numbered equation paragraphs that lost their style (an earlier Convert MathType rewrote
+                // the paragraphs): MTDisplayEquation back, or the numbering's tab stops.
+                styled = RestoreEquationParagraphStyles(doc, dry);
                 // Every Classic equation: its baseline lowering back from its stored depth; Classic pictures
                 // (the form before embedded objects) and objects holding another ID inside are listed for
                 // the app to redraw as objects with the same ID.
@@ -324,6 +327,7 @@ namespace MathBlocks.WordConnector
                 ["mathType"] = mathType,
                 ["lowered"] = lowered,
                 ["toObjects"] = toObjects,
+                ["styled"] = styled,
                 ["idRewrites"] = idRewrites,
                 ["redraw"] = redraw,
                 ["wrapped"] = wrapped,
@@ -331,6 +335,72 @@ namespace MathBlocks.WordConnector
                 ["bookmarks"] = bookmarks,
                 ["otherPictures"] = plainPictures,
             };
+        }
+
+        /// <summary>
+        /// A paragraph laid out as a numbered equation — tab, MathBlocks equation, tab, number (MathType's
+        /// MACROBUTTON or ours) — but with no style and no tab stops of its own: its number falls on Word's
+        /// default tab right after the equation. It gets the document's display-equation style back
+        /// (MTDisplayEquation, as MathType defines it: centre and right tab stops), else the tab stops the
+        /// add-in's numbering uses (centre of the text column, right margin). Returns how many.
+        /// </summary>
+        private int RestoreEquationParagraphStyles(Word.Document doc, bool dry)
+        {
+            Word.Style display = null;
+            foreach (var name in new[] { "MTDisplayEquation", "MathBlocks Display Equation" })
+            {
+                try
+                {
+                    display = doc.Styles[name];
+                    break;
+                }
+                catch (Exception)
+                {
+                }
+            }
+            int n = 0;
+            var seen = new HashSet<int>();
+            foreach (var e in AllEquations(doc))
+            {
+                try
+                {
+                    var para = e.Range.Paragraphs[1];
+                    var pr = para.Range;
+                    if (!seen.Add(pr.Start)) continue;
+                    var text = pr.Text ?? "";
+                    // tab, equation, tab, number: the equation's character sits between two tabs.
+                    int rel = e.Range.Start - pr.Start;
+                    bool shape = rel >= 1 && text.Length > rel + 1 && text[rel - 1] == '\t' && text.IndexOf('\t', rel + 1) > rel;
+                    if (!shape) continue;
+                    bool numbered = false;
+                    foreach (Word.Field f in pr.Fields)
+                    {
+                        var code = f.Code.Text ?? "";
+                        if (code.Contains("MTPlaceRef") || code.Contains("SEQ MBEq") || code.Contains("SEQ MTEqn") || code.Contains("MBEq")) { numbered = true; break; }
+                    }
+                    if (!numbered) continue;
+                    var styleName = "";
+                    try { styleName = ((Word.Style)para.get_Style()).NameLocal ?? ""; } catch (Exception) { }
+                    bool plainStyle = styleName == "" || styleName == ((Word.Style)doc.Styles[Word.WdBuiltinStyle.wdStyleNormal]).NameLocal;
+                    if (!plainStyle || para.TabStops.Count > 0) continue;
+                    n++;
+                    if (dry) continue;
+                    if (display != null) para.set_Style(display);
+                    else
+                    {
+                        var ps = pr.Sections[1].PageSetup;
+                        float width = ps.PageWidth - ps.LeftMargin - ps.RightMargin - para.LeftIndent - para.RightIndent;
+                        para.TabStops.Add(width / 2, Word.WdTabAlignment.wdAlignTabCenter);
+                        para.TabStops.Add(width, Word.WdTabAlignment.wdAlignTabRight);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("repair: restoring an equation paragraph's style", ex);
+                }
+            }
+            if (n > 0) Log.Info("repair: " + n + " numbered equation paragraph(s) " + (dry ? "would get" : "got") + " " + (display != null ? display.NameLocal : "the numbering tab stops") + " back");
+            return n;
         }
 
         /// <summary>Numbered MathBlocks equations whose paragraph has no number bookmark (a pasted copy) get one.</summary>

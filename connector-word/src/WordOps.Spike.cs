@@ -295,6 +295,72 @@ namespace MathBlocks.WordConnector
                     }
                     return new Dictionary<string, object> { ["results"] = list };
                 }
+                case "makeEquationParagraph":
+                {
+                    // A numbered display equation laid out as MathType does: tab, equation, tab, number,
+                    // with a centre tab stop at the middle of the text column and a right one at its end.
+                    var flat = Rpc.GetString(p, "flatOpc");
+                    var number = Rpc.GetString(p, "number");
+                    var end = d.Content.End - 1;
+                    var at = d.Range(end, end);
+                    at.InsertParagraphAfter();
+                    int start = d.Content.End - 1;
+                    d.Range(start, start).InsertXML(RunsOnly(flat));
+                    var para = d.Range(start, start).Paragraphs[1];
+                    var ps = para.Range.Sections[1].PageSetup;
+                    float width = ps.PageWidth - ps.LeftMargin - ps.RightMargin - para.LeftIndent - para.RightIndent;
+                    para.Alignment = Word.WdParagraphAlignment.wdAlignParagraphLeft;
+                    para.TabStops.ClearAll();
+                    // withoutTabs: the state an earlier Convert MathType left (no style, no tab stops).
+                    if (!Rpc.GetBool(p, "withoutTabs"))
+                    {
+                        para.TabStops.Add(width / 2, Word.WdTabAlignment.wdAlignTabCenter);
+                        para.TabStops.Add(width, Word.WdTabAlignment.wdAlignTabRight);
+                    }
+                    d.Range(para.Range.Start, para.Range.Start).InsertBefore("\t");
+                    if (Rpc.GetBool(p, "numberField"))
+                    {
+                        // A number field as MathBlocks writes it: ( SEQ MBEq ).
+                        var endAt = para.Range.End - 1;
+                        d.Range(endAt, endAt).InsertAfter("\t()");
+                        var inside = d.Range(para.Range.End - 2, para.Range.End - 2);
+                        d.Fields.Add(inside, Word.WdFieldType.wdFieldEmpty, "SEQ MBEq \\* ARABIC", false).Update();
+                    }
+                    else d.Range(para.Range.End - 1, para.Range.End - 1).InsertAfter("\t" + number);
+                    return new Dictionary<string, object> { ["start"] = para.Range.Start };
+                }
+                case "paraInfo":
+                {
+                    // A paragraph's properties and layout: style, alignment, tab stops; where its first
+                    // equation's centre and its number's end fall against the text column.
+                    var pos = Rpc.GetInt(p, "pos");
+                    var para = d.Range(pos, pos).Paragraphs[1];
+                    var pr = para.Range;
+                    var r = new Dictionary<string, object>();
+                    try { r["style"] = ((Word.Style)para.get_Style()).NameLocal; } catch (Exception) { r["style"] = ""; }
+                    r["alignment"] = para.Alignment.ToString();
+                    var tabs = new List<object>();
+                    foreach (Word.TabStop t in para.TabStops) tabs.Add(Math.Round(t.Position, 1) + " " + t.Alignment);
+                    r["tabs"] = tabs;
+                    r["text"] = (pr.Text ?? "").Replace("\u0001", "[eq]");
+                    var ps = pr.Sections[1].PageSetup;
+                    double left = ps.LeftMargin + para.LeftIndent, right = ps.PageWidth - ps.RightMargin - para.RightIndent;
+                    r["textLeft"] = left;
+                    r["textRight"] = right;
+                    r["textCenter"] = (left + right) / 2;
+                    Word.InlineShape eq = null;
+                    foreach (Word.InlineShape s in pr.InlineShapes) { eq = s; break; }
+                    if (eq != null)
+                    {
+                        r["equationKind"] = ProgIdOf(eq) ?? eq.Type.ToString();
+                        var x = Convert.ToDouble(eq.Range.Information[Word.WdInformation.wdHorizontalPositionRelativeToPage]);
+                        r["equationCenter"] = x + eq.Width / 2;
+                    }
+                    // The paragraph mark sits right after the number: its position is the number's end.
+                    var mark = d.Range(pr.End - 1, pr.End - 1);
+                    r["numberEnd"] = Convert.ToDouble(mark.Information[Word.WdInformation.wdHorizontalPositionRelativeToPage]);
+                    return r;
+                }
                 case "updateFields":
                     d.Fields.Update();
                     return new Dictionary<string, object> { ["ok"] = true };

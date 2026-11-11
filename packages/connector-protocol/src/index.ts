@@ -112,6 +112,11 @@ export interface MathTypeParagraph {
   /** MathType objects in it (checked again before replacing). */
   objects: number;
   flatOpc: string;
+  /**
+   * One package per MathType object (in order; null = not converted, left as it is): only the objects
+   * are replaced, the paragraph and its properties (style, tabs) are never rewritten.
+   */
+  packages?: (string | null)[];
 }
 
 /** The user double-clicked a MathType equation. */
@@ -265,6 +270,8 @@ export interface AppToConnector {
       /** Classic pictures listed for conversion to embedded objects / copies with another ID inside. */
       toObjects?: number;
       idRewrites?: number;
+      /** Numbered equation paragraphs that got their display-equation style (or tab stops) back. */
+      styled?: number;
       /** Classic pictures whose hidden source lacks the ID or the depth: the app redraws them once. */
       redraw?: { tag: string; latex: string; mode: "display" | "inline" | "numbered"; reason?: "picture" | "id" }[];
       /** Wrappers that held more than one equation, text or nested wrappers, split back into one per equation. */

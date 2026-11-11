@@ -76,9 +76,12 @@ describe("converting MathType in the open document", () => {
     const lists = word.calls.filter((c) => c.method === "listMathTypeParagraphs");
     expect(lists.length).toBe(2); // 15 + 5
     const replace = word.calls.find((c) => c.method === "replaceParagraphs")!;
-    const items = replace.params.items as { flatOpc: string; start: number }[];
+    // One package per MathType object (only the objects are replaced, never the paragraph).
+    const items = replace.params.items as { packages: (string | null)[]; start: number }[];
     expect(items).toHaveLength(20);
-    expect(items.every((i) => !i.flatOpc.includes("<w:object") && i.flatOpc.includes("<m:oMath>"))).toBe(true);
+    expect(items.every((i) => i.packages.length === 1 && !!i.packages[0] && !i.packages[0].includes("<w:object") && i.packages[0].includes("<m:oMath>"))).toBe(true);
+    // No package brings paragraph properties of its own.
+    expect(items.every((i) => !/<w:body><w:p\b[^>]*><w:pPr>/.test(i.packages[0]!))).toBe(true);
     const report = conv.useConversion.getState().report!;
     expect(report.inPlace).toBe(true);
     expect(report.result.converted).toBe(20);

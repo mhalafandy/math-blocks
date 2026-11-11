@@ -111,6 +111,16 @@ namespace MathBlocks.WordConnector
             return m.Success ? m.Groups[1].Value : null;
         }
 
+        /// <summary>
+        /// A one-paragraph package with its paragraph properties removed: replacing an equation in place
+        /// must never change the paragraph it sits in (style, tabs, spacing).
+        /// </summary>
+        public static string RunsOnly(string flatOpc)
+        {
+            if (flatOpc == null) return null;
+            return Regex.Replace(flatOpc, "(<w:body>\\s*<w:p\\b[^>]*>)\\s*<w:pPr>.*?</w:pPr>", "$1", RegexOptions.Singleline);
+        }
+
         private static int IndexOf(byte[] hay, byte[] needle)
         {
             for (int i = 0; i + needle.Length <= hay.Length; i++)

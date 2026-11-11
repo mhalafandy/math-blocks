@@ -26,7 +26,7 @@ namespace MathBlocks.WordConnector
                 // mark); then the old picture goes. The paragraph stays as it was.
                 int at = eq.Range.Start;
                 var old = eq.Picture;
-                doc.Range(at, at).InsertXML(flatOpc);
+                doc.Range(at, at).InsertXML(RunsOnly(flatOpc));
                 old.Delete();
                 FinishInserted(doc, flatOpc, at, tag);
                 return;
@@ -35,6 +35,13 @@ namespace MathBlocks.WordConnector
             ReplaceControl(doc, eq.Control, flatOpc);
             FinishInserted(doc, flatOpc, start, tag);
         }
+
+        /// <summary>
+        /// The package with its paragraph properties removed: replacing an equation in place must never
+        /// change the paragraph it sits in (its style, tabs, spacing — e.g. MTDisplayEquation's tab stops
+        /// that put the number at the right margin). Only the equation's run goes in.
+        /// </summary>
+        internal static string RunsOnly(string flatOpc) => PictureXml.RunsOnly(flatOpc);
 
         internal void ReplaceControl(Word.Document doc, Word.ContentControl cc, string flatOpc)
         {

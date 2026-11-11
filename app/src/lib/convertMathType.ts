@@ -165,17 +165,30 @@ const SLOW = 180_000;
 
 async function convertParagraphs(paragraphs: MathTypeParagraph[], equations: ConvertedEquation[]) {
   const { convertFlatOpc } = await import("@mathblocks/mathtype");
+  const { buildObjectInsertion, buildNativeInsertion } = await import("./equation");
   const profile = currentProfile();
+  const classic = useApp.getState().look === "classic";
   const items: MathTypeParagraph[] = [];
   for (const p of paragraphs) {
-    let r = convertFlatOpc(p.flatOpc, { profile });
-    if (useApp.getState().look === "classic" && r.flatOpc) {
-      const pics = await renderAll(r.equations);
-      let k = 0;
-      r = convertFlatOpc(p.flatOpc, { profile, picture: () => pics[k++] ?? null, tags: r.equations.map((e) => e.tag) });
+    // The conversion reads each MathType object (LaTeX, display or inline, its number); what goes into
+    // Word is one equation per object, replacing only that object — never the paragraph, whose
+    // properties (MTDisplayEquation's tab stops, spacing…) must stay exactly as they are.
+    const r = convertFlatOpc(p.flatOpc, { profile });
+    const packages: (string | null)[] = [];
+    for (const e of r.equations) {
+      if (e.status !== "converted" || !e.latex || !e.tag) {
+        packages.push(null);
+        continue;
+      }
+      const mode = e.display ? (e.number ? "numbered" : "display") : "inline";
+      packages.push(
+        classic
+          ? (await buildObjectInsertion(e.latex, e.display, e.tag, e.display, { keepParagraph: true, mode })).flatOpc
+          : buildNativeInsertion(e.latex, false, profile, e.tag).flatOpc,
+      );
     }
     for (const e of r.equations) equations.push({ ...e, index: equations.length + 1 });
-    if (r.flatOpc) items.push({ ...p, flatOpc: r.flatOpc });
+    if (packages.some((x) => x)) items.push({ ...p, packages });
   }
   return items;
 }
@@ -184,7 +197,7 @@ async function convertParagraphs(paragraphs: MathTypeParagraph[], equations: Con
  * Converts every MathType equation of the open Word document in place, in one undo step
  * (Ctrl+Z in Word brings them all back). Numbers, bookmarks and references are kept.
  */
-export async function convertOpenDocument(document?: string) {
+export async function convertOpenDocument(document?: string, o: { quiet?: boolean } = {}) {
   const app = useApp.getState();
   const ui = useConversion.getState();
   if (ui.busy) return;
@@ -199,7 +212,7 @@ export async function convertOpenDocument(document?: string) {
       return app.notify(`No MathType equations in ${first.name}`);
     }
     ui.set({ busy: false, progress: null });
-    const ok = await askConfirm(
+    const ok = o.quiet || await askConfirm(
       "Convert MathType equations",
       `Convert the ${first.totalObjects} MathType equation(s) in “${first.name}” into MathBlocks equations? Numbers and cross-references are kept. You can undo it with one Ctrl+Z in Word; saving a backup copy first is a good idea.`,
       "Convert",

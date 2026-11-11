@@ -205,6 +205,10 @@ static class Program
         Check(EquationIdentity.ResolvePictureTag(null, "edited", "{\"tag\":\"mb1|-|s1\"}", out var from2) == "mb1|-|s1" && from2 == "source", "identity: alt text edited → the hidden source");
         Check(EquationIdentity.ResolvePictureTag("Figure 3", "MathBlocks inline (mb1|-|a1): f", null, out _) == "mb1|-|a1", "identity: a title that is not an ID is ignored");
         ReadBack();
+        // Replacing in place: the new equation's package brings no paragraph properties.
+        var pkg = "<pkg:package><w:document><w:body><w:p><w:pPr><w:pStyle w:val=\"X\"/><w:jc w:val=\"center\"/></w:pPr><w:r><w:t>x</w:t></w:r></w:p></w:body></w:document></pkg:package>";
+        Check(!PictureXml.RunsOnly(pkg).Contains("<w:pPr>") && PictureXml.RunsOnly(pkg).Contains("<w:r><w:t>x</w:t></w:r>"), "replace in place: the package's paragraph properties are removed, its runs kept");
+        Check(PictureXml.RunsOnly("<w:body><w:p><w:r/></w:p></w:body>") == "<w:body><w:p><w:r/></w:p></w:body>", "replace in place: a package without paragraph properties is unchanged");
         Console.WriteLine(failures == 0 ? "all number-field checks passed" : failures + " check(s) failed");
         return failures == 0 ? 0 : 1;
     }

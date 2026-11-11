@@ -114,9 +114,31 @@ namespace MathBlocks.WordConnector
                     }
                     try
                     {
-                        var xml = Rpc.GetString(item, "flatOpc");
-                        r.InsertXML(xml);
-                        FinishInserted(doc, xml);
+                        if (item.TryGetValue("packages", out var pk) && pk is IEnumerable pkList && !(pk is string))
+                        {
+                            // Only the MathType objects are replaced, one by one: each new equation goes in
+                            // front of its MathType object, then the object goes. The paragraph — its style
+                            // (MTDisplayEquation), tabs, spacing, number fields, bookmarks — is never rewritten.
+                            var packages = new List<string>();
+                            foreach (var o in pkList) packages.Add(o as string);
+                            var shapes = new List<Word.InlineShape>();
+                            foreach (Word.InlineShape sh in r.InlineShapes) if (IsMathType(sh)) shapes.Add(sh);
+                            for (int k = Math.Min(shapes.Count, packages.Count) - 1; k >= 0; k--)
+                            {
+                                if (string.IsNullOrEmpty(packages[k])) continue; // not converted: MathType's stays
+                                var old = shapes[k];
+                                int at = old.Range.Start;
+                                doc.Range(at, at).InsertXML(RunsOnly(packages[k]));
+                                old.Delete();
+                                FinishInserted(doc, packages[k]);
+                            }
+                        }
+                        else
+                        {
+                            var xml = Rpc.GetString(item, "flatOpc");
+                            r.InsertXML(xml);
+                            FinishInserted(doc, xml);
+                        }
                         replaced++;
                     }
                     catch (COMException ex)

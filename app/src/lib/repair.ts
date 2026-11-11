@@ -35,6 +35,8 @@ export interface RepairReport {
   redrawn: number;
   /** Time the repair took (ms). */
   ms: number;
+  /** Numbered equation paragraphs that got their style (MTDisplayEquation) back. */
+  styled: number;
   renamed: number;
   wrapped: number;
   fromAlt: number;
@@ -49,8 +51,8 @@ export async function repairDocument(document?: string, o: { quiet?: boolean; fr
   if (!addinSupports("repairEquations")) return null;
   const target = document ? { document } : {};
   const dry = await connector.request("repairEquations", { ...target, dryRun: true }, 120_000);
-  const changes = (dry.inlined ?? 0) + (dry.split?.length ?? 0) + (dry.converted ?? 0) + (dry.lowered ?? 0) + (dry.redraw?.length ?? 0) + dry.renamed.length + dry.wrapped.length + dry.bookmarks;
-  const report: RepairReport = { inlined: 0, split: 0, converted: 0, lowered: 0, toObjects: 0, idRewrites: 0, redrawn: 0, ms: 0, native: dry.native ?? 0, mathType: dry.mathType ?? 0, renamed: 0, wrapped: 0, fromAlt: 0, bookmarks: 0, linkedAdded: 0, unlinked: 0, otherPictures: dry.otherPictures };
+  const changes = (dry.inlined ?? 0) + (dry.split?.length ?? 0) + (dry.converted ?? 0) + (dry.styled ?? 0) + (dry.lowered ?? 0) + (dry.redraw?.length ?? 0) + dry.renamed.length + dry.wrapped.length + dry.bookmarks;
+  const report: RepairReport = { inlined: 0, split: 0, converted: 0, lowered: 0, toObjects: 0, idRewrites: 0, redrawn: 0, ms: 0, styled: 0, native: dry.native ?? 0, mathType: dry.mathType ?? 0, renamed: 0, wrapped: 0, fromAlt: 0, bookmarks: 0, linkedAdded: 0, unlinked: 0, otherPictures: dry.otherPictures };
   if (changes > 0) {
     report.backup = await backupIfMany(dry.document, changes);
     // One operation, one undo step: the add-in's repair, the registry follow-up and the redraw of
@@ -76,6 +78,7 @@ export async function repairDocument(document?: string, o: { quiet?: boolean; fr
         report.fromAlt = r.wrapped.filter((w) => w.source === "alt").length;
         report.bookmarks = r.bookmarks;
         report.toObjects = r.toObjects ?? 0;
+        report.styled = r.styled ?? 0;
         report.idRewrites = r.idRewrites ?? 0;
         await carryOverRegistry(r.document, r.renamed, r.wrapped.map((w) => w.tag), report);
         return redrawItems(r.redraw ?? []);
@@ -143,6 +146,7 @@ export function describeRepair(r: RepairReport): string {
   if (r.split) parts.push(`${r.split} wrapper(s) holding several equations or text split into one per equation (text moved out)`);
   if (r.lowered) parts.push(`${r.lowered} equation baseline(s) restored`);
   if (r.toObjects) parts.push(`${r.toObjects} Classic picture(s) converted to embedded objects (same ID; numbers and references kept)`);
+  if (r.styled) parts.push(`${r.styled} numbered equation paragraph(s) got their style back (number at the right margin again)`);
   if (r.idRewrites) parts.push(`${r.idRewrites} copied object(s) given their own ID inside`);
   if (r.redrawn && r.redrawn !== r.toObjects + r.idRewrites) parts.push(`${r.redrawn} of ${r.toObjects + r.idRewrites} redrawn`);
   if (r.converted) parts.push(`${r.converted} Classic equation(s) converted to the new form (picture without wrapper)`);
