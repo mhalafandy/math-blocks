@@ -13,7 +13,11 @@ const FILE = new URL("../../../a local MathType document", import.meta.url);
 const paragraphs = (xml: string) => [...xml.matchAll(/<w:p\b[^>]*>[\s\S]*?<\/w:p>/g)].map((m) => m[0]);
 const pPr = (p: string) => /^<w:p\b[^>]*>(<w:pPr>[\s\S]*?<\/w:pPr>)?/.exec(p)![1] ?? "";
 
-describe.skipIf(!existsSync(FILE))("Convert MathType on a local document", () => {
+const present = existsSync(FILE);
+
+describe.skipIf(!present)("Convert MathType on a local document", () => {
+  // Read only when the fixture is there (a skipped describe still runs its body when collected).
+  if (!present) return;
   const input = new Uint8Array(readFileSync(FILE));
   const before = strFromU8(unzipSync(input)["word/document.xml"]!);
   const plan = convertDocx(input);
