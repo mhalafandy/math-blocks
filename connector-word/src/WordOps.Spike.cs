@@ -367,6 +367,23 @@ namespace MathBlocks.WordConnector
                         d.Bookmarks.ShowHidden = hidden;
                     }
                 }
+                case "deleteBookmarkPara":
+                {
+                    // Deletes the paragraph of a numbered equation (what a user does when an equation goes).
+                    var name = Rpc.GetString(p, "bookmark");
+                    bool hidden = d.Bookmarks.ShowHidden;
+                    d.Bookmarks.ShowHidden = true;
+                    try
+                    {
+                        if (!d.Bookmarks.Exists(name)) return new Dictionary<string, object> { ["deleted"] = false };
+                        d.Bookmarks[name].Range.Paragraphs[1].Range.Delete();
+                        return new Dictionary<string, object> { ["deleted"] = true };
+                    }
+                    finally
+                    {
+                        d.Bookmarks.ShowHidden = hidden;
+                    }
+                }
                 case "staleNumbers":
                 {
                     // Equation numbers out of date (as after moving equations), so Update numbers has work.

@@ -136,6 +136,13 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => import("../components/NumberMarkerDialog").then((m) => m.openNumberMarker()),
     },
     {
+      id: "word.sectionMarker",
+      title: "Insert section marker at Word's cursor (next section of the current chapter or appendix)…",
+      group: "Word",
+      keywords: "section marker numbering restart new section 3.2 A.1",
+      run: () => import("../components/NumberMarkerDialog").then((m) => m.openSectionMarker()),
+    },
+    {
       id: "word.repair",
       title: "Repair equations: give pasted copies back their MathBlocks identity",
       group: "Word",

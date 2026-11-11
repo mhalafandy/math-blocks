@@ -459,32 +459,35 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       check("every planned item was written", r.failed.length === 0 && r.written === r.planned, `${r.written}/${r.planned}${r.failed.length ? `; ${r.failed.map((f) => `${f.what}: ${f.problem}`).join("; ")}` : ""}`);
       check("time per equation", null, describeResult(r));
       check("Word kept the conversion in one undo record", !r.undoBrokenAt, r.undoBrokenAt ? `closed early at: ${r.undoBrokenAt}` : "intact");
-      // Bookmarks named from the labels, showing the computed numbers.
-      for (const bm of X.bookmarks) {
-        const label = bm.replace(/^_MBEq_/, "");
+      // Bookmarks named from the labels (eq:3.1.1 → _MBEq_3_1_1), showing chapter.section.equation numbers.
+      const { labelBookmark } = await import("./latexInterchange");
+      for (const [label, number] of Object.entries(X.numbers)) {
+        const bm = labelBookmark(label);
         const t = await smoke("bookmarkText", { bookmark: bm });
-        check(`number of eq:${label}: bookmark ${bm} shows ${X.numbers[label]}`, t.exists && String(t.text).replace(/\s/g, "") === X.numbers[label], t.exists ? `shows "${t.text}"` : "no such bookmark");
+        check(`eq:${label}: bookmark ${bm} shows ${number}`, t.exists && String(t.text).replace(/\s/g, "") === number, t.exists ? `shows "${t.text}"` : "no such bookmark");
       }
-      // References, also after Update numbers.
-      const refsOk = async () => {
-        const a = (await smoke("refResults", { bookmark: "_MBEq_velocity" })).results as string[];
-        const b = (await smoke("refResults", { bookmark: "_MBEqN_velocity" })).results as string[];
-        const o = (await smoke("refResults", { bookmark: "_MBEq_oscillator" })).results as string[];
-        return { ok: a.length === 1 && a[0] === "(3.1)" && b.length === 1 && b[0] === "3.1" && o.length === 1 && o[0] === "(A.3)", detail: `\\eqref velocity ${JSON.stringify(a)}, \\ref velocity ${JSON.stringify(b)}, \\eqref oscillator ${JSON.stringify(o)}` };
-      };
-      const refs1 = await refsOk();
-      check("references show the numbers (\\eqref with brackets, \\ref without)", refs1.ok, refs1.detail);
+      // References within and across sections, also after Update numbers.
+      const refsNow = async () => ({
+        a: (await smoke("refResults", { bookmark: "_MBEq_3_1_1" })).results as string[],
+        b: (await smoke("refResults", { bookmark: "_MBEqN_3_2_1" })).results as string[],
+        c: (await smoke("refResults", { bookmark: "_MBEq_3_2_2" })).results as string[],
+        d: (await smoke("refResults", { bookmark: "_MBEq_A_2_1" })).results as string[],
+      });
+      const refsText = (x: Awaited<ReturnType<typeof refsNow>>) => `\\eqref 3.1.1 ${JSON.stringify(x.a)}, \\ref 3.2.1 ${JSON.stringify(x.b)}, \\eqref 3.2.2 (from chapter 4) ${JSON.stringify(x.c)}, \\eqref A.2.1 ${JSON.stringify(x.d)}`;
+      const refsRight = (x: Awaited<ReturnType<typeof refsNow>>, first: string) => x.a.length === 1 && x.a[0] === first && x.b.length === 1 && x.b[0] === "3.2.1" && x.c.length === 1 && x.c[0] === "(3.2.2)" && x.d.length === 1 && x.d[0] === "(A.2.1)";
+      const r1 = await refsNow();
+      check("references show chapter.section.equation (\\eqref with brackets, \\ref without), within and across sections", refsRight(r1, "(3.1.1)"), refsText(r1));
       await connector.request("updateNumbers", {}, SLOW);
-      const refs2 = await refsOk();
-      check("references still right after Update numbers", refs2.ok, refs2.detail);
+      const r2 = await refsNow();
+      check("references still right after Update numbers", refsRight(r2, "(3.1.1)"), refsText(r2));
       // Layout of a numbered equation: centred, number at the right margin.
-      const at = await smoke("bookmarkPara", { bookmark: "_MBEq_position" });
+      const at = await smoke("bookmarkPara", { bookmark: "_MBEq_3_1_2" });
       if (at.exists) {
         const pi = await smoke("paraInfo", { pos: at.start });
         check("numbered equation: kept its MTDisplayEquation style", pi.style === "MTDisplayEquation", `style ${pi.style}`);
         check("numbered equation: number at the right margin", Math.abs(Number(pi.numberEnd) - Number(pi.textRight)) < 3, `number ends at ${Number(pi.numberEnd).toFixed(1)} pt, right margin ${Number(pi.textRight).toFixed(1)} pt`);
         check("numbered equation: centred on the text width", Math.abs(Number(pi.equationCenter) - Number(pi.textCenter)) < 3, `equation centre ${Number(pi.equationCenter).toFixed(1)} pt, text centre ${Number(pi.textCenter).toFixed(1)} pt`);
-      } else check("numbered equation layout", false, "bookmark _MBEq_position not found");
+      } else check("numbered equation layout", false, "bookmark _MBEq_3_1_2 not found");
       // Inline equations on the baseline, as objects.
       const inline = r.tags.find((t) => t.kind === "inline");
       if (inline) {
@@ -498,6 +501,38 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       check("a second run finds only the deliberate errors", leftValid === 0, `${leftValid} item(s) still to convert; ${again.issues.length} issue(s) left`);
       const scan2 = (await connector.request("scanInterchange", {}, SLOW)) as InterchangeScan;
       check("\\mbnumbering became numbering markers", scan2.paragraphs.filter((p) => p.marker).length === X.markers, `${scan2.paragraphs.filter((p) => p.marker).length} marker(s)`);
+      // A new equation in section 3.1, before (3.1.1): after Update numbers the later ones shift and the
+      // references follow their equations.
+      const markers = { open: "(", close: ")", chapter: true, parts: "section" as const, separator: "." as const, restart: "section" as const, source: "markers" as const };
+      const inlineInSection = r.tags.filter((t) => t.kind === "inline")[2];
+      if (inlineInSection) {
+        await smoke("caretTo", { where: "after", tag: inlineInSection.tag });
+        const added = await insert("E = mc^{2}", true);
+        const { flatOpc } = await buildInsertion("E = mc^{2}", false, profile, added.tag, "classic", true);
+        await connector.request("numberEquation", { tag: added.tag, flatOpc, ...markers }, SLOW);
+        await connector.request("updateNumbers", {}, SLOW);
+        const t311 = await smoke("bookmarkText", { bookmark: "_MBEq_3_1_1" });
+        const t312 = await smoke("bookmarkText", { bookmark: "_MBEq_3_1_2" });
+        const r3 = await refsNow();
+        check("after inserting an equation in section 3.1 and Update numbers: the later numbers shift", String(t311.text).replace(/\s/g, "") === "(3.1.2)" && String(t312.text).replace(/\s/g, "") === "(3.1.3)", `eq:3.1.1 shows "${t311.text}", eq:3.1.2 shows "${t312.text}"`);
+        check("…and the references follow their equations", refsRight(r3, "(3.1.2)"), refsText(r3));
+      } else check("insert an equation in section 3.1", false, "no inline equation to place it after");
+      // Insert section marker: prefilled from the marker before the cursor (appendix A, section 2).
+      await smoke("caretTo", { where: "end" });
+      await smoke("newParagraph");
+      const before = await connector.request("markerBefore", {}, SLOW);
+      check("Insert section marker: finds the marker before the cursor", before.chapter === 1 && before.appendix === true && before.section === 2, JSON.stringify(before));
+      await connector.request("insertNumberMarker", { chapter: 1, section: 3, appendix: true, restartEquations: true }, SLOW);
+      await smoke("newParagraph");
+      const late = await insert("F = ma", true);
+      const lateFlat = (await buildInsertion("F = ma", false, profile, late.tag, "classic", true)).flatOpc;
+      const lateNo = await connector.request("numberEquation", { tag: late.tag, flatOpc: lateFlat, ...markers }, SLOW);
+      check("an equation after the new section marker is numbered (A.3.1)", String(lateNo.number).replace(/\s/g, "") === "(A.3.1)", `numbered "${lateNo.number}"`);
+      // Delete an equation that is referenced: Update numbers lists the broken reference.
+      await smoke("deleteBookmarkPara", { bookmark: "_MBEq_A_2_1" });
+      const upd = await connector.request("updateNumbers", {}, SLOW);
+      const broken = upd.broken ?? [];
+      check("Update numbers lists the reference to the deleted equation, with its text", broken.length === 1 && broken[0]!.bookmark === "_MBEq_A_2_1" && /Word artefacts/.test(broken[0]!.snippet), JSON.stringify(broken));
       await smoke("save", { file: "interchange test (converted).docx" });
     });
     await step("interchange speed", async () => {

@@ -25,7 +25,7 @@ export interface ScanParagraph {
   /** Holds a MathBlocks or MathType equation number field already (counted, not converted). */
   numbered?: boolean;
   /** Holds a numbering marker field already: the chapter it sets. */
-  marker?: { chapter: number; appendix: boolean };
+  marker?: { chapter: number; appendix: boolean; section?: number };
   /** Holds fields, pictures or objects: text positions may not match document positions. */
   complex?: boolean;
 }
@@ -93,6 +93,10 @@ export interface PlannedReference {
 }
 
 export interface PlannedMarker {
+  /** \mbnumbering{3} / {A} (chapter or appendix) or \mbnumbering{3.2} / {A.1} (section). */
+  level: "chapter" | "section";
+  /** Section number (section markers; chapter markers set 0 until the first section marker). */
+  section: number;
   start: number;
   end: number;
   expect: string;
@@ -109,12 +113,17 @@ export interface InterchangePlan {
   markers: PlannedMarker[];
   issues: Issue[];
   counts: { inline: number; display: number; numbered: number; references: number; markers: number; legacyNumbers: number; mapped: number };
-  /** Markers are used (new or existing): numbers are "(chapter.n)" from the markers. */
+  /** Markers are used (new or existing): numbers come from the markers. */
   usesMarkers: boolean;
+  /** Section markers are used: numbers are (chapter.section.n), the counter restarts per section. */
+  usesSections: boolean;
 }
 
 export const DISPLAY_STYLE = "MTDisplayEquation";
-const LABEL_RE = /^eq:[a-z0-9]+(?:-[a-z0-9]+)*$/;
+/** eq: then letters, digits, dots and hyphens — e.g. eq:3.2.5, eq:A.1.3, eq:energy-balance. */
+const LABEL_RE = /^eq:[A-Za-z0-9]+(?:[.-][A-Za-z0-9]+)*$/;
+/** A label that is an equation number (3.2.5, A.1.3): checked against the computed number. */
+const NUMBER_LABEL_RE = /^(?:[0-9]+|[A-Z])(?:\.[0-9]+)+$/;
 /** Bookmarks hold at most 40 characters; the number-only twin (_MBEqN_) is one longer. */
 const BOOKMARK_MAX = 39;
 export const BOOKMARK_PREFIX = "_MBEq_";
@@ -179,6 +188,16 @@ export function mapLegacyForms(latex: string): { latex: string; mapped: string[]
     note("\\vec{\\mathbf{S}} → \\vectrix");
     return `\\vectrix{${c}}`;
   });
+  // Unit vectors of a frame: \hat{s}_1, \hat{\mathbf{s}}_1, \mathbf{\hat{s}}_1 → \bvec{s}_1 (a lowercase
+  // letter with an index; a hat without an index — an estimate — is left alone).
+  s = s.replace(/\\mathbf\s*\{\s*\\hat\s*\{\s*([a-z])\s*\}\s*\}(?=\s*_)/g, (_m, c: string) => {
+    note("\\hat{s}_i → \\bvec");
+    return `\\bvec{${c}}`;
+  });
+  s = s.replace(/\\hat\s*\{\s*(?:\\mathbf\s*\{\s*([a-z])\s*\}|([a-z]))\s*\}(?=\s*_)/g, (_m, a: string | undefined, b: string | undefined) => {
+    note("\\hat{s}_i → \\bvec");
+    return `\\bvec{${a ?? b}}`;
+  });
   // \left[\begin{array}{ccc} … \end{array}\right] → bmatrix (and ( | ‖ { forms)
   const fences: [string, string, string][] = [
     ["\\[", "\\]", "bmatrix"],
@@ -199,9 +218,10 @@ export function mapLegacyForms(latex: string): { latex: string; mapped: string[]
 
 // ------------------------------------------------------------------ labels and bookmarks
 
-/** The number bookmark of a label (eq:a-first-moment → _MBEq_a_first_moment), at most 39 characters. */
+/** The number bookmark of a label (eq:energy-balance → _MBEq_energy_balance), at most 39 characters. */
 export function labelBookmark(key: string): string {
-  const body = key.replace(/-/g, "_");
+  // Word allows letters, digits and underscores: dots and hyphens become underscores.
+  const body = key.replace(/[.-]/g, "_");
   const name = BOOKMARK_PREFIX + body;
   if (name.length <= BOOKMARK_MAX) return name;
   // Too long: shortened, with a hash of the whole key so different labels stay different.
@@ -223,6 +243,15 @@ const snippetOf = (text: string, from: number, to: number) => {
   return (a > 0 ? "…" : "") + text.slice(a, b).replace(/\t/g, " ⇥ ").replace(/\s+/g, " ").trim() + (b < text.length ? "…" : "");
 };
 
+/** Notation the convention rules out (warnings): a frame never takes a subscript. */
+function notationWarnings(latex: string): string[] {
+  const out: string[] = [];
+  for (const m of latex.matchAll(/\\vectrix\s*\{\s*([^}]*)\}\s*_/g)) {
+    out.push(`\\vectrix{${m[1]}} has a subscript: frames never do (only I and J are dyadics, \\dyadic{J}_{c})`);
+  }
+  return out;
+}
+
 /** Problems the parser finds: errors, and unknown commands (they would show as red raw text). */
 function parseProblems(latex: string): string[] {
   const r = parseLatex(latex);
@@ -232,7 +261,7 @@ function parseProblems(latex: string): string[] {
 const MARKER_RE = /^\s*\\mbnumbering\s*\{\s*([^}]*?)\s*\}\s*$/;
 /** A display paragraph: blanks/tabs, $$…$$ (or \[…\]), then nothing, a label, or a typed number. */
 const DISPLAY_RE = /^([\t ]*)(\$\$|\\\[)([\s\S]*?)(\$\$|\\\])([\t ]*)([\s\S]*?)\s*$/;
-const TYPED_NUMBER_RE = /^\(\s*([A-Z]|[0-9]+)\s*[.\-]\s*([0-9]+)\s*\)$|^\(\s*([0-9]+)\s*\)$/;
+const TYPED_NUMBER_RE = /^\(\s*(?:[A-Z]|[0-9]+)(?:\s*[.\-]\s*[0-9]+)*\s*\)$/;
 const REF_RE = /\\(eqref|ref)\s*\{([^}]*)\}/g;
 
 export function planInterchange(scan: InterchangeScan): InterchangePlan {
@@ -256,12 +285,13 @@ export function planInterchange(scan: InterchangeScan): InterchangePlan {
     if (!text.trim()) continue;
     const marker = MARKER_RE.exec(normalizeWordText(text));
     if (marker) {
-      const value = marker[1]!;
-      if (!/^(?:[0-9]+|[A-Z])$/.test(value)) {
-        issue("error", `\\mbnumbering needs a chapter number or one capital letter, not “${value}”`, p, 0, text.length);
+      const value = marker[1]!.replace(/\s+/g, "");
+      const m2 = /^([0-9]+|[A-Z])(?:\.([0-9]+))?$/.exec(value);
+      if (!m2) {
+        issue("error", `\\mbnumbering needs a chapter (3 or A) or a section (3.2 or A.1), not “${value}”`, p, 0, text.length);
         continue;
       }
-      markers.push({ start: p.start, end: p.end, expect: text, value, ...chapterOf(value) });
+      markers.push({ start: p.start, end: p.end, expect: text, value, level: m2[2] ? "section" : "chapter", section: m2[2] ? Number(m2[2]) : 0, ...chapterOf(m2[1]!) });
       continue;
     }
     if (/\\mbnumbering/.test(text)) {
@@ -286,7 +316,7 @@ export function planInterchange(scan: InterchangeScan): InterchangePlan {
         if (label) {
           const key = label[1]!.trim();
           if (!LABEL_RE.test(key)) {
-            issue("error", `Label “${key}” must be eq: followed by lowercase letters, digits and hyphens (e.g. eq:a-first-moment)`, p, text.indexOf(tail), text.length);
+            issue("error", `Label “${key}” must be eq: followed by letters, digits, dots and hyphens (e.g. eq:3.2.5)`, p, text.indexOf(tail), text.length);
             eq.invalid = true;
           }
           eq.numbered = true;
@@ -308,6 +338,7 @@ export function planInterchange(scan: InterchangeScan): InterchangePlan {
         issue("error", problem, p, text.indexOf(m[3]!), text.indexOf(m[3]!) + m[3]!.length);
         eq.invalid = true;
       }
+      for (const w of notationWarnings(latex)) issue("warning", w, p, text.indexOf(m[3]!), text.indexOf(m[3]!) + m[3]!.length);
       equations.push(eq);
       continue;
     }
@@ -356,6 +387,7 @@ export function planInterchange(scan: InterchangeScan): InterchangePlan {
         issue("error", problem, p, i, end);
         eq.invalid = true;
       }
+      for (const w of notationWarnings(latex)) issue("warning", w, p, i, end);
       if (/\\label\s*\{/.test(typed)) {
         issue("error", "\\label belongs after a display equation ($$…$$ TAB \\label{eq:KEY}), not inside an inline one", p, i, end);
         eq.invalid = true;
@@ -382,6 +414,12 @@ export function planInterchange(scan: InterchangeScan): InterchangePlan {
     if (!eq.label || eq.invalid) continue;
     const bm = labelBookmark(eq.label);
     const p = scan.paragraphs.find((x) => x.start === eq.start)!;
+    const clash = [...defined.values()].find((d) => d.bookmark === bm && d.label !== eq.label);
+    if (clash) {
+      issue("error", `Labels eq:${clash.label} and eq:${eq.label} give the same bookmark ${bm}: rename one`, p, 0, p.text.length);
+      eq.invalid = true;
+      continue;
+    }
     if (defined.has(eq.label)) {
       issue("error", `Duplicate label eq:${eq.label} (defined earlier in the document)`, p, 0, p.text.length);
       eq.invalid = true;
@@ -398,15 +436,25 @@ export function planInterchange(scan: InterchangeScan): InterchangePlan {
 
   // Numbers, in document order (existing numbers and markers count too).
   const usesMarkers = scan.paragraphs.some((p) => p.marker) || markers.length > 0;
+  const usesSections = scan.paragraphs.some((p) => (p.marker?.section ?? 0) > 0) || markers.some((m) => m.level === "section");
   let chapter: { chapter: number; appendix: boolean } | null = null;
+  let section = 0;
   let n = 0;
   const byStart = new Map(equations.filter((e) => e.kind === "display").map((e) => [e.start, e]));
   const markerAt = new Map(markers.map((m) => [m.start, m]));
   let warnedBeforeMarker = false;
+  const warnedNoSection = new Set<string>();
   for (const p of scan.paragraphs) {
-    const mk = markerAt.get(p.start) ?? p.marker;
+    const planned = markerAt.get(p.start);
+    const mk = planned ?? p.marker;
     if (mk) {
-      chapter = { chapter: mk.chapter, appendix: mk.appendix };
+      const next = { chapter: mk.chapter, appendix: mk.appendix };
+      const sec = planned ? planned.section : (p.marker?.section ?? 0);
+      if (planned?.level === "section" && chapter && (chapter.chapter !== next.chapter || chapter.appendix !== next.appendix)) {
+        issue("warning", `Section marker ${planned.value} follows ${chapter.appendix ? "appendix" : "chapter"} ${chapterLabel(chapter)}: is the chapter part right?`, p, 0, p.text.length);
+      }
+      chapter = next;
+      section = sec;
       n = 0;
       continue;
     }
@@ -415,16 +463,28 @@ export function planInterchange(scan: InterchangeScan): InterchangePlan {
       continue;
     }
     const eq = byStart.get(p.start);
-    if (!eq || !eq.numbered) continue;
+    // Equations with an error stay text: they get no number field and do not count.
+    if (!eq || !eq.numbered || eq.invalid) continue;
     n++;
     if (usesMarkers && !chapter && !warnedBeforeMarker) {
       issue("warning", "Numbered equation before the first \\mbnumbering: put \\mbnumbering{…} right after the chapter heading", p, 0, p.text.length);
       warnedBeforeMarker = true;
     }
-    eq.number = `(${chapter ? `${chapterLabel(chapter)}.` : ""}${n})`;
+    if (usesSections && chapter && section === 0 && !warnedNoSection.has(chapterLabel(chapter))) {
+      issue("warning", `Missing section marker: numbered equation in ${chapter.appendix ? "appendix" : "chapter"} ${chapterLabel(chapter)} before its first \\mbnumbering{${chapterLabel(chapter)}.1}`, p, 0, p.text.length);
+      warnedNoSection.add(chapterLabel(chapter));
+    }
+    const prefix = chapter ? `${chapterLabel(chapter)}.${usesSections ? `${section}.` : ""}` : "";
+    eq.number = `(${prefix}${n})`;
     eq.appendix = !!chapter?.appendix;
     if (eq.typedNumber && eq.typedNumber !== eq.number) {
       issue("warning", `Typed number ${eq.typedNumber} becomes ${eq.number} (computed from its position)`, p, 0, p.text.length);
+    }
+    // A label that is a number (eq:3.2.5): it should be the number the equation gets.
+    if (eq.label && NUMBER_LABEL_RE.test(eq.label) && `(${eq.label})` !== eq.number) {
+      const where = eq.label.split(".").slice(0, -1).join(".");
+      const here = prefix.replace(/\.$/, "");
+      issue("warning", where !== here ? `Label eq:${eq.label} does not fit the markers: the equation is in ${here || "no section"} and is numbered ${eq.number}` : `Label eq:${eq.label} is numbered ${eq.number} here (references follow the equation, not the label)`, p, 0, p.text.length);
     }
   }
 
@@ -434,7 +494,7 @@ export function planInterchange(scan: InterchangeScan): InterchangePlan {
     const bm = labelBookmark(key);
     const eq = defined.get(key);
     const resolved = !!eq || known.has(bm);
-    if (!LABEL_RE.test(r.label)) issue("error", `Reference to “${r.label}”: labels are eq: followed by lowercase letters, digits and hyphens`, r.p, r.from, r.to);
+    if (!LABEL_RE.test(r.label)) issue("error", `Reference to “${r.label}”: labels are eq: followed by letters, digits, dots and hyphens`, r.p, r.from, r.to);
     else if (!resolved) issue("error", `Unresolved reference \\${r.form}{${r.label}}: no equation has this label (left as highlighted text)`, r.p, r.from, r.to);
     const shows = eq?.number ? (r.form === "eqref" ? eq.number : eq.number.slice(1, -1)) : undefined;
     references.push({ start: r.p.start + r.from, end: r.p.start + r.to, expect: r.p.text.slice(r.from, r.to), label: key, form: r.form, resolved: resolved && LABEL_RE.test(r.label), bookmark: bm, ...(shows ? { shows } : {}) });
@@ -449,6 +509,7 @@ export function planInterchange(scan: InterchangeScan): InterchangePlan {
     markers,
     issues,
     usesMarkers,
+    usesSections,
     counts: {
       inline: valid.filter((e) => e.kind === "inline").length,
       display: valid.filter((e) => e.kind === "display" && !e.numbered).length,

@@ -65,6 +65,15 @@ export function InterchangeDialog() {
               {s.result.equations ? Math.round((s.result.buildMs + s.result.writeMs) / s.result.equations) : 0} ms per equation (building {Math.round(s.result.buildMs)} ms, writing in Word {Math.round(s.result.writeMs)} ms). One Ctrl+Z in Word undoes it.
             </p>
             {s.result.undoBrokenAt && <p className="error">Word closed the undo record early ({s.result.undoBrokenAt}): it may take more than one Ctrl+Z. Please send connector.log.</p>}
+            {(s.result.broken?.length ?? 0) > 0 && (
+              <ul className="issue-list">
+                {s.result.broken!.map((b, i) => (
+                  <li key={i} className="error">
+                    Broken reference (no such equation): <code>{b.snippet}</code>
+                  </li>
+                ))}
+              </ul>
+            )}
             {s.result.failed.length > 0 && (
               <ul className="issue-list">
                 {s.result.failed.map((f, i) => (

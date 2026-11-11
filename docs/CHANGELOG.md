@@ -25,6 +25,25 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Changed — LaTeX interchange: chapter.section.equation numbers, labels as numbers, section markers
+- Numbers are (chapter.section.equation) — (3.2.5), (A.1.3) in appendices — with the counter restarting
+  at each section; references show the same format. \mbnumbering{3.2} / {A.1} after each section heading
+  (as well as \mbnumbering{3} / {A} after the chapter or appendix heading).
+- Labels may be the equation numbers (\label{eq:3.2.5}, \eqref{eq:A.1.3}); bookmarks _MBEq_3_2_5.
+  Pre-flight warnings: missing section marker; label whose number differs from the computed one or does
+  not fit the markers (references still follow the equation); two labels giving the same bookmark.
+- Notation: \hat{s}_1, \hat{\mathbf{s}}_1, \mathbf{\hat{s}}_1 → \bvec{s}_1 (unit vectors of a frame);
+  a frame with a subscript is reported (only I and J are dyadics, \dyadic{J}_{c}). Hughes preset: the
+  dyadic is a bold capital with a single arrow (as the frames).
+- Insert section marker (ribbon → Section marker, Ctrl+K): prefilled with the chapter (or appendix) of
+  the marker before the cursor and the next section number; numbers are updated after it.
+- Update numbers lists references to equations that no longer exist, each with the text around it
+  (ribbon: a Word message; app: a list), instead of leaving Word's "Error! Reference source not found".
+- docs/LATEX-INTERCHANGE.md rewritten for all of this, with a generic example. The synthetic convention
+  document now has two chapters with two sections each and an appendix with two sections; the
+  self-test also inserts an equation and updates numbers, inserts a section marker, and deletes a
+  referenced equation (broken-reference list).
+
 ### Added — LaTeX interchange: a transcribed document becomes finished equations in one Convert LaTeX
 - Convention for documents with math as LaTeX text (inline $…$; display TAB $$…$$ in
   MTDisplayEquation; numbered with TAB \label{eq:KEY}; \eqref/\ref; \mbnumbering{3} / {A} after each

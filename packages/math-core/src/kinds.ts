@@ -167,7 +167,8 @@ export const PRESETS: Record<PresetId, { name: string; kinds: Record<string, Kin
       mat: S(BOLD),
       dcm: S({ ...BOLD, symbol: "C" }),
       crossmat: S({ ...BOLD, suffix: { text: "×", as: "sup" } }),
-      dyadic: S({ ...BOLD, accent: "double-arrow" }),
+      // Bold capital with an arrow, as the frames; I and J (inertia) are the dyadics.
+      dyadic: S({ ...BOLD, accent: "arrow" }),
       tens: S({ ...BOLD, letters: "sans" }),
       quat: S(BOLD),
       frm: S({ letters: "calligraphic", shape: "upright", accent: "arrow", symbol: "F" }),

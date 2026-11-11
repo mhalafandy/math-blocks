@@ -63,65 +63,107 @@ thesis template).
 
 | What | Paragraph | Text of the paragraph |
 |---|---|---|
-| Inline equation | any (in the sentence) | \`… the vector $\\pvec{c}_1$ is …\` |
+| Inline equation | any (in the sentence) | \`… the position $\\pvec{r}$ of …\` |
 | Display, unnumbered | style **${DISPLAY_STYLE}**, alone | TAB \`$$…$$\` |
-| Display, numbered | style **${DISPLAY_STYLE}**, alone | TAB \`$$…$$\` TAB \`\\label{eq:KEY}\` |
-| Multi-line, one number | style **${DISPLAY_STYLE}**, alone | TAB \`$$\\begin{aligned} a &= b \\\\ &= c \\end{aligned}$$\` TAB \`\\label{eq:KEY}\` |
-| Reference with brackets | in the sentence | \`\\eqref{eq:KEY}\` → (A.3) |
-| Reference, number only | in the sentence | \`\\ref{eq:KEY}\` → A.3 |
-| Numbering prefix | its own paragraph, right after each chapter or appendix heading | \`\\mbnumbering{3}\` or \`\\mbnumbering{A}\` |
+| Display, numbered | style **${DISPLAY_STYLE}**, alone | TAB \`$$…$$\` TAB \`\\label{eq:3.2.5}\` |
+| Multi-line, one number | style **${DISPLAY_STYLE}**, alone | TAB \`$$\\begin{aligned} a &= b \\\\ &= c \\end{aligned}$$\` TAB \`\\label{eq:3.2.6}\` |
+| Reference with brackets | in the sentence | \`\\eqref{eq:3.2.5}\` → (3.2.5) |
+| Reference, number only | in the sentence | \`\\ref{eq:3.2.5}\` → 3.2.5 |
+| Chapter / appendix marker | its own paragraph, right after the chapter or appendix heading | \`\\mbnumbering{3}\` or \`\\mbnumbering{A}\` |
+| Section marker | its own paragraph, right after each section heading | \`\\mbnumbering{3.2}\` or \`\\mbnumbering{A.1}\` |
 
-Rules:
+### Equation numbers: chapter.section.equation
+
+- Numbers are **(chapter.section.equation)** — (3.2.5) in section 2 of chapter 3 — and
+  **(letter.section.equation)** in appendices — (A.1.3). The equation counter restarts at every section.
+  References show the same format.
+- The numbers come from the markers, never from typed text: \`\\mbnumbering{3}\` after the chapter
+  heading, then \`\\mbnumbering{3.1}\`, \`\\mbnumbering{3.2}\`… after each section heading (appendix sections
+  too: \`\\mbnumbering{A}\`, then \`\\mbnumbering{A.1}\`…). A numbered equation before its chapter's first
+  section marker is reported ("missing section marker").
+
+### Labels are the equation numbers
+
+- Write the label as the number the equation has in the draft: \`\\label{eq:3.2.5}\`, \`\\label{eq:A.1.3}\`,
+  and cite it the same way: \`\\eqref{eq:3.2.5}\`, \`\\ref{eq:A.1.3}\`. (Other labels — letters, digits,
+  dots and hyphens after \`eq:\`, e.g. \`eq:energy-balance\` — work too.)
+- Each label once per document. References may come before or after their equation.
+- If an equation's computed number differs from its label (a section was added, an equation moved), the
+  pre-flight warns; the reference still points at the equation (its bookmark), so it shows the right
+  number.
+
+### Other rules
 
 - TAB is a real tab character (Word's Tab key), not spaces.
-- Never type an equation number: \`\\label{eq:KEY}\` gives it. MathBlocks computes it from the position
-  and the last \`\\mbnumbering\`: (3.1), (3.2)… in chapter 3; (A.1), (A.2)… in appendix A.
-- KEY: lowercase ASCII letters, digits and hyphens, starting with \`eq:\` — e.g. \`eq:a-first-moment\`.
-  Each KEY once per document. References may come before or after the equation they point to.
-- \`\\mbnumbering{…}\` takes a chapter number (\`3\`) or one capital letter for an appendix (\`A\` = first
-  appendix). It is needed after every chapter or appendix heading whose equations are numbered.
+- Never type an equation number in a new document (\`\\label\` gives it).
 - Inside \`$…$\` and \`$$…$$\`: plain ASCII — straight quotes, \`-\` for minus, \`'\` for primes.
 - One display equation per paragraph; nothing else in that paragraph except the TABs and the label.
 - \`\\(…\\)\` is accepted for inline and \`\\[…\\]\` for display, but \`$…$\` and \`$$…$$\` are preferred.
 - A literal dollar sign in text is written \`\\$\`.
 
-Example (one appendix):
+### Notation
+
+- **Physical vectors:** \`\\pvec{r}\`, index outside: \`\\pvec{r}_1\`.
+- **Frames (vectrices):** \`\\vectrix{F}\` — a bold capital with an arrow; never with a subscript.
+- **Unit vectors of a frame:** the frame's letter in lowercase with \`\\bvec\`, index outside:
+  \`\\bvec{f}_1\`, \`\\bvec{f}_2\`, \`\\bvec{f}_3\` for frame F (bold, with a hat).
+- **Dyadics:** only \`\\dyadic{I}\` and \`\\dyadic{J}\` (bold capital with an arrow), subscripts outside when
+  needed: \`\\dyadic{J}_{c}\`.
+- **Column matrices:** \`\\cmat{r}\`; **transpose:** \`^{\\T}\`.
+- **Bodies:** plain letters, no kind: \`B_1\`, \`B_{a}\`.
+
+Example (one chapter, one section; generic content):
 
 \`\`\`text
-Appendix A                                                    ← Heading (unnumbered in the template)
-\\mbnumbering{A}
-The first moment of body $\\body{B}_1$ about its origin is defined in \\eqref{eq:a-first-moment}.
-⇥$$\\pvec{c}_1 = \\int_{\\body{B}_1} \\pvec{r}\\,\\mathrm{d}m$$⇥\\label{eq:a-first-moment}     ← ${DISPLAY_STYLE}
-⇥$$\\pvec{c}_1 = \\vectrix{F}^{\\T}\\cmat{c}_1$$                                   ← ${DISPLAY_STYLE}, unnumbered
-⇥$$\\begin{aligned} \\cmat{c}_1 &= \\int \\cmat{r}\\,\\mathrm{d}m \\\\ &= m\\cmat{r}_c \\end{aligned}$$⇥\\label{eq:a-centre}
-Equation \\ref{eq:a-centre} gives the centre of mass.
+Kinematics                                                        ← Heading 1 (chapter 3)
+\\mbnumbering{3}
+Position                                                          ← Heading 2 (section 3.1)
+\\mbnumbering{3.1}
+The position $\\pvec{r}$ of a particle in the frame $\\vectrix{F}$ is given by \\eqref{eq:3.1.1}.
+⇥$$\\pvec{r} = \\vectrix{F}^{\\T}\\cmat{r}$$⇥\\label{eq:3.1.1}            ← ${DISPLAY_STYLE}
+⇥$$\\cmat{r} = \\begin{bmatrix} x & y & z \\end{bmatrix}^{\\T}$$          ← ${DISPLAY_STYLE}, unnumbered
+⇥$$\\begin{aligned} \\pvec{r} &= x\\bvec{f}_1 + y\\bvec{f}_2 + z\\bvec{f}_3 \\\\ &= \\vectrix{F}^{\\T}\\cmat{r} \\end{aligned}$$⇥\\label{eq:3.1.2}
+Equation \\ref{eq:3.1.2} expands \\eqref{eq:3.1.1} in the unit vectors of $\\vectrix{F}$.
 \`\`\`
+
+This gives (3.1.1) and (3.1.2); the references read "(3.1.1)" and "3.1.2".
 
 ## 2. What Convert LaTeX does
 
 1. **Pre-flight report, before anything is written:** the counts (inline, display, numbered,
-   references, markers) and every problem with the text around it — parse errors, unknown commands,
-   duplicate labels, unresolved references, malformed display paragraphs, typed numbers that differ
-   from the computed ones. You choose: stop, or convert the valid items.
+   references, markers) and every problem with the text around it, in document order — parse errors,
+   unknown commands, duplicate labels, unresolved references, malformed display paragraphs, missing
+   section markers, labels whose number does not fit the markers, typed numbers that differ from the
+   computed ones. You choose: stop, or convert the valid items.
 2. **Writes, as one Ctrl+Z** (a backup is made first for large documents):
    - inline equations as MathBlocks objects on the text baseline;
    - display equations as MathBlocks objects in the paragraph's own style (centred on its centre tab);
    - numbered ones with a number field at the right tab and a bookmark named from the label
-     (\`eq:a-first-moment\` → \`_MBEq_a_first_moment\`);
-   - \`\\mbnumbering\` as the hidden numbering marker (its paragraph becomes hidden);
+     (\`eq:3.2.5\` → \`_MBEq_3_2_5\`; dots and hyphens become underscores, at most 40 characters);
+   - every \`\\mbnumbering\` as a hidden numbering marker (its paragraph becomes hidden);
    - references as cross-reference fields (Ctrl+click jumps to the equation); unresolved ones stay as
      text, highlighted, and are listed;
    - then every number and reference is updated.
 3. **Re-running converts only what is left** (converted equations are no longer text; numbers continue
    from the ones already converted; references may point at equations converted earlier).
 
+### Keeping numbers right afterwards
+
+- **Insert section marker** (MathBlocks ribbon → Section marker, or Ctrl+K): for a section added later.
+  Put the cursor right after the new section heading; the marker is prefilled with the chapter (or
+  appendix) of the marker before it and the next section number. Update numbers then renumbers the
+  equations after it.
+- **Update numbers** renumbers every equation and reference, and lists references to equations that no
+  longer exist (Word would show "Error! Reference source not found"), each with the text around it.
+
 ## 3. Older forms that are converted too
 
-- Display paragraphs with a typed number — TAB \`$$…$$\` TAB \`(A.3)\` — get a number field instead of
+- Display paragraphs with a typed number — TAB \`$$…$$\` TAB \`(A.1.3)\` — get a number field instead of
   the text; the report warns when the computed number differs from the typed one.
 - MathType-style notation is mapped to notation kinds:
-  - \`\\mathbf{\\overset{\\scriptscriptstyle\\rightharpoonup}{c}}\` → \`\\pvec{c}\`
-  - \`\\vec{\\mathbf{S}}\` (capital) → \`\\vectrix{S}\`; for ${[...DYADIC_LETTERS].map(code).join(" and ")} → \`\\dyadic{…}\`
+  - \`\\mathbf{\\overset{\\scriptscriptstyle\\rightharpoonup}{r}}\` → \`\\pvec{r}\`
+  - \`\\vec{\\mathbf{F}}\` (capital) → \`\\vectrix{F}\`; for ${[...DYADIC_LETTERS].map(code).join(" and ")} → \`\\dyadic{…}\`
+  - \`\\hat{f}_1\`, \`\\hat{\\mathbf{f}}_1\`, \`\\mathbf{\\hat{f}}_1\` (lowercase letter with an index) → \`\\bvec{f}_1\`
   - \`\\left[\\begin{array}{…}…\\end{array}\\right]\` → \`bmatrix\` (\`( )\` → \`pmatrix\`, \`| |\` → \`vmatrix\`)
 
 ## 4. What Word does to typed LaTeX, undone before parsing
@@ -140,7 +182,7 @@ Anything not listed here is reported in the pre-flight as an unknown command and
 |---|---|
 ${kinds.map((k) => `| ${code(`\\${k.macro}${k.args ? k.argNames.map((a) => `{${a}}`).join("") : ""}`)} | ${k.name} |`).join("\n")}
 
-An index goes outside the kind: \`\\pvec{c}_1\`, \`\\uvec{s}_2\`. The transpose is \`^{\\T}\`.
+An index goes outside the kind: \`\\pvec{r}_1\`, \`\\bvec{f}_2\`. The transpose is \`^{\\T}\`.
 
 ### Structures
 

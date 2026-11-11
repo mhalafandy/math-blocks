@@ -16,7 +16,7 @@ namespace MathBlocks.WordConnector
     /// </summary>
     internal sealed partial class WordOps
     {
-        private static readonly Regex MarkerLabel = new Regex(@"Equation (Chapter|Appendix) (\d+)", RegexOptions.Compiled);
+        private static readonly Regex MarkerLabel = new Regex(@"Equation (Chapter|Appendix) (\d+)(?: Section (\d+))?", RegexOptions.Compiled);
 
         /// <summary>
         /// The paragraphs that hold LaTeX ($ or a backslash), equation numbers or numbering markers, with
@@ -45,7 +45,7 @@ namespace MathBlocks.WordConnector
                 if (code.Contains("MBEquationSection") || code.Contains("MTEditEquationSection"))
                 {
                     var m = MarkerLabel.Match(f.Code.Text ?? "");
-                    if (m.Success) markers[at] = new Dictionary<string, object> { ["chapter"] = int.Parse(m.Groups[2].Value), ["appendix"] = m.Groups[1].Value == "Appendix" };
+                    if (m.Success) markers[at] = new Dictionary<string, object> { ["chapter"] = int.Parse(m.Groups[2].Value), ["appendix"] = m.Groups[1].Value == "Appendix", ["section"] = m.Groups[3].Success ? int.Parse(m.Groups[3].Value) : 0 };
                 }
                 else if (code.Contains("MBPlaceRef") || code.Contains("MTPlaceRef") || code.Contains("SEQ MTEqn") || (code.Contains("SEQ MBEq") && code.Contains("\\c"))) numbered.Add(at);
             }
@@ -92,6 +92,29 @@ namespace MathBlocks.WordConnector
             }
             Log.Info("scanInterchange in " + doc.Name + ": " + paragraphs.Count + " paragraph(s), " + numbered.Count + " number(s), " + markers.Count + " marker(s), " + bookmarks.Count + " bookmark(s), " + clock.ElapsedMilliseconds + " ms");
             return new Dictionary<string, object> { ["name"] = doc.Name, ["fullName"] = doc.FullName, ["paragraphs"] = paragraphs, ["bookmarks"] = bookmarks };
+        }
+
+        /// <summary>The numbering marker nearest before the cursor (chapter, section, appendix), for "Insert section marker".</summary>
+        public Dictionary<string, object> MarkerBefore(Dictionary<string, object> p)
+        {
+            var doc = ActiveDocument();
+            int pos = _app.Selection.Start;
+            Dictionary<string, object> found = null;
+            foreach (Word.Field f in doc.Fields)
+            {
+                try
+                {
+                    if (f.Code.Start > pos) break;
+                    var code = f.Code.Text ?? "";
+                    if (!code.Contains("MBEquationSection") && !code.Contains("MTEditEquationSection")) continue;
+                    var m = MarkerLabel.Match(code);
+                    if (m.Success) found = new Dictionary<string, object> { ["chapter"] = int.Parse(m.Groups[2].Value), ["appendix"] = m.Groups[1].Value == "Appendix", ["section"] = m.Groups[3].Success ? int.Parse(m.Groups[3].Value) : 0 };
+                }
+                catch (COMException)
+                {
+                }
+            }
+            return found ?? new Dictionary<string, object> { ["none"] = true };
         }
 
         private static string StyleNameOf(Word.Paragraph para)
@@ -151,7 +174,7 @@ namespace MathBlocks.WordConnector
                     var updated = UpdateNumberFields(doc);
                     CheckOperationUndo("after updating numbers and references");
                     Log.Info("convertInterchange in " + doc.Name + ": " + done + "/" + items.Count + " item(s) in " + clock.ElapsedMilliseconds + " ms");
-                    return new Dictionary<string, object> { ["results"] = results, ["done"] = done, ["ms"] = clock.ElapsedMilliseconds, ["numbers"] = updated["numbers"], ["references"] = updated["references"] };
+                    return new Dictionary<string, object> { ["results"] = results, ["done"] = done, ["ms"] = clock.ElapsedMilliseconds, ["numbers"] = updated["numbers"], ["references"] = updated["references"], ["broken"] = updated["broken"] };
                 }
                 finally
                 {
@@ -209,9 +232,10 @@ namespace MathBlocks.WordConnector
                     // The marker in its own hidden paragraph (as MathType's section breaks): no blank line
                     // where \mbnumbering was, not in the heading (or its table of contents entry).
                     int chapter = Rpc.GetInt(item, "chapter", 1);
+                    int section = Rpc.GetInt(item, "section", 0);
                     bool appendix = Rpc.GetBool(item, "appendix");
                     r.Text = "";
-                    InsertInline(doc, doc.Range(start, start), NumberFields.Package(MarkerRuns(chapter, 1, appendix, true)));
+                    InsertInline(doc, doc.Range(start, start), NumberFields.Package(MarkerRuns(chapter, section, appendix, true)));
                     doc.Range(start, start).Paragraphs[1].Range.Font.Hidden = 1;
                     return null;
                 }

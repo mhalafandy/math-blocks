@@ -3,6 +3,7 @@
  * scan (add-in) → plan and pre-flight report (latexInterchange.ts) → build every equation as a
  * MathBlocks object → one write in Word (one Ctrl+Z, numbers and references updated at the end).
  */
+import type { BrokenReference } from "@mathblocks/connector-protocol";
 import { addinSupports, bringToFront, connector } from "./connector";
 import { backupIfMany } from "./docOps";
 import { describePlan, planInterchange, type InterchangePlan, type InterchangeScan } from "./latexInterchange";
@@ -26,6 +27,8 @@ export interface InterchangeResult {
   stopped?: boolean;
   /** The equations written: kind, ID and number (the self-test checks them in Word). */
   tags: { kind: "inline" | "display"; tag: string; number?: string; bookmark?: string }[];
+  /** References to equations that do not exist (after the final Update numbers). */
+  broken?: BrokenReference[];
 }
 
 /** The pre-flight decision (the dialog answers it; the self-test passes yes). */
@@ -79,7 +82,7 @@ export async function convertLatexDocument(o: { document?: string; fromWord?: bo
     if (!o.yes && k % 10 === 0) ui.show({ name: scan.name, plan, stage: "working", progress: `Building the equations… ${k + 1} / ${valid.length}` });
   }
   for (const m of plan.markers) {
-    items.push({ id: ++id, kind: "marker", start: m.start, end: m.end, expect: m.expect, chapter: m.chapter, appendix: m.appendix });
+    items.push({ id: ++id, kind: "marker", start: m.start, end: m.end, expect: m.expect, chapter: m.chapter, section: m.section, appendix: m.appendix });
     what.set(id, `\\mbnumbering{${m.value}}`);
   }
   for (const r of plan.references) {
@@ -91,10 +94,11 @@ export async function convertLatexDocument(o: { document?: string; fromWord?: bo
   // One write, one Ctrl+Z (inside an operation: progress window, no redraw, document stays in front).
   const backup = await backupIfMany(scan.fullName, items.length);
   const { numberFormat } = await import("./numbering");
-  const format = plan.usesMarkers ? { open: "(", close: ")", parts: "chapter", separator: ".", restart: "chapter", source: "markers" } : numberFormat(app.numberStyle);
+  // From the markers: (chapter.section.n) with section markers, else (chapter.n).
+  const format = plan.usesMarkers ? { open: "(", close: ")", parts: plan.usesSections ? "section" : "chapter", separator: ".", restart: plan.usesSections ? "section" : "chapter", source: "markers" } : numberFormat(app.numberStyle);
   if (!o.yes) ui.show({ name: scan.name, plan, stage: "working", progress: `Writing ${items.length} item(s) into Word…` });
   await connector.request("beginOperation", { document: scan.fullName, title: "Converting LaTeX", total: items.length, undoLabel: "Convert LaTeX" });
-  let r: { results: { id: number; ok: boolean; problem: string }[]; ms: number };
+  let r: { results: { id: number; ok: boolean; problem: string }[]; ms: number; broken?: BrokenReference[] };
   let undoBrokenAt = "";
   try {
     r = await connector.request("convertInterchange", { document: scan.fullName, items, format, undoLabel: "Convert LaTeX" }, 1_800_000);
@@ -106,7 +110,7 @@ export async function convertLatexDocument(o: { document?: string; fromWord?: bo
   const okIds = new Set(r.results.filter((x) => x.ok).map((x) => x.id));
   const equations = items.filter((i) => (i.kind === "inline" || i.kind === "display") && okIds.has(i.id)).length;
   const tags = [...okIds].map((i) => tagOf.get(i)).filter((t): t is NonNullable<typeof t> => !!t);
-  const result: InterchangeResult = { plan, written: okIds.size, planned: items.length, failed, equations, buildMs, writeMs: r.ms, tags, ...(backup ? { backup } : {}), ...(undoBrokenAt ? { undoBrokenAt } : {}) };
+  const result: InterchangeResult = { plan, written: okIds.size, planned: items.length, failed, equations, buildMs, writeMs: r.ms, tags, ...(r.broken?.length ? { broken: r.broken } : {}), ...(backup ? { backup } : {}), ...(undoBrokenAt ? { undoBrokenAt } : {}) };
   console.info(`[MathBlocks] Convert LaTeX: ${describeResult(result)}`);
   if (!o.yes) ui.show({ name: scan.name, plan, stage: "result", result });
   else if (o.fromWord) await tellUser(describeResult(result), failed.length ? "error" : "info");

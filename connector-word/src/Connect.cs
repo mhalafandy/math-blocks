@@ -185,7 +185,7 @@ namespace MathBlocks.WordConnector
             "numberEquation", "unnumberEquation", "listNumbered", "insertReference", "updateNumbers",
             "showWordMenu", "selectionInfo", "findLatex", "replaceRanges", "equationToText",
             "backupDocument", "beginOperation", "operationProgress", "endOperation", "repairEquations",
-            "insertNumberMarker", "upgradeNumbering", "textWidth", "confirm", "showMessage", "smoke",
+            "insertNumberMarker", "markerBefore", "upgradeNumbering", "textWidth", "confirm", "showMessage", "smoke",
         };
 
         // ------------------------------------------------------------ ribbon
@@ -299,6 +299,7 @@ namespace MathBlocks.WordConnector
         public void OnSelfTestSpike(IRibbonControl control) => RunAppCommand("selfTestSpike");
         public void OnListOfSymbols(IRibbonControl control) => RunAppCommand("listOfSymbols");
         public void OnNumberEquation(IRibbonControl control) => RunAppCommand("numberEquation");
+        public void OnSectionMarker(IRibbonControl control) => RunAppCommand("sectionMarker");
 
         public void OnUpdateNumbers(IRibbonControl control)
         {
@@ -306,6 +307,15 @@ namespace MathBlocks.WordConnector
             {
                 var r = _ops.UpdateNumbers(new Dictionary<string, object>());
                 _app.StatusBar = "MathBlocks: updated " + r["numbers"] + " equation number(s) and " + r["references"] + " reference(s)";
+                // References to equations that are gone: listed, so none stays unnoticed.
+                if (r.TryGetValue("broken", out var b) && b is List<object> broken && broken.Count > 0)
+                {
+                    var lines = new List<string>();
+                    foreach (var o in broken)
+                        if (o is Dictionary<string, object> d) lines.Add("• " + d["snippet"] + "   (" + d["bookmark"] + ")");
+                    MessageBox.Show(broken.Count + " reference(s) point to an equation that no longer exists (Word shows \"Error! Reference source not found\" there):\n\n" + string.Join("\n", lines.Count > 20 ? lines.GetRange(0, 20) : lines) + (lines.Count > 20 ? "\n… and " + (lines.Count - 20) + " more" : "") + "\n\nDelete them or insert a new reference.",
+                        "MathBlocks — broken references", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
             }
             catch (Exception ex)
             {
@@ -757,6 +767,7 @@ namespace MathBlocks.WordConnector
                     case "backupDocument": result = _ops.BackupDocument(p); break;
                     case "repairEquations": result = _ops.RepairEquations(p); break;
                     case "insertNumberMarker": result = _ops.InsertNumberMarker(p); break;
+                    case "markerBefore": result = _ops.MarkerBefore(p); break;
                     case "upgradeNumbering": result = _ops.UpgradeNumbering(p); break;
                     case "textWidth": result = _ops.TextWidth(p); break;
                     case "confirm": result = _ops.Confirm(p); break;

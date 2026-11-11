@@ -233,6 +233,14 @@ export interface DocumentInstances {
   instances: InstanceInfo[];
 }
 
+/** A reference to an equation that no longer exists (Word shows "Error! Reference source not found"). */
+export interface BrokenReference {
+  bookmark: string;
+  /** The text around it. */
+  snippet: string;
+  at: number;
+}
+
 export interface AppToConnector {
   /** Word self-test operations (ribbon → Run Word self-test): type, paste, move, undo, inspect. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -251,14 +259,14 @@ export interface AppToConnector {
     result: {
       name: string;
       fullName: string;
-      paragraphs: { start: number; end: number; text: string; style: string; numbered?: boolean; marker?: { chapter: number; appendix: boolean }; complex?: boolean }[];
+      paragraphs: { start: number; end: number; text: string; style: string; numbered?: boolean; marker?: { chapter: number; appendix: boolean; section?: number }; complex?: boolean }[];
       bookmarks: string[];
     };
   };
   /** LaTeX interchange: writes the planned items (one undo step), then updates numbers and references. */
   convertInterchange: {
     params: DocTarget & { items: (Record<string, unknown> & { id: number; kind: string; start: number; end: number; expect: string })[]; format: Record<string, unknown>; undoLabel: string };
-    result: { results: { id: number; ok: boolean; problem: string }[]; done: number; ms: number; numbers: number; references: number; undoBrokenAt?: string };
+    result: { results: { id: number; ok: boolean; problem: string }[]; done: number; ms: number; numbers: number; references: number; broken?: BrokenReference[]; undoBrokenAt?: string };
   };
   /** The checks of replaceMany alone (before an operation opens its undo record: they read Word's XML, which ends it). */
   verifyMany: { params: DocTarget & { items: { tag: string; flatOpc: string; expect?: string }[]; undoLabel: string }; result: { replaced: number; missing: string[]; refused?: { tag: string; reason: string }[] } };
@@ -332,7 +340,9 @@ export interface AppToConnector {
   insertNumberMarker: { params: { chapter: number; section: number; appendix?: boolean; restartEquations?: boolean }; result: { ok: true } };
   /** Rebuilds MathBlocks numbers and references as single fields (bookmark names kept). */
   upgradeNumbering: { params: DocTarget & NumberFormat; result: { numbers: number; references: number } };
-  updateNumbers: { params: DocTarget; result: { numbers: number; references: number } };
+  updateNumbers: { params: DocTarget; result: { numbers: number; references: number; broken?: BrokenReference[]; undoBrokenAt?: string } };
+  /** The numbering marker nearest before the cursor (for "Insert section marker"). */
+  markerBefore: { params: Record<string, never>; result: { chapter?: number; section?: number; appendix?: boolean; none?: boolean } };
   /** Text width (pt) of the paragraph holding the equation (tag) or the cursor: page minus margins, gutter, indents. */
   textWidth: { params: DocTarget & { tag?: string }; result: { textWidthPt: number; document: string } };
   /** What is at the cursor: a MathBlocks equation, selected text, or a LaTeX span around it. */

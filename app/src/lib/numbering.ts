@@ -41,7 +41,9 @@ export async function updateNumbers() {
   if (!requireAddin("updateNumbers")) return;
   try {
     const r = await connector.request("updateNumbers", {}, SLOW);
-    notify(`Updated ${r.numbers} equation number(s) and ${r.references} reference(s)`);
+    const broken = r.broken ?? [];
+    notify(`Updated ${r.numbers} equation number(s) and ${r.references} reference(s)${broken.length ? `; ${broken.length} reference(s) point to an equation that no longer exists` : ""}`, broken.length ? "error" : "info");
+    if (broken.length) (await import("../components/BrokenReferencesDialog")).showBrokenReferences(broken);
   } catch (e) {
     notify(e instanceof Error ? e.message : String(e), "error");
   }
@@ -147,7 +149,8 @@ export async function insertNumberMarker(o: { chapter: number; section: number; 
   const app = useApp.getState();
   try {
     await connector.request("insertNumberMarker", { ...o, restartEquations: true });
-    app.notify(`${o.appendix ? "Appendix" : "Chapter"} ${o.appendix ? String.fromCharCode(64 + o.chapter) : o.chapter}, section ${o.section} starts here: equation numbers after it restart.`);
+    const label = `${o.appendix ? String.fromCharCode(64 + o.chapter) : o.chapter}${o.section ? `.${o.section}` : ""}`;
+    app.notify(`${o.section ? "Section" : o.appendix ? "Appendix" : "Chapter"} ${label} starts here: equation numbers after it restart. Update numbers renumbers the equations after it.`);
   } catch (e) {
     app.notify(e instanceof Error ? e.message : String(e), "error");
   }

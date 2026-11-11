@@ -553,8 +553,39 @@ namespace MathBlocks.WordConnector
             {
                 try { f.Update(); references++; } catch (COMException) { }
             }
-            Log.Info("updateNumbers in " + doc.Name + ": " + numbers + " numbers, " + references + " references");
-            return new Dictionary<string, object> { ["numbers"] = numbers, ["references"] = references };
+            // References to equations that are gone (Word would show "Error! Reference source not found"):
+            // listed with the text around them, so none goes unnoticed.
+            var broken = new List<object>();
+            bool hidden = doc.Bookmarks.ShowHidden;
+            doc.Bookmarks.ShowHidden = true;
+            try
+            {
+                foreach (var f in refs)
+                {
+                    try
+                    {
+                        var code = (f.Code.Text ?? "").Trim();
+                        if (!code.StartsWith("REF ", StringComparison.Ordinal)) continue;
+                        var name = code.Substring(4).Trim().Split(' ')[0];
+                        if (doc.Bookmarks.Exists(name)) continue;
+                        var para = f.Code.Paragraphs[1].Range;
+                        var text = (para.Text ?? "").Replace("\r", " ").Replace("\a", " ").Replace("\t", " ").Trim();
+                        int at = Math.Max(0, Math.Min(text.Length, f.Code.Start - para.Start));
+                        int from = Math.Max(0, at - 40);
+                        var snippet = (from > 0 ? "…" : "") + text.Substring(from, Math.Min(text.Length - from, 80)) + (from + 80 < text.Length ? "…" : "");
+                        broken.Add(new Dictionary<string, object> { ["bookmark"] = name, ["snippet"] = snippet, ["at"] = f.Code.Start });
+                    }
+                    catch (COMException)
+                    {
+                    }
+                }
+            }
+            finally
+            {
+                doc.Bookmarks.ShowHidden = hidden;
+            }
+            Log.Info("updateNumbers in " + doc.Name + ": " + numbers + " numbers, " + references + " references, " + broken.Count + " broken");
+            return new Dictionary<string, object> { ["numbers"] = numbers, ["references"] = references, ["broken"] = broken };
         }
     }
 }

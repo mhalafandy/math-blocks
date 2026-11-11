@@ -20,7 +20,9 @@
           <button id="mbReference" keytip="R" label="Insert reference" imageMso="CrossReferenceInsert"
                   screentip="Insert a reference to a numbered equation at the cursor" onAction="OnInsertReference" />
           <button id="mbUpdateNumbers" keytip="U" label="Update numbers" imageMso="Refresh"
-                  screentip="Renumber equations and update references to them" onAction="OnUpdateNumbers" />
+                  screentip="Renumber equations and update references to them; lists references to equations that no longer exist" onAction="OnUpdateNumbers" />
+          <button id="mbSectionMarker" keytip="S" label="Section marker" imageMso="SectionInsert"
+                  screentip="Insert a numbering marker at the cursor for a new section (or chapter, appendix): equation numbers after it restart" onAction="OnSectionMarker" />
           <button id="mbSymbols" keytip="Y" label="List of symbols" imageMso="TableInsert"
                   screentip="Insert or update a list of symbols (nomenclature) made from this document's equations; descriptions you type in it are kept"
                   onAction="OnListOfSymbols" />
