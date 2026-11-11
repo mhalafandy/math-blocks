@@ -132,7 +132,20 @@ namespace MathBlocks.WordConnector
         {
             try
             {
-                var m = OleEmbedding.Match(s.Range.WordOpenXML);
+                return ObjectDataTagXml(s.Range.WordOpenXML);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>ObjectDataTag from XML already read.</summary>
+        internal static string ObjectDataTagXml(string xml)
+        {
+            try
+            {
+                var m = OleEmbedding.Match(xml);
                 if (!m.Success) return null;
                 var bytes = Convert.FromBase64String(Regex.Replace(m.Groups[1].Value, "\\s+", ""));
                 var t = Regex.Match(Encoding.ASCII.GetString(bytes), "\"tag\":\"(mb1\\|[^\"|]+\\|[0-9A-Za-z]+)\"");

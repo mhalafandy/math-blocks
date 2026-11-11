@@ -61,14 +61,25 @@ export async function repairDocument(document?: string, o: { quiet?: boolean; fr
     // every Classic picture (and mis-identified copy) as an embedded object all run inside it.
     const { replaceInDocument } = await import("./docOps");
     const t0 = performance.now();
+    // Reading Word's XML ends an open undo record, so everything is read before the operation opens
+    // its record (the dry run, the redraw packages, the checks of each equation); inside it Repair only
+    // writes: the plan's baselines, then the redraws.
+    const planned = dry.lowerings !== undefined;
+    const items = await redrawItems(dry.redraw ?? []);
+    const skip: ("inline" | "split" | "convert" | "identify")[] = [];
+    if (!dry.inlined) skip.push("inline");
+    if (!dry.split?.length) skip.push("split");
+    if (!dry.converted) skip.push("convert");
+    if (!dry.wrapped.length) skip.push("identify");
     const op = await replaceInDocument({
       document: dry.document,
       title: "Repairing MathBlocks equations",
       undoLabel: "Repair MathBlocks equations",
+      items: planned ? items : undefined,
       total: dry.redraw?.length ?? 0,
       noBackup: true,
       prepare: async () => {
-        const r = await connector.request("repairEquations", target, 300_000);
+        const r = await connector.request("repairEquations", planned ? { ...target, lowerings: dry.lowerings, skip } : target, 300_000);
         report.inlined = r.inlined ?? 0;
         report.split = r.split?.length ?? 0;
         report.converted = r.converted ?? 0;
@@ -79,11 +90,11 @@ export async function repairDocument(document?: string, o: { quiet?: boolean; fr
         report.wrapped = r.wrapped.length;
         report.fromAlt = r.wrapped.filter((w) => w.source === "alt").length;
         report.bookmarks = r.bookmarks;
-        report.toObjects = r.toObjects ?? 0;
+        report.toObjects = planned ? dry.toObjects ?? 0 : r.toObjects ?? 0;
         report.styled = r.styled ?? 0;
-        report.idRewrites = r.idRewrites ?? 0;
+        report.idRewrites = planned ? dry.idRewrites ?? 0 : r.idRewrites ?? 0;
         await carryOverRegistry(r.document, r.renamed, r.wrapped.map((w) => w.tag), report);
-        return redrawItems(r.redraw ?? []);
+        return planned ? items : redrawItems(r.redraw ?? []);
       },
     });
     report.redrawn = op.replaced;

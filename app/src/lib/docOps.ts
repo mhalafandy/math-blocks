@@ -61,14 +61,29 @@ export async function replaceInDocument(o: {
     const r = await connector.request("replaceMany", { document: o.document, items: o.items!.map(({ tag, flatOpc }) => ({ tag, flatOpc })), undoLabel: o.undoLabel }, 300_000);
     return { ...result, replaced: r.replaced, missing: r.missing, ms: performance.now() - t0 };
   }
-  await connector.request("beginOperation", { document: o.document, title: o.title, total: o.items?.length ?? o.total ?? 0, undoLabel: o.undoLabel });
-  const done: ReplaceItem[] = [];
+  // The checks of each equation read Word's XML, which ends an open undo record: they run first, and
+  // the replacements inside the operation's record skip them.
   let items: ReplaceItem[] = o.items ?? [];
+  let verified = false;
+  if (items.length && addinSupports("verifyMany")) {
+    const v = await connector.request("verifyMany", { document: o.document, items: items.map(({ tag, flatOpc }) => ({ tag, flatOpc })), undoLabel: o.undoLabel }, 300_000);
+    const bad = new Set([...v.missing, ...(v.refused ?? []).map((r) => r.tag)]);
+    result.missing.push(...v.missing);
+    items = items.filter((i) => !bad.has(i.tag));
+    verified = true;
+  }
+  await connector.request("beginOperation", { document: o.document, title: o.title, total: items.length || (o.total ?? 0), undoLabel: o.undoLabel });
+  const done: ReplaceItem[] = [];
   try {
-    if (o.prepare) items = await o.prepare();
+    if (o.prepare) {
+      const fromPrepare = await o.prepare();
+      // Items given up front were checked already; otherwise prepare's items are checked as they are replaced.
+      if (!o.items) items = fromPrepare;
+      else items = fromPrepare.filter((f) => items.some((i) => i.tag === f.tag));
+    }
     for (let i = 0; i < items.length; i += BATCH) {
       const batch = items.slice(i, i + BATCH);
-      const r = await connector.request("replaceMany", { document: o.document, items: batch.map(({ tag, flatOpc }) => ({ tag, flatOpc })), undoLabel: o.undoLabel }, 300_000);
+      const r = await connector.request("replaceMany", { document: o.document, items: batch.map(({ tag, flatOpc }) => ({ tag, flatOpc })), undoLabel: o.undoLabel, verified: verified && !!o.items }, 300_000);
       result.replaced += r.replaced;
       result.missing.push(...r.missing);
       done.push(...batch.filter((b) => !r.missing.includes(b.tag)));

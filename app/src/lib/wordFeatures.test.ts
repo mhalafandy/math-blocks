@@ -30,6 +30,8 @@ vi.mock("./connector", () => ({
           return { ok: true };
         case "listInstances":
           return { documents: [{ name: "thesis.docx", fullName: "C:\\thesis.docx", instances: word.instances }] };
+        case "verifyMany":
+          return { replaced: (params.items as unknown[]).length, missing: [] };
         case "replaceMany":
           return { replaced: (params.items as unknown[]).length, missing: [] };
         case "backupDocument":

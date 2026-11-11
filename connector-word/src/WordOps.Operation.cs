@@ -107,6 +107,15 @@ namespace MathBlocks.WordConnector
             catch (COMException)
             {
             }
+            // One busy pointer for the whole operation (Word otherwise switches it on and off with every
+            // change, which looks like flickering).
+            try
+            {
+                _app.System.Cursor = Word.WdCursorType.wdCursorWait;
+            }
+            catch (COMException)
+            {
+            }
             _progress = new ProgressForm(title, total);
             if (owner != IntPtr.Zero)
             {
@@ -178,6 +187,13 @@ namespace MathBlocks.WordConnector
                 {
                 }
                 _progress = null;
+            }
+            try
+            {
+                _app.System.Cursor = Word.WdCursorType.wdCursorNormal;
+            }
+            catch (COMException)
+            {
             }
             if (_operationScreen != null)
             {

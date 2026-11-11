@@ -295,7 +295,19 @@ namespace MathBlocks.WordConnector
         {
             try
             {
-                var xml = s.Range.WordOpenXML;
+                return DepthOfXml(s.Range.WordOpenXML);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>DepthOf from XML already read (reading Word's XML ends an open undo record).</summary>
+        internal static double? DepthOfXml(string xml)
+        {
+            try
+            {
                 PictureXml.Data(xml, out var json);
                 var depth = PictureXml.DepthPt(json);
                 if (depth != null) return depth;
@@ -315,7 +327,10 @@ namespace MathBlocks.WordConnector
         /// also holds hidden field characters (Word reports "mixed", 9999999): then the character that
         /// carries the object is read.
         /// </summary>
-        internal static double? LoweringOf(Word.InlineShape s)
+        internal static double? LoweringOf(Word.InlineShape s) => LoweringOf(s, null);
+
+        /// <summary>LoweringOf, using XML already read for the last fallback when given.</summary>
+        internal static double? LoweringOf(Word.InlineShape s, string xmlRead)
         {
             try
             {
@@ -330,7 +345,7 @@ namespace MathBlocks.WordConnector
                 }
                 // Still mixed (the field's hidden characters): what Word saves and renders — the
                 // lowering of the run that holds the object (or picture) in the range's XML.
-                var xml = r.WordOpenXML;
+                var xml = xmlRead ?? r.WordOpenXML;
                 var m = System.Text.RegularExpressions.Regex.Match(xml, "<w:r\\b[^>]*>(?:(?!</w:r>).)*?(?:<w:object|<w:pict|<w:drawing)", System.Text.RegularExpressions.RegexOptions.Singleline);
                 if (m.Success)
                 {
@@ -440,7 +455,7 @@ namespace MathBlocks.WordConnector
         }
 
         /// <summary>The wrapper a write is for, verified (one equation, no text, unique ID, unchanged); throws otherwise.</summary>
-        internal Eq VerifyForWrite(Word.Document doc, string tag, Dictionary<string, object> p, string what)
+        internal Eq VerifyForWrite(Word.Document doc, string tag, Dictionary<string, object> p, string what, bool verified = false)
         {
             var found = FindByTag(doc, tag);
             if (found.Count == 0) throw new RpcException(Rpc.NotFound, "The equation is no longer in the document.");
@@ -460,6 +475,8 @@ namespace MathBlocks.WordConnector
             {
             }
             if (!cc.IsPicture) Unlock(cc.Control);
+            // Checked already, before the operation's undo record opened (reading XML here would end it).
+            if (verified) return cc;
             var c = Inspect(doc, cc);
             c.SameTag = found.Count;
             var expect = p != null && p.TryGetValue("expect", out var e) ? e as string : null;

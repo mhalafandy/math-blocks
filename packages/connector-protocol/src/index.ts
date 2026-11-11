@@ -244,15 +244,23 @@ export interface AppToConnector {
     result: { documents: DocumentInstances[] };
   };
   /** Replaces several equations (by tag) in one undo step. */
-  replaceMany: { params: DocTarget & { items: { tag: string; flatOpc: string; expect?: string }[]; undoLabel: string }; result: { replaced: number; missing: string[]; refused?: { tag: string; reason: string }[] } };
+  replaceMany: { params: DocTarget & { items: { tag: string; flatOpc: string; expect?: string }[]; undoLabel: string; verified?: boolean }; result: { replaced: number; missing: string[]; refused?: { tag: string; reason: string }[] } };
+  /** The checks of replaceMany alone (before an operation opens its undo record: they read Word's XML, which ends it). */
+  verifyMany: { params: DocTarget & { items: { tag: string; flatOpc: string; expect?: string }[]; undoLabel: string }; result: { replaced: number; missing: string[]; refused?: { tag: string; reason: string }[] } };
   /**
    * Repairs identities: duplicated instance ids get new ones, MathBlocks pictures that lost their
    * content control are wrapped again, numbered copies get a number bookmark.
    */
   repairEquations: {
-    params: DocTarget & { dryRun?: boolean };
+    /**
+     * The real run gets the dry run's plan and only writes (reading Word's XML ends the operation's undo
+     * record): the baselines to set and the steps with nothing to do.
+     */
+    params: DocTarget & { dryRun?: boolean; lowerings?: { tag: string; want: number }[]; skip?: ("inline" | "split" | "convert" | "identify")[] };
     result: {
       document: string;
+      /** Baselines to restore (the dry run's plan for the real run). */
+      lowerings?: { tag: string; want: number }[];
       renamed: { from: string; to: string }[];
       wrapped: { tag: string; source: "emf" | "alt" }[];
       wrappedOk: number;

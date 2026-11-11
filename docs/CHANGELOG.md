@@ -25,6 +25,17 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed — Repair took 6 Ctrl+Z, was slow, and the pointer flickered
+- Cause (found by the self-test's probe): reading an equation's Word XML ends Word's open undo record.
+  Repair read XML inside its record, so Word split it into several undo steps.
+- Repair now reads everything before the operation's record opens: the dry run gives the plan
+  (baselines to set, steps with nothing to do), the redraw packages are built, and every equation is
+  checked; inside the record Repair only writes. The same pre-check applies to every document-wide
+  replacement (restyle, rename), so those are one Ctrl+Z too.
+- Each equation's XML is read once instead of three times (depth, data ID and lowering from one read),
+  and not again during the real run: Repair is faster.
+- One busy pointer for the whole operation instead of one per change.
+
 ### Changed — self-test closes its documents; no flicker during long operations
 - The self-test saves every document it opened into its folder and closes them at the end; documents
   that were open before the test stay open and untouched.

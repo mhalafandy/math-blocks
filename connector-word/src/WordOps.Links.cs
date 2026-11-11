@@ -122,8 +122,12 @@ namespace MathBlocks.WordConnector
             var missing = new List<object>();
             var refused = new List<object>();
             var undo = _app.UndoRecord;
+            // verifyOnly: the checks alone, before an operation opens its undo record (they read Word's XML,
+            // which ends an open record); the operation then replaces with verified=true.
+            bool verifyOnly = Rpc.GetBool(p, "verifyOnly");
+            bool verified = Rpc.GetBool(p, "verified");
             // Inside a document-wide operation the operation's undo record covers every batch.
-            var ownUndo = !undo.IsRecordingCustomRecord;
+            var ownUndo = !verifyOnly && !undo.IsRecordingCustomRecord;
             if (ownUndo) undo.StartCustomRecord(undoLabel);
             var clock = System.Diagnostics.Stopwatch.StartNew();
             try
@@ -137,12 +141,17 @@ namespace MathBlocks.WordConnector
                     try
                     {
                         // One clean equation with this ID, unchanged since it was read; otherwise it is left alone.
-                        target = VerifyForWrite(doc, tag, item, "replaceMany");
+                        target = VerifyForWrite(doc, tag, item, verifyOnly ? "replaceMany (check)" : "replaceMany", verified);
                     }
                     catch (RpcException ex)
                     {
                         if (ex.Code == Rpc.NotFound) missing.Add(tag);
                         else refused.Add(new Dictionary<string, object> { ["tag"] = tag, ["reason"] = ex.Message });
+                        continue;
+                    }
+                    if (verifyOnly)
+                    {
+                        replaced++;
                         continue;
                     }
                     CheckOperationUndo("before replacing " + tag);

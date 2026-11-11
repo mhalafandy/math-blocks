@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -214,6 +215,7 @@ namespace MathBlocks.WordConnector
             int split = 0, unlocked = 0, inlined = 0, converted = 0;
             int ok = 0, plainPictures = 0, bookmarks = 0, lowered = 0, toObjects = 0, idRewrites = 0, styled = 0;
             var redraw = new List<object>();
+            var lowerings = new List<object>();
             bool screen = _app.ScreenUpdating;
             var undo = _app.UndoRecord;
             var own = !dry && !undo.IsRecordingCustomRecord;
@@ -224,17 +226,21 @@ namespace MathBlocks.WordConnector
                 _app.ScreenUpdating = false;
                 if (!dry) CheckOperationUndo("repair: screen updating off");
                 // Pasted pictures that came in floating: back in line first.
-                inlined = dry ? InlineFloatingPictures(doc, true) : InlineFloatingNow(doc);
+                // Steps the dry run found nothing to do for are skipped: they would read Word's XML, which
+                // ends the operation's undo record.
+                var skip = new HashSet<string>(StringComparer.Ordinal);
+                if (!dry && p.TryGetValue("skip", out var sk) && sk is IEnumerable skl) foreach (var x in skl) if (x is string xs) skip.Add(xs);
+                inlined = dry ? InlineFloatingPictures(doc, true) : skip.Contains("inline") ? 0 : InlineFloatingNow(doc);
                 if (!dry) CheckOperationUndo("repair: floating pictures put in line");
                 // Wrappers that grew (several equations, text, nested wrappers): one equation each again.
-                split = SplitWrappers(doc, dry, splitReport);
+                if (!skip.Contains("split")) split = SplitWrappers(doc, dry, splitReport);
                 if (!dry) CheckOperationUndo("repair: wrappers split");
                 // Older documents: wrapped Classic equations become titled pictures.
-                converted = ConvertWrappedPictures(doc, dry);
+                if (!skip.Contains("convert")) converted = ConvertWrappedPictures(doc, dry);
                 if (!dry) CheckOperationUndo("repair: wrapped pictures converted");
                 // Pictures with MathBlocks data but no ID title: identified.
                 var shapes = new List<Word.InlineShape>();
-                foreach (Word.InlineShape s in doc.InlineShapes) shapes.Add(s);
+                if (!skip.Contains("identify")) foreach (Word.InlineShape s in doc.InlineShapes) shapes.Add(s);
                 foreach (var s in shapes)
                 {
                     if (InsideMathBlocksControl(s.Range) || IsTag(TagOf(s)))
@@ -267,20 +273,46 @@ namespace MathBlocks.WordConnector
                 // Every Classic equation: its baseline lowering back from its stored depth; Classic pictures
                 // (the form before embedded objects) and objects holding another ID inside are listed for
                 // the app to redraw as objects with the same ID.
-                foreach (var e in AllEquations(doc))
+                // Reading Word's XML ends an open undo record, so the reading happens in the dry run (before
+                // the operation's record opens): the real run is given the plan and only writes.
+                if (!dry && p.TryGetValue("lowerings", out var planned) && planned is IEnumerable plan)
+                {
+                    foreach (var o in plan)
+                    {
+                        if (!(o is Dictionary<string, object> item)) continue;
+                        var want = Convert.ToInt32(item["want"]);
+                        foreach (var e in FindByTag(doc, Rpc.GetString(item, "tag")))
+                        {
+                            if (!e.IsPicture) continue;
+                            try
+                            {
+                                e.Range.Font.Position = want;
+                                lowered++;
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Error("repair: restoring a baseline", ex);
+                            }
+                        }
+                    }
+                }
+                else foreach (var e in AllEquations(doc))
                 {
                     if (!e.IsPicture) continue;
                     try
                     {
-                        PictureXml.Data(e.Xml, out var json);
-                        var depth = DepthOf(e.Picture);
+                        // One read of the picture's XML for everything below.
+                        var xml = e.Picture.Range.WordOpenXML;
+                        PictureXml.Data(xml, out var json);
+                        var depth = DepthOfXml(xml);
                         if (depth != null)
                         {
                             var want = -(int)Math.Round(depth.Value);
-                            var cur = LoweringOf(e.Picture);
+                            var cur = LoweringOf(e.Picture, xml);
                             if (cur != null && (int)Math.Round(cur.Value) != want)
                             {
                                 lowered++;
+                                lowerings.Add(new Dictionary<string, object> { ["tag"] = e.Tag, ["want"] = want });
                                 if (!dry) e.Range.Font.Position = want;
                             }
                         }
@@ -288,10 +320,10 @@ namespace MathBlocks.WordConnector
                         // before objects), and objects whose own data holds another ID (a copy).
                         string reason = null;
                         if (!e.IsObject) reason = "picture";
-                        else if (ObjectDataTag(e.Picture) != e.Tag) reason = "id";
+                        else if (ObjectDataTagXml(xml) != e.Tag) reason = "id";
                         if (reason != null)
                         {
-                            var full = PictureXml.Source(e.Xml) ?? json;
+                            var full = PictureXml.Source(xml) ?? json;
                             var latex = EquationIdentity.FirstLatex(full) ?? EquationIdentity.AltParts(AltOf(e.Picture))?[1];
                             var mode = PictureXml.Mode(full) ?? EquationIdentity.AltParts(AltOf(e.Picture))?[0] ?? "inline";
                             if (!string.IsNullOrEmpty(latex))
@@ -338,6 +370,7 @@ namespace MathBlocks.WordConnector
                 ["mathType"] = mathType,
                 ["lowered"] = lowered,
                 ["toObjects"] = toObjects,
+                ["lowerings"] = lowerings,
                 ["styled"] = styled,
                 ["idRewrites"] = idRewrites,
                 ["redraw"] = redraw,

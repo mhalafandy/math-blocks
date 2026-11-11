@@ -9,6 +9,7 @@ vi.mock("./connector", () => ({
     async request(method: string, params: Record<string, unknown>) {
       calls.push({ method, params });
       if (method === "replaceMany") return { replaced: (params.items as unknown[]).length, missing: [] };
+      if (method === "verifyMany") return { replaced: (params.items as unknown[]).length, missing: [] };
       if (method === "operationProgress") return { cancelled: (params.done as number) >= cancelAfter };
       if (method === "backupDocument") return { path: "C:\\backups\\t.xml" };
       if (method === "endOperation") return { ms: 1200 };
@@ -26,8 +27,11 @@ describe("document-wide replacements", () => {
     cancelAfter = Infinity;
     const r = await replaceInDocument({ document: "d", title: "Restyle", undoLabel: "Restyle", items });
     expect(calls[0]!.method).toBe("backupDocument");
-    expect(calls[1]!.method).toBe("beginOperation");
+    // Checked before the operation opens its undo record (the checks read Word's XML, which ends it).
+    expect(calls[1]!.method).toBe("verifyMany");
+    expect(calls[2]!.method).toBe("beginOperation");
     expect(calls.filter((c) => c.method === "replaceMany")).toHaveLength(4);
+    expect(calls.filter((c) => c.method === "replaceMany").every((c) => c.params.verified === true)).toBe(true);
     expect(calls.at(-1)!.method).toBe("endOperation");
     expect(r).toMatchObject({ replaced: 35, cancelled: false, backup: "C:\\backups\\t.xml" });
     expect(describeOperation(r, "Restyled")).toBe("Restyled: 35 equation(s) in 1.2 s (34 ms each). Backup: t.xml");

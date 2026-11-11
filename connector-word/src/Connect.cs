@@ -129,7 +129,7 @@ namespace MathBlocks.WordConnector
         private static readonly string[] Methods =
         {
             "ping", "insertEquation", "replaceEquation", "readEquation", "documentInfo",
-            "listInstances", "replaceMany", "retag", "selectInstance", "getRegistry", "setRegistry",
+            "listInstances", "replaceMany", "verifyMany", "retag", "selectInstance", "getRegistry", "setRegistry",
             "listMathTypeParagraphs", "replaceParagraphs", "activateObject",
             "numberEquation", "unnumberEquation", "listNumbered", "insertReference", "updateNumbers",
             "showWordMenu", "selectionInfo", "findLatex", "replaceRanges", "equationToText",
@@ -681,6 +681,7 @@ namespace MathBlocks.WordConnector
                     case "replaceEquation": result = _ops.ReplaceEquation(p); break;
                     case "listInstances": result = _ops.ListInstances(p); break;
                     case "replaceMany": result = _ops.ReplaceMany(p); break;
+                    case "verifyMany": p["verifyOnly"] = true; result = _ops.ReplaceMany(p); break;
                     case "backupDocument": result = _ops.BackupDocument(p); break;
                     case "repairEquations": result = _ops.RepairEquations(p); break;
                     case "insertNumberMarker": result = _ops.InsertNumberMarker(p); break;
