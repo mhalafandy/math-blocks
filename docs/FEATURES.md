@@ -73,6 +73,41 @@ See [ROADMAP.md](ROADMAP.md) for milestones. Highlights: MathLive visual editor,
 completion, command palette, library on SQLite, linked blocks, parameterized templates, symbol search
 by meaning, numbering/references, MathType migration, precision mode, dependency manager.
 
+### Order of work
+1. **Embedded-object build**, remaining steps: 5 (menus and clicks) and 6 (self-test fully on objects:
+   tracked changes, undo/redo, per-user class registration, PDF from Word and Acrobat).
+2. **Priority 2:** own notation kinds, quick-style bar, bold Greek, upright frame labels.
+3. **MathType parity and beyond** (below).
+4. 1c, then the Accents page.
+
+### MathType parity and beyond (from the MathType Add-in for Microsoft 365)
+Not started. Ordered by value for the thesis.
+1. **Handwriting pad:** draw an equation (pen, touch, mouse) in the editor. It is recognised through
+   the existing screenshot-to-LaTeX path and reviewed before it is inserted.
+2. **Accessible alt text:** a spoken description (MathSpeak-style, English) plus MathML for every
+   equation.
+   - The ID stays in a separate part of the alt text, or only in the object data. Identification must
+     never depend on text a user might edit.
+   - Check that Word's PDF export carries it as alternative text.
+3. **Rich clipboard:** copying a MathBlocks equation puts LaTeX, MathML and an image on the clipboard,
+   so pasting into Overleaf, Google Docs or email works. LaTeX or MathML pasted into the editor is
+   converted.
+4. **Context-aware quick-style bar**, extending Priority 2's bar:
+   - matrix: add or delete a row or column, column alignment, separators;
+   - bracket: style and size;
+   - fraction: slashed or stacked;
+   - operator: limits above/below or at the side.
+5. **Entry points in Word:** a MathBlocks button in Word's Insert tab next to Equation. Open LaTeX
+   and Open MathML on the ribbon.
+6. **Higher-fidelity MathType conversion:**
+   - measure on the owner's documents (locally, never committed) which MathType formatting is lost:
+     nudges, custom spacing, colours, matrix lines, custom alignment, fence alignment;
+   - keep it where the model and the Classic renderer allow (MathType's own add-in drops these).
+7. **Export one equation as PDF**, next to PNG, SVG and MathML.
+8. *Optional:* right-to-left (Arabic) equations, only if asked.
+9. *Long term, evaluate only:* an Office.js companion add-in, so MathBlocks objects can be edited in
+   Word on the web and on Mac. Report the effort; don't build it.
+
 ### Backlog
 - Numbered multi-line equations: option to put the number on the last line (default stays centred).
 - Suggested line breaks: balance the lines (today each line is filled as far as it fits, so the last can be short).
