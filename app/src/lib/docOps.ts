@@ -28,6 +28,8 @@ export interface OperationResult {
   restored: number;
   ms: number;
   backup?: string;
+  /** Where Word closed the operation's single undo record early (diagnosis); absent when intact. */
+  undoBrokenAt?: string;
 }
 
 export async function replaceInDocument(o: {
@@ -81,8 +83,9 @@ export async function replaceInDocument(o: {
     useApp.getState().notify(`Stopped: ${e instanceof Error ? e.message : String(e)}. Restoring the equations already changed…`, "error");
   }
   if (result.cancelled) result.restored = await restore(o.document, done, o.undoLabel);
-  const end = await connector.request("endOperation", { done: result.replaced }).catch(() => ({ ms: 0 }));
+  const end = await connector.request("endOperation", { done: result.replaced }).catch(() => ({ ms: 0, undoBrokenAt: "" }));
   result.ms = end.ms || performance.now() - t0;
+  if (end.undoBrokenAt) result.undoBrokenAt = end.undoBrokenAt;
   console.info(`[MathBlocks] ${o.title}: ${result.replaced} equation(s) in ${Math.round(result.ms)} ms (${Math.round(result.ms / Math.max(1, result.replaced))} ms each)${result.cancelled ? `, cancelled, ${result.restored} restored` : ""}`);
   return result;
 }

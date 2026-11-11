@@ -283,7 +283,7 @@ export interface AppToConnector {
   /** Opens one undo record and a progress window owned by Word (document blocked). */
   beginOperation: { params: DocTarget & { title: string; total: number; undoLabel: string }; result: { ok: true } };
   operationProgress: { params: { done: number; text?: string }; result: { cancelled: boolean } };
-  endOperation: { params: { done: number }; result: { ms: number } };
+  endOperation: { params: { done: number }; result: { ms: number; undoBrokenAt?: string } };
   retag: { params: DocTarget & { tag: string; newTag: string }; result: { found: number } };
   selectInstance: { params: DocTarget & { tag: string }; result: { found: number } };
   /** The document's MathBlocks registry (Custom XML Part), or null. */

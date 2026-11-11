@@ -16,6 +16,8 @@ import { useApp } from "./store";
  */
 
 export interface RepairReport {
+  /** Where Word closed the single undo record early (diagnosis); absent when one Ctrl+Z undoes it all. */
+  undoBrokenAt?: string;
   /** Floating MathBlocks pictures put back in line with the text. */
   inlined: number;
   /** Wrappers that held several equations, text or nested wrappers, split into one per equation. */
@@ -85,6 +87,7 @@ export async function repairDocument(document?: string, o: { quiet?: boolean; fr
       },
     });
     report.redrawn = op.replaced;
+    if (op.undoBrokenAt) report.undoBrokenAt = op.undoBrokenAt;
     report.ms = Math.round(op.ms || performance.now() - t0);
   }
   if (!o.quiet || changes > 0) {

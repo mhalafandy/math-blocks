@@ -145,7 +145,9 @@ namespace MathBlocks.WordConnector
                         else refused.Add(new Dictionary<string, object> { ["tag"] = tag, ["reason"] = ex.Message });
                         continue;
                     }
+                    CheckOperationUndo("before replacing " + tag);
                     ReplaceEquationContent(doc, target, flatOpc, tag);
+                    CheckOperationUndo("after replacing " + tag);
                     foreach (var c in FindByTag(doc, tag)) if (!c.IsPicture) Secure(c.Control);
                     replaced++;
                 }

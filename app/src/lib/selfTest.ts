@@ -404,10 +404,22 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const refs = n1 ? ((await smoke("refResults", { bookmark: n1.bookmark })).results as string[]) : [];
       check("the reference still shows that number", !!n1 && refs.length > 0 && refs.every((t) => t.replace(/\s/g, "") === n1.number.replace(/\s/g, "")), JSON.stringify(refs));
       // One Ctrl+Z brings the pictures back; Ctrl+Y converts again.
+      check("Word kept Repair in one undo record", rep ? !rep.undoBrokenAt : null, rep?.undoBrokenAt ? `record closed early at: ${rep.undoBrokenAt}` : "intact");
+      const framesNow = async () => Promise.all(tags.map(async (t) => (await smoke("pictureInfo", { tag: t }).catch(() => ({ frame: "missing" }))).frame));
+      const isPictures = (fs: string[]) => fs.every((f) => f === "legacy" || f === "modern");
       await smoke("undo", { times: 1 });
-      const undone = await Promise.all(tags.map(async (t) => (await smoke("pictureInfo", { tag: t }).catch(() => ({ frame: "missing" }))).frame));
-      check("one Ctrl+Z undoes the whole Repair", undone.every((f) => f === "legacy" || f === "modern") && (await snap()).plain === before.plain, undone.join(", "));
-      await smoke("redo", { times: 1 });
+      const undone = await framesNow();
+      check("one Ctrl+Z undoes the whole Repair", isPictures(undone) && (await snap()).plain === before.plain, undone.join(", "));
+      // Diagnosis: how many Ctrl+Z it takes when one is not enough.
+      let undoSteps = 1;
+      if (!isPictures(undone)) {
+        while (undoSteps < 12 && !isPictures(await framesNow())) {
+          await smoke("undo", { times: 1 });
+          undoSteps++;
+        }
+        check("Ctrl+Z steps needed to undo Repair", null, isPictures(await framesNow()) ? `${undoSteps}` : `more than ${undoSteps}`);
+      }
+      await smoke("redo", { times: undoSteps });
       const redone = await Promise.all(tags.map(async (t) => (await smoke("pictureInfo", { tag: t }).catch(() => ({ frame: "missing" }))).frame));
       check("Ctrl+Y redoes the Repair", null, redone.join(", "));
       if (!redone.every((f) => f === "object")) await repairDocument(undefined, { quiet: true });

@@ -69,6 +69,7 @@ namespace MathBlocks.WordConnector
             var undoLabel = p.TryGetValue("undoLabel", out var u) && u is string us ? us : title;
             var total = p.TryGetValue("total", out var n) ? Convert.ToInt32(n) : 0;
             EndOperationCore();
+            _undoBrokenAt = null;
             var undo = _app.UndoRecord;
             if (!undo.IsRecordingCustomRecord)
             {
@@ -113,11 +114,13 @@ namespace MathBlocks.WordConnector
         {
             var done = p.TryGetValue("done", out var d) ? Convert.ToInt32(d) : 0;
             var text = p.TryGetValue("text", out var t) && t is string ts ? ts : null;
+            CheckOperationUndo("progress update");
             if (_progress != null && !_progress.IsDisposed)
             {
                 _progress.SetDone(done, text);
                 Application.DoEvents();
             }
+            CheckOperationUndo("progress window events");
             return new Dictionary<string, object> { ["cancelled"] = _progress != null && _progress.Cancelled };
         }
 
@@ -126,9 +129,11 @@ namespace MathBlocks.WordConnector
         {
             var done = p.TryGetValue("done", out var d) ? Convert.ToInt32(d) : 0;
             var ms = _operationClock.ElapsedMilliseconds;
+            CheckOperationUndo("end of the operation");
+            var broken = _undoBrokenAt ?? "";
             EndOperationCore();
             if (done > 0) Log.Info("operation finished: " + done + " equation(s) in " + ms + " ms (" + (ms / Math.Max(1, done)) + " ms each)");
-            return new Dictionary<string, object> { ["ms"] = ms };
+            return new Dictionary<string, object> { ["ms"] = ms, ["undoBrokenAt"] = broken };
         }
 
         private void EndOperationCore()
@@ -178,6 +183,24 @@ namespace MathBlocks.WordConnector
         }
 
         private Word.Window _operationWindow;
+
+        /// <summary>Where the operation's single undo record was found closed (diagnosis: one Ctrl+Z must undo it all).</summary>
+        private string _undoBrokenAt;
+
+        /// <summary>During an operation: notes the first point at which Word no longer records our undo record.</summary>
+        internal void CheckOperationUndo(string where)
+        {
+            if (!_operationUndo || _undoBrokenAt != null) return;
+            try
+            {
+                if (_app.UndoRecord.IsRecordingCustomRecord) return;
+                _undoBrokenAt = where;
+                Log.Info("operation undo record found closed at: " + where);
+            }
+            catch (COMException)
+            {
+            }
+        }
 
         private sealed class Owner : IWin32Window
         {

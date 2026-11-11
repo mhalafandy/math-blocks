@@ -218,15 +218,20 @@ namespace MathBlocks.WordConnector
             var undo = _app.UndoRecord;
             var own = !dry && !undo.IsRecordingCustomRecord;
             if (own) undo.StartCustomRecord("Repair MathBlocks equations");
+            if (!dry) CheckOperationUndo("repair: start");
             try
             {
                 _app.ScreenUpdating = false;
+                if (!dry) CheckOperationUndo("repair: screen updating off");
                 // Pasted pictures that came in floating: back in line first.
                 inlined = dry ? InlineFloatingPictures(doc, true) : InlineFloatingNow(doc);
+                if (!dry) CheckOperationUndo("repair: floating pictures put in line");
                 // Wrappers that grew (several equations, text, nested wrappers): one equation each again.
                 split = SplitWrappers(doc, dry, splitReport);
+                if (!dry) CheckOperationUndo("repair: wrappers split");
                 // Older documents: wrapped Classic equations become titled pictures.
                 converted = ConvertWrappedPictures(doc, dry);
+                if (!dry) CheckOperationUndo("repair: wrapped pictures converted");
                 // Pictures with MathBlocks data but no ID title: identified.
                 var shapes = new List<Word.InlineShape>();
                 foreach (Word.InlineShape s in doc.InlineShapes) shapes.Add(s);
@@ -252,10 +257,13 @@ namespace MathBlocks.WordConnector
                     foreach (var e in AllEquations(doc)) if (!seen.Add(e.Tag)) renamed.Add(new Dictionary<string, object> { ["from"] = e.Tag, ["to"] = "" });
                 }
                 else foreach (var pair in ResolveDuplicates(doc)) renamed.Add(pair);
+                if (!dry) CheckOperationUndo("repair: pictures identified, copies renamed");
                 bookmarks = BookmarkNumberedEquations(doc, dry);
+                if (!dry) CheckOperationUndo("repair: number bookmarks");
                 // Numbered equation paragraphs that lost their style (an earlier Convert MathType rewrote
                 // the paragraphs): MTDisplayEquation back, or the numbering's tab stops.
                 styled = RestoreEquationParagraphStyles(doc, dry);
+                if (!dry) CheckOperationUndo("repair: paragraph styles");
                 // Every Classic equation: its baseline lowering back from its stored depth; Classic pictures
                 // (the form before embedded objects) and objects holding another ID inside are listed for
                 // the app to redraw as objects with the same ID.
@@ -298,12 +306,15 @@ namespace MathBlocks.WordConnector
                         Log.Error("repair: checking a picture's source", ex);
                     }
                 }
+                if (!dry) CheckOperationUndo("repair: baselines");
                 if (!dry) unlocked = UnlockAll(doc);
+                if (!dry) CheckOperationUndo("repair: wrappers unlocked");
             }
             finally
             {
                 _app.ScreenUpdating = screen;
                 if (own) undo.EndCustomRecord();
+                if (!dry) CheckOperationUndo("repair: screen updating back on");
             }
             // Left untouched, reported: native Word equations (they keep their wrapper) and MathType objects.
             int native = 0, mathType = 0;
@@ -382,10 +393,18 @@ namespace MathBlocks.WordConnector
                     var styleName = "";
                     try { styleName = ((Word.Style)para.get_Style()).NameLocal ?? ""; } catch (Exception) { }
                     bool plainStyle = styleName == "" || styleName == ((Word.Style)doc.Styles[Word.WdBuiltinStyle.wdStyleNormal]).NameLocal;
-                    if (!plainStyle || para.TabStops.Count > 0) continue;
+                    // Word lists the default stops (every 0.5") among a paragraph's tab stops: only custom ones count.
+                    int custom = 0;
+                    foreach (Word.TabStop ts in para.TabStops) if (ts.CustomTab) custom++;
+                    if (!plainStyle || custom > 0) continue;
                     n++;
                     if (dry) continue;
-                    if (display != null) para.set_Style(display);
+                    if (display != null)
+                    {
+                        // Direct formatting left by the rewrite (alignment) would override the style.
+                        para.Reset();
+                        para.set_Style(display);
+                    }
                     else
                     {
                         var ps = pr.Sections[1].PageSetup;

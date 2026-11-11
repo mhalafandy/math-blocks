@@ -340,7 +340,7 @@ namespace MathBlocks.WordConnector
                     try { r["style"] = ((Word.Style)para.get_Style()).NameLocal; } catch (Exception) { r["style"] = ""; }
                     r["alignment"] = para.Alignment.ToString();
                     var tabs = new List<object>();
-                    foreach (Word.TabStop t in para.TabStops) tabs.Add(Math.Round(t.Position, 1) + " " + t.Alignment);
+                    foreach (Word.TabStop t in para.TabStops) if (t.CustomTab) tabs.Add(Math.Round(t.Position, 1) + " " + t.Alignment);
                     r["tabs"] = tabs;
                     r["text"] = (pr.Text ?? "").Replace("\u0001", "[eq]");
                     var ps = pr.Sections[1].PageSetup;

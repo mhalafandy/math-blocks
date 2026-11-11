@@ -25,6 +25,15 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed — Repair did not restore the number position on converted documents
+- Word lists a paragraph's default tab stops (every 0.5") among its tab stops, so Repair took every
+  numbered paragraph to have tab stops already and left it alone. Only custom tab stops count now.
+  The paragraph gets MTDisplayEquation back (its leftover direct alignment cleared first), or the
+  numbering's centre and right tab stops where the document has no such style.
+- Self-test: the paragraph check lists custom tab stops only (it passed on default stops before).
+  Repair's undo is diagnosed: whether Word kept the single undo record and, if not, where it closed
+  and how many Ctrl+Z steps Repair takes.
+
 ### Fixed — another open document came to the front after Repair, Convert or restyling
 - Closing the progress window of a long operation let Windows activate the next window in line,
   which could be another open Word document. The window that was active when the operation started
