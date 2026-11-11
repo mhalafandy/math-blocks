@@ -210,9 +210,85 @@ namespace MathBlocks.WordConnector
             {
                 string code;
                 try { code = f.Code?.Text ?? ""; } catch (COMException) { continue; }
-                if (code.Contains("MBPlaceRef") || code.Contains("MTPlaceRef")) return (f.Result?.Text ?? "").Replace("\t", "").Trim();
+                if (code.Contains("MBPlaceRef") || code.Contains("MTPlaceRef")) return ButtonDisplay(f);
             }
             return "";
+        }
+
+        /// <summary>
+        /// What a MACROBUTTON / GOTOBUTTON field shows. These fields have no result (Field.Result is empty):
+        /// their display text is the end of their code, with nested fields showing their results.
+        /// </summary>
+        internal static string ButtonDisplay(Word.Field f)
+        {
+            // Through Word's ranges: the code's own text between nested fields, and each nested field's result.
+            try
+            {
+                var codeRange = f.Code;
+                var doc = codeRange.Document;
+                var nested = new List<Word.Field>();
+                foreach (Word.Field n in codeRange.Fields) nested.Add(n);
+                nested.Sort((x, y) => x.Code.Start.CompareTo(y.Code.Start));
+                var sb = new System.Text.StringBuilder();
+                int pos = codeRange.Start;
+                foreach (var n in nested)
+                {
+                    int begin = n.Code.Start - 1;
+                    if (begin < pos) continue; // nested deeper (inside a field already taken)
+                    sb.Append(doc.Range(pos, begin).Text ?? "");
+                    int end = n.Code.End + 1;
+                    try
+                    {
+                        var r = n.Result;
+                        if (r != null && r.End > n.Code.End)
+                        {
+                            sb.Append(r.Text ?? "");
+                            end = r.End + 1;
+                        }
+                    }
+                    catch (COMException)
+                    {
+                    }
+                    pos = Math.Min(end, codeRange.End);
+                }
+                if (pos < codeRange.End) sb.Append(doc.Range(pos, codeRange.End).Text ?? "");
+                var walked = ButtonText(DisplayText(sb.ToString())).Replace("\t", "").Trim();
+                if (walked.Length > 0) return walked;
+            }
+            catch (COMException)
+            {
+            }
+            string code;
+            try { code = f.Code.Text ?? ""; } catch (COMException) { return ""; }
+            var shown = DisplayText("\u0013" + code + "\u0015").Replace("\t", "").Trim();
+            if (shown.Length > 0) return shown;
+            try { return (f.Result?.Text ?? "").Replace("\t", "").Trim(); } catch (COMException) { return ""; }
+        }
+
+        private static readonly System.Text.RegularExpressions.Regex InnerField = new System.Text.RegularExpressions.Regex("\u0013([^\u0013\u0014\u0015]*)(?:\u0014([^\u0013\u0014\u0015]*))?\u0015");
+
+        /// <summary>
+        /// Text as it reads on the page: Word's range text holds the codes of fields (\u0013 code \u0014 result
+        /// \u0015); fields with a result show it, MACROBUTTON/GOTOBUTTON show their display text, others nothing.
+        /// </summary>
+        internal static string DisplayText(string text)
+        {
+            if (string.IsNullOrEmpty(text) || text.IndexOf('\u0013') < 0) return text ?? "";
+            for (int guard = 0; guard < 50; guard++)
+            {
+                var next = InnerField.Replace(text, m => m.Groups[2].Success ? m.Groups[2].Value : ButtonText(m.Groups[1].Value));
+                if (next == text) break;
+                text = next;
+            }
+            return text.Replace("\u0013", "").Replace("\u0014", "").Replace("\u0015", "");
+        }
+
+        /// <summary>The display text of a button field's code: after the keyword, its argument and its switches.</summary>
+        private static string ButtonText(string code)
+        {
+            var t = code.Trim();
+            var m = System.Text.RegularExpressions.Regex.Match(t, @"^(MACROBUTTON|GOTOBUTTON)\s+\S+\s*((?:\\\*\s*\S+\s*|\\[a-z]\s*)*)(.*)$", System.Text.RegularExpressions.RegexOptions.Singleline | System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            return m.Success ? m.Groups[3].Value : "";
         }
 
         private static string NumberText(Word.Bookmark bm)
@@ -433,7 +509,9 @@ namespace MathBlocks.WordConnector
             undo.StartCustomRecord("Insert equation chapter marker");
             try
             {
-                _app.Selection.Range.InsertXML(NumberFields.Package(runs));
+                // At an empty point at a paragraph's end, InsertXML adds a paragraph mark before the runs (the
+                // marker would land after the cursor): through a placeholder it stays where the cursor is.
+                InsertInline(doc, _app.Selection.Range, NumberFields.Package(runs));
                 UpdateNumberFields(doc);
             }
             finally
@@ -569,8 +647,12 @@ namespace MathBlocks.WordConnector
                         var name = code.Substring(4).Trim().Split(' ')[0];
                         if (doc.Bookmarks.Exists(name)) continue;
                         var para = f.Code.Paragraphs[1].Range;
-                        var text = (para.Text ?? "").Replace("\r", " ").Replace("\a", " ").Replace("\t", " ").Trim();
-                        int at = Math.Max(0, Math.Min(text.Length, f.Code.Start - para.Start));
+                        var raw = para.Text ?? "";
+                        int rawAt = Math.Max(0, Math.Min(raw.Length, f.Code.Start - para.Start));
+                        // As it reads on the page (no field codes); the position mapped through the same cleaning.
+                        int at = DisplayText(raw.Substring(0, rawAt)).Length;
+                        var text = DisplayText(raw).Replace("\r", " ").Replace("\a", " ").Replace("\t", " ").Trim();
+                        at = Math.Max(0, Math.Min(text.Length, at));
                         int from = Math.Max(0, at - 40);
                         var snippet = (from > 0 ? "…" : "") + text.Substring(from, Math.Min(text.Length - from, 80)) + (from + 80 < text.Length ? "…" : "");
                         broken.Add(new Dictionary<string, object> { ["bookmark"] = name, ["snippet"] = snippet, ["at"] = f.Code.Start });

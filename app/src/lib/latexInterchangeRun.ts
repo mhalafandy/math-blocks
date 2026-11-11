@@ -109,7 +109,8 @@ export async function convertLatexDocument(o: { document?: string; fromWord?: bo
   const failed = r.results.filter((x) => !x.ok).map((x) => ({ what: what.get(x.id) ?? `item ${x.id}`, problem: x.problem }));
   const okIds = new Set(r.results.filter((x) => x.ok).map((x) => x.id));
   const equations = items.filter((i) => (i.kind === "inline" || i.kind === "display") && okIds.has(i.id)).length;
-  const tags = [...okIds].map((i) => tagOf.get(i)).filter((t): t is NonNullable<typeof t> => !!t);
+  // In document order (the items' order), not the order Word wrote them in (last first).
+  const tags = items.filter((i) => okIds.has(i.id)).map((i) => tagOf.get(i.id)).filter((t): t is NonNullable<typeof t> => !!t);
   const result: InterchangeResult = { plan, written: okIds.size, planned: items.length, failed, equations, buildMs, writeMs: r.ms, tags, ...(r.broken?.length ? { broken: r.broken } : {}), ...(backup ? { backup } : {}), ...(undoBrokenAt ? { undoBrokenAt } : {}) };
   console.info(`[MathBlocks] Convert LaTeX: ${describeResult(result)}`);
   if (!o.yes) ui.show({ name: scan.name, plan, stage: "result", result });

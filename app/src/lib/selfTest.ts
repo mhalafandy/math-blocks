@@ -529,6 +529,9 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const lateFlat = (await buildInsertion("F = ma", false, profile, late.tag, "classic", true)).flatOpc;
       const lateNo = await connector.request("numberEquation", { tag: late.tag, flatOpc: lateFlat, ...markers }, SLOW);
       check("an equation after the new section marker is numbered (A.3.1)", String(lateNo.number).replace(/\s/g, "") === "(A.3.1)", `numbered "${lateNo.number}"`);
+      // The paragraphs with the deliberate errors were not touched by these steps.
+      const still = planInterchange((await connector.request("scanInterchange", {}, SLOW)) as InterchangeScan);
+      check("the paragraphs with the deliberate errors are unchanged by the steps above", still.issues.filter((i) => i.severity === "error").length >= 5, still.issues.map((i) => i.what.slice(0, 50)).join(" | "));
       // Delete an equation that is referenced: Update numbers lists the broken reference.
       await smoke("deleteBookmarkPara", { bookmark: "_MBEq_A_2_1" });
       const upd = await connector.request("updateNumbers", {}, SLOW);

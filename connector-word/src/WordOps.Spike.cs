@@ -389,29 +389,13 @@ namespace MathBlocks.WordConnector
                 case "staleNumbers":
                 {
                     // Equation numbers out of date (as after moving equations), so Update numbers has work.
-                    // The shown counter is nested in the number's MACROBUTTON field: every field of the
-                    // document's range, nested ones included.
-                    int n = 0;
-                    foreach (Word.Field f in d.Content.Fields)
-                    {
-                        var all = new List<Word.Field> { f };
-                        try { foreach (Word.Field inner in f.Code.Fields) all.Add(inner); } catch (Exception) { }
-                        foreach (var g in all)
-                        {
-                            string code;
-                            try { code = g.Code.Text ?? ""; } catch (Exception) { continue; }
-                            if (!code.Contains("SEQ MBEq") || !code.Contains("\\c")) continue;
-                            try
-                            {
-                                g.Result.Text = "9";
-                                n++;
-                            }
-                            catch (Exception)
-                            {
-                            }
-                        }
-                    }
-                    return new Dictionary<string, object> { ["fields"] = n };
+                    // An equation counter at the top that the numbers after it have not counted yet (as after
+                    // pasting a numbered equation): every number after it is out of date until Update numbers.
+                    int count = d.Fields.Count;
+                    d.Range(0, 0).InsertParagraphBefore();
+                    var top = d.Range(0, 0);
+                    var fld = d.Fields.Add(top, Word.WdFieldType.wdFieldEmpty, "SEQ MBEq \\* ARABIC", false);
+                    return new Dictionary<string, object> { ["fields"] = d.Fields.Count - count };
                 }
                 case "undoProbe":
                 {

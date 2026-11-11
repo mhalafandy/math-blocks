@@ -57,7 +57,7 @@ namespace MathBlocks.WordConnector
                     {
                         // What it shows and its bookmark: references by number (eq:A.1.3) resolve to it.
                         string shown = "", bookmark = "";
-                        try { shown = (f.Result?.Text ?? "").Replace("\t", "").Trim(); } catch (COMException) { }
+                        shown = ButtonDisplay(f);
                         try
                         {
                             bool hid = doc.Bookmarks.ShowHidden;

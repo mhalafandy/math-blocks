@@ -46,7 +46,7 @@ namespace MathBlocks.WordConnector
                     if (code.Contains("MTEditEquationSection"))
                     {
                         var label = "";
-                        try { label = (f.Result?.Text ?? "").Trim(); } catch (COMException) { }
+                        label = ButtonDisplay(f);
                         items.Add(new Dictionary<string, object> { ["type"] = "mtBreak", ["start"] = start, ["paraStart"] = para.Start, ["label"] = label, ["code"] = NestedCodes(f) });
                     }
                     else if (code.Contains("MTPlaceRef"))
@@ -60,7 +60,7 @@ namespace MathBlocks.WordConnector
                             ["type"] = "mtNumber",
                             ["start"] = start,
                             ["paraStart"] = para.Start,
-                            ["text"] = (f.Result?.Text ?? "").Replace("\t", "").Trim(),
+                            ["text"] = ButtonDisplay(f),
                             ["bookmark"] = bookmark ?? "",
                             ["code"] = nested,
                             ["snippet"] = Snippet(para),
@@ -73,7 +73,7 @@ namespace MathBlocks.WordConnector
                     }
                     else if (code.Contains("MBPlaceRef"))
                     {
-                        items.Add(new Dictionary<string, object> { ["type"] = "mbNumber", ["start"] = start, ["paraStart"] = para.Start, ["text"] = (f.Result?.Text ?? "").Replace("\t", "").Trim(), ["snippet"] = Snippet(para) });
+                        items.Add(new Dictionary<string, object> { ["type"] = "mbNumber", ["start"] = start, ["paraStart"] = para.Start, ["text"] = ButtonDisplay(f), ["snippet"] = Snippet(para) });
                     }
                 }
             }
@@ -113,7 +113,7 @@ namespace MathBlocks.WordConnector
 
         private static string Snippet(Word.Range para)
         {
-            var t = (para.Text ?? "").Replace("\r", " ").Replace("\a", " ").Replace("\t", " ").Trim();
+            var t = DisplayText(para.Text ?? "").Replace("\r", " ").Replace("\a", " ").Replace("\t", " ").Trim();
             return t.Length > 80 ? t.Substring(0, 80) + "…" : t;
         }
 

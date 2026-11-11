@@ -25,6 +25,18 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed — equation numbers read as empty (Convert numbering did nothing); Section marker placement
+- MathType's and MathBlocks' numbers are MACROBUTTON fields, which have no field result: their text was read
+  as empty. Convert numbering therefore found no readable MathType numbers and changed nothing, "Number
+  equation" reported no number, and references by number could not resolve. Numbers are now read from the
+  button's display text (the code's text and its nested fields' results).
+- Section marker in an empty paragraph: Word's XML insertion put the marker in a new paragraph after the
+  cursor; it now stays at the cursor.
+- The broken-reference list shows the text as it reads (no field codes).
+- Self-test: the equations of a conversion are listed in document order (the insert check used the reverse
+  order and put its equation in the wrong section); the Update numbers undo check makes the numbers really out
+  of date; a check that the later steps leave the paragraphs with the deliberate errors unchanged.
+
 ### Added — one numbering scheme per document: Convert numbering (MathType → MathBlocks)
 - MathType's numbers (SEQ MTEqn/MTSec/MTChap) and MathBlocks' (SEQ MBEq/MBSec/MBChap) count separately,
   so new MathBlocks numbers did not continue MathType's in one document. Convert numbering (ribbon,
