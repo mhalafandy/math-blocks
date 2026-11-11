@@ -75,6 +75,16 @@ namespace MathBlocks.WordConnector
                 undo.StartCustomRecord(undoLabel);
                 _operationUndo = true;
             }
+            try
+            {
+                // Closing the progress window lets Windows activate the next window in line, which
+                // can be another open document: this one comes back to the front at the end.
+                _operationWindow = _app.ActiveWindow;
+            }
+            catch (COMException)
+            {
+                _operationWindow = null;
+            }
             IntPtr owner = IntPtr.Zero;
             try
             {
@@ -152,8 +162,22 @@ namespace MathBlocks.WordConnector
                 }
                 _progress = null;
             }
+            if (_operationWindow != null)
+            {
+                try
+                {
+                    _operationWindow.Activate();
+                }
+                catch (COMException)
+                {
+                    // The window was closed meanwhile.
+                }
+                _operationWindow = null;
+            }
             _operationClock.Stop();
         }
+
+        private Word.Window _operationWindow;
 
         private sealed class Owner : IWin32Window
         {

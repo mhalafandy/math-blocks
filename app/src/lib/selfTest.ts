@@ -342,13 +342,16 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     // ------------------------------------------------------------ Convert MathType keeps the paragraph
     section = "Convert MathType keeps the paragraph (number at the right margin)";
     await step("convert a MathType paragraph", async () => {
-      await smoke("newDocument");
+      const docC = await smoke("newDocument");
       await smoke("typeText", { text: "Convert MathType test." });
       const { buildMathTypeControlInsertion } = await import("./equation");
       const made = await smoke("makeEquationParagraph", { flatOpc: await buildMathTypeControlInsertion(), number: "(1)" });
       const p0 = await smoke("paraInfo", { pos: made.start });
       const { convertOpenDocument } = await import("./convertMathType");
       await convertOpenDocument(undefined, { quiet: true });
+      const frontC = (await smoke("activeName")).name as string;
+      check("Convert leaves its document in front", frontC === docC.name, `in front: ${frontC}, converted: ${docC.name}`);
+      if (frontC !== docC.name) await smoke("activate", { name: docC.name });
       const p1 = await smoke("paraInfo", { pos: made.start });
       check("the MathType equation became a MathBlocks object", /MathBlocks\.Equation/.test(String(p1.equationKind)), `before ${p0.equationKind}, after ${p1.equationKind}`);
       check("the paragraph keeps its style, alignment and tab stops", p1.style === p0.style && p1.alignment === p0.alignment && JSON.stringify(p1.tabs) === JSON.stringify(p0.tabs), `before ${p0.style} ${p0.alignment} [${p0.tabs}], after ${p1.style} ${p1.alignment} [${p1.tabs}]`);
@@ -387,6 +390,9 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       check("before Repair: the three equations are Classic pictures", frames0.every((f) => f === "legacy" || f === "modern"), frames0.join(", "));
       const { repairDocument } = await import("./repair");
       const rep = await repairDocument(undefined, { quiet: true });
+      const front = (await smoke("activeName")).name as string;
+      check("Repair leaves its document in front (another open document does not come forward)", front === docR.name, `in front: ${front}, repaired: ${docR.name}`);
+      if (front !== docR.name) await smoke("activate", { name: docR.name });
       const after = await snap();
       const frames = await Promise.all(tags.map(async (t) => (await smoke("pictureInfo", { tag: t }).catch(() => ({ frame: "missing" }))).frame));
       check("Repair converts every Classic picture to an embedded object, same ID", frames.every((f) => f === "object"), frames.join(", "));
@@ -421,7 +427,6 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       check("Repair restores a numbered equation paragraph's lost style / tab stops", !!rep3 && rep3.styled >= 1 && (l1.tabs as string[]).length >= 2, `styled ${rep3?.styled}; before [${l0.tabs}] number at ${Number(l0.numberEnd).toFixed(1)}, after ${l1.style} [${l1.tabs}]`);
       check("after Repair the number ends at the right margin again", Math.abs(Number(l1.numberEnd) - Number(l1.textRight)) < 3, `number ends at ${Number(l1.numberEnd).toFixed(1)} pt, right margin ${Number(l1.textRight).toFixed(1)} pt`);
       await smoke("save", { file: "repair test.docx" });
-      void docR;
     });
 
     // ------------------------------------------------------------ save

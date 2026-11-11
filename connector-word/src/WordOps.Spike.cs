@@ -300,7 +300,7 @@ namespace MathBlocks.WordConnector
                     // A numbered display equation laid out as MathType does: tab, equation, tab, number,
                     // with a centre tab stop at the middle of the text column and a right one at its end.
                     var flat = Rpc.GetString(p, "flatOpc");
-                    var number = Rpc.GetString(p, "number");
+                    var number = p.TryGetValue("number", out var nv) && nv is string ns ? ns : "";
                     var end = d.Content.End - 1;
                     var at = d.Range(end, end);
                     at.InsertParagraphAfter();

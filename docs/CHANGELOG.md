@@ -25,6 +25,13 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed — another open document came to the front after Repair, Convert or restyling
+- Closing the progress window of a long operation let Windows activate the next window in line,
+  which could be another open Word document. The window that was active when the operation started
+  now comes back to the front.
+- Self-test: Repair and Convert check that their document stays in front; the Repair section's
+  last step no longer needs an equation number.
+
 ### Fixed — Convert MathType dropped paragraph properties (number not at the right margin)
 - Cause: in the open document, Convert MathType rewrote each whole paragraph. Word exported the
   paragraph without its mark — so without its <w:pPr> — and the rewrite took the paragraph's
