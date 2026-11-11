@@ -246,6 +246,13 @@ export async function convertOpenDocument(document?: string, o: { quiet?: boolea
       progress: null,
       report: { source: first.name, output: null, inPlace: true, result: { equations, converted, skipped: equations.length - converted } },
     });
+    // One numbering scheme per document: MathType's numbers stay MathType fields until converted.
+    if (!o.quiet) {
+      const { scanNumbering } = await import("./numberingConversionRun");
+      const scan = await scanNumbering(first.fullName).catch(() => null);
+      const left = scan?.items.filter((i) => i.type === "mtNumber").length ?? 0;
+      if (left) app.notify(`This document still uses MathType's equation numbering (${left} number(s)). Run “Convert numbering” (MathBlocks ribbon or Ctrl+K) so that new equations continue it — keep the numbers or renumber to chapter.section.equation.`, "info");
+    }
   } catch (e) {
     ui.set({ busy: false, progress: null });
     app.notify(e instanceof Error ? e.message : String(e), "error");

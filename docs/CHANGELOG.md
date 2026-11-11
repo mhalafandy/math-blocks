@@ -25,6 +25,26 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added — one numbering scheme per document: Convert numbering (MathType → MathBlocks)
+- MathType's numbers (SEQ MTEqn/MTSec/MTChap) and MathBlocks' (SEQ MBEq/MBSec/MBChap) count separately,
+  so new MathBlocks numbers did not continue MathType's in one document. Convert numbering (ribbon,
+  Ctrl+K; suggested after Convert MathType) turns MathType's breaks into MathBlocks markers and its
+  numbers into MathBlocks number fields, keeping each number's bookmark (ZEqnNum…), so every reference
+  keeps pointing at its equation.
+- Choice: keep the existing numbers, or renumber to chapter.section.equation (a section marker after each
+  section heading; its number from Word's numbering or the heading text, e.g. "A.1 Frames").
+- Before anything is written: every number old → new and the problems (missing section headings,
+  unnumbered headings, numbers that skip, counters reset by hand, breaks without equations), with
+  snippets; copy the list. One Ctrl+Z, backup first, the document stays in front; afterwards every
+  number is compared with what was planned. New numbers in the document use the same format.
+- Convert LaTeX: refuses to add numbers while MathType's numbering is still there (button: Convert
+  numbering first); \eqref{eq:A.1.3} / \ref{…} resolve to an equation already in the document showing
+  that number; a new label repeating an existing number is an error.
+- Self-test: a MathType part (A.1)–(A.3) is converted, renumbered to (A.1.1)–(A.1.3) with its references
+  following; a pasted section adds (A.1.4) and section A.2 with references to old and new equations;
+  after Convert LaTeX and Update numbers every number is correct and unique; "keep the existing numbers"
+  leaves (A.1)–(A.3) as they were; each step one Ctrl+Z.
+
 ### Changed — LaTeX interchange: chapter.section.equation numbers, labels as numbers, section markers
 - Numbers are (chapter.section.equation) — (3.2.5), (A.1.3) in appendices — with the counter restarting
   at each section; references show the same format. \mbnumbering{3.2} / {A.1} after each section heading

@@ -28,6 +28,9 @@ export interface ScanParagraph {
   marker?: { chapter: number; appendix: boolean; section?: number };
   /** Holds fields, pictures or objects: text positions may not match document positions. */
   complex?: boolean;
+  /** Its number as shown, e.g. "(A.1.3)", and that number's bookmark (MathBlocks or MathType). */
+  number?: string;
+  bookmark?: string;
 }
 
 export interface InterchangeScan {
@@ -36,6 +39,8 @@ export interface InterchangeScan {
   paragraphs: ScanParagraph[];
   /** Equation number bookmarks already in the document (_MBEq_…): labels converted before. */
   bookmarks: string[];
+  /** MathType number fields still in the document. */
+  mathTypeNumbers?: number;
 }
 
 export type IssueSeverity = "error" | "warning";
@@ -117,6 +122,8 @@ export interface InterchangePlan {
   usesMarkers: boolean;
   /** Section markers are used: numbers are (chapter.section.n), the counter restarts per section. */
   usesSections: boolean;
+  /** The document still uses MathType's numbering: new numbers would not continue it (convert it first). */
+  needsNumberingConversion: boolean;
 }
 
 export const DISPLAY_STYLE = "MTDisplayEquation";
@@ -434,6 +441,28 @@ export function planInterchange(scan: InterchangeScan): InterchangePlan {
     defined.set(eq.label, eq);
   }
 
+  // Equations already numbered in the document, by the number they show: a reference by number
+  // (\eqref{eq:A.1.3}) to an equation converted before resolves to its bookmark.
+  const existing = new Map<string, string>();
+  for (const p of scan.paragraphs) if (p.number && p.bookmark) existing.set(p.number.replace(/\s+/g, ""), p.bookmark);
+  for (const eq of equations) {
+    if (!eq.label || eq.invalid || !NUMBER_LABEL_RE.test(eq.label) || !existing.has(`(${eq.label})`)) continue;
+    const p = scan.paragraphs.find((x) => x.start === eq.start)!;
+    issue("error", `Label eq:${eq.label}: an equation already in the document has the number (${eq.label})`, p, 0, p.text.length);
+    eq.invalid = true;
+    defined.delete(eq.label);
+  }
+
+  // One numbering scheme: with MathType's numbers still there, new MathBlocks numbers would not continue them.
+  const needsNumberingConversion = (scan.mathTypeNumbers ?? 0) > 0 && (markers.length > 0 || equations.some((e) => e.numbered && !e.invalid));
+  if (needsNumberingConversion) {
+    const first = scan.paragraphs.find((p) => markers.some((m) => m.start === p.start) || equations.some((e) => e.numbered && e.start === p.start))!;
+    issue("error", `This document still uses MathType's equation numbering (${scan.mathTypeNumbers} number(s)): run “Convert numbering” first, or the new numbers would not continue MathType's. Numbered equations and \\mbnumbering markers are left until then.`, first, 0, first.text.length);
+    for (const e of equations) if (e.numbered) e.invalid = true;
+    markers.length = 0;
+    defined.clear();
+  }
+
   // Numbers, in document order (existing numbers and markers count too).
   const usesMarkers = scan.paragraphs.some((p) => p.marker) || markers.length > 0;
   const usesSections = scan.paragraphs.some((p) => (p.marker?.section ?? 0) > 0) || markers.some((m) => m.level === "section");
@@ -493,11 +522,14 @@ export function planInterchange(scan: InterchangeScan): InterchangePlan {
     const key = r.label.replace(/^eq:/, "");
     const bm = labelBookmark(key);
     const eq = defined.get(key);
-    const resolved = !!eq || known.has(bm);
+    // Not a label here: an equation already in the document showing that number (converted from MathType).
+    const byNumber = !eq && !known.has(bm) && NUMBER_LABEL_RE.test(key) ? existing.get(`(${key})`) : undefined;
+    const resolved = !!eq || known.has(bm) || !!byNumber;
     if (!LABEL_RE.test(r.label)) issue("error", `Reference to “${r.label}”: labels are eq: followed by letters, digits, dots and hyphens`, r.p, r.from, r.to);
     else if (!resolved) issue("error", `Unresolved reference \\${r.form}{${r.label}}: no equation has this label (left as highlighted text)`, r.p, r.from, r.to);
-    const shows = eq?.number ? (r.form === "eqref" ? eq.number : eq.number.slice(1, -1)) : undefined;
-    references.push({ start: r.p.start + r.from, end: r.p.start + r.to, expect: r.p.text.slice(r.from, r.to), label: key, form: r.form, resolved: resolved && LABEL_RE.test(r.label), bookmark: bm, ...(shows ? { shows } : {}) });
+    const number = eq?.number ?? (byNumber ? `(${key})` : undefined);
+    const shows = number ? (r.form === "eqref" ? number : number.slice(1, -1)) : undefined;
+    references.push({ start: r.p.start + r.from, end: r.p.start + r.to, expect: r.p.text.slice(r.from, r.to), label: key, form: r.form, resolved: resolved && LABEL_RE.test(r.label), bookmark: byNumber ?? bm, ...(shows ? { shows } : {}) });
   }
 
   // In document order (easier to work through in Word).
@@ -510,6 +542,7 @@ export function planInterchange(scan: InterchangeScan): InterchangePlan {
     issues,
     usesMarkers,
     usesSections,
+    needsNumberingConversion,
     counts: {
       inline: valid.filter((e) => e.kind === "inline").length,
       display: valid.filter((e) => e.kind === "display" && !e.numbered).length,

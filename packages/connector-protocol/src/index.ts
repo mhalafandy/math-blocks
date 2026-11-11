@@ -259,9 +259,18 @@ export interface AppToConnector {
     result: {
       name: string;
       fullName: string;
-      paragraphs: { start: number; end: number; text: string; style: string; numbered?: boolean; marker?: { chapter: number; appendix: boolean; section?: number }; complex?: boolean }[];
+      paragraphs: { start: number; end: number; text: string; style: string; numbered?: boolean; number?: string; bookmark?: string; marker?: { chapter: number; appendix: boolean; section?: number }; complex?: boolean }[];
       bookmarks: string[];
+      /** MathType number fields still in the document (one numbering scheme: convert them first). */
+      mathTypeNumbers?: number;
     };
+  };
+  /** MathType numbering → MathBlocks: breaks, numbers (shown text, bookmark), MathBlocks markers and numbers, headings, in order. */
+  scanNumbering: { params: DocTarget; result: { name: string; fullName: string; items: Record<string, unknown>[] } };
+  /** Writes the numbering plan (one undo step), then updates numbers and references; what each bookmark shows afterwards. */
+  convertNumbering: {
+    params: DocTarget & { items: Record<string, unknown>[]; format: Record<string, unknown> };
+    result: { problems: string[]; shows: Record<string, string>; ms: number; broken?: BrokenReference[]; undoBrokenAt?: string };
   };
   /** LaTeX interchange: writes the planned items (one undo step), then updates numbers and references. */
   convertInterchange: {

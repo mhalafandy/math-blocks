@@ -156,6 +156,21 @@ This gives (3.1.1) and (3.1.2); the references read "(3.1.1)" and "3.1.2".
 - **Update numbers** renumbers every equation and reference, and lists references to equations that no
   longer exist (Word would show "Error! Reference source not found"), each with the text around it.
 
+### Pasting into a document with MathType equations
+
+A document can have one numbering scheme only. If it still contains MathType's equation numbers and
+chapter/section breaks, run **Convert numbering** (MathBlocks ribbon → Convert numbering, or Ctrl+K)
+before Convert LaTeX — Convert LaTeX refuses to add numbers until then, because new numbers would not
+continue MathType's. Convert numbering turns MathType's breaks into MathBlocks markers and its numbers
+into MathBlocks numbers, keeping each number's bookmark so every existing reference stays on its
+equation; you choose "keep the existing numbers" or "renumber to chapter.section.equation" (a section
+marker after each section heading, read from Word's numbering or the heading text), and see the full
+old → new list and any problems before anything is written.
+
+After that, new text may refer to the converted equations by their number — \`\\eqref{eq:A.1.3}\`
+finds the equation showing (A.1.3) — and new equations continue the numbering (a new equation at the
+end of section A.1 becomes (A.1.4)). A new label that repeats an existing number is reported.
+
 ## 3. Older forms that are converted too
 
 - Display paragraphs with a typed number — TAB \`$$…$$\` TAB \`(A.1.3)\` — get a number field instead of

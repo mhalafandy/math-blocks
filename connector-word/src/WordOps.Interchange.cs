@@ -28,6 +28,8 @@ namespace MathBlocks.WordConnector
             var clock = Stopwatch.StartNew();
             // Numbers and markers already there (converted before, or MathType's): by paragraph.
             var numbered = new HashSet<int>();
+            var numberInfo = new Dictionary<int, Dictionary<string, object>>();
+            int mathTypeNumbers = 0;
             var markers = new Dictionary<int, Dictionary<string, object>>();
             foreach (Word.Field f in doc.Fields)
             {
@@ -47,7 +49,27 @@ namespace MathBlocks.WordConnector
                     var m = MarkerLabel.Match(f.Code.Text ?? "");
                     if (m.Success) markers[at] = new Dictionary<string, object> { ["chapter"] = int.Parse(m.Groups[2].Value), ["appendix"] = m.Groups[1].Value == "Appendix", ["section"] = m.Groups[3].Success ? int.Parse(m.Groups[3].Value) : 0 };
                 }
-                else if (code.Contains("MBPlaceRef") || code.Contains("MTPlaceRef") || code.Contains("SEQ MTEqn") || (code.Contains("SEQ MBEq") && code.Contains("\\c"))) numbered.Add(at);
+                else if (code.Contains("MBPlaceRef") || code.Contains("MTPlaceRef") || code.Contains("SEQ MTEqn") || (code.Contains("SEQ MBEq") && code.Contains("\\c")))
+                {
+                    numbered.Add(at);
+                    if (code.Contains("MTPlaceRef")) mathTypeNumbers++;
+                    if ((code.Contains("MBPlaceRef") || code.Contains("MTPlaceRef")) && !numberInfo.ContainsKey(at))
+                    {
+                        // What it shows and its bookmark: references by number (eq:A.1.3) resolve to it.
+                        string shown = "", bookmark = "";
+                        try { shown = (f.Result?.Text ?? "").Replace("\t", "").Trim(); } catch (COMException) { }
+                        try
+                        {
+                            bool hid = doc.Bookmarks.ShowHidden;
+                            doc.Bookmarks.ShowHidden = true;
+                            foreach (Word.Bookmark bm in f.Code.Paragraphs[1].Range.Bookmarks)
+                                if (bm.Name.StartsWith(BookmarkPrefix, StringComparison.Ordinal) || bm.Name.StartsWith(MathTypeBookmarkPrefix, StringComparison.Ordinal)) bookmark = bm.Name;
+                            doc.Bookmarks.ShowHidden = hid;
+                        }
+                        catch (COMException) { }
+                        numberInfo[at] = new Dictionary<string, object> { ["text"] = shown, ["bookmark"] = bookmark };
+                    }
+                }
             }
             var paragraphs = new List<object>();
             foreach (Word.Paragraph para in doc.Paragraphs)
@@ -67,6 +89,11 @@ namespace MathBlocks.WordConnector
                     ["style"] = StyleNameOf(para),
                 };
                 if (hasNumber) entry["numbered"] = true;
+                if (numberInfo.TryGetValue(start, out var ni))
+                {
+                    entry["number"] = ni["text"];
+                    entry["bookmark"] = ni["bookmark"];
+                }
                 if (hasMarker) entry["marker"] = markers[start];
                 try
                 {
@@ -91,7 +118,7 @@ namespace MathBlocks.WordConnector
                 doc.Bookmarks.ShowHidden = hidden;
             }
             Log.Info("scanInterchange in " + doc.Name + ": " + paragraphs.Count + " paragraph(s), " + numbered.Count + " number(s), " + markers.Count + " marker(s), " + bookmarks.Count + " bookmark(s), " + clock.ElapsedMilliseconds + " ms");
-            return new Dictionary<string, object> { ["name"] = doc.Name, ["fullName"] = doc.FullName, ["paragraphs"] = paragraphs, ["bookmarks"] = bookmarks };
+            return new Dictionary<string, object> { ["name"] = doc.Name, ["fullName"] = doc.FullName, ["paragraphs"] = paragraphs, ["bookmarks"] = bookmarks, ["mathTypeNumbers"] = mathTypeNumbers };
         }
 
         /// <summary>The numbering marker nearest before the cursor (chapter, section, appendix), for "Insert section marker".</summary>

@@ -547,6 +547,75 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       check("150-equation document: time per equation", null, r ? describeResult(r) : "");
     });
 
+    section = "One numbering scheme: MathType numbers → MathBlocks, then pasted LaTeX";
+    await step("mathtype numbering, renumbered", async () => {
+      const { mathTypeNumberingDocx } = await import("./interchangeFixture");
+      const { toBase64 } = await import("./render");
+      const docM = await smoke("openDocx", { file: "numbering test.docx", base64: toBase64(await mathTypeNumberingDocx(true)) });
+      const { convertOpenDocument } = await import("./convertMathType");
+      await convertOpenDocument(undefined, { quiet: true });
+      // Convert LaTeX refuses to add numbers while MathType's numbering is there.
+      const guard = planInterchange((await connector.request("scanInterchange", {}, SLOW)) as InterchangeScan);
+      check("Convert LaTeX waits for Convert numbering while MathType's numbering is there", guard.needsNumberingConversion, guard.issues[0]?.what ?? "no warning");
+      const { scanNumbering, convertNumbering } = await import("./numberingConversionRun");
+      const { planNumberingConversion } = await import("./numberingConversion");
+      const scanN = (await scanNumbering())!;
+      const planN = planNumberingConversion(scanN, "renumber");
+      check("renumber plan: (A.1)–(A.3) → (A.1.1)–(A.1.3), no problems", planN.changes.map((c) => `${c.old}→${c.new}`).join(" ") === "(A.1)→(A.1.1) (A.2)→(A.1.2) (A.3)→(A.1.3)" && planN.problems.length === 0, `${planN.changes.map((c) => `${c.old}→${c.new}`).join(" ")}; ${planN.problems.map((p) => p.what).join(" | ")}`);
+      let resN: Awaited<ReturnType<typeof convertNumbering>> | null = null;
+      await oneCtrlZ("Convert numbering (renumber)", docM.name, async () => {
+        resN = await convertNumbering(scanN, "renumber");
+      });
+      const rn = resN as Awaited<ReturnType<typeof convertNumbering>> | null;
+      check("every converted number shows what was planned", !!rn && rn.mismatches.length === 0 && rn.problems.length === 0, rn ? `${JSON.stringify(rn.mismatches)} ${rn.problems.join("; ")}` : "did not run");
+      const shows = async (bm: string) => String((await smoke("bookmarkText", { bookmark: bm })).text).replace(/\s/g, "");
+      check("MathType's bookmarks now carry the new numbers", (await shows("ZEqnNum100001")) === "(A.1.1)" && (await shows("ZEqnNum100003")) === "(A.1.3)", `ZEqnNum100001 ${await shows("ZEqnNum100001")}, ZEqnNum100003 ${await shows("ZEqnNum100003")}`);
+      const refs = async (bm: string) => (await smoke("refResults", { bookmark: bm })).results as string[];
+      const old1 = await refs("ZEqnNum100001");
+      const old3 = await refs("ZEqnNum100003");
+      check("MathType's references follow their equations", old1.length === 1 && old1[0] === "(A.1.1)" && old3.length === 1 && old3[0] === "(A.1.3)", `to (A.1): ${JSON.stringify(old1)}, to (A.3): ${JSON.stringify(old3)}`);
+      // The pasted section: one more equation in A.1, section A.2, references to old and new equations.
+      const { convertLatexDocument } = await import("./latexInterchangeRun");
+      let resL: Awaited<ReturnType<typeof convertLatexDocument>> = null;
+      await oneCtrlZ("Convert LaTeX after Convert numbering", docM.name, async () => {
+        resL = await convertLatexDocument({ yes: true });
+      });
+      const rl = resL as Awaited<ReturnType<typeof convertLatexDocument>>;
+      check("pasted section: no problems, everything written", !!rl && rl.plan.issues.length === 0 && rl.failed.length === 0, rl ? `${rl.plan.issues.map((i) => i.what).join(" | ")} ${rl.failed.map((f) => f.problem).join("; ")}` : "did not run");
+      await connector.request("updateNumbers", {}, SLOW);
+      const all = (await scanNumbering())!.items.filter((i) => i.type === "mbNumber").map((i) => (i as { text: string }).text.replace(/\s/g, ""));
+      check("after Update numbers: every number correct and unique", all.join(" ") === "(A.1.1) (A.1.2) (A.1.3) (A.1.4) (A.2.1)", all.join(" "));
+      const r13 = await refs("ZEqnNum100003");
+      const r11n = await refs("ZEqnNum100001N");
+      const r14 = await refs("_MBEq_A_1_4");
+      const r21 = await refs("_MBEq_A_2_1");
+      check(
+        "references to old and new equations are right (by number to the converted ones, by label to the new ones)",
+        r13.length === 2 && r13.every((x) => x === "(A.1.3)") && r11n.length === 1 && r11n[0] === "A.1.1" && r14.length === 1 && r14[0] === "(A.1.4)" && r21.length === 1 && r21[0] === "(A.2.1)",
+        `(A.1.3) ${JSON.stringify(r13)}, A.1.1 ${JSON.stringify(r11n)}, (A.1.4) ${JSON.stringify(r14)}, (A.2.1) ${JSON.stringify(r21)}`,
+      );
+      await smoke("save", { file: "numbering test (converted).docx" });
+    });
+    await step("mathtype numbering, kept", async () => {
+      const { mathTypeNumberingDocx } = await import("./interchangeFixture");
+      const { toBase64 } = await import("./render");
+      const docK = await smoke("openDocx", { file: "numbering keep test.docx", base64: toBase64(await mathTypeNumberingDocx(false)) });
+      const { convertOpenDocument } = await import("./convertMathType");
+      await convertOpenDocument(undefined, { quiet: true });
+      const { scanNumbering, convertNumbering } = await import("./numberingConversionRun");
+      const scanK = (await scanNumbering())!;
+      let resK: Awaited<ReturnType<typeof convertNumbering>> | null = null;
+      await oneCtrlZ("Convert numbering (keep the numbers)", docK.name, async () => {
+        resK = await convertNumbering(scanK, "keep");
+      });
+      const rk = resK as Awaited<ReturnType<typeof convertNumbering>> | null;
+      const all = (await scanNumbering())!.items.filter((i) => i.type === "mbNumber").map((i) => (i as { text: string }).text.replace(/\s/g, ""));
+      check("keep the existing numbers: (A.1)–(A.3) unchanged, now MathBlocks numbers", !!rk && rk.mismatches.length === 0 && all.join(" ") === "(A.1) (A.2) (A.3)", `${all.join(" ")}${rk?.mismatches.length ? `; ${JSON.stringify(rk.mismatches)}` : ""}`);
+      const r1 = (await smoke("refResults", { bookmark: "ZEqnNum100001" })).results as string[];
+      check("keep: references unchanged", r1.length === 1 && r1[0] === "(A.1)", JSON.stringify(r1));
+      await smoke("save", { file: "numbering keep test (converted).docx" });
+    });
+
     section = "Repair: Classic pictures become embedded objects";
     await step("repair conversion", async () => {
       const docR = await smoke("newDocument");

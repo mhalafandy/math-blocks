@@ -90,11 +90,11 @@ const NS =
 export const mathTypeRun = (n: number, widthPt = 40, heightPt = 18, lowerHalfPt = 12) =>
   `<w:r><w:rPr><w:position w:val="-${lowerHalfPt}"/></w:rPr><w:object w:dxaOrig="${widthPt * 20}" w:dyaOrig="${heightPt * 20}"><v:shape id="_x0000_i${1024 + n}" type="#_x0000_t75" style="width:${widthPt}pt;height:${heightPt}pt" o:ole=""><v:imagedata r:id="rIdImg${n}" o:title=""/></v:shape><o:OLEObject Type="Embed" ProgID="Equation.DSMT4" ShapeID="_x0000_i${1024 + n}" DrawAspect="Content" ObjectID="_${1200000000 + n}" r:id="rIdOle${n}"/></w:object></w:r>`;
 
-const text = (t: string) => `<w:r><w:t xml:space="preserve">${t}</w:t></w:r>`;
+export const text = (t: string) => `<w:r><w:t xml:space="preserve">${t}</w:t></w:r>`;
 const MT_DISPLAY = `<w:pPr><w:pStyle w:val="MTDisplayEquation"/></w:pPr>`;
 
 /** Numbered display paragraph as MathType writes it: tab, equation, tab, MACROBUTTON number with a ZEqnNum bookmark. */
-const numbered = (n: number, bookmark: number, label: string) =>
+export const numbered = (n: number, bookmark: number, label: string) =>
   `<w:p>${MT_DISPLAY}<w:r><w:tab/></w:r>${mathTypeRun(n)}<w:r><w:tab/></w:r><w:bookmarkStart w:id="${bookmark}" w:name="ZEqnNum${100000 + bookmark}"/>` +
   `<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> MACROBUTTON MTPlaceRef \\* MERGEFORMAT </w:instrText></w:r><w:r><w:fldChar w:fldCharType="begin"/></w:r>` +
   `<w:r><w:instrText xml:space="preserve"> SEQ MTEqn \\h \\* MERGEFORMAT </w:instrText></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r><w:r><w:instrText>(</w:instrText></w:r>` +
@@ -103,7 +103,7 @@ const numbered = (n: number, bookmark: number, label: string) =>
   `<w:r><w:instrText>)</w:instrText></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r><w:bookmarkEnd w:id="${bookmark}"/></w:p>`;
 
 /** A MathType reference to a numbered equation: GOTOBUTTON with a nested REF to its bookmark. */
-const reference = (bookmark: number, shown: string) =>
+export const reference = (bookmark: number, shown: string) =>
   `<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> GOTOBUTTON ZEqnNum${100000 + bookmark}  \\* MERGEFORMAT </w:instrText></w:r>` +
   `<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> REF ZEqnNum${100000 + bookmark} \\* Charformat \\! \\* MERGEFORMAT </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:instrText>${shown}</w:instrText></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r>` +
   `<w:r><w:fldChar w:fldCharType="end"/></w:r>`;
@@ -113,6 +113,7 @@ const STYLES =
   `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles ${NS}>` +
   `<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>` +
   `<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:sz w:val="32"/></w:rPr></w:style>` +
+  `<w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:outlineLvl w:val="1"/></w:pPr><w:rPr><w:b/><w:sz w:val="26"/></w:rPr></w:style>` +
   `<w:style w:type="paragraph" w:customStyle="1" w:styleId="MTDisplayEquation"><w:name w:val="MTDisplayEquation"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr><w:tabs><w:tab w:val="center" w:pos="4394"/><w:tab w:val="right" w:pos="8787"/></w:tabs></w:pPr></w:style>` +
   `</w:styles>`;
 
@@ -145,7 +146,15 @@ export function syntheticMathTypeDocument(): SyntheticDocument {
     numbered(5, 4, "4"),
     `<w:p>${text("From ")}${reference(1, "(A.1)")}${text(" and ")}${reference(3, "(A.3)")}${text(" the result follows.")}</w:p>`,
   ];
-  const rels = order
+  return { docx: mathTypeDocx(paragraphs, order.map((e) => e.name)), equations: order };
+}
+
+/**
+ * A MathType-style .docx from paragraphs (WordprocessingML) and the MathType objects they use (object n
+ * of mathTypeRun(n) is objects[n - 1]); styles: Normal, Heading 1, Heading 2, MTDisplayEquation.
+ */
+export function mathTypeDocx(paragraphs: string[], objects: SyntheticEquation[]): Uint8Array {
+  const rels = objects
     .map((_, i) => `<Relationship Id="rIdOle${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/oleObject" Target="embeddings/oleObject${i + 1}.bin"/><Relationship Id="rIdImg${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image${i + 1}.wmf"/>`)
     .join("");
   const files: Record<string, Uint8Array> = {
@@ -161,9 +170,32 @@ export function syntheticMathTypeDocument(): SyntheticDocument {
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>${rels}</Relationships>`,
     ),
   };
-  order.forEach((e, i) => {
-    files[`word/embeddings/oleObject${i + 1}.bin`] = syntheticMathTypeObject(e.name);
+  objects.forEach((name, i) => {
+    files[`word/embeddings/oleObject${i + 1}.bin`] = syntheticMathTypeObject(name);
     files[`word/media/image${i + 1}.wmf`] = new Uint8Array([0xd7, 0xcd, 0xc6, 0x9a, 0, 0]);
   });
-  return { docx: zipSync(files), equations: order };
+  return zipSync(files);
 }
+
+/** A paragraph of plain text in a style (Normal when omitted); tabs as real tabs. */
+export const styledParagraph = (t: string, style?: string) =>
+  `<w:p>${style ? `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>` : ""}${t
+    .split("\t")
+    .map((part, i) => (i ? "<w:r><w:tab/></w:r>" : "") + (part ? text(part.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")) : ""))
+    .join("")}</w:p>`;
+
+/**
+ * A MathType chapter/section break as MathType writes it: a hidden paragraph with MACROBUTTON
+ * MTEditEquationSection2 and hidden SEQ fields that set the counters (the equation counter restarts).
+ */
+export const mathTypeBreak = (chapter: number, section: number) => {
+  const hidden = "<w:rPr><w:vanish/></w:rPr>";
+  const f = (code: string) =>
+    `<w:r>${hidden}<w:fldChar w:fldCharType="begin"/></w:r><w:r>${hidden}<w:instrText xml:space="preserve"> ${code} </w:instrText></w:r><w:r>${hidden}<w:fldChar w:fldCharType="end"/></w:r>`;
+  return (
+    `<w:p><w:pPr><w:rPr><w:vanish/></w:rPr></w:pPr><w:r>${hidden}<w:fldChar w:fldCharType="begin"/></w:r><w:r>${hidden}<w:instrText xml:space="preserve"> MACROBUTTON MTEditEquationSection2 </w:instrText></w:r>` +
+    `<w:r>${hidden}<w:instrText>Equation Chapter ${chapter} Section ${section}</w:instrText></w:r>` +
+    f("SEQ MTEqn \\r \\h \\* MERGEFORMAT") + f(`SEQ MTSec \\r ${section} \\h \\* MERGEFORMAT`) + f(`SEQ MTChap \\r ${chapter} \\h \\* MERGEFORMAT`) +
+    `<w:r>${hidden}<w:fldChar w:fldCharType="end"/></w:r></w:p>`
+  );
+};

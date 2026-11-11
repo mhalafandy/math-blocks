@@ -101,6 +101,16 @@ export function InterchangeDialog() {
           <div className="spacer" />
           {s.stage === "preflight" ? (
             <>
+              {plan.needsNumberingConversion && (
+                <button
+                  onClick={() => {
+                    close();
+                    void import("../lib/numberingConversionRun").then((m) => m.openNumberingConversion());
+                  }}
+                >
+                  Convert numbering first…
+                </button>
+              )}
               <button onClick={close}>Stop</button>
               <button className="primary" disabled={!valid && !c.markers && !c.references} onClick={() => void answer(true)}>
                 {errors.length ? `Convert the ${valid} valid equation(s)` : `Convert ${valid} equation(s)`}

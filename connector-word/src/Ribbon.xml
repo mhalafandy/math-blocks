@@ -28,6 +28,8 @@
                   onAction="OnListOfSymbols" />
         </group>
         <group id="MathBlocksMathType" label="Convert">
+          <button id="mbConvertNumbering" label="Convert numbering" imageMso="NumberingRestart"
+                  screentip="Turn MathType's equation numbers and chapter/section breaks into MathBlocks numbers and markers (keep them, or renumber to chapter.section.equation); references keep pointing at their equations" onAction="OnConvertNumbering" />
           <button id="mbConvertMathType" keytip="C" label="Convert MathType equations" size="large" imageMso="EquationProfessional"
                   screentip="Turn this document's MathType equations into native, editable MathBlocks equations (one undo step)"
                   onAction="OnConvertMathType" />

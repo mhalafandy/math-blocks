@@ -141,3 +141,35 @@ export function interchangeSpeedParagraphs(): { style: string; text: string }[] 
   }
   return out;
 }
+
+/**
+ * A document part converted from MathType and a section pasted after it (generic content): Appendix A
+ * with a MathType break, section heading "A.1 Frames", three MathType equations numbered (A.1)–(A.3)
+ * (two-level, MathType's fields and ZEqnNum bookmarks) and a paragraph referring to (A.1) and (A.3);
+ * then, as pasted from a transcription, one more equation for A.1, section A.2 with \mbnumbering and a
+ * labelled equation, and references to old and new equations by number.
+ */
+export async function mathTypeNumberingDocx(withPastedSection = true): Promise<Uint8Array> {
+  const { mathTypeDocx, styledParagraph, mathTypeBreak, mathTypeNumbered, mathTypeReference } = await import("@mathblocks/mathtype");
+  const run = (t: string) => `<w:r><w:t xml:space="preserve">${t}</w:t></w:r>`;
+  const paragraphs = [
+    styledParagraph("Appendix A", "Heading1"),
+    mathTypeBreak(1, 1),
+    styledParagraph("A.1 Frames", "Heading2"),
+    styledParagraph("Generic equations, converted from MathType."),
+    mathTypeNumbered(1, 1, "1"),
+    mathTypeNumbered(2, 2, "2"),
+    mathTypeNumbered(3, 3, "3"),
+    `<w:p>${run("From ")}${mathTypeReference(1, "(A.1)")}${run(" and ")}${mathTypeReference(3, "(A.3)")}${run(" the result follows.")}</w:p>`,
+  ];
+  if (withPastedSection) {
+    paragraphs.push(
+      styledParagraph("\t$$x = y + 1$$\t\\label{eq:A.1.4}", "MTDisplayEquation"),
+      styledParagraph("A.2 Oscillator", "Heading2"),
+      styledParagraph("\\mbnumbering{A.2}"),
+      styledParagraph("\t$$m\\ddot{x} + kx = 0$$\t\\label{eq:A.2.1}", "MTDisplayEquation"),
+      styledParagraph("From \\eqref{eq:A.1.3}, equation \\ref{eq:A.1.1}, \\eqref{eq:A.1.4} and \\eqref{eq:A.2.1}."),
+    );
+  }
+  return mathTypeDocx(paragraphs, ["pythagoras", "fraction", "force"]);
+}

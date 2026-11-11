@@ -300,7 +300,9 @@ namespace MathBlocks.WordConnector
                         {
                             var code = f.Code.Text ?? "";
                             // The REF field itself (GOTOBUTTON's code contains it too, but shows no result of its own).
-                            if (code.Contains("REF " + name) && !code.Contains("GOTOBUTTON")) list.Add((f.Result.Text ?? "").Trim());
+                            // Exactly this bookmark (ZEqnNum1 is not ZEqnNum1N).
+                            var t = code.Trim();
+                            if (t.StartsWith("REF ", StringComparison.Ordinal) && t.Substring(4).TrimStart().Split(' ')[0] == name) list.Add((f.Result.Text ?? "").Trim());
                         }
                         catch (Exception)
                         {

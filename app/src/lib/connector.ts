@@ -188,6 +188,7 @@ class ConnectorClient {
           // These show a dialog of the app (conversion report, list of symbols; the reference picker for an older add-in).
           void bringToFront();
           if (params.command === "convertMathType") void import("./convertMathType").then((m) => m.convertOpenDocument(params.document));
+          else if (params.command === "convertNumbering") void import("./numberingConversionRun").then((m) => m.openNumberingConversion({ document: params.document, fromWord: true }));
           else if (params.command === "sectionMarker") void import("../components/NumberMarkerDialog").then((m) => m.openSectionMarker());
           else if (params.command === "insertReference") void import("./numbering").then((m) => m.openReferencePicker());
           else if (params.command === "listOfSymbols") void import("../components/NomenclatureDialog").then((m) => m.openNomenclature());

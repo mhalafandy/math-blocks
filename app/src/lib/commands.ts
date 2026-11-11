@@ -136,6 +136,13 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => import("../components/NumberMarkerDialog").then((m) => m.openNumberMarker()),
     },
     {
+      id: "word.convertNumbering",
+      title: "Convert MathType numbering to MathBlocks numbers (keep, or renumber to chapter.section.equation)…",
+      group: "Word",
+      keywords: "mathtype numbering numbers breaks sections convert renumber chapter section equation one scheme",
+      run: () => import("./numberingConversionRun").then((m) => m.openNumberingConversion()),
+    },
+    {
       id: "word.sectionMarker",
       title: "Insert section marker at Word's cursor (next section of the current chapter or appendix)…",
       group: "Word",

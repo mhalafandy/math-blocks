@@ -176,3 +176,44 @@ describe("the speed test document", () => {
     expect(plan.counts).toMatchObject({ numbered: 100, inline: 50, references: 50, markers: 2 });
   });
 });
+
+describe("a document with numbers converted from MathType", () => {
+  const P = (paras: { text: string; style?: string; number?: string; bookmark?: string; numbered?: boolean; marker?: { chapter: number; appendix: boolean; section?: number } }[]) => {
+    let pos = 0;
+    return paras.map((p) => ({ style: "Normal", ...p, start: pos, end: (pos += p.text.length + 1) - 1 }));
+  };
+  const converted = () =>
+    P([
+      { text: "", marker: { chapter: 1, appendix: true, section: 0 } },
+      { text: "", marker: { chapter: 1, appendix: true, section: 1 } },
+      { text: "\t\t(A.1.1)", numbered: true, number: "(A.1.1)", bookmark: "ZEqnNum100001" },
+      { text: "\t\t(A.1.2)", numbered: true, number: "(A.1.2)", bookmark: "ZEqnNum100002" },
+      { text: "\t\t(A.1.3)", numbered: true, number: "(A.1.3)", bookmark: "ZEqnNum100003" },
+      { text: "\t$$x = 4$$\t\\label{eq:A.1.4}", style: "MTDisplayEquation" },
+      { text: "\\mbnumbering{A.2}" },
+      { text: "\t$$y = 1$$\t\\label{eq:A.2.1}", style: "MTDisplayEquation" },
+      { text: "From \\eqref{eq:A.1.3}, \\ref{eq:A.1.1}, \\eqref{eq:A.1.4} and \\eqref{eq:A.2.1}." },
+    ]);
+
+  it("new equations continue the converted numbers; references by number resolve to the old equations' bookmarks", () => {
+    const plan = planInterchange({ name: "t", fullName: "t", bookmarks: [], paragraphs: converted() });
+    expect(plan.issues).toEqual([]);
+    expect(plan.equations.map((e) => e.number)).toEqual(["(A.1.4)", "(A.2.1)"]);
+    expect(plan.references.map((r) => `${r.bookmark}:${r.shows}`)).toEqual(["ZEqnNum100003:(A.1.3)", "ZEqnNum100001:A.1.1", "_MBEq_A_1_4:(A.1.4)", "_MBEq_A_2_1:(A.2.1)"]);
+  });
+
+  it("a new label that repeats an existing number is an error", () => {
+    const paras = converted();
+    paras[5]!.text = "\t$$x = 4$$\t\\label{eq:A.1.2}";
+    const plan = planInterchange({ name: "t", fullName: "t", bookmarks: [], paragraphs: P(paras) });
+    expect(plan.issues.map((i) => i.what)).toContainEqual(expect.stringMatching(/Label eq:A\.1\.2: an equation already in the document has the number \(A\.1\.2\)/));
+  });
+
+  it("with MathType's numbering still there, numbered equations and markers wait for Convert numbering", () => {
+    const plan = planInterchange({ name: "t", fullName: "t", bookmarks: [], paragraphs: converted(), mathTypeNumbers: 3 });
+    expect(plan.needsNumberingConversion).toBe(true);
+    expect(plan.issues[0]!.what).toMatch(/still uses MathType's equation numbering \(3 number\(s\)\): run “Convert numbering” first/);
+    expect(plan.equations.every((e) => e.invalid)).toBe(true);
+    expect(plan.markers).toEqual([]);
+  });
+});
