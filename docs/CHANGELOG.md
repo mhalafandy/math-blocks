@@ -25,6 +25,16 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Embedded objects — step 3 (Convert LaTeX and Convert MathType write objects)
+- Convert LaTeX writes objects (through the same insertion as the Insert button).
+- Convert MathType (open document and files): each converted equation becomes an embedded MathBlocks
+  object in place of the MathType object — Classic EMF as its picture, its LaTeX, ID, mode, depth,
+  size and style in its own data; numbers, bookmarks and references around it stay.
+- References are inserted with Word's field commands (GOTOBUTTON with a nested REF), not XML: an XML
+  insertion at the end of the last paragraph started a new paragraph.
+- Self-test: Paste Special EMF counts as information (a plain picture, as with MathType); the
+  reference check reads the REF field only.
+
 ### Embedded objects — step 2 (the app writes objects; clicks)
 - Every Classic insert, update, number/unnumber, Convert LaTeX, Apply notation, linked copy and
   Repair redraw now writes an embedded MathBlocks object (buildInsertion); the VML picture form stays

@@ -316,11 +316,9 @@ namespace MathBlocks.WordConnector
             undo.StartCustomRecord("Insert equation reference");
             try
             {
-                var r = _app.Selection.Range;
-                int start = r.Start;
-                InsertInline(doc, r, NumberFields.Package(NumberFields.ReferenceRuns(target)));
-                var inserted = doc.Range(start, _app.Selection.Range.End);
-                inserted.Fields.Update();
+                // Word's field commands, not XML: an XML insertion at the end of the last paragraph starts a
+                // new paragraph (self-test 0.1.88–0.1.91); fields are inserted in place, in the sentence.
+                InsertReferenceFields(doc, _app.Selection.Range, target);
                 // The number the reference shows: the bookmarked number's text (the REF field inside
                 // GOTOBUTTON's display text is not listed among the range's fields).
                 var text = "";
@@ -343,6 +341,31 @@ namespace MathBlocks.WordConnector
             {
                 undo.EndCustomRecord();
             }
+        }
+
+        /// <summary>
+        /// A reference as the add-in writes it — { GOTOBUTTON bookmark { REF bookmark \* Charformat \! } }
+        /// (Ctrl+click jumps to the equation) — inserted at a point with Word's field commands; the caret
+        /// ends after it.
+        /// </summary>
+        internal static void InsertReferenceFields(Word.Document doc, Word.Range at, string target)
+        {
+            var point = doc.Range(at.Start, at.Start);
+            var outer = doc.Fields.Add(point, Word.WdFieldType.wdFieldEmpty, "GOTOBUTTON " + target + "  \\* MERGEFORMAT ", false);
+            // The REF field goes at the end of GOTOBUTTON's code: it is the button's display text.
+            int inside = outer.Code.End;
+            var inner = doc.Fields.Add(doc.Range(inside, inside), Word.WdFieldType.wdFieldEmpty, "REF " + target + " \\* Charformat \\! \\* MERGEFORMAT", false);
+            inner.Update();
+            outer.Update();
+            int end = outer.Code.End + 1;
+            try
+            {
+                if (outer.Result != null && outer.Result.End >= end) end = outer.Result.End + 1;
+            }
+            catch (COMException)
+            {
+            }
+            doc.Range(end, end).Select();
         }
 
         /// <summary>

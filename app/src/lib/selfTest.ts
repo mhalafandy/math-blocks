@@ -248,7 +248,8 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
             const altBody = (a: string) => a.replace(/\(mb1\|[^)]*\)/, "");
             if (altBody(r.alt ?? "") !== altBody(o.alt ?? "")) diffs.push(`alt "${r.alt}"`);
             if (!r.hasSource) diffs.push("hidden source lost");
-            const strict = MUST_KEEP.has(mode) || mode === "pictureEmf";
+            // Paste Special EMF/PNG make a plain picture by design (as with MathType); only the normal pastes must keep the object.
+            const strict = MUST_KEEP.has(mode);
             check(`${mode}: same representation as the original (format, frame, wrap, size, lowering, alt text, hidden source)`, diffs.length === 0 ? true : strict ? false : null, diffs.length ? diffs.join("; ") : "identical");
           }
           if (MUST_KEEP.has(mode)) {

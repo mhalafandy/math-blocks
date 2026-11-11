@@ -286,7 +286,8 @@ namespace MathBlocks.WordConnector
                         try
                         {
                             var code = f.Code.Text ?? "";
-                            if (code.Contains("REF " + name)) list.Add((f.Result.Text ?? "").Trim());
+                            // The REF field itself (GOTOBUTTON's code contains it too, but shows no result of its own).
+                            if (code.Contains("REF " + name) && !code.Contains("GOTOBUTTON")) list.Add((f.Result.Text ?? "").Trim());
                         }
                         catch (Exception)
                         {

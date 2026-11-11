@@ -144,8 +144,15 @@ async function renderAll(equations: ConvertedEquation[], progress?: (done: numbe
   for (const e of equations) {
     if (e.status !== "converted" || !e.latex) continue;
     // The ID goes into the hidden source too, so the equation is still known if its alt text is edited.
-    const p = await renderPicture(e.latex, e.display, size, e.display ? (e.number ? "numbered" : "display") : "inline", false, { tag: e.tag ?? null });
-    out.push({ emf: p.emf, svg: p.svg, png: p.png, widthPt: p.widthPt, heightPt: p.heightPt, depthPt: p.depthPt });
+    const mode = e.display ? (e.number ? "numbered" : "display") : "inline";
+    const p = await renderPicture(e.latex, e.display, size, mode, false, { tag: e.tag ?? null });
+    // Written as an embedded MathBlocks object (as MathType's were), its data inside.
+    const { objectBin } = await import("./equation");
+    const { CLASSIC } = await import("@mathblocks/math-render");
+    const object = e.tag
+      ? objectBin({ version: 1, latex: e.latex, mode, tag: e.tag, depthPt: p.depthPt, widthPt: p.widthPt, heightPt: p.heightPt, sizePt: size, style: CLASSIC.id, block: null })
+      : undefined;
+    out.push({ emf: p.emf, svg: p.svg, png: p.png, widthPt: p.widthPt, heightPt: p.heightPt, depthPt: p.depthPt, object });
     if (progress && out.length % 10 === 0) progress(out.length);
   }
   return out;

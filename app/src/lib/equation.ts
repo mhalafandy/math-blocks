@@ -143,15 +143,7 @@ export async function buildObjectInsertion(latex: string, display: boolean, exis
   const pic = await renderPicture(latex, typesetDisplay, sizePt, mode, false, { block: parseTag(tag)?.blockId, tag });
   const { CLASSIC } = await import("@mathblocks/math-render");
   const data: ObjectData = { version: 1, latex, mode, tag, depthPt: pic.depthPt, widthPt: pic.widthPt, heightPt: pic.heightPt, sizePt, style: CLASSIC.id, block: parseTag(tag)?.blockId ?? null };
-  const bin = writeCfb(
-    {
-      "\u0001Ole": oleStream(),
-      "\u0003ObjInfo": objInfoStream(),
-      "\u0001CompObj": compObjStream("MathBlocks Equation", MB_OBJECT_PROGID, MB_OBJECT_CLSID),
-      MathBlocks: new TextEncoder().encode(JSON.stringify(data)),
-    },
-    MB_OBJECT_CLSID,
-  );
+  const bin = objectBin(data);
   const n = ++pictureCounter;
   const run = oleObjectRun({ imageRId: "rIdMbE1", oleRId: "rIdMbO1", progId: MB_OBJECT_PROGID, widthPt: pic.widthPt, heightPt: pic.heightPt, depthPt: pic.depthPt, id: (Date.now() % 1_000_000) * 10 + (n % 10), alt: altText(latex, mode, tag) });
   const body = display ? `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${run}</w:p>` : paragraph(run);
@@ -166,6 +158,19 @@ export async function buildObjectInsertion(latex: string, display: boolean, exis
       ],
     ),
   };
+}
+
+/** The compound file of a MathBlocks object holding this data (as MathType's objects are laid out). */
+export function objectBin(data: ObjectData): Uint8Array {
+  return writeCfb(
+    {
+      "\u0001Ole": oleStream(),
+      "\u0003ObjInfo": objInfoStream(),
+      "\u0001CompObj": compObjStream("MathBlocks Equation", MB_OBJECT_PROGID, MB_OBJECT_CLSID),
+      MathBlocks: new TextEncoder().encode(JSON.stringify(data)),
+    },
+    MB_OBJECT_CLSID,
+  );
 }
 
 /** The data of a MathBlocks object read back from its compound file (base64), or null. */

@@ -128,6 +128,35 @@ describe("document conversion", () => {
     expect(doc).not.toContain("<w:sdt"); // a Classic picture is the equation, no content control
   });
 
+  it("object build: converted MathType equations become embedded MathBlocks objects with their data", async () => {
+    const { writeCfb } = await import("@mathblocks/ooxml");
+    const input = docx([numberedParagraph(1, "A.1"), `<w:p><w:r><w:t xml:space="preserve">where </w:t></w:r>${objectRun(2)}</w:p>`], [eq1, eq2]);
+    const tags = convertDocx(input).equations.map((e) => e.tag);
+    const r = convertDocx(input, {
+      tags,
+      picture: (latex, _d, tag) => ({
+        emf: new Uint8Array([1, 2, 3, 4]),
+        svg: "<svg/>",
+        png: new Uint8Array(),
+        widthPt: 10,
+        heightPt: 12,
+        depthPt: 3,
+        object: writeCfb({ MathBlocks: new TextEncoder().encode(JSON.stringify({ version: 1, latex, tag })) }),
+      }),
+    });
+    const files = unzipSync(r.docx);
+    const doc = strFromU8(files["word/document.xml"]!);
+    expect(doc.match(/ProgID="MathBlocks\.Equation\.1"/g)?.length).toBe(2);
+    expect(doc).not.toContain('ProgID="Equation.DSMT4"');
+    const bins = Object.keys(files).filter((f) => /^word\/embeddings\/mathblocks-.*\.bin$/.test(f));
+    expect(bins.length).toBe(2);
+    const datas = bins.map((b) => JSON.parse(new TextDecoder().decode(readCfb(files[b]!).get("MathBlocks")!.data)));
+    expect(datas.map((d) => d.tag).sort()).toEqual([...tags].sort());
+    expect(strFromU8(files["word/_rels/document.xml.rels"]!)).toContain("relationships/oleObject");
+    // Numbers and bookmarks around them stay.
+    expect(doc).toContain('w:name="ZEqnNum1"');
+  });
+
   it("replaces MathType objects by native equations, keeping numbers and bookmarks", () => {
     const input = docx(
       [
