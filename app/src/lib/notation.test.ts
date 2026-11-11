@@ -16,7 +16,7 @@ describe("notation forms", () => {
     const forms = findForms(["\\vec{r}=\\vec{v}t+\\mathbf{q}_{ab}", "\\vec{r}\\cdot\\bar{\\bar{I}}", "x^2"]);
     expect(forms.map((f) => [formLabel(f.key), f.count, [...f.letters.keys()].join(",")])).toEqual([
       ["Arrow", 3, "r,v"],
-      ["Bold", 1, "c"],
+      ["Bold", 1, "q"],
       ["Double bar", 1, "I"],
     ]);
   });
