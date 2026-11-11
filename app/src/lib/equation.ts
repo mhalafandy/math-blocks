@@ -193,16 +193,25 @@ export async function readObjectData(base64: string | null | undefined): Promise
   }
 }
 
-/** The MathType control object (a generated Equation.DSMT4), for the spike. */
+/**
+ * The MathType control object for the spike: a synthetic Equation.DSMT4 object (a²+b²=c², built by
+ * @mathblocks/mathtype from generic MTEF — no user content), with our own drawing of it as its cached
+ * picture (an EMF without the MathBlocks source, so it is never taken for a MathBlocks equation).
+ */
 export async function buildMathTypeControlInsertion() {
-  const { MATHTYPE_CONTROL: c } = await import("./fixtures/mathtypeControl");
+  const { syntheticMathTypeObject, SYNTHETIC_EQUATIONS } = await import("@mathblocks/mathtype");
+  const { renderEmf, renderSvg } = await import("@mathblocks/math-render");
+  const { loadFonts, classicStyle, toBase64 } = await import("./render");
+  const sizePt = useApp.getState().equationSizePt;
+  const r = renderSvg(parseLatex(SYNTHETIC_EQUATIONS.pythagoras.latex).root, { fonts: await loadFonts(), style: classicStyle(), display: false, sizePt });
+  const emf = renderEmf(r);
   const n = ++pictureCounter;
-  const run = oleObjectRun({ imageRId: "rIdMtW1", oleRId: "rIdMtO1", progId: "Equation.DSMT4", widthPt: c.widthPt, heightPt: c.heightPt, depthPt: -c.positionHalfPt / 2, id: (Date.now() % 1_000_000) * 10 + (n % 10), alt: "" });
+  const run = oleObjectRun({ imageRId: "rIdMtW1", oleRId: "rIdMtO1", progId: "Equation.DSMT4", widthPt: r.widthPt, heightPt: r.heightPt, depthPt: r.depthPt, id: (Date.now() % 1_000_000) * 10 + (n % 10), alt: "" });
   return flatOpc(
     [paragraph(run)],
     [
-      { rId: "rIdMtW1", target: `media/mathtype${n}.wmf`, contentType: "image/x-wmf", base64: c.wmfBase64 },
-      { rId: "rIdMtO1", target: `embeddings/mathtype${n}.bin`, contentType: "application/vnd.openxmlformats-officedocument.oleObject", base64: c.oleBase64, relType: REL_OLE_OBJECT },
+      { rId: "rIdMtW1", target: `media/mathtype${n}.emf`, contentType: "image/x-emf", base64: toBase64(emf) },
+      { rId: "rIdMtO1", target: `embeddings/mathtype${n}.bin`, contentType: "application/vnd.openxmlformats-officedocument.oleObject", base64: toBase64(syntheticMathTypeObject("pythagoras")), relType: REL_OLE_OBJECT },
     ],
   );
 }

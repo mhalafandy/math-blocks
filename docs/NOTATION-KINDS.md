@@ -86,7 +86,7 @@ Defaults follow common spacecraft-dynamics usage (Hughes); `tools/notation-censu
 | Reference frame | `\frm{a}` | ℱ with arrow and subscript a | preset |
 | Body / region | `\body{B}{i}` | bold upright 𝐁ᵢ | common |
 | Transpose mark | `^{\T}` | upright regular ᵀ | your rule (replaces the 1a+ transpose setting) |
-| Differential | `\dd{m}` | upright d: d*m* | census |
+| Differential | `\dd{m}` | upright d: d*m* | common |
 
 - The **Schaub & Junkins** preset uses [BN], [ω̃], {}ᴮω, ᴺd/dt.
 - The **Markley & Crassidis** preset uses 𝐀, [ω×], scalar-last q.

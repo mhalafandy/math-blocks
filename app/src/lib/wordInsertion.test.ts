@@ -138,16 +138,17 @@ describe("Classic insertion as Word receives it", async () => {
     expect(data!.depthPt).toBe(b.data.depthPt);
   });
 
-  it("spike control: a MathType object is packaged intact (Equation Native readable)", async () => {
+  it("spike control: a synthetic MathType object (a²+b²=c²) is packaged intact (Equation Native readable)", async () => {
     const { buildMathTypeControlInsertion } = await import("./equation");
     const { readCfb, mathTypeObjectToLatex } = await import("@mathblocks/mathtype");
     const flat = await buildMathTypeControlInsertion();
     expect(flat).toContain('ProgID="Equation.DSMT4"');
-    expect(flat).toContain('pkg:contentType="image/x-wmf"');
+    expect(flat).toContain('pkg:contentType="image/x-emf"');
+    expect(flat).not.toContain("MathBlocks1:"); // its picture carries no MathBlocks source
     const bin = partsOf(flat).find((p) => p.type === "application/vnd.openxmlformats-officedocument.oleObject")!;
     const bytes = Uint8Array.from(atob(/<pkg:binaryData>([\s\S]*?)<\/pkg:binaryData>/.exec(bin.body)![1]!.replace(/\s+/g, "")), (c) => c.charCodeAt(0));
     expect(readCfb(bytes).has("Equation Native")).toBe(true);
-    expect(mathTypeObjectToLatex(bytes).latex.length).toBeGreaterThan(0);
+    expect(mathTypeObjectToLatex(bytes).latex).toBe("a^{2}+b^{2}=c^{2}");
   });
 
   it("object build: the app reads a MathBlocks object from its own data first", async () => {

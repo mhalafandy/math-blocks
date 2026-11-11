@@ -5,15 +5,16 @@ import { writeCfb } from "@mathblocks/ooxml";
 import { convertDocx, readCfb } from "../src";
 
 /**
- * Convert MathType on a local document (path from the environment, never committed;
- * numbered paragraphs styled MTDisplayEquation): only the MathType objects may change —
- * every paragraph's properties (style, tabs, spacing…) must be byte-identical afterwards.
+ * Local check on a real MathType document: MB_MATHTYPE_DOCX=<path to a .docx> pnpm vitest run.
+ * Only the MathType objects may change — every paragraph's properties (style, tabs, spacing…)
+ * must be byte-identical afterwards. Never commit the document: CI uses the generated one
+ * (synthetic.test.ts).
  */
-const FILE = new URL("../../../a local MathType document", import.meta.url);
+const FILE = process.env.MB_MATHTYPE_DOCX ?? "";
 const paragraphs = (xml: string) => [...xml.matchAll(/<w:p\b[^>]*>[\s\S]*?<\/w:p>/g)].map((m) => m[0]);
 const pPr = (p: string) => /^<w:p\b[^>]*>(<w:pPr>[\s\S]*?<\/w:pPr>)?/.exec(p)![1] ?? "";
 
-const present = existsSync(FILE);
+const present = FILE !== "" && existsSync(FILE);
 
 describe.skipIf(!present)("Convert MathType on a local document", () => {
   // Read only when the fixture is there (a skipped describe still runs its body when collected).

@@ -1,9 +1,9 @@
 /**
  * Notation census: how often each spacecraft-dynamics convention appears in MathType (or
  * MathBlocks) Word documents, to pick palette defaults from the author's own writing.
- * Run: pnpm tsx tools/notation-census.ts <a.docx> [b.docx …]  → local/NOTATION-CENSUS.md
+ * Run: pnpm tsx tools/notation-census.ts <a.docx> [b.docx …]  → local/NOTATION-CENSUS.md (gitignored: it is derived from your documents)
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename } from "node:path";
 import { convertDocx } from "@mathblocks/mathtype";
 import { findForms, formLabel } from "../app/src/lib/notation";
@@ -138,5 +138,6 @@ for (const t of TOPICS) {
 md.push("## All decorated-symbol forms", "", "| Form | Uses | Letters |", "|---|---|---|");
 for (const f of findForms(eqs.map((e) => e.latex))) md.push(`| ${formLabel(f.key)} | ${f.count} | ${[...f.letters.keys()].join(" ").replace(/\|/g, "\\|")} |`);
 md.push("");
+mkdirSync(new URL("../local/", import.meta.url), { recursive: true });
 writeFileSync(new URL("../local/NOTATION-CENSUS.md", import.meta.url), md.join("\n"));
 console.log(`${eqs.length} equations → local/NOTATION-CENSUS.md`);

@@ -6,35 +6,8 @@ import { strToU8, zipSync } from "fflate";
 
 // ------------------------------------------------------------------ MTEF records
 
-export const tf = { text: 1, fn: 2, v: 3, lcGreek: 4, ucGreek: 5, sym: 6, vec: 7, num: 8, expand: 22, marker: 23, space: 24 };
-
-const u16 = (n: number) => [n & 0xff, n >> 8];
-
-export const line = (...items: number[][]) => [1, 0, ...items.flat(), 0];
-export const nullLine = () => [1, 1];
-export function ch(typeface: number, c: string | number, embells: number[] = []) {
-  const code = typeof c === "number" ? c : c.codePointAt(0)!;
-  const emb = embells.length ? [...embells.flatMap((e) => [6, 0, e]), 0] : [];
-  return [2, embells.length ? 1 : 0, typeface + 128, ...u16(code), ...emb];
-}
-export const v = (s: string) => [...s].flatMap((c) => ch(tf.v, c));
-export const tmpl = (selector: number, variation: number, ...slots: number[][]) => [3, 0, selector, variation, 0, ...slots.flat(), 0];
-export const pile = (halign: number, ...lines: number[][]) => [4, 0, halign, 1, ...lines.flat(), 0];
-export function matrix(rows: number, cols: number, ...cells: number[][]) {
-  const partition = (n: number) => new Array(Math.ceil(((n + 1) * 2) / 8)).fill(0);
-  return [5, 0, 1, 1, 1, rows, cols, ...partition(rows), ...partition(cols), ...cells.flat(), 0];
-}
-
-/** A whole MTEF v5 equation, with the formatting records MathType writes before the content. */
-export function mtef(...content: number[][]) {
-  const header = [5, 1, 0, 7, 9, ...strToU8("DSMT7"), 0, 1];
-  const annotation = [...strToU8("TeX Input Language"), 0, ...strToU8("x"), 0];
-  const future = [0x66, annotation.length, ...annotation];
-  const encoding = [19, ...strToU8("MTCode"), 0];
-  const font = [17, 1, ...strToU8("Times New Roman"), 0];
-  const size = [9, 101, ...u16(240)];
-  return new Uint8Array([...header, ...future, ...encoding, ...font, ...size, ...content.flat(), 0]);
-}
+// The MTEF builders live in the package (synthetic MathType data for tests and the self-test).
+export { tf, line, nullLine, ch, v, tmpl, pile, matrix, mtef } from "../src/synthetic";
 
 // ------------------------------------------------------------------ OLE compound file
 

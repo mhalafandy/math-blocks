@@ -12,3 +12,7 @@ connector-word/.vs/
 *.user
 *.pfx
 connector-word/tests/out/
+
+# Material derived from your own documents (census reports, local fixtures): never commit.
+/local/
+/fixtures/private/
