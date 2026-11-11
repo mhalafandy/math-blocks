@@ -25,6 +25,18 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed — one Ctrl+Z for every whole-document operation; add-in enabled mid-session
+- Convert MathType (open document), Convert LaTeX and Update numbers run inside one undo record with a
+  steady busy pointer, and report where Word closed it early if it ever does. Update numbers had no
+  undo record at all (one Ctrl+Z per field). Normalize bold and Change notation use the checked-first
+  replacement path (0.1.103).
+- Self-test: each of these operations must leave its document in front, change it, and be undone by
+  exactly one Ctrl+Z (text and every equation's LaTeX as before); Ctrl+Y redoes it.
+- Add-in enabled again while Word is open: it attaches to every open window (each activated once,
+  then the window you were in comes back), and logs how it was loaded and the first click events.
+- Double-clicking a MathBlocks equation while the app is not running starts the app instead of
+  Word's "server application cannot be found" message.
+
 ### Fixed — Repair took 6 Ctrl+Z, was slow, and the pointer flickered
 - Cause (found by the self-test's probe): reading an equation's Word XML ends Word's open undo record.
   Repair read XML inside its record, so Word split it into several undo steps.

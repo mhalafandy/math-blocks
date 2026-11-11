@@ -96,10 +96,13 @@ namespace MathBlocks.WordConnector
             foreach (var o in list) if (o is Dictionary<string, object> d) items.Add(d);
             items.Sort((a, b) => Rpc.GetInt(b, "start").CompareTo(Rpc.GetInt(a, "start")));
 
+            return InOneUndo(undoLabel, () => ReplaceParagraphsCore(doc, items));
+        }
+
+        private Dictionary<string, object> ReplaceParagraphsCore(Word.Document doc, List<Dictionary<string, object>> items)
+        {
             int replaced = 0, skipped = 0;
-            var undo = _app.UndoRecord;
             bool screen = _app.ScreenUpdating;
-            undo.StartCustomRecord(undoLabel);
             try
             {
                 _app.ScreenUpdating = false;
@@ -140,6 +143,7 @@ namespace MathBlocks.WordConnector
                             FinishInserted(doc, xml);
                         }
                         replaced++;
+                        CheckOperationUndo("after converting the paragraph at " + start);
                     }
                     catch (COMException ex)
                     {
@@ -151,7 +155,6 @@ namespace MathBlocks.WordConnector
             finally
             {
                 _app.ScreenUpdating = screen;
-                undo.EndCustomRecord();
             }
             Log.Info("replaceParagraphs in " + doc.Name + ": " + replaced + " replaced, " + skipped + " skipped");
             return new Dictionary<string, object> { ["replaced"] = replaced, ["skipped"] = skipped };

@@ -77,7 +77,9 @@ namespace MathBlocks.WordConnector
                 _pipe.LineReceived += OnLine;
                 _pipe.ConnectionChanged += connected => { if (connected) OnUi(SendHello); };
                 _pipe.Start();
-                Log.Info("connector " + Version + " loaded in Word " + _app.Build);
+                Log.Info("connector " + Version + " loaded in Word " + _app.Build + " (" + connectMode + ", " + _app.Documents.Count + " document(s) open)");
+                // Loaded mid-session (enabled again in COM Add-ins): attach to every window already open.
+                if (connectMode == ext_ConnectMode.ext_cm_AfterStartup) AttachToOpenWindows();
             }
             catch (Exception ex)
             {
@@ -108,6 +110,55 @@ namespace MathBlocks.WordConnector
         }
 
         public void OnAddInsUpdate(ref Array custom) { }
+
+        /// <summary>
+        /// After a mid-session load, windows that were already open may not route clicks to the add-in until
+        /// they are activated again (closing and reopening Word did it before). Each open window is activated
+        /// once, then the window the user was in comes back; the open documents get their checks.
+        /// </summary>
+        private void AttachToOpenWindows()
+        {
+            var t = new Timer { Interval = 800 };
+            t.Tick += (o, e) =>
+            {
+                t.Stop();
+                t.Dispose();
+                try
+                {
+                    Word.Window current = null;
+                    try { current = _app.ActiveWindow; } catch (Exception) { }
+                    var windows = new List<Word.Window>();
+                    foreach (Word.Window w in _app.Windows) windows.Add(w);
+                    bool screen = _app.ScreenUpdating;
+                    _app.ScreenUpdating = false;
+                    try
+                    {
+                        foreach (var w in windows)
+                        {
+                            try { w.Activate(); } catch (Exception) { }
+                        }
+                        try { current?.Activate(); } catch (Exception) { }
+                    }
+                    finally
+                    {
+                        _app.ScreenUpdating = screen;
+                    }
+                    Log.Info("attached to " + windows.Count + " open window(s) after a mid-session load");
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("attaching to open windows", ex);
+                }
+            };
+            t.Start();
+        }
+
+        /// <summary>Logs the first event of each kind after loading (diagnosis: does Word deliver them to this window?).</summary>
+        private void NoteFirst(string what)
+        {
+            if (_firstEvents.Add(what)) Log.Info("first " + what + " event received");
+        }
+        private readonly HashSet<string> _firstEvents = new HashSet<string>();
 
         public void OnStartupComplete(ref Array custom) { }
 
@@ -291,6 +342,7 @@ namespace MathBlocks.WordConnector
         /// </summary>
         private void OnWindowBeforeRightClick(Word.Selection sel, ref bool cancel)
         {
+            NoteFirst("right-click");
             try
             {
                 if (_pipe == null || !_pipe.IsConnected) return;
@@ -384,6 +436,7 @@ namespace MathBlocks.WordConnector
         /// </summary>
         private void OnWindowSelectionChange(Word.Selection sel)
         {
+            NoteFirst("selection change");
             try
             {
                 if (_guarding || _idle == null) return;
@@ -480,9 +533,26 @@ namespace MathBlocks.WordConnector
 
         private void OnWindowBeforeDoubleClick(Word.Selection sel, ref bool cancel)
         {
+            NoteFirst("double-click");
             try
             {
-                if (_pipe == null || !_pipe.IsConnected) return;
+                if (_pipe == null || !_pipe.IsConnected)
+                {
+                    // The app is not running: no "server application cannot be found" from Word for our
+                    // objects; the app is started instead.
+                    if (WordOps.MathBlocksObjectIn(sel) != null)
+                    {
+                        cancel = true;
+                        _app.StatusBar = "MathBlocks: starting the MathBlocks app — double-click the equation again once it is open.";
+                        foreach (var exe in CandidateAppPaths())
+                        {
+                            if (!File.Exists(exe)) continue;
+                            Process.Start(exe);
+                            break;
+                        }
+                    }
+                    return;
+                }
                 // A MathBlocks embedded object: intercepted before Word tries to activate it (no server, no prompt).
                 var obj = WordOps.MathBlocksObjectIn(sel);
                 if (obj != null)

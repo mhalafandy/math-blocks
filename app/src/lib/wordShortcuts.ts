@@ -114,7 +114,7 @@ export async function numberAtCursor() {
  * was typed into an equation's wrapper is first moved out of it (Repair equations), then converted.
  * Started from Word, it finishes in Word: the question and the result appear over Word.
  */
-export async function convertAllLatex(document?: string, o: { fromWord?: boolean; selectionOnly?: boolean } = {}) {
+export async function convertAllLatex(document?: string, o: { fromWord?: boolean; selectionOnly?: boolean; /** No confirmation (the self-test). */ yes?: boolean } = {}) {
   if (!ready("findLatex")) return;
   const fromWord = !!o.fromWord;
   const say = (text: string, kind: "info" | "error" = "info") => tell(text, kind, fromWord);
@@ -130,7 +130,7 @@ export async function convertAllLatex(document?: string, o: { fromWord?: boolean
     const why = [found.skippedInside ? `${found.skippedInside} inside equations or fields` : "", found.notLocated ? `${found.notLocated} that Word could not locate (see connector.log)` : ""].filter(Boolean).join(", ");
     const where = found.selection ? "the selection" : `“${found.name}”`;
     if (!found.items.length) return say(`No LaTeX found in ${where} to convert (expressions between dollar signs, \\( \\) or \\[ \\])${why ? `; skipped: ${why}` : ""}.`, why ? "error" : "info");
-    const ok = await confirmInWord(
+    const ok = o.yes || await confirmInWord(
       "Convert LaTeX to equations",
       `Convert ${found.items.length} LaTeX expression(s) in ${where} into MathBlocks equations? One Ctrl+Z in Word undoes it.`,
       "Convert",

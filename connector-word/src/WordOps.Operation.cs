@@ -225,6 +225,42 @@ namespace MathBlocks.WordConnector
         private Word.Window _operationWindow;
         private bool? _operationScreen;
 
+        /// <summary>
+        /// Runs a whole-document change as one undo step (one Ctrl+Z) with a steady busy pointer; reports
+        /// where Word closed the record early, if it did (undoBrokenAt). Inside an operation it just runs.
+        /// </summary>
+        internal Dictionary<string, object> InOneUndo(string label, Func<Dictionary<string, object>> work)
+        {
+            var undo = _app.UndoRecord;
+            bool own = !undo.IsRecordingCustomRecord;
+            if (own)
+            {
+                undo.StartCustomRecord(label);
+                _operationUndo = true;
+                _undoBrokenAt = null;
+                try { _app.System.Cursor = Word.WdCursorType.wdCursorWait; } catch (COMException) { }
+            }
+            try
+            {
+                var r = work();
+                if (own)
+                {
+                    CheckOperationUndo("end of " + label);
+                    r["undoBrokenAt"] = _undoBrokenAt ?? "";
+                }
+                return r;
+            }
+            finally
+            {
+                if (own)
+                {
+                    try { undo.EndCustomRecord(); } catch (COMException) { }
+                    _operationUndo = false;
+                    try { _app.System.Cursor = Word.WdCursorType.wdCursorNormal; } catch (COMException) { }
+                }
+            }
+        }
+
         /// <summary>Where the operation's single undo record was found closed (diagnosis: one Ctrl+Z must undo it all).</summary>
         private string _undoBrokenAt;
 

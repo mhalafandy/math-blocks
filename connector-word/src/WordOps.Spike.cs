@@ -342,6 +342,20 @@ namespace MathBlocks.WordConnector
                     else d.Range(para.Range.End - 1, para.Range.End - 1).InsertAfter("\t" + number);
                     return new Dictionary<string, object> { ["start"] = para.Range.Start };
                 }
+                case "staleNumbers":
+                {
+                    // Equation numbers out of date (as after moving equations), so Update numbers has work.
+                    int n = 0;
+                    foreach (Word.Field f in d.Fields)
+                    {
+                        string code;
+                        try { code = f.Code.Text ?? ""; } catch (Exception) { continue; }
+                        if (!code.Contains("SEQ MBEq")) continue;
+                        f.Result.Text = "9";
+                        n++;
+                    }
+                    return new Dictionary<string, object> { ["fields"] = n };
+                }
                 case "undoProbe":
                 {
                     // Which call ends a custom undo record (Repair must be one Ctrl+Z): each runs alone inside

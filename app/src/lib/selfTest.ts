@@ -54,6 +54,7 @@ export const MANUAL_CHECKS = [
   "Drag an equation with the mouse to another line, then to another document: only the equation moves; no other text changes; Ctrl+Z restores.",
   "Home → Paste → Paste Special → 'Picture (PNG)' (the self-test can only paste a bitmap, the nearest the object model offers).",
   "Look: inline α, β, γ, f, p and a fraction sit on the text baseline at 100 % and 200 % zoom, and in print.",
+  "Add-in loaded mid-session: with a document with equations open, untick MathBlocks in File → Options → Add-ins → COM Add-ins, then tick it again (Word stays open): double-click and right-click on an equation in that open document work straight away.",
 ];
 
 export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }): Promise<string | null> {
@@ -94,6 +95,45 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     return connector.request("unnumberEquation", { tag, flatOpc }, SLOW);
   };
   const snap = () => smoke("snapshot") as Promise<{ text: string; plain: string; tags: string[]; pictures: number; floating: number }>;
+  /** The active document's text plus every equation's ID and LaTeX: what one Ctrl+Z must restore exactly. */
+  const docState = async () => {
+    const s = await snap();
+    const r = await connector.request("listInstances", { includeContent: true }, SLOW).catch(() => ({ documents: [] as { name: string; instances: { tag: string; flatOpc?: string }[] }[] }));
+    const front = (await smoke("activeName")).name as string;
+    const d = r.documents.find((x) => x.name === front) ?? r.documents[0];
+    const eqs = (d?.instances ?? []).map((i) => {
+      const rd = i.flatOpc ? readEquationXml(i.flatOpc) : null;
+      return `${i.tag}=${rd ? serializeLatex(rd.root) : "?"}`;
+    });
+    return `${s.text}\n§${eqs.sort().join("|")}`;
+  };
+  /**
+   * A whole-document operation: it must leave its document in front, change it, and be undone by exactly
+   * one Ctrl+Z (text and every equation as before); Ctrl+Y redoes it.
+   */
+  const oneCtrlZ = async (label: string, docName: string, run: () => Promise<unknown>) => {
+    const before = await docState();
+    await run();
+    const front = (await smoke("activeName")).name as string;
+    check(`${label}: leaves its document in front`, front === docName, `in front: ${front}, worked on: ${docName}`);
+    if (front !== docName) await smoke("activate", { name: docName });
+    const after = await docState();
+    if (after === before) {
+      check(`${label}: changed the document`, false, "nothing changed, so its undo could not be checked");
+      return;
+    }
+    await smoke("undo", { times: 1 });
+    let steps = 1;
+    let now = await docState();
+    while (now !== before && steps < 10) {
+      await smoke("undo", { times: 1 });
+      steps++;
+      now = await docState();
+    }
+    check(`${label}: one Ctrl+Z undoes it`, now === before && steps === 1, now === before ? `${steps} Ctrl+Z` : `not restored after ${steps} Ctrl+Z`);
+    await smoke("redo", { times: steps });
+    check(`${label}: Ctrl+Y redoes it`, null, (await docState()) === after ? "redone" : "differs from the result after redo");
+  };
   /** Undo until the document's text equals `target` again (at most 4 steps); returns the steps used, or -1. */
   const undoTo = async (target: string) => {
     for (let n = 1; n <= 4; n++) {
@@ -350,10 +390,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const made = await smoke("makeEquationParagraph", { flatOpc: await buildMathTypeControlInsertion(), number: "(1)" });
       const p0 = await smoke("paraInfo", { pos: made.start });
       const { convertOpenDocument } = await import("./convertMathType");
-      await convertOpenDocument(undefined, { quiet: true });
-      const frontC = (await smoke("activeName")).name as string;
-      check("Convert leaves its document in front", frontC === docC.name, `in front: ${frontC}, converted: ${docC.name}`);
-      if (frontC !== docC.name) await smoke("activate", { name: docC.name });
+      await oneCtrlZ("Convert MathType (open document)", docC.name, () => convertOpenDocument(undefined, { quiet: true }));
       const p1 = await smoke("paraInfo", { pos: made.start });
       check("the MathType equation became a MathBlocks object", /MathBlocks\.Equation/.test(String(p1.equationKind)), `before ${p0.equationKind}, after ${p1.equationKind}`);
       check("the paragraph keeps its style, alignment and tab stops", p1.style === p0.style && p1.alignment === p0.alignment && JSON.stringify(p1.tabs) === JSON.stringify(p0.tabs), `before ${p0.style} ${p0.alignment} [${p0.tabs}], after ${p1.style} ${p1.alignment} [${p1.tabs}]`);
@@ -362,6 +399,42 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     });
 
     // ------------------------------------------------------------ Repair converts Classic pictures to objects
+    section = "One Ctrl+Z for each whole-document operation";
+    await step("whole-document operations", async () => {
+      const docU = await smoke("newDocument");
+      await smoke("typeText", { text: "Undo test: bold spread " });
+      await insert("\\mathbf{r_{i}}", false);
+      await smoke("typeText", { text: " and a transpose " });
+      await insert("\\mathbf{A}^{\\mathbf{T}}\\mathbf{x}", false);
+      await smoke("typeText", { text: "." });
+      await smoke("newParagraph");
+      const n1 = await insert("F=ma", true);
+      await number(n1.tag, "F=ma");
+      await smoke("caretTo", { where: "end" });
+      await smoke("newParagraph");
+      const n2 = await insert("G=mg", true);
+      await number(n2.tag, "G=mg");
+      await smoke("caretTo", { where: "end" });
+      await smoke("newParagraph");
+      await smoke("typeText", { text: "LaTeX to convert: $E=mc^2$ and $a^2+b^2=c^2$." });
+      const { buildDocumentIndex, rewriteDocument } = await import("./symbolIndex");
+      const { normalizeBold } = await import("@mathblocks/math-core");
+      const bolded = (l: string) => {
+        const root = parseLatex(l).root;
+        return normalizeBold(root) ? serializeLatex(root) : l;
+      };
+      let index = await buildDocumentIndex();
+      await oneCtrlZ("Normalize bold", docU.name, () => rewriteDocument(index, index.equations.filter((e) => bolded(e.latex) !== e.latex), bolded, "Normalize bold"));
+      const { changeTranspose } = await import("./notation");
+      index = await buildDocumentIndex();
+      await oneCtrlZ("Change notation (transpose form)", docU.name, () => rewriteDocument(index, index.equations, (l) => changeTranspose(l, "upright"), "Transpose form"));
+      await smoke("staleNumbers");
+      await oneCtrlZ("Update numbers", docU.name, () => connector.request("updateNumbers", {}, SLOW));
+      const { convertAllLatex } = await import("./wordShortcuts");
+      await oneCtrlZ("Convert LaTeX", docU.name, () => convertAllLatex(undefined, { yes: true }));
+      await smoke("save", { file: "undo test.docx" });
+    });
+
     section = "Repair: Classic pictures become embedded objects";
     await step("repair conversion", async () => {
       const docR = await smoke("newDocument");

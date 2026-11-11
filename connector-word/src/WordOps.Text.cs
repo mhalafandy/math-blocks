@@ -203,10 +203,13 @@ namespace MathBlocks.WordConnector
             var items = new List<Dictionary<string, object>>();
             foreach (var o in list) if (o is Dictionary<string, object> d) items.Add(d);
             items.Sort((a, b) => Rpc.GetInt(b, "start").CompareTo(Rpc.GetInt(a, "start")));
+            return InOneUndo(undoLabel, () => ReplaceRangesCore(doc, items));
+        }
+
+        private Dictionary<string, object> ReplaceRangesCore(Word.Document doc, List<Dictionary<string, object>> items)
+        {
             int replaced = 0, skipped = 0;
-            var undo = _app.UndoRecord;
             bool screen = _app.ScreenUpdating;
-            undo.StartCustomRecord(undoLabel);
             try
             {
                 _app.ScreenUpdating = items.Count < 3;
@@ -231,6 +234,7 @@ namespace MathBlocks.WordConnector
                         }
                         else if (item.TryGetValue("text", out var t) && t is string text) r.Text = text;
                         replaced++;
+                        CheckOperationUndo("after converting the text at " + start);
                     }
                     catch (COMException ex)
                     {
@@ -242,9 +246,8 @@ namespace MathBlocks.WordConnector
             finally
             {
                 _app.ScreenUpdating = screen;
-                undo.EndCustomRecord();
             }
-            Log.Info("replaceRanges \"" + undoLabel + "\": " + replaced + " replaced, " + skipped + " skipped");
+            Log.Info("replaceRanges: " + replaced + " replaced, " + skipped + " skipped");
             return new Dictionary<string, object> { ["replaced"] = replaced, ["skipped"] = skipped };
         }
 

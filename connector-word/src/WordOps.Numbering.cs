@@ -514,7 +514,19 @@ namespace MathBlocks.WordConnector
         public Dictionary<string, object> UpdateNumbers(Dictionary<string, object> p)
         {
             var doc = ResolveDocument(p);
-            return UpdateNumberFields(doc);
+            return InOneUndo("Update equation numbers", () =>
+            {
+                bool screen = _app.ScreenUpdating;
+                try
+                {
+                    _app.ScreenUpdating = false;
+                    return UpdateNumberFields(doc);
+                }
+                finally
+                {
+                    _app.ScreenUpdating = screen;
+                }
+            });
         }
 
         private static Dictionary<string, object> UpdateNumberFields(Word.Document doc)
