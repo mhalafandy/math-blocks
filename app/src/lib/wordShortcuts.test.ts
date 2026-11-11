@@ -19,6 +19,11 @@ vi.mock("./connector", () => ({
         if (!params.dryRun) word.repaired = true;
         return { document: "C:\\t.docx", renamed: [], wrapped: [], wrappedOk: 0, bookmarks: 0, otherPictures: 0, split: word.trapped && !word.repaired ? [{ tag: "mb1|-|x", equations: 1, text: 4, nested: 0, otherPictures: 0 }] : [] };
       }
+      // Repair runs as one operation (one undo step).
+      if (method === "beginOperation") return { ok: true };
+      if (method === "operationProgress") return { cancelled: false };
+      if (method === "endOperation") return { ms: 1 };
+      if (method === "replaceMany") return { replaced: (params.items as unknown[]).length, missing: [] };
       if (method === "confirm") return { ok: true, dontAsk: word.dontAsk };
       if (method === "showMessage") return { ok: true };
       if (method === "getRegistry") return { xml: null, fullName: "C:\\t.docx" };

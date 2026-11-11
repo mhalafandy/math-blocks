@@ -21,9 +21,13 @@ namespace MathBlocks.WordConnector
         {
             if (eq.IsPicture)
             {
+                // The new content goes in front of the old picture while it is still there (the insertion
+                // point is then never at a paragraph's end, where Word's XML insertion can add a paragraph
+                // mark); then the old picture goes. The paragraph stays as it was.
                 int at = eq.Range.Start;
-                eq.Picture.Delete();
+                var old = eq.Picture;
                 doc.Range(at, at).InsertXML(flatOpc);
+                old.Delete();
                 FinishInserted(doc, flatOpc, at, tag);
                 return;
             }

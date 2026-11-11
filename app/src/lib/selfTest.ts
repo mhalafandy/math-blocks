@@ -1,6 +1,6 @@
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { addinSupports, connector } from "./connector";
-import { buildInsertion, currentProfile } from "./equation";
+import { buildInsertion, buildPictureInsertion, currentProfile } from "./equation";
 import { numberFormat } from "./numbering";
 import { readEquationXml } from "./readEquation";
 import { useApp } from "./store";
@@ -333,6 +333,64 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
         check("move: Ctrl+Z restores the document", steps > 0, steps > 0 ? `${steps} undo step(s)` : "not restored in 4 steps");
       });
     }
+
+    // ------------------------------------------------------------ Repair converts Classic pictures to objects
+    section = "Repair: Classic pictures become embedded objects";
+    await step("repair conversion", async () => {
+      const docR = await smoke("newDocument");
+      await smoke("typeText", { text: "Repair test: inline " });
+      // Equations in the form before objects (VML pictures), as in older documents.
+      const pin = await buildPictureInsertion("\\alpha+\\beta", false);
+      await connector.request("insertEquation", { flatOpc: pin.flatOpc, tag: pin.tag, display: false, undoLabel: "Insert equation" }, SLOW);
+      await smoke("typeText", { text: " and text after." });
+      await smoke("newParagraph");
+      const pdisp = await buildPictureInsertion("\\vec{r}=\\frac{p}{1+e\\cos\\theta}", true);
+      await connector.request("insertEquation", { flatOpc: pdisp.flatOpc, tag: pdisp.tag, display: true, undoLabel: "Insert equation" }, SLOW);
+      await smoke("caretTo", { where: "end" });
+      await smoke("newParagraph");
+      const pnum = await buildPictureInsertion("F=ma", true);
+      await connector.request("insertEquation", { flatOpc: pnum.flatOpc, tag: pnum.tag, display: true, undoLabel: "Insert equation" }, SLOW);
+      const numberedPic = await buildPictureInsertion("F=ma", false, pnum.tag, true);
+      await connector.request("numberEquation", { tag: pnum.tag, flatOpc: numberedPic.flatOpc, ...numberFormat(useApp.getState().numberStyle), chapter: false, parts: "eq" }, SLOW);
+      await smoke("caretTo", { where: "end" });
+      await smoke("newParagraph");
+      const list0 = await connector.request("listNumbered", {}, SLOW);
+      const n0 = list0.equations.find((x) => x.tag === pnum.tag);
+      await smoke("typeText", { text: "See " });
+      if (n0) await connector.request("insertReference", { bookmark: n0.bookmark, numberOnly: false }, SLOW);
+      await smoke("typeText", { text: " for the force." });
+      const tags = [pin.tag, pdisp.tag, pnum.tag];
+      const before = await snap();
+      const frames0 = await Promise.all(tags.map(async (t) => (await smoke("pictureInfo", { tag: t })).frame));
+      check("before Repair: the three equations are Classic pictures", frames0.every((f) => f === "legacy" || f === "modern"), frames0.join(", "));
+      const { repairDocument } = await import("./repair");
+      const rep = await repairDocument(undefined, { quiet: true });
+      const after = await snap();
+      const frames = await Promise.all(tags.map(async (t) => (await smoke("pictureInfo", { tag: t }).catch(() => ({ frame: "missing" }))).frame));
+      check("Repair converts every Classic picture to an embedded object, same ID", frames.every((f) => f === "object"), frames.join(", "));
+      check("Repair reports counts and time", !!rep && rep.toObjects === 3, rep ? `converted ${rep.toObjects}, redrawn ${rep.redrawn}, ${rep.ms} ms${rep.backup ? `, backup ${rep.backup}` : ""}` : "no report");
+      check("Repair keeps the text around the equations", before.plain === after.plain, before.plain === after.plain ? "" : `before ${JSON.stringify(before.plain.slice(0, 120))}, after ${JSON.stringify(after.plain.slice(0, 120))}`);
+      const list1 = await connector.request("listNumbered", {}, SLOW);
+      const n1 = list1.equations.find((x) => x.tag === pnum.tag);
+      check("Repair keeps the number and its bookmark on the same equation", !!n0 && !!n1 && n1.number === n0.number && n1.bookmark === n0.bookmark, `before ${n0?.number} ${n0?.bookmark}, after ${n1?.number} ${n1?.bookmark}`);
+      const refs = n1 ? ((await smoke("refResults", { bookmark: n1.bookmark })).results as string[]) : [];
+      check("the reference still shows that number", !!n1 && refs.length > 0 && refs.every((t) => t.replace(/\s/g, "") === n1.number.replace(/\s/g, "")), JSON.stringify(refs));
+      // One Ctrl+Z brings the pictures back; Ctrl+Y converts again.
+      await smoke("undo", { times: 1 });
+      const undone = await Promise.all(tags.map(async (t) => (await smoke("pictureInfo", { tag: t }).catch(() => ({ frame: "missing" }))).frame));
+      check("one Ctrl+Z undoes the whole Repair", undone.every((f) => f === "legacy" || f === "modern") && (await snap()).plain === before.plain, undone.join(", "));
+      await smoke("redo", { times: 1 });
+      const redone = await Promise.all(tags.map(async (t) => (await smoke("pictureInfo", { tag: t }).catch(() => ({ frame: "missing" }))).frame));
+      check("Ctrl+Y redoes the Repair", null, redone.join(", "));
+      if (!redone.every((f) => f === "object")) await repairDocument(undefined, { quiet: true });
+      // Converting twice changes nothing.
+      const again = await snap();
+      const rep2 = await repairDocument(undefined, { quiet: true });
+      const after2 = await snap();
+      check("a second Repair changes nothing", !!rep2 && rep2.toObjects === 0 && rep2.redrawn === 0 && after2.text === again.text, rep2 ? `converted ${rep2.toObjects}, redrawn ${rep2.redrawn}, lowered ${rep2.lowered}, renamed ${rep2.renamed}` : "no report");
+      await smoke("save", { file: "repair test.docx" });
+      void docR;
+    });
 
     // ------------------------------------------------------------ save
     section = "Saved test documents";

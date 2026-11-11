@@ -350,22 +350,29 @@ namespace MathBlocks.WordConnector
         /// </summary>
         internal static void InsertReferenceFields(Word.Document doc, Word.Range at, string target)
         {
-            var point = doc.Range(at.Start, at.Start);
-            var outer = doc.Fields.Add(point, Word.WdFieldType.wdFieldEmpty, "GOTOBUTTON " + target + "  \\* MERGEFORMAT ", false);
-            // The REF field goes at the end of GOTOBUTTON's code: it is the button's display text.
-            int inside = outer.Code.End;
-            var inner = doc.Fields.Add(doc.Range(inside, inside), Word.WdFieldType.wdFieldEmpty, "REF " + target + " \\* Charformat \\! \\* MERGEFORMAT", false);
-            inner.Update();
-            outer.Update();
-            int end = outer.Code.End + 1;
+            int start = at.Start;
+            Word.Field outer = null;
             try
             {
-                if (outer.Result != null && outer.Result.End >= end) end = outer.Result.End + 1;
+                outer = doc.Fields.Add(doc.Range(start, start), Word.WdFieldType.wdFieldEmpty, "GOTOBUTTON " + target + "  \\* MERGEFORMAT ", false);
+                // The REF field goes at the end of GOTOBUTTON's code (the button's display text): a
+                // collapsed copy of the code range, so the new field lands inside the code.
+                var inside = outer.Code.Duplicate;
+                inside.Collapse(Word.WdCollapseDirection.wdCollapseEnd);
+                var inner = doc.Fields.Add(inside, Word.WdFieldType.wdFieldEmpty, "REF " + target + " \\* Charformat \\! \\* MERGEFORMAT", false);
+                try { inner.Update(); } catch (Exception) { }
+                // GOTOBUTTON has no result: the field ends right after its code.
+                int end = Math.Min(outer.Code.End + 1, doc.Content.End - 1);
+                doc.Range(end, end).Select();
+                Log.Info("insert reference: fields inserted for " + target);
             }
-            catch (COMException)
+            catch (Exception ex)
             {
+                // Fallback: the XML insertion (stays in the paragraph except at the end of the last one).
+                Log.Error("insert reference with fields failed; using XML instead", ex);
+                try { outer?.Delete(); } catch (Exception) { }
+                InsertInline(doc, doc.Range(start, start), NumberFields.Package(NumberFields.ReferenceRuns(target)));
             }
-            doc.Range(end, end).Select();
         }
 
         /// <summary>

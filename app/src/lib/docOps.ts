@@ -30,30 +30,48 @@ export interface OperationResult {
   backup?: string;
 }
 
-export async function replaceInDocument(o: { document: string; title: string; undoLabel: string; items: ReplaceItem[] }): Promise<OperationResult> {
+export async function replaceInDocument(o: {
+  document: string;
+  title: string;
+  undoLabel: string;
+  items?: ReplaceItem[];
+  /**
+   * Runs inside the operation's single undo record and gives the items (Repair: the add-in's repair
+   * first, then the equations to redraw) — so everything is one Ctrl+Z.
+   */
+  prepare?: () => Promise<ReplaceItem[]>;
+  /** Progress total when the items come from prepare. */
+  total?: number;
+  /** The caller made the backup already. */
+  noBackup?: boolean;
+}): Promise<OperationResult> {
   const result: OperationResult = { replaced: 0, missing: [], cancelled: false, restored: 0, ms: 0 };
-  if (!o.items.length) return result;
+  if (!o.prepare && !o.items?.length) return result;
   const t0 = performance.now();
   const safe = addinSupports("beginOperation");
-  if (o.items.length > BACKUP_ABOVE && addinSupports("backupDocument")) {
+  if (!o.noBackup && (o.items?.length ?? o.total ?? 0) > BACKUP_ABOVE && addinSupports("backupDocument")) {
     result.backup = (await connector.request("backupDocument", { document: o.document }, 120_000)).path;
   }
   if (!safe) {
+    o = { ...o, items: o.prepare ? await o.prepare() : o.items };
+    if (!o.items!.length) return result;
     // Older add-in: one request, one undo step, no progress window.
-    const r = await connector.request("replaceMany", { document: o.document, items: o.items.map(({ tag, flatOpc }) => ({ tag, flatOpc })), undoLabel: o.undoLabel }, 300_000);
+    const r = await connector.request("replaceMany", { document: o.document, items: o.items!.map(({ tag, flatOpc }) => ({ tag, flatOpc })), undoLabel: o.undoLabel }, 300_000);
     return { ...result, replaced: r.replaced, missing: r.missing, ms: performance.now() - t0 };
   }
-  await connector.request("beginOperation", { document: o.document, title: o.title, total: o.items.length, undoLabel: o.undoLabel });
+  await connector.request("beginOperation", { document: o.document, title: o.title, total: o.items?.length ?? o.total ?? 0, undoLabel: o.undoLabel });
   const done: ReplaceItem[] = [];
+  let items: ReplaceItem[] = o.items ?? [];
   try {
-    for (let i = 0; i < o.items.length; i += BATCH) {
-      const batch = o.items.slice(i, i + BATCH);
+    if (o.prepare) items = await o.prepare();
+    for (let i = 0; i < items.length; i += BATCH) {
+      const batch = items.slice(i, i + BATCH);
       const r = await connector.request("replaceMany", { document: o.document, items: batch.map(({ tag, flatOpc }) => ({ tag, flatOpc })), undoLabel: o.undoLabel }, 300_000);
       result.replaced += r.replaced;
       result.missing.push(...r.missing);
       done.push(...batch.filter((b) => !r.missing.includes(b.tag)));
-      const p = await connector.request("operationProgress", { done: Math.min(o.items.length, i + BATCH), text: `${Math.min(o.items.length, i + BATCH)} / ${o.items.length} equations` });
-      if (p.cancelled && i + BATCH < o.items.length) {
+      const p = await connector.request("operationProgress", { done: Math.min(items.length, i + BATCH), text: `${Math.min(items.length, i + BATCH)} / ${items.length} equations` });
+      if (p.cancelled && i + BATCH < items.length) {
         result.cancelled = true;
         break;
       }

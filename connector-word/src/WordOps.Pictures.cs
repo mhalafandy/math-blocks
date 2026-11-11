@@ -212,7 +212,7 @@ namespace MathBlocks.WordConnector
             var wrapped = new List<object>();
             var splitReport = new List<object>();
             int split = 0, unlocked = 0, inlined = 0, converted = 0;
-            int ok = 0, plainPictures = 0, bookmarks = 0, lowered = 0;
+            int ok = 0, plainPictures = 0, bookmarks = 0, lowered = 0, toObjects = 0, idRewrites = 0;
             var redraw = new List<object>();
             bool screen = _app.ScreenUpdating;
             var undo = _app.UndoRecord;
@@ -253,31 +253,41 @@ namespace MathBlocks.WordConnector
                 }
                 else foreach (var pair in ResolveDuplicates(doc)) renamed.Add(pair);
                 bookmarks = BookmarkNumberedEquations(doc, dry);
-                // Every Classic picture: its baseline lowering back from its source (depth); pictures whose
-                // hidden source lacks the ID or the depth (converted from MathType, older builds) are listed
-                // for the app to redraw — the app writes both into the picture once.
+                // Every Classic equation: its baseline lowering back from its stored depth; Classic pictures
+                // (the form before embedded objects) and objects holding another ID inside are listed for
+                // the app to redraw as objects with the same ID.
                 foreach (var e in AllEquations(doc))
                 {
                     if (!e.IsPicture) continue;
                     try
                     {
                         PictureXml.Data(e.Xml, out var json);
-                        var src = json ?? PictureSource(e.Xml);
-                        var depth = PictureXml.DepthPt(json);
+                        var depth = DepthOf(e.Picture);
                         if (depth != null)
                         {
                             var want = -(int)Math.Round(depth.Value);
-                            if ((int)Math.Round((double)e.Range.Font.Position) != want)
+                            var cur = LoweringOf(e.Picture);
+                            if (cur != null && (int)Math.Round(cur.Value) != want)
                             {
                                 lowered++;
                                 if (!dry) e.Range.Font.Position = want;
                             }
                         }
-                        if (json == null || SourceTag(json) != e.Tag || depth == null)
+                        // Redrawn by the app as an embedded object, same ID: every Classic picture (the form
+                        // before objects), and objects whose own data holds another ID (a copy).
+                        string reason = null;
+                        if (!e.IsObject) reason = "picture";
+                        else if (ObjectDataTag(e.Picture) != e.Tag) reason = "id";
+                        if (reason != null)
                         {
-                            var latex = EquationIdentity.FirstLatex(json) ?? EquationIdentity.AltParts(AltOf(e.Picture))?[1];
-                            var mode = PictureXml.Mode(json) ?? EquationIdentity.AltParts(AltOf(e.Picture))?[0] ?? "inline";
-                            if (!string.IsNullOrEmpty(latex)) redraw.Add(new Dictionary<string, object> { ["tag"] = e.Tag, ["latex"] = latex, ["mode"] = mode });
+                            var full = PictureXml.Source(e.Xml) ?? json;
+                            var latex = EquationIdentity.FirstLatex(full) ?? EquationIdentity.AltParts(AltOf(e.Picture))?[1];
+                            var mode = PictureXml.Mode(full) ?? EquationIdentity.AltParts(AltOf(e.Picture))?[0] ?? "inline";
+                            if (!string.IsNullOrEmpty(latex))
+                            {
+                                redraw.Add(new Dictionary<string, object> { ["tag"] = e.Tag, ["latex"] = latex, ["mode"] = mode, ["reason"] = reason });
+                                if (reason == "picture") toObjects++; else idRewrites++;
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -313,6 +323,8 @@ namespace MathBlocks.WordConnector
                 ["native"] = native,
                 ["mathType"] = mathType,
                 ["lowered"] = lowered,
+                ["toObjects"] = toObjects,
+                ["idRewrites"] = idRewrites,
                 ["redraw"] = redraw,
                 ["wrapped"] = wrapped,
                 ["wrappedOk"] = ok,

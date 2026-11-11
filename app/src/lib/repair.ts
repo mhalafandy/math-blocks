@@ -27,8 +27,14 @@ export interface RepairReport {
   mathType: number;
   /** Baselines restored. */
   lowered: number;
-  /** Pictures redrawn so their hidden source carries the ID and depth (converted MathType equations). */
+  /** Classic pictures converted to embedded MathBlocks objects (same ID, numbers and references kept). */
+  toObjects: number;
+  /** Copied objects whose own data held another ID, redrawn with their own. */
+  idRewrites: number;
+  /** All redrawn equations (toObjects + idRewrites, as replaced in Word). */
   redrawn: number;
+  /** Time the repair took (ms). */
+  ms: number;
   renamed: number;
   wrapped: number;
   fromAlt: number;
@@ -44,22 +50,39 @@ export async function repairDocument(document?: string, o: { quiet?: boolean; fr
   const target = document ? { document } : {};
   const dry = await connector.request("repairEquations", { ...target, dryRun: true }, 120_000);
   const changes = (dry.inlined ?? 0) + (dry.split?.length ?? 0) + (dry.converted ?? 0) + (dry.lowered ?? 0) + (dry.redraw?.length ?? 0) + dry.renamed.length + dry.wrapped.length + dry.bookmarks;
-  const report: RepairReport = { inlined: 0, split: 0, converted: 0, lowered: 0, redrawn: 0, native: dry.native ?? 0, mathType: dry.mathType ?? 0, renamed: 0, wrapped: 0, fromAlt: 0, bookmarks: 0, linkedAdded: 0, unlinked: 0, otherPictures: dry.otherPictures };
+  const report: RepairReport = { inlined: 0, split: 0, converted: 0, lowered: 0, toObjects: 0, idRewrites: 0, redrawn: 0, ms: 0, native: dry.native ?? 0, mathType: dry.mathType ?? 0, renamed: 0, wrapped: 0, fromAlt: 0, bookmarks: 0, linkedAdded: 0, unlinked: 0, otherPictures: dry.otherPictures };
   if (changes > 0) {
     report.backup = await backupIfMany(dry.document, changes);
-    const r = await connector.request("repairEquations", target, 300_000);
-    report.inlined = r.inlined ?? 0;
-    report.split = r.split?.length ?? 0;
-    report.converted = r.converted ?? 0;
-    report.lowered = r.lowered ?? 0;
-    report.native = r.native ?? report.native;
-    report.mathType = r.mathType ?? report.mathType;
-    report.renamed = r.renamed.length;
-    report.wrapped = r.wrapped.length;
-    report.fromAlt = r.wrapped.filter((w) => w.source === "alt").length;
-    report.bookmarks = r.bookmarks;
-    await carryOverRegistry(r.document, r.renamed, r.wrapped.map((w) => w.tag), report);
-    if (r.redraw?.length) report.redrawn = await redrawPictures(r.document, r.redraw);
+    // One operation, one undo step: the add-in's repair, the registry follow-up and the redraw of
+    // every Classic picture (and mis-identified copy) as an embedded object all run inside it.
+    const { replaceInDocument } = await import("./docOps");
+    const t0 = performance.now();
+    const op = await replaceInDocument({
+      document: dry.document,
+      title: "Repairing MathBlocks equations",
+      undoLabel: "Repair MathBlocks equations",
+      total: dry.redraw?.length ?? 0,
+      noBackup: true,
+      prepare: async () => {
+        const r = await connector.request("repairEquations", target, 300_000);
+        report.inlined = r.inlined ?? 0;
+        report.split = r.split?.length ?? 0;
+        report.converted = r.converted ?? 0;
+        report.lowered = r.lowered ?? 0;
+        report.native = r.native ?? report.native;
+        report.mathType = r.mathType ?? report.mathType;
+        report.renamed = r.renamed.length;
+        report.wrapped = r.wrapped.length;
+        report.fromAlt = r.wrapped.filter((w) => w.source === "alt").length;
+        report.bookmarks = r.bookmarks;
+        report.toObjects = r.toObjects ?? 0;
+        report.idRewrites = r.idRewrites ?? 0;
+        await carryOverRegistry(r.document, r.renamed, r.wrapped.map((w) => w.tag), report);
+        return redrawItems(r.redraw ?? []);
+      },
+    });
+    report.redrawn = op.replaced;
+    report.ms = Math.round(op.ms || performance.now() - t0);
   }
   if (!o.quiet || changes > 0) {
     const { tell } = await import("./wordUi");
@@ -69,22 +92,18 @@ export async function repairDocument(document?: string, o: { quiet?: boolean; fr
 }
 
 /**
- * Pictures whose hidden source lacks the ID or the depth (converted from MathType, older builds):
- * drawn again from their LaTeX with the same ID, so the ID and the depth live in the picture itself.
- * Once: the next Repair finds them complete.
+ * Equations Repair redraws as embedded objects with the same ID: Classic pictures (the form before
+ * objects — converted once; the next Repair finds none) and copied objects whose data held another ID.
  */
-async function redrawPictures(document: string, list: { tag: string; latex: string; mode: "display" | "inline" | "numbered" }[]): Promise<number> {
-  const { buildInsertion, currentProfile } = await import("./equation");
-  const { replaceInDocument } = await import("./docOps");
-  const profile = currentProfile();
+async function redrawItems(list: { tag: string; latex: string; mode: "display" | "inline" | "numbered" }[]) {
+  const { buildObjectInsertion } = await import("./equation");
   const items = [];
   for (const e of list) {
-    const display = e.mode === "display";
-    const { flatOpc } = await buildInsertion(e.latex, display, profile, e.tag, "classic", e.mode !== "inline");
+    // In place: the object's run only, so the paragraph (alignment, tabs, number) stays as it is.
+    const { flatOpc } = await buildObjectInsertion(e.latex, e.mode === "display", e.tag, e.mode !== "inline", { keepParagraph: true, mode: e.mode });
     items.push({ tag: e.tag, flatOpc });
   }
-  const op = await replaceInDocument({ document, title: "Writing IDs into equations", undoLabel: "Repair: write IDs into equations", items });
-  return op.replaced;
+  return items;
 }
 
 /** Registry follow-up: native sources move to the new ids; linked copies need their definition here. */
@@ -123,7 +142,9 @@ export function describeRepair(r: RepairReport): string {
   if (r.inlined) parts.push(`${r.inlined} floating picture(s) put back in line with the text`);
   if (r.split) parts.push(`${r.split} wrapper(s) holding several equations or text split into one per equation (text moved out)`);
   if (r.lowered) parts.push(`${r.lowered} equation baseline(s) restored`);
-  if (r.redrawn) parts.push(`${r.redrawn} equation(s) redrawn with their ID and depth inside (converted MathType equations)`);
+  if (r.toObjects) parts.push(`${r.toObjects} Classic picture(s) converted to embedded objects (same ID; numbers and references kept)`);
+  if (r.idRewrites) parts.push(`${r.idRewrites} copied object(s) given their own ID inside`);
+  if (r.redrawn && r.redrawn !== r.toObjects + r.idRewrites) parts.push(`${r.redrawn} of ${r.toObjects + r.idRewrites} redrawn`);
   if (r.converted) parts.push(`${r.converted} Classic equation(s) converted to the new form (picture without wrapper)`);
   if (r.renamed) parts.push(`${r.renamed} copied equation(s) got their own identity`);
   if (r.wrapped) parts.push(`${r.wrapped} pasted picture(s) were identified as MathBlocks equations again${r.fromAlt ? ` (${r.fromAlt} from their alt text only)` : ""}`);
@@ -133,5 +154,6 @@ export function describeRepair(r: RepairReport): string {
   const head = parts.length ? `Repaired: ${parts.join("; ")}.` : "Every MathBlocks equation is intact.";
   const other = r.otherPictures ? ` ${r.otherPictures} other picture(s) carry no MathBlocks data (ordinary pictures, or equations pasted as "Picture").` : "";
   const untouched = r.native || r.mathType ? ` Left untouched: ${r.native} native Word equation(s), ${r.mathType} MathType object(s).` : "";
-  return head + other + untouched + (r.backup ? ` Backup: ${r.backup.split(/[\\/]/).pop()}` : "");
+  const took = r.ms ? ` (${(r.ms / 1000).toFixed(1)} s)` : "";
+  return head + took + other + untouched + (r.backup ? ` Backup: ${r.backup.split(/[\\/]/).pop()}` : "");
 }

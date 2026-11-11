@@ -135,10 +135,17 @@ export interface ObjectData {
  * picture (our Classic EMF) in the VML shape, the data in the object's compound file. Spike only:
  * used by the Word self-test in its own test documents.
  */
-export async function buildObjectInsertion(latex: string, display: boolean, existingTag?: string, typesetDisplay = display) {
+export async function buildObjectInsertion(
+  latex: string,
+  display: boolean,
+  existingTag?: string,
+  typesetDisplay = display,
+  /** Replace in place: the object's run only, the paragraph keeps its own alignment (Repair conversion). */
+  o: { keepParagraph?: boolean; mode?: "display" | "inline" | "numbered" } = {},
+) {
   const { renderPicture, toBase64, altText } = await import("./render");
   const tag = existingTag ?? formatTag({ blockId: null, instanceId: newInstanceId() });
-  const mode = display ? "display" : typesetDisplay ? "numbered" : "inline";
+  const mode = o.mode ?? (display ? "display" : typesetDisplay ? "numbered" : "inline");
   const sizePt = useApp.getState().equationSizePt;
   const pic = await renderPicture(latex, typesetDisplay, sizePt, mode, false, { block: parseTag(tag)?.blockId, tag });
   const { CLASSIC } = await import("@mathblocks/math-render");
@@ -146,7 +153,7 @@ export async function buildObjectInsertion(latex: string, display: boolean, exis
   const bin = objectBin(data);
   const n = ++pictureCounter;
   const run = oleObjectRun({ imageRId: "rIdMbE1", oleRId: "rIdMbO1", progId: MB_OBJECT_PROGID, widthPt: pic.widthPt, heightPt: pic.heightPt, depthPt: pic.depthPt, id: (Date.now() % 1_000_000) * 10 + (n % 10), alt: altText(latex, mode, tag) });
-  const body = display ? `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${run}</w:p>` : paragraph(run);
+  const body = display && !o.keepParagraph ? `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${run}</w:p>` : paragraph(run);
   return {
     tag,
     data,

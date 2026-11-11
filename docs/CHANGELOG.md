@@ -25,6 +25,20 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Embedded objects — step 4 (Repair converts Classic pictures to objects)
+- Repair equations converts every Classic picture (VML or pasted DrawingML) to an embedded object
+  with the same ID, in place: the object's run only, so the paragraph — alignment, tabs, number
+  fields, bookmarks and references — stays as it was. Copied objects whose own data holds another ID
+  are redrawn with their own. Native equations and MathType objects are untouched.
+- One undo step: the add-in's repair, the registry follow-up and the redraw run inside one operation;
+  a backup first when many; the report gives the counts and the time. A second Repair changes nothing.
+- An equation replaced in place gets its new content in front of the old one before the old one goes,
+  so Word never inserts at a paragraph's end (where it can add a paragraph mark).
+- Reference insertion with fields: no longer fails ("Value out of range"); falls back to the XML
+  insertion if Word refuses the fields.
+- Self-test: a Repair section (old pictures with a number and a reference → objects; same IDs, number,
+  bookmark, reference and text; one Ctrl+Z; a second Repair is a no-op).
+
 ### Embedded objects — step 3 (Convert LaTeX and Convert MathType write objects)
 - Convert LaTeX writes objects (through the same insertion as the Insert button).
 - Convert MathType (open document and files): each converted equation becomes an embedded MathBlocks

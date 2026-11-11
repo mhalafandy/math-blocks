@@ -262,8 +262,11 @@ export interface AppToConnector {
       mathType?: number;
       /** Classic pictures whose baseline lowering was restored from their source. */
       lowered?: number;
+      /** Classic pictures listed for conversion to embedded objects / copies with another ID inside. */
+      toObjects?: number;
+      idRewrites?: number;
       /** Classic pictures whose hidden source lacks the ID or the depth: the app redraws them once. */
-      redraw?: { tag: string; latex: string; mode: "display" | "inline" | "numbered" }[];
+      redraw?: { tag: string; latex: string; mode: "display" | "inline" | "numbered"; reason?: "picture" | "id" }[];
       /** Wrappers that held more than one equation, text or nested wrappers, split back into one per equation. */
       split?: { tag: string; equations: number; text: number; nested: number; otherPictures: number }[];
     };
