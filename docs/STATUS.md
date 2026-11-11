@@ -5,9 +5,8 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.109 (same code as 0.1.108; built from the status-file commit). This round's fixes are
-  building now as the next build — see "What to test".
-- **CI:** 0.1.109 passed.
+- **Published:** 0.1.110, from commit `b7ff031` — contains this round's fixes.
+- **CI:** passed (tests and type check; Windows build of the desktop app and the Word add-in).
 
 ## This round
 
@@ -26,7 +25,7 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 **Commits:** `31730e0` (fixes and this status), `779f808` (status file).
 
-## What to test (next build after 0.1.109)
+## What to test (0.1.110)
 
 1. **Self-test.** Expected:
    - "One numbering scheme": renumber (A.1)–(A.3) → (A.1.1)–(A.1.3) with no problems; MathType's references
