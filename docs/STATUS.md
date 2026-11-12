@@ -5,7 +5,7 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.118 (commit `653a3a0`), CI passed — My styles, restyle undo, window activations. This round's build (bold Greek): pending CI.
+- **Published:** 0.1.119 (commit `2e8a562`), CI passed — bold Greek, plus My styles, restyle undo and window activations (0.1.118).
 
 ## Window switching (0.1.115 self-test): what was checked, what is known
 
@@ -59,7 +59,7 @@ two can be compared side by side.
 
 **Commits:** this round's commit "My styles, restyle undo, window activations".
 
-## What to test (next build)
+## What to test (0.1.119)
 
 0. **Bold Greek:** Ctrl+K → "Bold Greek comparison sheet": bold Greek should look as heavy as the bold Latin
    letters next to it, at 12 and 10 pt. The self-test section "Bold Greek" checks the stroke weight and saves
@@ -110,6 +110,7 @@ Not received yet (the template lines for Convert numbering and Review notation k
 
 ## History
 
+- **0.1.119** — Bold Greek: emboldened Symbol outlines calibrated to Times Bold; Hughes bold kinds draw Greek upright; comparison sheet.
 - **0.1.118** — My styles; restyle undo follows the drawings; window activations recorded; two-document check.
 - **0.1.117** — Self-test keeps its document in front after undo/redo and in Repair.
 - **0.1.116** — Document style: looks per document (render time), meaning in the LaTeX; Check style; classification; presets.
