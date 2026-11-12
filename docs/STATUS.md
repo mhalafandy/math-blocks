@@ -5,7 +5,7 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.114 (commit `bd4e47e`), CI passed — contains this round's notation kinds work and the two self-test fixes.
+- **Published:** 0.1.115 (commit `a36ddd4`), CI passed — the notation kinds work plus the corrected self-test check.
 
 ## Root cause: the "text loss" in the 0.1.108 self-test
 
@@ -32,7 +32,7 @@ and the self-test's own re-scan found them intact. The text guard (0.1.112) stay
 
 **Commits:** this round's commit "Notation kinds on conversion; Review notation kinds".
 
-## What to test (next build)
+## What to test (0.1.115)
 
 1. **Self-test.** Expected: all checks pass, including "Apply notation kinds: the older forms became kinds"
    (now run before Normalize bold).
@@ -74,6 +74,7 @@ and the self-test's own re-scan found them intact. The text guard (0.1.112) stay
 
 ## History
 
+- **0.1.114** — Notation kinds on conversion; Review notation kinds (Ctrl+K); fixes after the 0.1.113 self-test.
 - **0.1.113** — Number reading after fields without a result (bracket kept); undo checks compare numbers.
 - **0.1.112** — Text guard on every whole-document operation; missing section marker is a pre-flight error;
   number brackets; cursor after an inserted section marker.
