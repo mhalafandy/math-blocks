@@ -57,7 +57,8 @@ and the self-test's own re-scan found them intact. The text guard (0.1.112) stay
 ## Waiting for the owner
 
 - Self-test of the next build; Review notation kinds on a thesis copy.
-- Open question: should `[\mathbf{A}\mathbf{B}]` become `\dcm{A}{B}` (unticked for now)?
+- Decided: the `\dcm` rule stays unticked by default (ticked per document when its examples show rotation
+  matrices); labels in indices become upright, ticked by default. No open decisions.
 
 ## Known problems
 
