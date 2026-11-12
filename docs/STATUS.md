@@ -5,7 +5,7 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.121 (commit `7b23488`), CI passed. This round's build (self-test check fix): pending CI.
+- **Published:** 0.1.122 (commit `951b069`), CI passed. This milestone's build (objects steps 5–6): pending CI.
 
 ## Window switching (0.1.115 self-test): cause
 
@@ -19,48 +19,31 @@ recording stays in the add-in and in the self-test, so a recurrence will name it
 
 ## This round
 
-Fixes from converting a real chapter (owner's report; priority 2, 1, 4, 3, 7, 5, 6). Generic tests only.
+**Process (owner, 13 Nov):** rounds continue through the plan without waiting for test results; every feature
+gets a self-test check, STATUS is updated each round, a build is published at the end of each milestone, and
+anything reported is fixed in the next round.
 
-1. **(2, blocker) Every MathType break becomes a marker.** Cause: a break took its chapter/section only from the
-   first numbered equation after it; breaks in chapters or sections without equations were "left as they are",
-   and in renumber mode the section headings after such a break got no markers either. Now each break is
-   evaluated from its own SEQ fields (as Word does: \r n sets, no switch adds one, \c keeps), checked against
-   the first number after it. Section headings without a break are listed in the pre-flight with a marker
-   offered (on by default). After converting, any MathType numbering field left is listed.
-2. **(1) Private-use characters.** MathType's MT Extra characters are mapped from MathType's character table
-   (its dot operator → \cdot); anything unmapped stays MathType and is listed, never passed on silently.
-   Bare commands now end with a space (\cdot followed by a letter made an unknown command).
-3. **(4) The one object not converted** was an *empty* MathType equation (nothing in it), silently skipped.
-   Now every equation that cannot be converted is listed with where it is (its paragraph, or the paragraph
-   before when it is alone) before anything is written; after converting, the MathType objects left must be
-   exactly those listed.
-4. **(3) One reference mechanism.** Convert numbering turns MathType's GOTOBUTTON/REF references into MathBlocks
-   references to the _MBEq_ bookmarks; each is verified to show its equation's number, then the ZEqnNum
-   bookmarks are removed (kept and listed on any mismatch). (Before: "Update numbers" did refresh MathType's REF
-   fields, as Word updates every REF; they now are MathBlocks references anyway.)
-5. **(7)** Convert LaTeX accepts every form Convert MathType writes; the doc lists them from one table, and a
-   test reads each back through Convert LaTeX to the same equation. The test found the parser rejected bare
-   \langle, \rangle, \lfloor, \rfloor, \lceil, \rceil and \backslash — fixed.
-6. **(5)** A "$" touching a converted equation is reported with its place. **(6)** ℤ ℝ ℕ ℚ ℂ → \mathbb{…};
-   Greek capitals that look like Latin letters are reported.
+**Milestone: embedded objects, steps 5 and 6.**
 
-**Commits:** "Convert numbering: every MathType break becomes a marker; references unified"; "Convert MathType:
-nothing passes through silently".
+- **Step 5 — menus and clicks.** Right-click on an equation object shows a MathBlocks menu at the pointer:
+  Edit equation here (first), Edit in the MathBlocks window, Number / Unnumber, Copy LaTeX, Convert to LaTeX
+  text, Cut, Copy, Paste, Delete. Before, right-click opened the floating editor directly and Word's Cut/Copy/
+  Paste were not reachable on an equation. (Word's own menu cannot be used: it offers OLE verbs that need a
+  server.) Double-click still opens the equation for editing.
+- **Step 6 — objects end to end, in the self-test:** undo/redo of an insert and an edit; Track Changes (insert
+  is tracked, an edit leaves exactly one equation with its ID — the old one is a tracked deletion — accept all,
+  reject all); per-user class registration (HKCU, no server: Word names the objects) and what Word reports;
+  PDF from Word (pages, alternative text). Acrobat's "Save as Adobe PDF" is detected and left to the trial
+  checklist (printing through Acrobat can open dialogs that would block an unattended test).
 
 ## What to test (next build)
 
-1. **Self-test** (please don't click in Word while it runs). Expected: all checks pass, including
-   - "One numbering scheme": the converted numbers have MathBlocks bookmarks, MathType's references are now
-     MathBlocks references, every one verified, MathType's bookmarks removed, no MathType numbering field left;
-   - new step "chapters with empty sections": every break a marker (6), the heading without a break listed and
-     marked, new equations numbered (2.2.1), (2.3.1), (3.1.1);
-   - "Convert MathType: nothing passes through silently": the private-use dot becomes \cdot, the empty object is
-     listed with where it is, and is the only MathType object left.
-2. **On a fresh copy of the chapter** (from before any conversion): Convert MathType — the pre-flight lists what
-   cannot be converted (expected: the empty object), then Convert numbering — every heading should end up with a
-   marker (check the list of headings without a break), the result should say "No MathType numbering field is
-   left" and that every reference shows its equation's number. Then add an equation in a later section and in
-   the next chapter and check their numbers.
+1. **Self-test.** New sections: "Equation objects: the right-click menu" and "Equation objects: tracked changes,
+   undo/redo, class registration, PDF". The PDF is saved in the self-test folder ("objects test.pdf").
+2. In a document: right-click an equation — the MathBlocks menu; try Copy LaTeX (paste into Notepad), Cut and
+   Paste, Number.
+3. Acrobat: open "objects test.docx" from the self-test folder, Acrobat → Create PDF; the equations should be
+   sharp when zoomed.
 
 ## Last self-test analysed
 
@@ -97,14 +80,14 @@ left is the empty one listed by the pre-flight.
 
 ## Next
 
-1. Owner's results; fixes if needed. The look of individual symbols (owner's request, after functionality).
-2. Embedded-object build step 5 (menus and clicks) and step 6 (self-test fully on objects: tracked changes,
-   undo/redo, per-user class registration, PDF from Word and Acrobat).
-3. Checklist for a one-day trial on a copy of a real chapter.
+1. Checklist for a one-day trial on a copy of a real chapter.
+2. The look of individual symbols (owner's request, after functionality).
 4. Then: Priority 2 → 1c → Accents page → MathType parity (see FEATURES.md).
 
 ## History
 
+- **0.1.123** — Embedded objects steps 5–6: MathBlocks right-click menu; per-user class registration; self-test of undo/redo, Track Changes, PDF.
+- **0.1.122** — Self-test: the undo check compares the kind of each number.
 - **0.1.121** — Convert MathType/numbering fixes from a real chapter (breaks, references, private use, empty objects, number sets, look-alikes, interchange forms).
 - **0.1.120** — Bold Greek calibrated by darkness (no heavier than bold Latin).
 - **0.1.119** — Bold Greek: emboldened Symbol outlines calibrated to Times Bold; Hughes bold kinds draw Greek upright; comparison sheet.

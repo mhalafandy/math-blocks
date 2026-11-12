@@ -445,6 +445,107 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       await smoke("save", { file: "mathtype private use test (converted).docx" });
     });
 
+    section = "Equation objects: the right-click menu";
+    await step("object menu", async () => {
+      const docO = await smoke("newDocument");
+      await smoke("typeText", { text: "Menu test: " });
+      const eq = await insert("E=mc^2", false);
+      await smoke("typeText", { text: " end." });
+      const menu = (await smoke("objectMenu", { tag: eq.tag })) as { items: { id: string; label: string; enabled: boolean }[]; isObject: boolean };
+      const ids = menu.items.map((i) => i.id).join(" ");
+      check("an equation object gets the MathBlocks menu: Edit here first, then the window, numbering, LaTeX, Cut/Copy/Paste/Delete", menu.isObject && ids === "edit editWindow number copyLatex toLatex cut copy paste delete", menu.items.map((i) => `${i.label}${i.enabled ? "" : " (off)"}`).join(" · "));
+      check("the numbering item says what it will do", menu.items.find((i) => i.id === "number")?.label === "Number equation");
+      const latex = (await smoke("objectMenuRun", { tag: eq.tag, id: "copyLatex" })) as { result: string; clipboardText: string | null };
+      check("Copy LaTeX puts the equation's LaTeX on the clipboard", norm(latex.clipboardText ?? "") === norm("E=mc^2"), `${latex.result}: ${latex.clipboardText}`);
+      const before = (await snap()).tags.length;
+      await smoke("objectMenuRun", { tag: eq.tag, id: "cut" });
+      const afterCut = await snap();
+      check("Cut removes the equation (the text around it stays)", afterCut.tags.length === before - 1 && /Menu test:\s*end\./.test(afterCut.plain), `${before} → ${afterCut.tags.length}; “${afterCut.plain.trim()}”`);
+      await smoke("caretTo", { where: "end" });
+      await smoke("paste", { mode: "ctrlV" });
+      const afterPaste = await snap();
+      check("…and Paste brings it back, the same equation", afterPaste.tags.length === before && afterPaste.tags.includes(eq.tag), afterPaste.tags.join(", "));
+      await smoke("objectMenuRun", { tag: eq.tag, id: "delete" });
+      check("Delete removes it", (await snap()).tags.length === before - 1);
+      await smoke("undo", { times: 1 });
+      check("…and Ctrl+Z restores it", (await snap()).tags.includes(eq.tag));
+      // Edit here: the floating editor opens on that equation (the app's editing target).
+      useApp.getState().setEditing(null);
+      await smoke("objectMenuRun", { tag: eq.tag, id: "edit" });
+      for (let i = 0; i < 20 && useApp.getState().editing?.tag !== eq.tag; i++) await new Promise((r) => setTimeout(r, 250));
+      check("Edit equation here opens it for editing", useApp.getState().editing?.tag === eq.tag, useApp.getState().editing?.tag ?? "not opened");
+      useApp.getState().setEditing(null);
+      void docO;
+      await smoke("save", { file: "object menu test.docx" });
+    });
+
+    section = "Equation objects: tracked changes, undo/redo, class registration, PDF";
+    await step("objects end to end", async () => {
+      const { buildDocumentIndex, rewriteDocument } = await import("./symbolIndex");
+      const latexOfTag = async (tag: string) => (await buildDocumentIndex()).equations.find((e) => e.tag === tag)?.latex ?? null;
+      const edit = async (tag: string, to: string) => {
+        const ix = await buildDocumentIndex();
+        await rewriteDocument(ix, ix.equations.filter((e) => e.tag === tag), () => to, "Edit equation");
+      };
+      // Undo and redo of an insert and of an edit.
+      const docU = await smoke("newDocument");
+      await smoke("typeText", { text: "Undo test: " });
+      const a = await insert("a^2+b^2", false);
+      check("an inserted equation is an embedded object", ((await smoke("objectMenu", { tag: a.tag })) as { isObject: boolean }).isObject);
+      await smoke("undo", { times: 1 });
+      check("Ctrl+Z removes an inserted equation", !(await snap()).tags.includes(a.tag));
+      await smoke("redo", { times: 1 });
+      check("Ctrl+Y brings it back, same ID", (await snap()).tags.includes(a.tag));
+      await edit(a.tag, "a^2+b^2=c^2");
+      check("an edit changes the equation", norm((await latexOfTag(a.tag)) ?? "") === norm("a^2+b^2=c^2"), (await latexOfTag(a.tag)) ?? "not found");
+      await smoke("undo", { times: 1 });
+      check("Ctrl+Z restores the equation before the edit", norm((await latexOfTag(a.tag)) ?? "") === norm("a^2+b^2"), (await latexOfTag(a.tag)) ?? "not found");
+      await smoke("redo", { times: 1 });
+      check("Ctrl+Y redoes the edit", norm((await latexOfTag(a.tag)) ?? "") === norm("a^2+b^2=c^2"), (await latexOfTag(a.tag)) ?? "not found");
+      await smoke("save", { file: "objects undo test.docx" });
+      void docU;
+
+      // Tracked changes: insert, edit, delete with Track Changes on; accept and reject.
+      await smoke("newDocument");
+      await smoke("typeText", { text: "Tracked changes: " });
+      await smoke("trackChanges", { on: true });
+      const t = await insert("x+y", false);
+      const r1 = ((await smoke("revisions")) as { count: number }).count;
+      check("with Track Changes on, inserting an equation is a tracked change", r1 > 0, `${r1} revision(s)`);
+      await edit(t.tag, "x+y+z");
+      const ix = await buildDocumentIndex();
+      const same = ix.equations.filter((e) => e.tag === t.tag);
+      check("an edit with Track Changes on leaves one equation with that ID (the old one is a tracked deletion)", same.length === 1 && norm(same[0]!.latex) === norm("x+y+z"), same.map((e) => e.latex).join(" | ") || "not found");
+      const menu = (await smoke("objectMenu", { tag: t.tag })) as { items: unknown[] };
+      check("…and it can still be opened (its menu, its source)", menu.items.length > 0);
+      await smoke("acceptAll");
+      const afterAccept = await buildDocumentIndex();
+      check("Accept all: the edited equation remains, readable", afterAccept.equations.filter((e) => e.tag === t.tag).length === 1 && norm(afterAccept.equations.find((e) => e.tag === t.tag)!.latex) === norm("x+y+z"));
+      const t2 = await insert("p=q", false);
+      await smoke("rejectAll");
+      check("Reject all: an equation inserted with Track Changes on goes away", !(await snap()).tags.includes(t2.tag));
+      await smoke("trackChanges", { on: false });
+      await smoke("save", { file: "objects tracked changes test.docx" });
+
+      // The class, registered for this user only, without a server.
+      const reg = (await smoke("classRegistration")) as Record<string, string | null | undefined>;
+      check("the MathBlocks equation class is registered for this user (no server)", reg.progId === "MathBlocks Equation" && reg.clsid === "MathBlocks Equation" && reg.clsidProgId === "MathBlocks.Equation.1" && !reg.server, JSON.stringify(reg));
+      check("what Word reports for a MathBlocks object (class name)", null, `ProgID “${reg.wordProgId ?? "—"}”, class “${reg.wordClassType ?? "—"}”`);
+
+      // PDF from Word: the equations are drawn (vector pictures), with alternative text.
+      await smoke("newDocument");
+      await smoke("typeText", { text: "PDF test: " });
+      await insert("\\int_0^1 x^2\\,dx=\\frac{1}{3}", false);
+      await smoke("newParagraph");
+      await insert("\\pvec{r}=\\vectrix{F}^{\\T}\\cmat{r}", true);
+      const pdf = (await smoke("exportPdf", { file: "objects test.pdf" })) as { size: number; pages: number; alt: boolean; images: number; path: string };
+      check("PDF from Word: written, with the page", pdf.size > 1000 && pdf.pages >= 1, `${pdf.size} bytes, ${pdf.pages} page(s), ${pdf.images} raster image(s)`);
+      check("PDF from Word: the equations carry alternative text (accessibility tags)", pdf.alt, pdf.path);
+      const printers = (await smoke("pdfPrinters")) as { printers: string[]; acrobat: boolean };
+      check("PDF from Acrobat: open the saved “objects test.docx” and use Acrobat's Save as Adobe PDF (manual, in the trial checklist)", null, `${printers.acrobat ? "Acrobat found" : "Acrobat not found"}; PDF printers: ${printers.printers.filter((p) => /pdf/i.test(p)).join(", ") || "none"}`);
+      await smoke("save", { file: "objects test.docx" });
+    });
+
     section = "One Ctrl+Z for each whole-document operation";
     await step("whole-document operations", async () => {
       const docU = await smoke("newDocument");

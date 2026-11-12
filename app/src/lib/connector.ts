@@ -189,6 +189,7 @@ class ConnectorClient {
         if (params.command === "convertLatex") void import("./wordShortcuts").then((m) => m.convertAllLatex(params.document, { fromWord: true, selectionOnly: !!params.hasSelection }));
         else if (params.command === "numberEquation") void import("./numbering").then((m) => m.toggleNumberFromRibbon(params, true));
         else if (params.command === "repair") void import("./repair").then((m) => m.repairDocument(params.document, { fromWord: true }));
+        else if (params.command === "toggleLatex") void import("./wordShortcuts").then((m) => m.toggleLatexAtCursor());
         else if (params.command === "selfTest") void import("./selfTest").then((m) => m.runWordSelfTest({ spike: false }));
         else if (params.command === "selfTestSpike") void import("./selfTest").then((m) => m.runWordSelfTest({ spike: true }));
         else {

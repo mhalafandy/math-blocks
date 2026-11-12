@@ -146,6 +146,61 @@ namespace MathBlocks.WordConnector
                     d.Activate();
                     return new Dictionary<string, object> { ["name"] = d.Name, ["fullName"] = d.FullName };
                 }
+                case "trackChanges":
+                    _app.ActiveDocument.TrackRevisions = Rpc.GetBool(p, "on");
+                    return new Dictionary<string, object> { ["on"] = _app.ActiveDocument.TrackRevisions };
+                case "revisions":
+                    return new Dictionary<string, object> { ["count"] = _app.ActiveDocument.Revisions.Count };
+                case "acceptAll":
+                    _app.ActiveDocument.Revisions.AcceptAll();
+                    return new Dictionary<string, object> { ["count"] = _app.ActiveDocument.Revisions.Count };
+                case "rejectAll":
+                    _app.ActiveDocument.Revisions.RejectAll();
+                    return new Dictionary<string, object> { ["count"] = _app.ActiveDocument.Revisions.Count };
+                case "classRegistration":
+                {
+                    var state = ObjectClass.State();
+                    // What Word itself reports for the first MathBlocks object of the document.
+                    foreach (Word.InlineShape s in _app.ActiveDocument.InlineShapes)
+                    {
+                        if (!IsMathBlocksObject(s)) continue;
+                        try { state["wordProgId"] = s.OLEFormat.ProgID ?? ""; } catch (Exception ex) { state["wordProgId"] = "error: " + ex.Message; }
+                        try { state["wordClassType"] = s.OLEFormat.ClassType ?? ""; } catch (Exception ex) { state["wordClassType"] = "error: " + ex.Message; }
+                        break;
+                    }
+                    return state;
+                }
+                case "exportPdf":
+                {
+                    var d = _app.ActiveDocument;
+                    var path = Path.Combine(SmokeFolder ?? Path.GetTempPath(), Rpc.GetString(p, "file"));
+                    d.ExportAsFixedFormat(path, Word.WdExportFormat.wdExportFormatPDF, false, Word.WdExportOptimizeFor.wdExportOptimizeForPrint,
+                        Word.WdExportRange.wdExportAllDocument, 1, 1, Word.WdExportItem.wdExportDocumentContent, true, true,
+                        Word.WdExportCreateBookmarks.wdExportCreateNoBookmarks, true, true, false);
+                    var bytes = File.ReadAllBytes(path);
+                    var text = System.Text.Encoding.ASCII.GetString(bytes);
+                    return new Dictionary<string, object>
+                    {
+                        ["path"] = path,
+                        ["size"] = bytes.Length,
+                        ["pages"] = System.Text.RegularExpressions.Regex.Matches(text, @"/Type\s*/Page\b").Count,
+                        ["alt"] = text.Contains("/Alt"),
+                        ["images"] = System.Text.RegularExpressions.Regex.Matches(text, @"/Subtype\s*/Image").Count,
+                    };
+                }
+                case "pdfPrinters":
+                {
+                    var list = new List<object>();
+                    foreach (string name in System.Drawing.Printing.PrinterSettings.InstalledPrinters) list.Add(name);
+                    bool acrobat = false;
+                    try { using (var k = Microsoft.Win32.Registry.ClassesRoot.OpenSubKey("AcroExch.Document")) acrobat = k != null; } catch (Exception) { }
+                    return new Dictionary<string, object> { ["printers"] = list, ["acrobat"] = acrobat };
+                }
+                case "objectMenu":
+                case "objectMenuRun":
+                    // The right-click menu of an equation object (built and run by the add-in's Connect).
+                    if (ObjectMenuHook == null) throw new RpcException(Rpc.InvalidParams, "object menu not available");
+                    return ObjectMenuHook(Rpc.GetString(p, "tag"), op == "objectMenuRun" ? Rpc.GetString(p, "id") : null);
                 case "activations":
                     return new Dictionary<string, object> { ["list"] = TakeActivations() };
                 case "activeName":

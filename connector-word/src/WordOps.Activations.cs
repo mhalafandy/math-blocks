@@ -12,6 +12,9 @@ namespace MathBlocks.WordConnector
     /// </summary>
     internal sealed partial class WordOps
     {
+        /// <summary>The object menu (Connect): items for a tag, or the result of running one (self-test).</summary>
+        internal Func<string, string, Dictionary<string, object>> ObjectMenuHook;
+
         /// <summary>The request being handled now (set by the dispatcher), or null between requests.</summary>
         internal string CurrentRequest;
         /// <summary>The last request handled and when it ended (activations arrive asynchronously, e.g. when a window closes).</summary>

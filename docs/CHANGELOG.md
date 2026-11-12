@@ -25,6 +25,19 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added — embedded objects, steps 5 and 6 (menus and clicks; end-to-end checks)
+- Right-click on a MathBlocks equation object: a MathBlocks menu at the pointer — Edit equation here
+  (the floating editor), Edit in the MathBlocks window, Number / Unnumber, Copy LaTeX, Convert to LaTeX
+  text, Cut, Copy, Paste, Delete. Word's own menu would offer the object's OLE verbs, which need a server
+  MathBlocks objects do not have. Double-click still opens the equation; a native equation's wrapper keeps
+  the floating editor on right-click.
+- The MathBlocks equation class (MathBlocks.Equation.1) is registered for the current user only, without a
+  server, so Word names the objects; nothing needs administrator rights.
+- Self-test: the menu (items, Copy LaTeX, Cut and Paste, Delete and Ctrl+Z, Edit here); objects end to end —
+  undo/redo of an insert and an edit, Track Changes (insert, edit, accept all, reject all), the class
+  registration and what Word reports for it, PDF from Word (pages, alternative text); Acrobat is detected and
+  left to the trial checklist.
+
 ### Fixed — Convert MathType and Convert numbering on a real chapter
 - Every MathType chapter/section break becomes a MathBlocks marker, also in chapters and sections without
   equations (their chapter and section are read from the break's own SEQ fields, as Word evaluates them);

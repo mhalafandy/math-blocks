@@ -19,7 +19,7 @@ namespace MathBlocks.WordConnector
     [Guid("B18397FB-F3F1-4634-AC20-9DEA0673976A")]
     [ProgId("MathBlocks.WordConnector")]
     [ClassInterface(ClassInterfaceType.AutoDispatch)]
-    public class Connect : IDTExtensibility2, IRibbonExtensibility
+    public partial class Connect : IDTExtensibility2, IRibbonExtensibility
     {
         private Word.Application _app;
         private WordOps _ops;
@@ -42,6 +42,8 @@ namespace MathBlocks.WordConnector
                 _app = (Word.Application)application;
                 _ops = new WordOps(_app);
                 _ops.IdleChecks = IdleChecks;
+                _ops.ObjectMenuHook = ObjectMenuForTest;
+                ObjectClass.EnsureRegistered();
                 _ui = new Control();
                 _idle = new Timer { Interval = 400 };
                 _idle.Tick += (o, e) => OnIdle();
@@ -370,7 +372,10 @@ namespace MathBlocks.WordConnector
                 // Word's picture menu (Word ignores Cancel there) with our items.
                 if (cc == null || (cc.IsPicture && !cc.IsObject)) return;
                 cancel = true;
-                OpenPanel(doc, cc);
+                // An embedded object: the MathBlocks menu (Edit here first, then numbering, LaTeX, Cut/Copy/Paste/Delete);
+                // a native equation's wrapper: the floating editor as before.
+                if (cc.IsObject) ShowObjectMenu(doc, cc);
+                else OpenPanel(doc, cc);
             }
             catch (Exception ex)
             {
