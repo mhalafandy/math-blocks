@@ -5,68 +5,59 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.110, from commit `b7ff031` — contains this round's fixes.
-- **CI:** passed (tests and type check; Windows build of the desktop app and the Word add-in).
+- **Published:** 0.1.110 (commit `b7ff031`), CI passed. This round's fixes are building as the next build.
 
 ## This round
 
-**Fixes after the 0.1.108 self-test.**
+**Fixes after the 0.1.110 self-test.**
 
-- Equation numbers (MathType's and MathBlocks') are MACROBUTTON fields, which have no field result, so their
-  text was read as empty. Effects: Convert numbering found no readable MathType number and changed nothing;
-  "Number equation" reported an empty number; Convert LaTeX could not resolve references by number. Numbers
-  are now read from the button's display text.
-- Section marker inserted in an empty paragraph went into a new paragraph after the cursor (Word's XML
-  insertion); it now stays at the cursor.
-- Broken-reference list: the text around each reference reads as on the page (it showed field codes).
-- Self-test fixes: the equations of a conversion are listed in document order (the "insert an equation in
-  section 3.1" check put its equation in the wrong section); the Update numbers undo check now makes numbers
-  out of date; new check that later test steps leave the paragraphs with the deliberate errors unchanged.
+- Numbers were read without their opening bracket ("A.1)") when it followed a field switch directly; Convert
+  numbering therefore still found no readable MathType number, and number comparisons (Insert reference,
+  Repair, Number equation) failed. Fixed.
+- Insert section marker left the cursor in front of the hidden marker, so the next equation went into the
+  previous section. The cursor now goes after the marker.
+- Self-test: broken-reference check adjusted to the snippet window; the Update numbers undo check now reports
+  the numbers at each step (to find out why it sees no change).
 
-**Commits:** `31730e0` (fixes and this status), `779f808` (status file).
+**Commits:** the commit "Fix number brackets and cursor after section marker…" (this round).
 
-## What to test (0.1.110)
+## What to test (next build)
 
 1. **Self-test.** Expected:
-   - "One numbering scheme": renumber (A.1)–(A.3) → (A.1.1)–(A.1.3) with no problems; MathType's references
-     follow; Convert LaTeX on the pasted section adds (A.1.4) and (A.2.1); after Update numbers the numbers read
-     (A.1.1) (A.1.2) (A.1.3) (A.1.4) (A.2.1); references to old and new equations right; "keep" leaves (A.1)–(A.3).
-   - "Convert LaTeX: interchange convention document": the insert check shifts (3.1.1) → (3.1.2) and the
-     references follow; the equation after the new section marker is (A.3.1); the broken-reference snippet
-     contains "Word artefacts"; the deliberate-error paragraphs are unchanged.
-   - "One Ctrl+Z for each whole-document operation": Update numbers now changes the document and is one Ctrl+Z.
-2. **Convert numbering on a copy of the thesis** (ribbon → Convert numbering → renumber): the old → new list
-   now shows the real numbers. Check it before confirming; report anything wrong.
+   - "One numbering scheme": renumber (A.1)–(A.3) → (A.1.1)–(A.1.3), no problems; MathType's references follow;
+     the pasted section adds (A.1.4) and (A.2.1); after Update numbers: (A.1.1) (A.1.2) (A.1.3) (A.1.4) (A.2.1);
+     references to old and new equations right; "keep" leaves (A.1)–(A.3).
+   - "Convert LaTeX: interchange convention document": the equation after the new section marker is (A.3.1).
+   - Insert reference / Repair: the reference shows the equation's number (these regressed in 0.1.110).
+   - "Update numbers: the numbers (diagnosis)" — send the line if "Update numbers: changed the document" fails.
+2. **Convert numbering on a copy of the thesis** (ribbon → Convert numbering → renumber): check the old → new
+   list before confirming.
 
 ## Last self-test analysed
 
-**0.1.108:** 203 checks — 173 passed, 15 failed, 15 for information; embedded-object spike 123 checks, 0 failed.
+**0.1.110:** 204 checks — 173 passed, 16 failed, 15 for information; spike 123 checks, 0 failed.
 
-- Passed: the whole interchange conversion of the convention document — counts, 5 errors and 4 warnings
-  listed, three-level numbers and label bookmarks, references within and across sections before and after
-  Update numbers, number at the right margin, centring, inline baseline, one Ctrl+Z, second run; the Section
-  marker finds the previous marker; Convert LaTeX waits while MathType's numbering is there.
-- Speed: 150-equation document in 45.5 s — about 300 ms per equation (almost all inside Word).
+- Now passing: inserting an equation in section 3.1 shifts the later numbers and references follow; the
+  deliberate-error paragraphs are unchanged (the text missing in the 0.1.108 test document was an artefact of
+  my script reading the saved file, not real damage); the broken-reference list finds the deleted equation.
 - Failures and causes:
-  - 11 in "One numbering scheme" and in "Number equation" results: numbers read as empty (MACROBUTTON has no
-    result) — fixed.
-  - "After inserting an equation in section 3.1…" (2 checks): test used the equations in reverse order — fixed.
-  - "An equation after the new section marker is numbered (A.3.1)": number read as empty, and the marker landed
-    after the cursor — both fixed.
-  - "Update numbers lists the reference…": the list was right, but the snippet showed field codes — fixed.
-  - "Update numbers: changed the document": the stale-numbers helper changed nothing — replaced.
+  - 13 checks (One numbering scheme, Insert reference, Repair's reference check): numbers read as "A.1)" —
+    the opening bracket was taken as part of a field switch. Fixed.
+  - "An equation after the new section marker is numbered (A.3.1)": the cursor stayed before the marker. Fixed.
+  - "Update numbers lists the reference…": the list was right; the check looked for words outside the
+    snippet window. Adjusted.
+  - "Update numbers: changed the document": still no change seen; diagnosis added.
 
 ## Waiting for the owner
 
-- Self-test results of the next build; Convert numbering on a thesis copy (check the old → new list).
+- Self-test of the next build; Convert numbering on a thesis copy.
 - No open decisions.
 
 ## Known problems
 
-- Writing equations into Word takes about 0.25–0.3 s per equation (150 equations ≈ 40 s); could be optimised.
-- In the 0.1.108 self-test two paragraphs of the convention test document lost part of their text during the
-  later test steps (inserting equations at the end of the document); a new check reports whether this happens
-  again, to find which step causes it.
+- Writing equations into Word takes about 0.3 s per equation (150 equations ≈ 45 s); could be optimised.
+- The Update numbers undo check sees no change in its test document (cause being diagnosed; the Update numbers
+  command itself works — numbers shift and references follow in the interchange checks).
 
 ## Next
 
@@ -78,6 +69,8 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## History
 
+- **0.1.110** — Equation numbers read from the button fields' display text; Section marker at the cursor;
+  readable broken-reference snippets; self-test fixes.
 - **0.1.108** — Convert numbering (MathType → MathBlocks: keep, or renumber to chapter.section.equation);
   three-level interchange numbering, section markers, labels as numbers, `\bvec`; Section marker command;
   broken-reference list.

@@ -287,7 +287,7 @@ namespace MathBlocks.WordConnector
         private static string ButtonText(string code)
         {
             var t = code.Trim();
-            var m = System.Text.RegularExpressions.Regex.Match(t, @"^(MACROBUTTON|GOTOBUTTON)\s+\S+\s*((?:\\\*\s*\S+\s*|\\[a-z]\s*)*)(.*)$", System.Text.RegularExpressions.RegexOptions.Singleline | System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            var m = System.Text.RegularExpressions.Regex.Match(t, @"^(MACROBUTTON|GOTOBUTTON)\s+\S+\s*((?:\\\*\s*[A-Za-z]+\s*|\\[a-z](?![A-Za-z])\s*)*)(.*)$", System.Text.RegularExpressions.RegexOptions.Singleline | System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             return m.Success ? m.Groups[3].Value : "";
         }
 
@@ -511,7 +511,12 @@ namespace MathBlocks.WordConnector
             {
                 // At an empty point at a paragraph's end, InsertXML adds a paragraph mark before the runs (the
                 // marker would land after the cursor): through a placeholder it stays where the cursor is.
-                InsertInline(doc, _app.Selection.Range, NumberFields.Package(runs));
+                var sel = _app.Selection;
+                int at = sel.Start, length = doc.Content.End;
+                InsertInline(doc, sel.Range, NumberFields.Package(runs));
+                // The cursor goes after the marker, so what is typed or inserted next belongs to the new section.
+                int after = at + (doc.Content.End - length);
+                sel.SetRange(after, after);
                 UpdateNumberFields(doc);
             }
             finally

@@ -25,6 +25,14 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed — numbers read without their opening bracket; cursor after an inserted section marker
+- A number's opening bracket right after a field switch was taken as part of the switch ("A.1)" instead of
+  "(A.1)"), so Convert numbering still could not read MathType's numbers and number comparisons failed.
+- After Insert section marker the cursor stayed in front of the hidden marker, so the next equation landed in
+  the previous section; the cursor now goes after the marker.
+- Self-test: the broken-reference check looks at text inside the snippet window; the Update numbers undo
+  check reports the numbers before, with the extra counter, and after Update numbers.
+
 ### Fixed — equation numbers read as empty (Convert numbering did nothing); Section marker placement
 - MathType's and MathBlocks' numbers are MACROBUTTON fields, which have no field result: their text was read
   as empty. Convert numbering therefore found no readable MathType numbers and changed nothing, "Number

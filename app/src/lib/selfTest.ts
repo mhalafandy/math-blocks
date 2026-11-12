@@ -430,8 +430,12 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const { changeTranspose } = await import("./notation");
       index = await buildDocumentIndex();
       await oneCtrlZ("Change notation (transpose form)", docU.name, () => rewriteDocument(index, index.equations, (l) => changeTranspose(l, "upright"), "Transpose form"));
-      await smoke("staleNumbers");
+      const numbersNow = async () => (await connector.request("listNumbered", {}, SLOW)).equations.map((e) => e.number).join(" ");
+      const before0 = await numbersNow();
+      const stale = await smoke("staleNumbers");
+      const staleNow = await numbersNow();
       await oneCtrlZ("Update numbers", docU.name, () => connector.request("updateNumbers", {}, SLOW));
+      check("Update numbers: the numbers (diagnosis)", null, `before ${before0}; with an extra counter at the top (${stale.fields} field added) ${staleNow}; after Update numbers ${await numbersNow()}`);
       const { convertAllLatex } = await import("./wordShortcuts");
       await oneCtrlZ("Convert LaTeX", docU.name, () => convertAllLatex(undefined, { yes: true }));
       await smoke("save", { file: "undo test.docx" });
@@ -536,7 +540,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       await smoke("deleteBookmarkPara", { bookmark: "_MBEq_A_2_1" });
       const upd = await connector.request("updateNumbers", {}, SLOW);
       const broken = upd.broken ?? [];
-      check("Update numbers lists the reference to the deleted equation, with its text", broken.length === 1 && broken[0]!.bookmark === "_MBEq_A_2_1" && /Word artefacts/.test(broken[0]!.snippet), JSON.stringify(broken));
+      check("Update numbers lists the reference to the deleted equation, with its text", broken.length === 1 && broken[0]!.bookmark === "_MBEq_A_2_1" && /quotes/.test(broken[0]!.snippet) && !/GOTOBUTTON|MERGEFORMAT/.test(broken[0]!.snippet), JSON.stringify(broken));
       await smoke("save", { file: "interchange test (converted).docx" });
     });
     await step("interchange speed", async () => {
