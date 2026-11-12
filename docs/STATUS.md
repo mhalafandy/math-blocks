@@ -5,7 +5,7 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.122 (commit `951b069`), CI passed. This milestone's build (objects steps 5–6): pending CI.
+- **Published:** 0.1.125 (commit `c15de21`), CI passed. It holds objects steps 5–6, the trial checklist, Priority 2, the Accents page and intermediate frames (the 0.1.123 and 0.1.124 runs were superseded by later pushes and never published).
 
 ## Window switching (0.1.115 self-test): cause
 
@@ -47,7 +47,7 @@ Self-test section "Intermediate frames" checks all three on a generic F, F_I, F_
   editor uses the same grid and search) — nothing new needed.
 - **Accents page:** sliders for size, stroke, gap, barb angle, smallest gap, fixed/adaptive length; live preview
   at 12 and 10 pt on this PC's fonts; MathBlocks default / MathType-like; Save and redraw the document.
-- Previous milestone (objects steps 5–6) is in 0.1.123.
+- Objects steps 5–6 and this milestone are both in 0.1.125.
 
 Tests: unit tests for the quick-style actions, the frame-label shape and the accent rules reaching the drawing;
 the bar was checked in the browser preview. These are editor and settings features, so the Word self-test has no
@@ -57,7 +57,7 @@ new section this round.
 
 0. **Intermediate frames:** self-test section "Intermediate frames"; then Document style → Apply style on
    your converted chapter, and check `\vectrix{S}_{I}`-type frames show an upright numeral.
-1. **Self-test** (sections added in 0.1.123: the right-click menu; objects end to end).
+1. **Self-test** (sections added in 0.1.125: the right-click menu; objects end to end).
 2. **Quick-style bar:** type a letter, pause → the bar above it; try Bold, Upright, the accents, Make → kind;
    on a kind (`;pv` Tab r Space, then click it) → Plain / Style….
 3. **Notation settings → a kind → Frame label shape:** italic for the DCM, then check `\dcm{A}{B}` in Word.
@@ -108,8 +108,9 @@ The one-day trial checklist is in [TRIAL-CHECKLIST.md](TRIAL-CHECKLIST.md).
 
 ## History
 
-- **0.1.124** — Trial checklist; quick-style bar; frame-label shape per kind; Accents page.
-- **0.1.123** — Embedded objects steps 5–6: MathBlocks right-click menu; per-user class registration; self-test of undo/redo, Track Changes, PDF.
+- **0.1.125** — Intermediate frames: frame-subscript check per document, Roman numerals upright, DCMs between indexed frames. Also carries the two entries below (their own runs were superseded).
+- **0.1.124** (not published) — Trial checklist; quick-style bar; frame-label shape per kind; Accents page.
+- **0.1.123** (not published) — Embedded objects steps 5–6: MathBlocks right-click menu; per-user class registration; self-test of undo/redo, Track Changes, PDF.
 - **0.1.122** — Self-test: the undo check compares the kind of each number.
 - **0.1.121** — Convert MathType/numbering fixes from a real chapter (breaks, references, private use, empty objects, number sets, look-alikes, interchange forms).
 - **0.1.120** — Bold Greek calibrated by darkness (no heavier than bold Latin).
