@@ -25,6 +25,11 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed — bold Greek no heavier than bold Latin
+- The emboldening offset is calibrated by darkness (ink per advance width over lowercase letters) instead of the
+  stem of Times Bold "I": bold Greek is as much darker than regular Greek as Times Bold is than Times (about
+  0.014 em per side instead of 0.033 em).
+
 ### Fixed — bold Greek is drawn bold
 - Classic: Greek comes from the Symbol font, which has no bold face; bold Greek was drawn regular. Its
   outlines are now emboldened (outward offset), calibrated on the PC's fonts so the stroke matches Times

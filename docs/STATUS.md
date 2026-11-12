@@ -7,62 +7,33 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 - **Published:** 0.1.119 (commit `2e8a562`), CI passed — bold Greek, plus My styles, restyle undo and window activations (0.1.118).
 
-## Window switching (0.1.115 self-test): what was checked, what is known
+## Window switching (0.1.115 self-test): cause
 
-In 0.1.115 another Word document was in front after undo/redo, twice. Every path that can bring a Word window
-forward was checked:
-
-- **Progress window** (whole-document operations): the document's window is enabled again *before* the progress
-  window closes, and the window that was in front is activated again after it — correct.
-- **Confirmations and messages over Word**: owned by the active Word window, so closing them returns to it.
-  Status-bar messages open no window.
-- **Attaching to open windows** (when the add-in is loaded mid-session): activates every window once, then the one
-  that was in front — runs only at that load.
-- **The app**: no automatic path activates a Word document; "Go to equation" (symbol index) does, only when
-  clicked.
-- **Undo / redo in the self-test**: act on the active document only.
-
-No MathBlocks path was found that activates another document during undo/redo, and in the 0.1.117 self-test no
-switch happened. To settle it rather than assume: the add-in now records every Word window activation with the
-MathBlocks request during which it happened (or "no MathBlocks request" — then it came from outside MathBlocks),
-and the self-test reports them: a new section with two documents open checks after each operation that the one
-worked on stays in front, and names the request if another came forward; a final line lists windows that came
-forward not by a self-test step. **Open until the next self-test reports.**
+Settled by the 0.1.119 self-test: with the add-in recording every Word window activation and the MathBlocks request
+during which it happened, a full run recorded **no** window that came forward outside the self-test's own steps,
+and with two documents open none of ten operations (insert, Update numbers, Convert LaTeX and Apply style with their
+progress windows, Repair, restyle, Check style, status message, Ctrl+Z, Ctrl+Y) changed the document in front. Every
+MathBlocks path that can activate a window was also reviewed (see 0.1.118 notes in the history). The switch in 0.1.115
+therefore did not come from MathBlocks — most likely something outside the test (a click, another program). The
+recording stays in the add-in and in the self-test, so a recurrence will name its cause.
 
 ## This round
 
-**4. Bold Greek was not drawn bold (bug).** Classic draws Greek from the Symbol font, which has no bold face;
-the renderer slanted it for italic but ignored bold. Now bold Greek's outlines are emboldened: every point moves
-outward by an offset measured on this PC's fonts — half the difference between the stem of Times New Roman Bold
-"I" and Symbol's capital Iota (Bold Italic for italic) — so the stroke weight matches bold Latin letters; the
-advance grows by twice the offset. On a PC without Symbol, Times' own bold Greek is used, then STIX's math bold
-Greek. It applies everywhere the Classic engine draws (pictures, objects, the Classic preview, comparison
-sheet); native Word equations already mark bold Greek bold (Word draws it); the visual editor shows it bold.
-The Hughes preset now draws Greek in bold kinds as bold upright, like Latin: \pvec{\omega} (bold upright,
-harpoon), \cmat{\omega} (bold upright), plain \omega (document style). In LaTeX export, lowercase bold Greek
-stays bold italic (LaTeX has no upright bold lowercase Greek without extra packages).
-MathType gets bold Greek from Windows' synthetic bold of Symbol; the self-test saves a sheet document so the
-two can be compared side by side.
+**Bold Greek looked heavier than bold Latin (owner, on 0.1.119).** The first calibration matched the stem of
+Times Bold capital "I" (0.159 em against Symbol's 0.094 em), then thickened every stroke of the Greek letter by the
+same amount — hairlines included. Real bold thickens stems much more than hairlines, so the Greek came out darker.
+Measured on Times-metric fonts: matching the stem needs 0.033 em per side, matching the overall darkness of Times
+Bold lowercase only 0.014 em. Now the offset is calibrated by **darkness** (ink per advance width over lowercase
+letters): bold Greek is made exactly as much darker than regular Greek as Times Bold is darker than Times (Bold
+Italic than Italic), found by a few steps on the real emboldened outlines, on this PC's fonts. The comparison sheet
+and the self-test show both darkness figures.
 
-
-1. **Window switching**: investigation above; activation recording; two-document self-test section.
-2. **Restyle undo restores the stored style too.** Word's undo does not cover the Custom XML Part, so the stored
-   style keeps a short history and the ID of one redrawn equation (probe). When the probe's drawing is in a
-   different style than the stored one and that style is in the history (after Ctrl+Z or Ctrl+Y), the stored
-   style follows it, with a status-bar note. The add-in tells the app when Word is idle after a selection change
-   in such a document; every operation that reads the style checks too. A style changed but not yet redrawn has
-   no probe, so it is never mistaken for an undo.
-3. **My styles**: New style… (blank or from any style; name, description), rename, edit + Save style, duplicate,
-   delete, set as my default, export/import; built-in styles read-only; the document shows its style's name,
-   "…, modified" after changes.
-- Fix after the 0.1.117 self-test: the restyle checks could not read the style fingerprint of embedded objects.
-
-**Commits:** this round's commit "My styles, restyle undo, window activations".
+**Commits:** this round's commit "Bold Greek: calibrate by darkness, not the capital stem".
 
 ## What to test (0.1.119)
 
-0. **Bold Greek:** Ctrl+K → "Bold Greek comparison sheet": bold Greek should look as heavy as the bold Latin
-   letters next to it, at 12 and 10 pt. The self-test section "Bold Greek" checks the stroke weight and saves
+0. **Bold Greek (recalibrated):** Ctrl+K → "Bold Greek comparison sheet": bold Greek should now look as heavy as
+   the bold Latin letters next to it, at 12 and 10 pt (lighter than in 0.1.119). The self-test section "Bold Greek" checks the stroke weight and saves
    "bold greek sheet.docx": please compare it with the same letters made bold in MathType.
 
 1. **Self-test** (please don't click in Word while it runs). Expected: all checks pass, including
@@ -77,11 +48,9 @@ two can be compared side by side.
 
 ## Last self-test analysed
 
-**0.1.117:** 240 checks — 213 passed, 4 failed, 23 for information; spike 123, 0 failed. No window switch.
-
-- The 4 failures were the restyle checks "changed the document" and "drawn in the new style (0 of 5)": the
-  restyle worked (σ_sf's size in Word changed both times, LaTeX unchanged), but the test equations are embedded
-  objects and their style fingerprint was not read back from the object's data. Fixed.
+**0.1.119:** 272 checks — 245 passed, **0 failed**, 27 for information; spike 123, 0 failed. Two documents open:
+every operation kept the worked-on document in front; no window came forward outside the test. Bold Greek: the
+stem checks passed, but the result looked heavier than bold Latin (owner) — recalibrated by darkness this round.
 
 ## Thesis-copy results
 

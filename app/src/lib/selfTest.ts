@@ -723,8 +723,9 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       if (!fonts.symbol) check("bold Greek: the Symbol font was not found (drawn from Times New Roman Bold instead)", null);
       else {
         const em = (x: number) => `${(x * 1000).toFixed(1)}/1000 em`;
-        check("stroke of emboldened bold Greek (upright) matches Times New Roman Bold", Math.abs(st.emboldened - st.timesBold) / st.timesBold < 0.08, `Symbol ${em(st.symbol)} → ${em(st.emboldened)}; Times Bold ${em(st.timesBold)} (offset ${em(st.offsetUpright)})`);
-        check("stroke of emboldened bold Greek (italic) matches Times New Roman Bold Italic", Math.abs(st.emboldenedItalic - st.timesBoldItalic) / st.timesBoldItalic < 0.1, `→ ${em(st.emboldenedItalic)}; Times Bold Italic ${em(st.timesBoldItalic)} (offset ${em(st.offsetItalic)})`);
+        const pct = (x: number) => `${((x - 1) * 100).toFixed(1)} % darker`;
+        check("bold Greek (upright) is as much darker than regular Greek as Times Bold is than Times", Math.abs(st.darkness.greek - st.darkness.latin) / st.darkness.latin < 0.03, `Times Bold ${pct(st.darkness.latin)}; emboldened Symbol ${pct(st.darkness.greek)} (offset ${em(st.offsetUpright)}; stems: Symbol ${em(st.symbol)} → ${em(st.emboldened)}, Times Bold "I" ${em(st.timesBold)})`);
+        check("bold Greek (italic) is as much darker as Times Bold Italic is than Times Italic", Math.abs(st.darkness.greekItalic - st.darkness.latinItalic) / st.darkness.latinItalic < 0.03, `Times Bold Italic ${pct(st.darkness.latinItalic)}; emboldened Symbol ${pct(st.darkness.greekItalic)} (offset ${em(st.offsetItalic)})`);
       }
       // The three meanings of one letter, Latin or Greek: \pvec bold upright with a harpoon, \cmat bold upright, plain italic.
       const ds = await import("./docStyle");

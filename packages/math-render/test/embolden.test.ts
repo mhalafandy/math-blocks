@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseLatex } from "@mathblocks/math-latex";
-import { boldGreek, charGlyph, CLASSIC, glyphSource, glyphStem, layout, loadFont, thinOutline, type Box, type FontSet, type OutlineCmd } from "../src";
+import { boldDarkness, boldGreek, charGlyph, CLASSIC, glyphSource, glyphStem, layout, loadFont, offsetForDarkness, thinOutline, type Box, type FontSet, type OutlineCmd } from "../src";
 
 const L = "/usr/share/fonts/truetype/liberation/LiberationSerif-";
 const STIX = new URL("../node_modules/@fontsource/stix-two-math/files/stix-two-math-latin-400-normal.woff", import.meta.url);
@@ -36,6 +36,18 @@ describe.skipIf(!available)("bold Greek (emboldened outlines)", () => {
     const bold = stemOf("bold", "I");
     const thickened = stemOf("regular", "I", (bold - reg) / 2);
     expect(Math.abs(thickened - bold) / bold).toBeLessThan(0.06);
+  });
+
+  it("calibrated by darkness: the offset makes regular letters as much darker as the bold face is", () => {
+    const k = boldDarkness(fonts.regular, fonts.bold)!;
+    expect(k).toBeGreaterThan(1.25);
+    expect(k).toBeLessThan(1.6);
+    // Regular lowercase stands in for Symbol's Greek (same stroke weight).
+    const glyphs = [..."aenos"].map((c) => charGlyph(fonts.regular, c)!);
+    const d = offsetForDarkness(glyphs, k);
+    // Much less than matching the capital I stem (about 0.03 em), which looked heavier than bold Latin.
+    expect(d).toBeGreaterThan(0.008);
+    expect(d).toBeLessThan(0.022);
   });
 
   it("without Symbol the offsets fall back to a default, and bold Greek comes from a real bold", () => {

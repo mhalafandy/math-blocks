@@ -36,7 +36,7 @@ export function boldGreekStems(fonts: FontSet) {
       emboldenedItalic = glyphStem(thinOutline(cmds as never, -bg.italic) as OutlineCmd[], g.h) ?? 0;
     }
   }
-  return { ...bg.stems, emboldened, emboldenedItalic, offsetUpright: bg.upright, offsetItalic: bg.italic, measured: bg.measured };
+  return { ...bg.stems, emboldened, emboldenedItalic, offsetUpright: bg.upright, offsetItalic: bg.italic, measured: bg.measured, darkness: bg.darkness };
 }
 
 export function BoldGreekSheet() {
@@ -53,7 +53,7 @@ export function BoldGreekSheet() {
       const em = (x: number) => (x ? `${(x * 1000).toFixed(0)}/1000 em` : "—");
       setNote(
         fonts.symbol
-          ? `Stems measured on this PC — Times Regular ${em(st.timesRegular)}, Times Bold ${em(st.timesBold)}, Times Bold Italic ${em(st.timesBoldItalic)}; Symbol ${em(st.symbol)}, emboldened ${em(st.emboldened)} (upright) / ${em(st.emboldenedItalic)} (italic); outward offset ${em(st.offsetUpright)} / ${em(st.offsetItalic)}.`
+          ? `Measured on this PC — Times Bold is ${((st.darkness.latin - 1) * 100).toFixed(0)} % darker than Times (Bold Italic ${((st.darkness.latinItalic - 1) * 100).toFixed(0)} %); emboldened Symbol Greek ${((st.darkness.greek - 1) * 100).toFixed(0)} % / ${((st.darkness.greekItalic - 1) * 100).toFixed(0)} %, with an outward offset of ${em(st.offsetUpright)} / ${em(st.offsetItalic)}.`
           : "No Symbol font here: bold Greek is drawn from Times New Roman Bold (or STIX's bold Greek), not emboldened.",
       );
       const rows = LETTERS.map((l) => {
