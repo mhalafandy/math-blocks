@@ -189,7 +189,10 @@ async function convertParagraphs(paragraphs: MathTypeParagraph[], equations: Con
           : buildNativeInsertion(e.latex, false, profile, e.tag).flatOpc,
       );
     }
-    for (const e of r.equations) equations.push({ ...e, index: equations.length + 1 });
+    // Where each equation is, for the report: its paragraph's text, or the paragraph before an equation alone in its own.
+    const own = [...p.flatOpc.matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>/g)].map((m) => m[1]).join("").replace(/\s+/g, " ").trim();
+    const where = own ? `“${own.length > 70 ? `${own.slice(0, 70)}…` : own}”` : p.before ? `alone in a paragraph after “${p.before}”` : "alone in a paragraph";
+    for (const e of r.equations) equations.push({ ...e, index: equations.length + 1, where: e.number ? `${e.number}, ${where}` : where });
     if (packages.some((x) => x)) items.push({ ...p, packages });
   }
   return items;
@@ -236,6 +239,20 @@ export async function convertOpenDocument(document?: string, o: { quiet?: boolea
       if (from >= page.total || page.paragraphs.length === 0) break;
       page = await connector.request("listMathTypeParagraphs", { document: first.fullName, from, limit: PAGE }, SLOW);
     }
+    // Pre-flight: equations that cannot be converted stay MathType — listed with where they are, before anything is written.
+    const held = equations.filter((e) => e.status !== "converted");
+    if (held.length && !o.quiet) {
+      ui.set({ busy: false, progress: null });
+      const list = held.slice(0, 8).map((e) => `• ${e.where ?? `equation ${e.index}`}: ${e.messages[0] ?? "not converted"}`).join("\n");
+      const go = await askConfirm(
+        "Convert MathType equations",
+        `${held.length} MathType equation(s) cannot be converted and will stay MathType (listed again in the report):\n${list}${held.length > 8 ? `\n… and ${held.length - 8} more` : ""}\n\nConvert the other ${equations.length - held.length} now?`,
+        "Convert the others",
+        false,
+      );
+      if (!go) return;
+      ui.set({ busy: true });
+    }
     ui.set({ progress: `Writing ${items.length} paragraph(s) into Word…` });
     await backupIfMany(first.fullName, items.length);
     const r = items.length ? await connector.request("replaceParagraphs", { document: first.fullName, items, undoLabel: "Convert MathType equations" }, 600_000) : { replaced: 0, skipped: 0 };
@@ -250,6 +267,13 @@ export async function convertOpenDocument(document?: string, o: { quiet?: boolea
     }
     for (const e of equations) e.messages = e.messages.filter(Boolean);
     const converted = equations.filter((e) => e.status === "converted").length;
+    // After: no private-use character in any converted equation, and every MathType object left is one listed above.
+    const pua = equations.filter((e) => e.status === "converted" && e.latex && /[\uE000-\uF8FF]/u.test(e.latex));
+    const after = await connector.request("listMathTypeParagraphs", { document: first.fullName, from: 0, limit: 1 }, SLOW).catch(() => null);
+    const leftInWord = after?.totalObjects ?? 0;
+    if (pua.length || leftInWord !== held.length) {
+      app.notify(`After converting: ${leftInWord} MathType object(s) left in the document (${held.length} listed as not convertible)${pua.length ? `; ${pua.length} converted equation(s) still hold a private-use character` : ""}. See the report.`, "error");
+    }
     ui.set({
       busy: false,
       progress: null,

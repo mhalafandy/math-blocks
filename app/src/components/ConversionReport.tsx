@@ -67,6 +67,7 @@ export function ConversionReport() {
               <span className="conv-num">{e.number ?? `#${e.index}`}</span>
               <div className="conv-eq">
                 {e.latex ? <MathPreview latex={e.latex} /> : <span className="muted">(not converted)</span>}
+                {e.where && <div className="conv-msg muted">Where: {e.where}</div>}
                 {e.messages.map((m, i) => (
                   <div key={i} className="conv-msg">
                     {m}

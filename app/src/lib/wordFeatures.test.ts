@@ -76,7 +76,7 @@ describe("converting MathType in the open document", () => {
   it("pages through the paragraphs and writes them back in one request", async () => {
     await conv.convertOpenDocument();
     const lists = word.calls.filter((c) => c.method === "listMathTypeParagraphs");
-    expect(lists.length).toBe(2); // 15 + 5
+    expect(lists.length).toBe(3); // 15 + 5, then the check after converting (MathType objects left)
     const replace = word.calls.find((c) => c.method === "replaceParagraphs")!;
     // One package per MathType object (only the objects are replaced, never the paragraph).
     const items = replace.params.items as { packages: (string | null)[]; start: number }[];

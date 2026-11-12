@@ -135,6 +135,42 @@ end of section A.1 becomes (A.1.4)). A new label that repeats an existing number
   - `\hat{f}_1`, `\hat{\mathbf{f}}_1`, `\mathbf{\hat{f}}_1` (lowercase letter with an index) → `\bvec{f}_1`
   - `\left[\begin{array}{…}…\end{array}\right]` → `bmatrix` (`( )` → `pmatrix`, `| |` → `vmatrix`)
   - a forced look in an index (`\sigma_{\mathrm{sf}}`, `r_{\mathbf{n}}`) → plain (`\sigma_{sf}`, `r_{n}`)
+  - ℤ ℝ ℕ ℚ ℂ typed as characters → `\mathbb{Z}` … `\mathbb{C}`; Greek capitals that look like Latin letters
+    (Α Β Ε Ζ Η Ι Κ Μ Ν Ο Ρ Τ Χ) are reported as a warning
+
+### What Convert MathType writes (accepted as they are)
+
+Every form below is what converting a MathType equation produces; Convert LaTeX reads each back to the same
+equation (checked in the tests on every build), so text written by MathBlocks or by tools that follow this file
+can be converted again.
+
+| Form | Example |
+|---|---|
+| Physical vector | `\pvec{r}` |
+| Physical vector with a frame pair (relative to) | `\pvec[P/O]{r}` |
+| Primed frames in the frame pair | `\pvec[B'/B]{\omega}` |
+| Vectrix (frame) and its transpose | `\vectrix{F}^{\T}` |
+| Dyadic | `\dyadic{J}_{c}` |
+| Basis (unit) vector with an index | `\bvec{f}_{1}` |
+| Column matrix, matrix | `\cmat{x}=\mat{A}\cmat{y}` |
+| Rotation matrix (direction cosines) | `\dcm{A}{B}` |
+| Left superscript (frame of a column) | `{}^{E}\cmat{n}_{3}` |
+| Left superscript and subscript | `{}^{a}_{b}X` |
+| Primes | `x''+y'` |
+| Dot product, cross product | `a\cdot b+a\times b` |
+| Fraction, root, n-th root | `\frac{a}{b}+\sqrt{x}+\sqrt[3]{y}` |
+| Sum, product, integral with limits | `\sum_{i=1}^{n}a_i+\prod_{k}b_k+\int_{0}^{T}f\,dt` |
+| Stretchy brackets | `\left(\frac{a}{b}\right)+\left[x\right]+\left\{y\right\}+\left|z\right|` |
+| Matrices | `\begin{bmatrix}a&b\\c&d\end{bmatrix}+\begin{pmatrix}x\\y\end{pmatrix}` |
+| Accents | `\dot{x}+\ddot{x}+\hat{x}+\bar{x}+\tilde{x}+\vec{x}+\overrightharpoon{x}` |
+| Over and under | `\overset{\leftrightarrow}{I}+\underset{n\to\infty}{\lim}x` |
+| Functions | `\sin\theta+\cos\phi+\exp x+\ln y` |
+| Text and upright letters | `\text{if }x>0,\ \mathrm{d}t` |
+| Bold Latin and Greek | `\mathbf{F}+\boldsymbol{\omega}` |
+| Number sets | `k\in\mathbb{Z},\ x\in\mathbb{R}` |
+| Spaces | `a\,b\:c;d\quad e\qquad f` |
+| Aligned lines | `\begin{aligned}a&=b\\&=c\end{aligned}` |
+| Cases | `f=\begin{cases}1&x>0\\0&\text{else}\end{cases}` |
 
 ## 4. What Word does to typed LaTeX, undone before parsing
 
@@ -198,7 +234,7 @@ An index goes outside the kind: `\pvec{r}_1`, `\bvec{f}_2`. The transpose is `^{
 
 ### Symbols
 
-- Letters and ordinary symbols: `\alpha`, `\beta`, `\gamma`, `\delta`, `\epsilon`, `\varepsilon`, `\zeta`, `\eta`, `\theta`, `\vartheta`, `\iota`, `\kappa`, `\lambda`, `\mu`, `\nu`, `\xi`, `\pi`, `\varpi`, `\rho`, `\varrho`, `\sigma`, `\varsigma`, `\tau`, `\upsilon`, `\phi`, `\varphi`, `\chi`, `\psi`, `\omega`, `\Gamma`, `\Delta`, `\Theta`, `\Lambda`, `\Xi`, `\Pi`, `\Sigma`, `\Upsilon`, `\Phi`, `\Psi`, `\Omega`, `\infty`, `\partial`, `\nabla`, `\hbar`, `\ell`, `\Re`, `\Im`, `\aleph`, `\wp`, `\emptyset`, `\varnothing`, `\forall`, `\exists`, `\nexists`, `\neg`, `\lnot`, `\angle`, `\triangle`, `\prime`, `\degree`, `\top`, `\bot`, `\varkappa`, `\complement`, `\mho`, `\cdots`, `\ldots`, `\dots`, `\vdots`, `\ddots`
+- Letters and ordinary symbols: `\alpha`, `\beta`, `\gamma`, `\delta`, `\epsilon`, `\varepsilon`, `\zeta`, `\eta`, `\theta`, `\vartheta`, `\iota`, `\kappa`, `\lambda`, `\mu`, `\nu`, `\xi`, `\pi`, `\varpi`, `\rho`, `\varrho`, `\sigma`, `\varsigma`, `\tau`, `\upsilon`, `\phi`, `\varphi`, `\chi`, `\psi`, `\omega`, `\Gamma`, `\Delta`, `\Theta`, `\Lambda`, `\Xi`, `\Pi`, `\Sigma`, `\Upsilon`, `\Phi`, `\Psi`, `\Omega`, `\langle`, `\rangle`, `\lfloor`, `\rfloor`, `\lceil`, `\rceil`, `\backslash`, `\infty`, `\partial`, `\nabla`, `\hbar`, `\ell`, `\Re`, `\Im`, `\aleph`, `\wp`, `\emptyset`, `\varnothing`, `\forall`, `\exists`, `\nexists`, `\neg`, `\lnot`, `\angle`, `\triangle`, `\prime`, `\degree`, `\top`, `\bot`, `\varkappa`, `\complement`, `\mho`, `\cdots`, `\ldots`, `\dots`, `\vdots`, `\ddots`
 - Binary operators: `\pm`, `\mp`, `\times`, `\div`, `\cdot`, `\ast`, `\star`, `\circ`, `\bullet`, `\cap`, `\cup`, `\wedge`, `\land`, `\vee`, `\lor`, `\oplus`, `\ominus`, `\otimes`, `\odot`, `\setminus`, `\dagger`, `\ddagger`, `\uplus`, `\sqcup`, `\sqcap`, `\circledast`, `\diamond`, `\amalg`
 - Relations and arrows: `\leq`, `\le`, `\geq`, `\ge`, `\neq`, `\ne`, `\approx`, `\equiv`, `\sim`, `\simeq`, `\cong`, `\propto`, `\ll`, `\gg`, `\in`, `\notin`, `\ni`, `\subset`, `\subseteq`, `\supset`, `\supseteq`, `\parallel`, `\perp`, `\mid`, `\coloneqq`, `\doteq`, `\to`, `\rightarrow`, `\leftarrow`, `\gets`, `\leftrightarrow`, `\Rightarrow`, `\Leftarrow`, `\Leftrightarrow`, `\implies`, `\impliedby`, `\iff`, `\mapsto`, `\longrightarrow`, `\longleftarrow`, `\Longrightarrow`, `\Longleftarrow`, `\uparrow`, `\downarrow`, `\rightleftharpoons`, `\therefore`, `\because`, `\vdash`, `\models`, `\triangleq`, `\nmid`, `\nless`, `\ngtr`, `\nleq`, `\ngeq`, `\nsim`, `\ncong`, `\nparallel`, `\prec`, `\succ`, `\preceq`, `\succeq`, `\subsetneq`, `\supsetneq`, `\nsubseteq`, `\nsupseteq`, `\leqslant`, `\geqslant`, `\lesssim`, `\gtrsim`, `\asymp`, `\approxeq`, `\longleftrightarrow`, `\Longleftrightarrow`, `\hookrightarrow`, `\hookleftarrow`, `\longmapsto`, `\rightharpoonup`, `\rightharpoondown`, `\leftharpoonup`, `\leftharpoondown`, `\updownarrow`, `\Uparrow`, `\Downarrow`, `\Updownarrow`, `\nearrow`, `\searrow`, `\nwarrow`, `\swarrow`, `\leftrightharpoons`
 - Punctuation: `\colon`

@@ -11,6 +11,7 @@
  * the add-in write them.
  */
 import { parseLatex } from "@mathblocks/math-latex";
+import { lookalikeWarnings } from "@mathblocks/mathtype";
 import { KIND_RULES } from "./kindRules";
 
 /** One paragraph as the add-in scanned it (only paragraphs that matter are sent). */
@@ -221,6 +222,12 @@ export function mapLegacyForms(latex: string): { latex: string; mapped: string[]
       return `\\begin{${env}}${body}\\end{${env}}`;
     });
   }
+  // Double-struck number sets typed as characters: the LaTeX commands.
+  const BB: Record<string, string> = { "ℤ": "Z", "ℝ": "R", "ℕ": "N", "ℚ": "Q", "ℂ": "C" };
+  if (/[ℤℝℕℚℂ]/.test(s)) {
+    s = s.replace(/[ℤℝℕℚℂ]/g, (c) => `\\mathbb{${BB[c]}}`);
+    note("ℤ ℝ ℕ ℚ ℂ → \\mathbb{…}");
+  }
   // Indices are written plainly: a forced look (\mathrm{sf}, \mathbf{n}, \mathit{i}) is dropped, the
   // document style draws index labels (italic or upright).
   const plain = KIND_RULES.find((r) => r.id === "plain-indices")!.apply(s);
@@ -260,7 +267,7 @@ const snippetOf = (text: string, from: number, to: number) => {
 
 /** Notation the convention rules out (warnings): a frame never takes a subscript. */
 function notationWarnings(latex: string): string[] {
-  const out: string[] = [];
+  const out: string[] = [...lookalikeWarnings(latex)];
   for (const m of latex.matchAll(/\\vectrix\s*\{\s*([^}]*)\}\s*_/g)) {
     out.push(`\\vectrix{${m[1]}} has a subscript: frames never do (only I and J are dyadics, \\dyadic{J}_{c})`);
   }

@@ -6,6 +6,7 @@
  * are reported as warnings and converted as well as possible.
  */
 import { latexCommands } from "@mathblocks/math-latex";
+import { MT_PRIVATE_USE } from "./mtCodes";
 import type { MtNode } from "./mtef";
 
 type Char = Extract<MtNode, { t: "char" }>;
@@ -75,6 +76,12 @@ const CHAR_LATEX: Record<number, string> = {
   0x005f: "\\_",
   0x00a0: "~",
   0xe2ef: "\\mathbb{R}", // MT Extra
+  // Double-struck number sets: the commands every LaTeX reader knows.
+  0x2124: "\\mathbb{Z}",
+  0x211d: "\\mathbb{R}",
+  0x2115: "\\mathbb{N}",
+  0x211a: "\\mathbb{Q}",
+  0x2102: "\\mathbb{C}",
 };
 
 const DELIM: Record<number, string> = {
@@ -175,7 +182,16 @@ function word(s: string, typeface: number): string {
 function rawChar(code: number, typeface: number): string {
   if (typeface === FN_SPACE) return SPACES[code] ?? "\\,";
   const special = CHAR_LATEX[code];
-  if (special !== undefined) return special;
+  // A bare command (\cdot, \times) ends with a space, so a letter after it cannot join it (\cdotb).
+  if (special !== undefined) return /^\\[A-Za-z]+$/.test(special) ? `${special} ` : special;
+  // MathType's private-use characters (MT Extra): their Unicode equivalent, spelled as LaTeX. Unmapped
+  // ones stay as they are and the conversion reports them (never passed on silently).
+  const unicode = code >= 0xe000 && code <= 0xf8ff ? MT_PRIVATE_USE[code] : undefined;
+  if (unicode !== undefined) {
+    const cp = unicode.codePointAt(0)!;
+    if ([...unicode].length === 1) return rawChar(cp, typeface);
+    return unicode;
+  }
   const ch = String.fromCodePoint(code);
   const cmd = latexCommands.CHAR_TO_COMMAND.get(ch);
   if (cmd) return `\\${cmd} `;

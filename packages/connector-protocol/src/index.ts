@@ -112,6 +112,8 @@ export interface MathTypeParagraph {
   /** MathType objects in it (checked again before replacing). */
   objects: number;
   flatOpc: string;
+  /** Text of the paragraph before (where it is, for the report). */
+  before?: string;
   /**
    * One package per MathType object (in order; null = not converted, left as it is): only the objects
    * are replaced, the paragraph and its properties (style, tabs) are never rewritten.

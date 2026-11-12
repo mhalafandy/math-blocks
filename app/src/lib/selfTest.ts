@@ -424,6 +424,26 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     });
 
     // ------------------------------------------------------------ Repair converts Classic pictures to objects
+    section = "Convert MathType: nothing passes through silently";
+    await step("mathtype private use and empty objects", async () => {
+      const { mathTypeDocx, mathTypeRun, styledParagraph } = await import("@mathblocks/mathtype");
+      const { toBase64 } = await import("./render");
+      const para = (n: number, text: string) => `<w:p>${styledParagraph(text).slice(5, -6)}${mathTypeRun(n)}</w:p>`;
+      // A dot product written with MathType's private-use dot, and an empty MathType object alone in its paragraph.
+      const docx = mathTypeDocx([para(1, "The product "), styledParagraph("Before the empty one."), `<w:p>${mathTypeRun(2)}</w:p>`], ["dotProduct", "empty"]);
+      await smoke("openDocx", { file: "mathtype private use test.docx", base64: toBase64(docx) });
+      const conv = await import("./convertMathType");
+      await conv.convertOpenDocument(undefined, { quiet: true });
+      const report = conv.useConversion.getState().report?.result;
+      const dot = report?.equations.find((e) => e.latex?.includes("cdot"));
+      check("the private-use dot (MT Extra) becomes \\cdot", !!dot && dot.status === "converted" && !/[-]/u.test(dot.latex ?? ""), dot?.latex ?? "not found");
+      const held = report?.equations.filter((e) => e.status !== "converted") ?? [];
+      check("the empty MathType object is listed, with where it is, and left as it is", held.length === 1 && /Empty MathType equation/.test(held[0]!.messages.join(" ")) && /Before the empty one/.test(held[0]!.where ?? ""), held.map((e) => `${e.where}: ${e.messages.join("; ")}`).join(" | ") || "nothing listed");
+      const left = await connector.request("listMathTypeParagraphs", { from: 0, limit: 1 }, SLOW);
+      check("after converting: the only MathType object left is the one listed", left.totalObjects === held.length, `${left.totalObjects} left, ${held.length} listed`);
+      await smoke("save", { file: "mathtype private use test (converted).docx" });
+    });
+
     section = "One Ctrl+Z for each whole-document operation";
     await step("whole-document operations", async () => {
       const docU = await smoke("newDocument");

@@ -26,6 +26,9 @@ export const SYMBOLS: Record<string, SymbolDef> = {
   Gamma: ident("Γ"), Delta: ident("Δ"), Theta: ident("Θ"), Lambda: ident("Λ"),
   Xi: ident("Ξ"), Pi: ident("Π"), Sigma: ident("Σ"), Upsilon: ident("Υ"),
   Phi: ident("Φ"), Psi: ident("Ψ"), Omega: ident("Ω"),
+  // Delimiters outside \left…\right (MathType writes them on their own) and the backslash
+  langle: ord("⟨"), rangle: ord("⟩"), lfloor: ord("⌊"), rfloor: ord("⌋"), lceil: ord("⌈"), rceil: ord("⌉"),
+  backslash: ord("\\"),
   // Ordinary symbols
   infty: ident("∞"), partial: ident("∂"), nabla: ident("∇"), hbar: ident("ℏ"),
   ell: ident("ℓ"), Re: ident("ℜ"), Im: ident("ℑ"), aleph: ident("ℵ"), wp: ident("℘"),

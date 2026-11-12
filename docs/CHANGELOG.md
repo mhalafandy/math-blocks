@@ -25,6 +25,27 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed — Convert MathType and Convert numbering on a real chapter
+- Every MathType chapter/section break becomes a MathBlocks marker, also in chapters and sections without
+  equations (their chapter and section are read from the break's own SEQ fields, as Word evaluates them);
+  a section heading without a MathType break is listed, with a marker added after it unless unticked;
+  after the conversion any MathType numbering field left (MTEqn, MTSec, MTChap, breaks, numbers) is listed.
+- MathType's references (GOTOBUTTON/REF ZEqnNum…) become MathBlocks references to the numbers' _MBEq_
+  bookmarks (one reference mechanism); each is verified to show its equation's number, then MathType's
+  bookmarks are removed (kept, and the mismatches listed, otherwise).
+- MathType's private-use characters (MT Extra) are mapped from MathType's character table (e.g. its dot
+  operator → \cdot); an unmapped one, an empty MathType object, or any equation that cannot be converted
+  stays MathType and is listed with where it is before anything is written; after converting, the MathType
+  objects left must be exactly those listed, and no converted equation may hold a private-use character.
+- Bare commands from MathType (\cdot, \times…) are followed by a space (a letter after one made an unknown
+  command); the parser accepts \langle, \rangle, \lfloor, \rfloor, \lceil, \rceil and \backslash outside
+  \left…\right.
+- ℤ ℝ ℕ ℚ ℂ → \mathbb{…} (Convert MathType and Convert LaTeX); Greek capitals that look like Latin letters
+  and a "$" touching a converted equation are reported.
+- docs/LATEX-INTERCHANGE.md lists every form Convert MathType writes (from one table); a test reads each back
+  through Convert LaTeX and checks it is the same equation, and every command the MathType reader can write
+  is checked against the parser.
+
 ### Fixed — bold Greek no heavier than bold Latin
 - The emboldening offset is calibrated by darkness (ink per advance width over lowercase letters) instead of the
   stem of Times Bold "I": bold Greek is as much darker than regular Greek as Times Bold is than Times (about

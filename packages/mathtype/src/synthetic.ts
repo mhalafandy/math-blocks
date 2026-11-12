@@ -55,6 +55,12 @@ export const SYNTHETIC_EQUATIONS = {
     mtef: () => mtef(eq(tmpl(3, 3, line(matrix(1, 3, line(ch(tf.num, "0")), line(v("y")), line(v("z")))), ch(tf.expand, "["), ch(tf.expand, "]")))),
   },
   force: { latex: "\\mathbf{F}=m\\mathbf{a}", mtef: () => mtef(eq(ch(tf.vec, "F"), sign("="), v("m"), ch(tf.vec, "a"))) },
+  /** A dot product written with MathType's private-use dot (MT Extra, U+E98F). */
+  dotProduct: { latex: "a\\cdot b", mtef: () => mtef(eq(v("a"), ch(tf.sym, 0xe98f), v("b"))) },
+  /** An empty equation (nothing in it), as MathType can leave behind. */
+  empty: { latex: "", mtef: () => mtef(eq()) },
+  /** A private-use character MathType's table has no equivalent for. */
+  unmappedPrivate: { latex: "a\u{E000}", mtef: () => mtef(eq(v("a"), ch(tf.sym, 0xe000))) },
 } as const;
 export type SyntheticEquation = keyof typeof SYNTHETIC_EQUATIONS;
 

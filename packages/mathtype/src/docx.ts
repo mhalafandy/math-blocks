@@ -70,6 +70,8 @@ export interface ConvertedEquation {
   messages: string[];
   /** Content-control tag of the new MathBlocks equation. */
   tag?: string;
+  /** Where it is in the document (for the report), when known. */
+  where?: string;
 }
 
 export interface ConvertResult {
@@ -164,9 +166,20 @@ function convertPartXml(
       const converted = mathTypeObjectToLatex(bin);
       const warnings = converted.warnings;
       const latex = transform ? transform(converted.latex) : converted.latex;
+      // Never silently: an empty object, or a character with no LaTeX equivalent, stays MathType and is listed.
+      if (!latex.trim()) {
+        entry.messages.push("Empty MathType equation (nothing in it): left as it is — delete it in Word if it is not needed");
+        return null;
+      }
+      const pua = [...latex].filter((c) => /[\uE000-\uF8FF]/u.test(c));
+      if (pua.length) {
+        entry.latex = latex;
+        entry.messages.push(`MathType character ${[...new Set(pua)].map((c) => `U+${c.codePointAt(0)!.toString(16).toUpperCase()}`).join(", ")} (private use, MT Extra) has no LaTeX equivalent: the equation is left as MathType`);
+        return null;
+      }
       const parsed = parseLatex(latex);
       entry.latex = latex;
-      entry.messages.push(...warnings, ...parsed.diagnostics.map((x) => x.message));
+      entry.messages.push(...warnings, ...parsed.diagnostics.map((x) => x.message), ...lookalikeWarnings(latex), ...dollarWarnings(before, after));
       entry.status = "converted";
       for (const m of run.matchAll(/\br:id="([^"]+)"/g)) dropped.add(m[1]!);
       entry.tag = tags?.[entry.index - 1] || formatTag({ blockId: null, instanceId: newInstanceId() });
@@ -341,6 +354,24 @@ function replaceObjectRuns(xml: string, replace: (run: string, before: string, a
     pos = end;
   }
   return out + xml.slice(pos);
+}
+
+/** Greek capitals that look like Latin letters (often typed for a Roman numeral or a Latin letter). */
+const LOOKALIKE: Record<string, string> = { "Α": "A", "Β": "B", "Ε": "E", "Ζ": "Z", "Η": "H", "Ι": "I", "Κ": "K", "Μ": "M", "Ν": "N", "Ο": "O", "Ρ": "P", "Τ": "T", "Χ": "X" };
+
+export function lookalikeWarnings(latex: string): string[] {
+  const found = [...new Set([...latex].filter((c) => LOOKALIKE[c]))];
+  return found.map((c) => `Greek capital ${c} (U+${c.codePointAt(0)!.toString(16).toUpperCase()}) looks like the Latin letter ${LOOKALIKE[c]}: check which one is meant`);
+}
+
+/** Text of a run sequence (w:t contents). */
+const runText = (xml: string) => [...xml.matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>/g)].map((m) => m[1]).join("");
+
+/** A "$" right next to the equation in the text (left from LaTeX delimiters, or doubled ones). */
+export function dollarWarnings(before: string, after: string): string[] {
+  const b = /\$\s*$/.test(runText(before));
+  const a = /^\s*\$/.test(runText(after));
+  return b || a ? [`A “$” touches this equation in the text (${b && a ? "both sides" : b ? "before it" : "after it"}) — left from LaTeX delimiters? Remove it in Word if it does not belong there`] : [];
 }
 
 function lastRunStart(xml: string, before: number) {

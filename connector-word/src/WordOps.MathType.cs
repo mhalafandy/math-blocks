@@ -49,6 +49,23 @@ namespace MathBlocks.WordConnector
             return map.Values.ToList();
         }
 
+        private static string PreviousText(Word.Document doc, int start)
+        {
+            try
+            {
+                var prev = doc.Range(start, start).Paragraphs[1].Previous();
+                for (int i = 0; prev != null && i < 3; i++, prev = prev.Previous())
+                {
+                    var t = Snippet(prev.Range);
+                    if (t.Length > 0) return t;
+                }
+            }
+            catch (COMException)
+            {
+            }
+            return "";
+        }
+
         private static int CountMathType(Word.Range r)
         {
             int n = 0;
@@ -71,6 +88,8 @@ namespace MathBlocks.WordConnector
                     ["end"] = span.End,
                     ["objects"] = span.Count,
                     ["flatOpc"] = doc.Range(span.Start, span.End).WordOpenXML,
+                    // Where it is, for the report: the paragraph before (an equation alone in its paragraph has no text of its own).
+                    ["before"] = PreviousText(doc, span.Start),
                 });
             }
             return new Dictionary<string, object>

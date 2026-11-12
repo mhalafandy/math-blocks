@@ -6,6 +6,7 @@
 import { KINDS } from "@mathblocks/math-core";
 import { latexCommands, parseLatex } from "@mathblocks/math-latex";
 import { DISPLAY_STYLE, DYADIC_LETTERS } from "./latexInterchange";
+import { MATHTYPE_OUTPUT_FORMS } from "@mathblocks/mathtype";
 
 const parsesCleanly = (latex: string) => !parseLatex(latex).diagnostics.some((d) => d.severity === "error" || /^Unknown command/.test(d.message));
 const code = (s: string) => "`" + s + "`";
@@ -186,6 +187,18 @@ end of section A.1 becomes (A.1.4)). A new label that repeats an existing number
   - \`\\hat{f}_1\`, \`\\hat{\\mathbf{f}}_1\`, \`\\mathbf{\\hat{f}}_1\` (lowercase letter with an index) → \`\\bvec{f}_1\`
   - \`\\left[\\begin{array}{…}…\\end{array}\\right]\` → \`bmatrix\` (\`( )\` → \`pmatrix\`, \`| |\` → \`vmatrix\`)
   - a forced look in an index (\`\\sigma_{\\mathrm{sf}}\`, \`r_{\\mathbf{n}}\`) → plain (\`\\sigma_{sf}\`, \`r_{n}\`)
+  - ℤ ℝ ℕ ℚ ℂ typed as characters → \`\\mathbb{Z}\` … \`\\mathbb{C}\`; Greek capitals that look like Latin letters
+    (Α Β Ε Ζ Η Ι Κ Μ Ν Ο Ρ Τ Χ) are reported as a warning
+
+### What Convert MathType writes (accepted as they are)
+
+Every form below is what converting a MathType equation produces; Convert LaTeX reads each back to the same
+equation (checked in the tests on every build), so text written by MathBlocks or by tools that follow this file
+can be converted again.
+
+| Form | Example |
+|---|---|
+${MATHTYPE_OUTPUT_FORMS.map((f) => `| ${f.what} | ${code(f.latex)} |`).join("\n")}
 
 ## 4. What Word does to typed LaTeX, undone before parsing
 

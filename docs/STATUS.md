@@ -5,7 +5,7 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.120 (commit `6b820b6`), CI passed — bold Greek calibrated by darkness.
+- **Published:** 0.1.120 (commit `6b820b6`), CI passed. This round's build: pending CI (see the next update).
 
 ## Window switching (0.1.115 self-test): cause
 
@@ -19,32 +19,48 @@ recording stays in the add-in and in the self-test, so a recurrence will name it
 
 ## This round
 
-**Bold Greek looked heavier than bold Latin (owner, on 0.1.119).** The first calibration matched the stem of
-Times Bold capital "I" (0.159 em against Symbol's 0.094 em), then thickened every stroke of the Greek letter by the
-same amount — hairlines included. Real bold thickens stems much more than hairlines, so the Greek came out darker.
-Measured on Times-metric fonts: matching the stem needs 0.033 em per side, matching the overall darkness of Times
-Bold lowercase only 0.014 em. Now the offset is calibrated by **darkness** (ink per advance width over lowercase
-letters): bold Greek is made exactly as much darker than regular Greek as Times Bold is darker than Times (Bold
-Italic than Italic), found by a few steps on the real emboldened outlines, on this PC's fonts. The comparison sheet
-and the self-test show both darkness figures.
+Fixes from converting a real chapter (owner's report; priority 2, 1, 4, 3, 7, 5, 6). Generic tests only.
 
-**Commits:** this round's commit "Bold Greek: calibrate by darkness, not the capital stem".
+1. **(2, blocker) Every MathType break becomes a marker.** Cause: a break took its chapter/section only from the
+   first numbered equation after it; breaks in chapters or sections without equations were "left as they are",
+   and in renumber mode the section headings after such a break got no markers either. Now each break is
+   evaluated from its own SEQ fields (as Word does: \r n sets, no switch adds one, \c keeps), checked against
+   the first number after it. Section headings without a break are listed in the pre-flight with a marker
+   offered (on by default). After converting, any MathType numbering field left is listed.
+2. **(1) Private-use characters.** MathType's MT Extra characters are mapped from MathType's character table
+   (its dot operator → \cdot); anything unmapped stays MathType and is listed, never passed on silently.
+   Bare commands now end with a space (\cdot followed by a letter made an unknown command).
+3. **(4) The one object not converted** was an *empty* MathType equation (nothing in it), silently skipped.
+   Now every equation that cannot be converted is listed with where it is (its paragraph, or the paragraph
+   before when it is alone) before anything is written; after converting, the MathType objects left must be
+   exactly those listed.
+4. **(3) One reference mechanism.** Convert numbering turns MathType's GOTOBUTTON/REF references into MathBlocks
+   references to the _MBEq_ bookmarks; each is verified to show its equation's number, then the ZEqnNum
+   bookmarks are removed (kept and listed on any mismatch). (Before: "Update numbers" did refresh MathType's REF
+   fields, as Word updates every REF; they now are MathBlocks references anyway.)
+5. **(7)** Convert LaTeX accepts every form Convert MathType writes; the doc lists them from one table, and a
+   test reads each back through Convert LaTeX to the same equation. The test found the parser rejected bare
+   \langle, \rangle, \lfloor, \rfloor, \lceil, \rceil and \backslash — fixed.
+6. **(5)** A "$" touching a converted equation is reported with its place. **(6)** ℤ ℝ ℕ ℚ ℂ → \mathbb{…};
+   Greek capitals that look like Latin letters are reported.
 
-## What to test (0.1.120)
+**Commits:** "Convert numbering: every MathType break becomes a marker; references unified"; "Convert MathType:
+nothing passes through silently".
 
-0. **Bold Greek (recalibrated):** Ctrl+K → "Bold Greek comparison sheet": bold Greek should now look as heavy as
-   the bold Latin letters next to it, at 12 and 10 pt (lighter than in 0.1.119). The self-test section "Bold Greek" checks the stroke weight and saves
-   "bold greek sheet.docx": please compare it with the same letters made bold in MathType.
+## What to test (next build)
 
 1. **Self-test** (please don't click in Word while it runs). Expected: all checks pass, including
-   - "Document style": restyle labels upright / italic — drawn in the new style, one Ctrl+Z each;
-   - "My styles": create from blank, rename, duplicate, delete, export/import → identical drawings, built-in
-     styles unchanged, your own styles as before;
-   - "Two documents open": every operation keeps the worked-on document in front; Ctrl+Z / Ctrl+Y of a restyle
-     restore the stored style, Check style lists nothing;
-   - "Window activations": send the line — it tells whether anything outside the test brought a window forward.
-2. **Document style page on a copy of a converted chapter**: New style… (from a preset or blank, name it), set it
-   up, Save style, Save and redraw; Ctrl+Z in Word, then reopen the page: the previous style is shown again.
+   - "One numbering scheme": the converted numbers have MathBlocks bookmarks, MathType's references are now
+     MathBlocks references, every one verified, MathType's bookmarks removed, no MathType numbering field left;
+   - new step "chapters with empty sections": every break a marker (6), the heading without a break listed and
+     marked, new equations numbered (2.2.1), (2.3.1), (3.1.1);
+   - "Convert MathType: nothing passes through silently": the private-use dot becomes \cdot, the empty object is
+     listed with where it is, and is the only MathType object left.
+2. **On a fresh copy of the chapter** (from before any conversion): Convert MathType — the pre-flight lists what
+   cannot be converted (expected: the empty object), then Convert numbering — every heading should end up with a
+   marker (check the list of headings without a break), the result should say "No MathType numbering field is
+   left" and that every reference shows its equation's number. Then add an equation in a later section and in
+   the next chapter and check their numbers.
 
 ## Last self-test analysed
 
@@ -79,6 +95,7 @@ Not received yet (the template lines for Convert numbering and Review notation k
 
 ## History
 
+- **0.1.121** — Convert MathType/numbering fixes from a real chapter (breaks, references, private use, empty objects, number sets, look-alikes, interchange forms).
 - **0.1.120** — Bold Greek calibrated by darkness (no heavier than bold Latin).
 - **0.1.119** — Bold Greek: emboldened Symbol outlines calibrated to Times Bold; Hughes bold kinds draw Greek upright; comparison sheet.
 - **0.1.118** — My styles; restyle undo follows the drawings; window activations recorded; two-document check.
