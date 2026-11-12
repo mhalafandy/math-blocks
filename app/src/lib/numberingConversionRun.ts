@@ -6,7 +6,7 @@
 import type { BrokenReference } from "@mathblocks/connector-protocol";
 import { addinSupports, bringToFront, connector } from "./connector";
 import { backupIfMany } from "./docOps";
-import { planNumberingConversion, type NumberingMode, type NumberingPlan, type NumberingScan } from "./numberingConversion";
+import { planNumberingConversion, type NumberingMode, type NumberingOptions, type NumberingPlan, type NumberingScan } from "./numberingConversion";
 import { useApp } from "./store";
 
 export interface NumberingResult {
@@ -21,6 +21,15 @@ export interface NumberingResult {
   /** The text guard found other text changed and undid the conversion. */
   guardFailed?: string;
   guardRestored?: boolean;
+  /** MathType bookmark → MathBlocks bookmark of the same number. */
+  aliases?: Record<string, string>;
+  /** MathType references now MathBlocks references, and those that do not show their equation's number. */
+  referencesConverted?: number;
+  referenceMismatches?: { bookmark: string; expected: string; shows: string; snippet: string }[];
+  /** MathType bookmarks removed (only when every reference was verified). */
+  aliasesRemoved?: number;
+  /** MathType numbering fields still in the document after the conversion (none expected). */
+  leftovers?: { code: string; snippet: string; start: number }[];
 }
 
 /** Scans the document and plans both choices (the dialog switches between them). */
@@ -43,15 +52,15 @@ export async function openNumberingConversion(o: { document?: string; fromWord?:
 }
 
 /** Writes a plan; the self-test calls it directly. */
-export async function convertNumbering(scan: NumberingScan, mode: NumberingMode): Promise<NumberingResult> {
-  const plan = planNumberingConversion(scan, mode);
+export async function convertNumbering(scan: NumberingScan, mode: NumberingMode, o: NumberingOptions = {}): Promise<NumberingResult> {
+  const plan = planNumberingConversion(scan, mode, o);
   const backup = await backupIfMany(scan.fullName, plan.writes.length);
   await connector.request("beginOperation", { document: scan.fullName, title: "Converting MathType numbering", total: plan.writes.length, undoLabel: "Convert MathType numbering" });
-  let r: { problems: string[]; shows: Record<string, string>; ms: number; broken?: BrokenReference[] };
+  let r: Awaited<ReturnType<typeof requestConvert>>;
   let undoBrokenAt = "";
   let guard: { failed?: string; restored?: boolean } = {};
   try {
-    r = await connector.request("convertNumbering", { document: scan.fullName, items: plan.writes as unknown as Record<string, unknown>[], format: plan.format }, 1_800_000);
+    r = await requestConvert(scan, plan);
   } finally {
     const end = await connector.request("endOperation", { done: plan.writes.length }).catch(() => ({ ms: 0, undoBrokenAt: "" }) as { ms: number; undoBrokenAt?: string; guardFailed?: string; guardRestored?: boolean });
     undoBrokenAt = end.undoBrokenAt ?? "";
@@ -65,5 +74,21 @@ export async function convertNumbering(scan: NumberingScan, mode: NumberingMode)
   // New numbers in this document (equations numbered later, Convert LaTeX) use the same format.
   const app = useApp.getState();
   useApp.setState({ numberStyle: { ...app.numberStyle, open: "(", close: ")", chapter: plan.format.parts !== "eq", parts: plan.format.parts, separator: ".", restart: plan.format.restart, source: "markers" } });
-  return { plan, mismatches, problems: r.problems, ms: r.ms, ...(r.broken?.length ? { broken: r.broken } : {}), ...(undoBrokenAt ? { undoBrokenAt } : {}), ...(backup ? { backup } : {}) };
+  return {
+    plan,
+    mismatches,
+    problems: r.problems,
+    ms: r.ms,
+    ...(r.broken?.length ? { broken: r.broken } : {}),
+    ...(undoBrokenAt ? { undoBrokenAt } : {}),
+    ...(backup ? { backup } : {}),
+    aliases: r.aliases ?? {},
+    referencesConverted: r.referencesConverted ?? 0,
+    referenceMismatches: r.referenceMismatches ?? [],
+    aliasesRemoved: r.aliasesRemoved ?? 0,
+    leftovers: r.leftovers ?? [],
+  };
 }
+
+const requestConvert = (scan: NumberingScan, plan: NumberingPlan) =>
+  connector.request("convertNumbering", { document: scan.fullName, items: plan.writes as unknown as Record<string, unknown>[], format: plan.format }, 1_800_000);

@@ -102,6 +102,21 @@ export const numbered = (n: number, bookmark: number, label: string) =>
   `<w:r><w:instrText>.</w:instrText></w:r><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> SEQ MTEqn \\c \\* Arabic \\* MERGEFORMAT </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:instrText>${label}</w:instrText></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r>` +
   `<w:r><w:instrText>)</w:instrText></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r><w:bookmarkEnd w:id="${bookmark}"/></w:p>`;
 
+/** A numbered display equation in chapter.section.equation form, as MathType writes it: (2.1.3). */
+export const numbered3 = (n: number, bookmark: number, chapter: number, section: number, eq: number) => {
+  const seq = (code: string, shown: string | number) =>
+    `<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> ${code} </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:instrText>${shown}</w:instrText></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r>`;
+  return (
+    `<w:p>${MT_DISPLAY}<w:r><w:tab/></w:r>${mathTypeRun(n)}<w:r><w:tab/></w:r><w:bookmarkStart w:id="${bookmark}" w:name="ZEqnNum${100000 + bookmark}"/>` +
+    `<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> MACROBUTTON MTPlaceRef \\* MERGEFORMAT </w:instrText></w:r><w:r><w:fldChar w:fldCharType="begin"/></w:r>` +
+    `<w:r><w:instrText xml:space="preserve"> SEQ MTEqn \\h \\* MERGEFORMAT </w:instrText></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r><w:r><w:instrText>(</w:instrText></w:r>` +
+    seq("SEQ MTChap \\c \\* Arabic \\* MERGEFORMAT", chapter) + `<w:r><w:instrText>.</w:instrText></w:r>` +
+    seq("SEQ MTSec \\c \\* Arabic \\* MERGEFORMAT", section) + `<w:r><w:instrText>.</w:instrText></w:r>` +
+    seq("SEQ MTEqn \\c \\* Arabic \\* MERGEFORMAT", eq) +
+    `<w:r><w:instrText>)</w:instrText></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r><w:bookmarkEnd w:id="${bookmark}"/></w:p>`
+  );
+};
+
 /** A MathType reference to a numbered equation: GOTOBUTTON with a nested REF to its bookmark. */
 export const reference = (bookmark: number, shown: string) =>
   `<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> GOTOBUTTON ZEqnNum${100000 + bookmark}  \\* MERGEFORMAT </w:instrText></w:r>` +

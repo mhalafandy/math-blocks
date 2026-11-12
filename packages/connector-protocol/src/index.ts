@@ -272,7 +272,20 @@ export interface AppToConnector {
   /** Writes the numbering plan (one undo step), then updates numbers and references; what each bookmark shows afterwards. */
   convertNumbering: {
     params: DocTarget & { items: Record<string, unknown>[]; format: Record<string, unknown> };
-    result: { problems: string[]; shows: Record<string, string>; ms: number; broken?: BrokenReference[]; undoBrokenAt?: string };
+    result: {
+      problems: string[];
+      shows: Record<string, string>;
+      ms: number;
+      broken?: BrokenReference[];
+      undoBrokenAt?: string;
+      /** MathType bookmark → the MathBlocks bookmark of the same number. */
+      aliases?: Record<string, string>;
+      referencesConverted?: number;
+      referenceMismatches?: { bookmark: string; expected: string; shows: string; snippet: string }[];
+      aliasesRemoved?: number;
+      /** MathType numbering fields still in the document (none expected). */
+      leftovers?: { code: string; snippet: string; start: number }[];
+    };
   };
   /** LaTeX interchange: writes the planned items (one undo step), then updates numbers and references. */
   convertInterchange: {

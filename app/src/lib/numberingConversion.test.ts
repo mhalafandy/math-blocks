@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { headingSection, parseNumber, planNumberingConversion, type NumberingItem, type NumberingScan } from "./numberingConversion";
+import { breakCounters, headingSection, parseNumber, planNumberingConversion, type NumberingItem, type NumberingScan } from "./numberingConversion";
 
 /** A two-level MathType appendix: break, section A.1 with (A.1)–(A.3), section A.2 with (A.4). */
 const appendix = (): NumberingScan => {
@@ -87,5 +87,56 @@ describe("the self-test's MathType numbering document", () => {
     expect(xml).toContain("\\mbnumbering{A.2}");
     const keep = strFromU8(unzipSync(await mathTypeNumberingDocx(false))["word/document.xml"]!);
     expect(keep).not.toContain("mbnumbering");
+  });
+
+  it("evaluates a MathType break's fields as Word does", () => {
+    const codes = (chap: string, sec: string) => ["SEQ MTEqn \\r \\h \\* MERGEFORMAT", `SEQ MTSec ${sec} \\h \\* MERGEFORMAT`, `SEQ MTChap ${chap} \\h \\* MERGEFORMAT`];
+    expect(breakCounters(codes("\\r 3", "\\r 0"), "", { chap: 0, sec: 0 })).toEqual({ chap: 3, sec: 0 });
+    expect(breakCounters(codes("\\c", ""), "", { chap: 3, sec: 1 })).toEqual({ chap: 3, sec: 2 });
+    expect(breakCounters(codes("", "\\r 1"), "", { chap: 3, sec: 4 })).toEqual({ chap: 4, sec: 1 });
+    expect(breakCounters(undefined, "Equation Chapter 2 Section 5", { chap: 0, sec: 0 })).toEqual({ chap: 2, sec: 5 });
+    expect(breakCounters(undefined, "Equation Section (Next)", { chap: 2, sec: 5 })).toEqual({ chap: 2, sec: 6 });
+  });
+
+  /** Generic chapters with breaks in sections that have no equations yet, and a heading without a break. */
+  const multiChapter = (): NumberingScan => {
+    const brk = (start: number, chap: number, sec: number): NumberingItem => ({ type: "mtBreak", start, paraStart: start, label: `Equation Chapter ${chap} Section ${sec}`, code: ["SEQ MTEqn \\r \\h", `SEQ MTSec \\r ${sec} \\h`, `SEQ MTChap \\r ${chap} \\h`] });
+    const num = (start: number, text: string, id: number): NumberingItem => ({ type: "mtNumber", start, paraStart: start - 5, text, bookmark: `ZEqnNum${100000 + id}`, snippet: text });
+    const head = (start: number, level: number, text: string): NumberingItem => ({ type: "heading", start, paraStart: start, after: start + 9, level, text, list: "" });
+    const items: NumberingItem[] = [
+      head(0, 1, "Introduction"),
+      brk(10, 1, 0),
+      head(20, 1, "Models"),
+      brk(30, 2, 0),
+      head(40, 2, "2.1 Kinematics"),
+      brk(50, 2, 1),
+      num(70, "(2.1.1)", 1),
+      num(90, "(2.1.2)", 2),
+      head(100, 2, "2.2 Dynamics"),
+      brk(110, 2, 2),
+      head(120, 2, "2.3 Control"),
+      head(140, 1, "Results"),
+      brk(150, 3, 0),
+      head(160, 2, "3.1 Simulation"),
+      brk(170, 3, 1),
+    ];
+    return { name: "t", fullName: "t", items };
+  };
+
+  it("every break becomes a marker, also in chapters and sections without equations", () => {
+    const plan = planNumberingConversion(multiChapter(), "keep");
+    const markers = plan.writes.filter((w) => w.kind === "replaceBreak").map((w) => `${w.chapter}.${w.section}@${w.start}`);
+    expect(markers).toEqual(["1.0@10", "2.0@30", "2.1@50", "2.2@110", "3.0@150", "3.1@170"]);
+    expect(plan.problems.filter((p) => /left as it is/.test(p.what))).toEqual([]);
+    expect(plan.changes.map((c) => c.new)).toEqual(["(2.1.1)", "(2.1.2)"]);
+  });
+
+  it("a section heading without a MathType break is listed, and marked when chosen", () => {
+    const on = planNumberingConversion(multiChapter(), "keep");
+    expect(on.headingsWithoutBreak.map((h) => `${h.text} → ${h.chapter}.${h.section}`)).toEqual(["2.3 Control → 2.3"]);
+    expect(on.writes.some((w) => w.kind === "insertMarker" && w.chapter === 2 && w.section === 3 && w.start === 129)).toBe(true);
+    const off = planNumberingConversion(multiChapter(), "keep", { markHeadings: false });
+    expect(off.writes.some((w) => w.kind === "insertMarker")).toBe(false);
+    expect(off.problems.some((p) => /2\.3 Control.*no MathType break/.test(p.what))).toBe(true);
   });
 });

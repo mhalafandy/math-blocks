@@ -13,6 +13,8 @@ interface State {
   scan: NumberingScan | null;
   mode: NumberingMode;
   busy: boolean;
+  /** Add a section marker after each section heading that had no MathType break. */
+  markHeadings: boolean;
   result?: NumberingResult;
   show: (scan: NumberingScan, mode: NumberingMode) => void;
   set: (s: Partial<Omit<State, "show" | "set">>) => void;
@@ -23,13 +25,14 @@ export const useNumberingDialog = create<State>((set) => ({
   scan: null,
   mode: "renumber",
   busy: false,
-  show: (scan, mode) => set({ open: true, scan, mode, busy: false, result: undefined }),
+  markHeadings: true,
+  show: (scan, mode) => set({ open: true, scan, mode, busy: false, markHeadings: true, result: undefined }),
   set: (s) => set(s),
 }));
 
 export function NumberingDialog() {
   const s = useNumberingDialog();
-  const plan = useMemo(() => (s.scan ? planNumberingConversion(s.scan, s.mode) : null), [s.scan, s.mode]);
+  const plan = useMemo(() => (s.scan ? planNumberingConversion(s.scan, s.mode, { markHeadings: s.markHeadings }) : null), [s.scan, s.mode, s.markHeadings]);
   if (!s.open || !s.scan || !plan) return null;
   const close = () => s.set({ open: false, scan: null, result: undefined });
   const errors = plan.problems.filter((p) => p.severity === "error");
@@ -38,7 +41,7 @@ export function NumberingDialog() {
     s.set({ busy: true });
     try {
       const { convertNumbering } = await import("../lib/numberingConversionRun");
-      const result = await convertNumbering(s.scan!, s.mode);
+      const result = await convertNumbering(s.scan!, s.mode, { markHeadings: s.markHeadings });
       s.set({ busy: false, result });
     } catch (e) {
       s.set({ busy: false });
@@ -51,8 +54,8 @@ export function NumberingDialog() {
     <Modal title={`Convert MathType numbering — “${s.scan.name}”`} onClose={close} width={820}>
       <div className="form">
         <p className="hint">
-          {plan.counts.numbers} MathType number(s){plan.counts.breaks ? `, ${plan.counts.breaks} break(s)` : ""}. They become MathBlocks numbers (one numbering scheme, so new equations continue them); every number
-          keeps its bookmark, so references keep pointing at their equation.
+          {plan.counts.numbers} MathType number(s){plan.counts.breaks ? `, ${plan.counts.breaks} chapter/section break(s)` : ""}. They become MathBlocks numbers and markers (one numbering scheme, so new equations
+          continue them) — every break, also in chapters and sections without equations yet. MathType's references become MathBlocks references to the same equations; each is checked to show its equation's number.
         </p>
         {!r && (
           <>
@@ -63,6 +66,21 @@ export function NumberingDialog() {
               <input type="radio" checked={s.mode === "renumber"} onChange={() => s.set({ mode: "renumber" })} disabled={s.busy || !plan.canRenumber} /> Renumber to chapter.section.equation (a section marker after
               each section heading{plan.levels >= 3 ? "; the numbers already have three levels" : ""})
             </label>
+            {plan.headingsWithoutBreak.length > 0 && (
+              <div>
+                <label className="check">
+                  <input type="checkbox" checked={s.markHeadings} onChange={(e) => s.set({ markHeadings: e.target.checked })} disabled={s.busy} /> Add a section marker after{" "}
+                  {plan.headingsWithoutBreak.length} section heading(s) that had no MathType break (equations added to them later are then numbered in their own section):
+                </label>
+                <div className="hint" style={{ maxHeight: 80, overflow: "auto" }}>
+                  {plan.headingsWithoutBreak.map((h, i) => (
+                    <div key={i}>
+                      “{h.text}” → section {h.chapter}.{h.section}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )}
         {r ? (
@@ -70,7 +88,27 @@ export function NumberingDialog() {
             <p>
               Done in {(r.ms / 1000).toFixed(1)} s{r.backup ? `; backup ${r.backup.split(/[\\/]/).pop()}` : ""}. One Ctrl+Z in Word undoes it.
               {r.mismatches.length ? "" : " Every number shows what was planned."}
+              {r.referencesConverted ? ` ${r.referencesConverted} reference(s) now MathBlocks references${r.referenceMismatches?.length ? "" : ", each showing its equation's number"}${r.aliasesRemoved ? "; MathType's bookmarks removed" : ""}.` : ""}
+              {r.leftovers?.length ? "" : " No MathType numbering field is left."}
             </p>
+            {(r.leftovers?.length ?? 0) > 0 && (
+              <ul className="issue-list">
+                {r.leftovers!.map((l, i) => (
+                  <li key={`l${i}`} className="error">
+                    MathType field still in the document: <code>{l.code}</code> — “{l.snippet}”
+                  </li>
+                ))}
+              </ul>
+            )}
+            {(r.referenceMismatches?.length ?? 0) > 0 && (
+              <ul className="issue-list">
+                {r.referenceMismatches!.map((m, i) => (
+                  <li key={`r${i}`} className="error">
+                    A reference shows {m.shows} instead of {m.expected} (MathType's bookmarks were kept): “{m.snippet}”
+                  </li>
+                ))}
+              </ul>
+            )}
             {r.guardFailed && (
               <p className="error">
                 The conversion was undone: {r.guardFailed}. {r.guardRestored ? "The document is as it was before." : "Undoing did not fully restore it — use Word's Undo or the backup."}

@@ -135,6 +135,8 @@ namespace MathBlocks.WordConnector
             {
                 var problems = new List<object>();
                 var bookmarks = new List<string>();
+                // MathType bookmark (ZEqnNum…) → the MathBlocks bookmark of the same number (_MBEq_…).
+                var aliases = new Dictionary<string, string>();
                 bool screen = _app.ScreenUpdating;
                 bool hidden = doc.Bookmarks.ShowHidden;
                 try
@@ -172,12 +174,22 @@ namespace MathBlocks.WordConnector
                                 {
                                     var f = FieldAt(doc, start, "MTPlaceRef");
                                     if (f == null) { problems.Add("MathType number not found at " + start); break; }
-                                    var name = Rpc.GetString(item, "bookmark");
-                                    if (string.IsNullOrEmpty(name)) name = BookmarkPrefix + RandomId(12);
+                                    // The number gets a MathBlocks bookmark; MathType's stays on the same text as an
+                                    // alias until its references point at the MathBlocks one (checked below).
+                                    var mt = Rpc.GetString(item, "bookmark");
+                                    var name = BookmarkPrefix + RandomId(12);
+                                    while (doc.Bookmarks.Exists(name)) name = BookmarkPrefix + RandomId(12);
                                     int pos = f.Code.Start - 1;
-                                    if (doc.Bookmarks.Exists(name)) doc.Bookmarks[name].Delete();
+                                    if (!string.IsNullOrEmpty(mt) && doc.Bookmarks.Exists(mt)) doc.Bookmarks[mt].Delete();
+                                    if (!string.IsNullOrEmpty(mt) && doc.Bookmarks.Exists(mt + "N")) doc.Bookmarks[mt + "N"].Delete();
                                     f.Delete();
                                     InsertInline(doc, doc.Range(pos, pos), NumberFields.Package(NumberFields.NumberRuns(fmt, name, NumberOnlyName(name), Rpc.GetBool(item, "appendix"))));
+                                    if (!string.IsNullOrEmpty(mt))
+                                    {
+                                        doc.Bookmarks.Add(mt, doc.Bookmarks[name].Range);
+                                        if (doc.Bookmarks.Exists(NumberOnlyName(name))) doc.Bookmarks.Add(mt + "N", doc.Bookmarks[NumberOnlyName(name)].Range);
+                                        aliases[mt] = name;
+                                    }
                                     bookmarks.Add(name);
                                     break;
                                 }
@@ -193,12 +205,35 @@ namespace MathBlocks.WordConnector
                         }
                         CheckOperationUndo("after " + kind + " at " + start);
                     }
+                    UpdateNumberFields(doc);
+                    var refs = ConvertMathTypeReferences(doc, aliases, problems);
                     var updated = UpdateNumberFields(doc);
+                    // Every converted reference must show what its equation's number shows; then MathType's
+                    // bookmarks are no longer needed (else they stay, and the mismatches are reported).
+                    var refMismatches = VerifyReferences(doc, refs);
+                    int aliasesRemoved = 0;
+                    if (refMismatches.Count == 0)
+                    {
+                        foreach (var mt in aliases.Keys)
+                            foreach (var n in new[] { mt, mt + "N" })
+                                if (doc.Bookmarks.Exists(n)) { doc.Bookmarks[n].Delete(); aliasesRemoved++; }
+                    }
                     var shows = new Dictionary<string, object>();
                     foreach (var name in bookmarks)
                         if (doc.Bookmarks.Exists(name)) shows[name] = (doc.Bookmarks[name].Range.Text ?? "").Replace("\t", "").Trim();
+                    // Keyed by MathType's bookmark too (the plan knows those).
+                    foreach (var kv in aliases)
+                        if (doc.Bookmarks.Exists(kv.Value)) shows[kv.Key] = (doc.Bookmarks[kv.Value].Range.Text ?? "").Replace("\t", "").Trim();
+                    var leftovers = MathTypeNumberingLeft(doc);
                     Log.Info("convertNumbering in " + doc.Name + ": " + items.Count + " item(s), " + problems.Count + " problem(s), " + clock.ElapsedMilliseconds + " ms");
-                    return new Dictionary<string, object> { ["problems"] = problems, ["shows"] = shows, ["ms"] = clock.ElapsedMilliseconds, ["broken"] = updated["broken"] };
+                    var aliasMap = new Dictionary<string, object>();
+                    foreach (var kv in aliases) aliasMap[kv.Key] = kv.Value;
+                    return new Dictionary<string, object>
+                    {
+                        ["problems"] = problems, ["shows"] = shows, ["ms"] = clock.ElapsedMilliseconds, ["broken"] = updated["broken"],
+                        ["aliases"] = aliasMap, ["referencesConverted"] = refs.Count, ["referenceMismatches"] = refMismatches,
+                        ["aliasesRemoved"] = aliasesRemoved, ["leftovers"] = leftovers,
+                    };
                 }
                 finally
                 {
@@ -206,6 +241,98 @@ namespace MathBlocks.WordConnector
                     _app.ScreenUpdating = screen;
                 }
             });
+        }
+
+        private static readonly System.Text.RegularExpressions.Regex MathTypeRef = new System.Text.RegularExpressions.Regex(@"^\s*GOTOBUTTON\s+(ZEqnNum\d+)(N?)\b");
+
+        /// <summary>
+        /// MathType's references (GOTOBUTTON ZEqnNum… + REF ZEqnNum…) → MathBlocks references to the
+        /// _MBEq_ bookmark of the same number (one reference mechanism). Last first, so positions hold.
+        /// Returns the converted references' targets in document order.
+        /// </summary>
+        private List<string> ConvertMathTypeReferences(Word.Document doc, Dictionary<string, string> aliases, List<object> problems)
+        {
+            var found = new List<(int pos, string target, string mt)>();
+            foreach (Word.Field f in doc.Fields)
+            {
+                try
+                {
+                    var m = MathTypeRef.Match(f.Code.Text ?? "");
+                    if (!m.Success) continue;
+                    if (!aliases.TryGetValue(m.Groups[1].Value, out var mb))
+                    {
+                        problems.Add("reference to " + m.Groups[1].Value + " left as MathType's: its equation was not converted (" + Snippet(f.Code.Paragraphs[1].Range) + ")");
+                        continue;
+                    }
+                    found.Add((f.Code.Start - 1, m.Groups[2].Value == "N" ? NumberOnlyName(mb) : mb, m.Groups[1].Value));
+                }
+                catch (COMException)
+                {
+                }
+            }
+            found.Sort((a, b) => b.pos.CompareTo(a.pos));
+            var targets = new List<string>();
+            foreach (var r in found)
+            {
+                try
+                {
+                    var f = FieldAt(doc, r.pos, "GOTOBUTTON " + r.mt);
+                    if (f == null) continue;
+                    int pos = f.Code.Start - 1;
+                    f.Delete();
+                    InsertReferenceFields(doc, doc.Range(pos, pos), r.target);
+                    targets.Add(r.target);
+                }
+                catch (Exception ex)
+                {
+                    problems.Add("reference to " + r.mt + ": " + ex.Message);
+                }
+            }
+            targets.Reverse();
+            return targets;
+        }
+
+        /// <summary>References (to these bookmarks) that do not show what their bookmark shows.</summary>
+        private static List<object> VerifyReferences(Word.Document doc, List<string> targets)
+        {
+            var bad = new List<object>();
+            var wanted = new HashSet<string>(targets);
+            string Norm(string t) => System.Text.RegularExpressions.Regex.Replace(t ?? "", @"\s", "");
+            foreach (Word.Field f in doc.Fields)
+            {
+                try
+                {
+                    var m = System.Text.RegularExpressions.Regex.Match(f.Code.Text ?? "", @"^\s*GOTOBUTTON\s+(\S+)");
+                    if (!m.Success || !wanted.Contains(m.Groups[1].Value)) continue;
+                    var name = m.Groups[1].Value;
+                    var expect = doc.Bookmarks.Exists(name) ? Norm(doc.Bookmarks[name].Range.Text) : "(no bookmark)";
+                    var shows = Norm(ButtonDisplay(f));
+                    if (shows != expect) bad.Add(new Dictionary<string, object> { ["bookmark"] = name, ["expected"] = expect, ["shows"] = shows, ["snippet"] = Snippet(f.Code.Paragraphs[1].Range) });
+                }
+                catch (COMException)
+                {
+                }
+            }
+            return bad;
+        }
+
+        /// <summary>MathType numbering fields still in the document (each with where it is).</summary>
+        private static List<object> MathTypeNumberingLeft(Word.Document doc)
+        {
+            var left = new List<object>();
+            foreach (Word.Field f in doc.Fields)
+            {
+                try
+                {
+                    var code = (f.Code.Text ?? "").Trim();
+                    if (!System.Text.RegularExpressions.Regex.IsMatch(code, @"\bSEQ\s+MT(Eqn|Sec|Chap)\b|MTEditEquationSection|MTPlaceRef")) continue;
+                    left.Add(new Dictionary<string, object> { ["code"] = code.Length > 80 ? code.Substring(0, 80) + "…" : code, ["snippet"] = Snippet(f.Code.Paragraphs[1].Range), ["start"] = f.Code.Start - 1 });
+                }
+                catch (COMException)
+                {
+                }
+            }
+            return left;
         }
 
         /// <summary>The top-level field of this kind that starts at (or right around) a position.</summary>

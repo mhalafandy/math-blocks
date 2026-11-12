@@ -148,6 +148,41 @@ export function interchangeSpeedParagraphs(): { style: string; text: string }[] 
  * then, as pasted from a transcription, one more equation for A.1, section A.2 with \mbnumbering and a
  * labelled equation, and references to old and new equations by number.
  */
+/**
+ * Generic chapters numbered chapter.section.equation by MathType, with breaks in chapters and sections
+ * that have no equations yet, a section heading without a break, a reference, and LaTeX to convert
+ * afterwards into the later sections (each label is the number the new equation must get).
+ */
+export async function mathTypeChaptersDocx(): Promise<Uint8Array> {
+  const { mathTypeDocx, styledParagraph, mathTypeBreak, mathTypeNumbered3, mathTypeReference } = await import("@mathblocks/mathtype");
+  const run = (t: string) => `<w:r><w:t xml:space="preserve">${t}</w:t></w:r>`;
+  return mathTypeDocx(
+    [
+      styledParagraph("Introduction", "Heading1"),
+      mathTypeBreak(1, 0),
+      styledParagraph("A chapter without equations."),
+      styledParagraph("Models", "Heading1"),
+      mathTypeBreak(2, 0),
+      styledParagraph("2.1 Kinematics", "Heading2"),
+      mathTypeBreak(2, 1),
+      mathTypeNumbered3(1, 1, 2, 1, 1),
+      mathTypeNumbered3(2, 2, 2, 1, 2),
+      `<w:p>${run("By ")}${mathTypeReference(2, "(2.1.2)")}${run(" the model follows.")}</w:p>`,
+      styledParagraph("2.2 Dynamics", "Heading2"),
+      mathTypeBreak(2, 2),
+      styledParagraph("\t$$p = m v$$\t\\label{eq:2.2.1}", "MTDisplayEquation"),
+      styledParagraph("2.3 Control", "Heading2"),
+      styledParagraph("\t$$u = -k x$$\t\\label{eq:2.3.1}", "MTDisplayEquation"),
+      styledParagraph("Results", "Heading1"),
+      mathTypeBreak(3, 0),
+      styledParagraph("3.1 Simulation", "Heading2"),
+      mathTypeBreak(3, 1),
+      styledParagraph("\t$$e = x - r$$\t\\label{eq:3.1.1}", "MTDisplayEquation"),
+    ],
+    ["pythagoras", "fraction"],
+  );
+}
+
 export async function mathTypeNumberingDocx(withPastedSection = true): Promise<Uint8Array> {
   const { mathTypeDocx, styledParagraph, mathTypeBreak, mathTypeNumbered, mathTypeReference } = await import("@mathblocks/mathtype");
   const run = (t: string) => `<w:r><w:t xml:space="preserve">${t}</w:t></w:r>`;

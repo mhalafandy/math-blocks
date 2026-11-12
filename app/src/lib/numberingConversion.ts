@@ -49,6 +49,40 @@ export interface NumberingPlan {
   counts: { numbers: number; breaks: number; sectionMarkers: number; changed: number };
   /** Renumbering is possible (the numbers have a chapter part). */
   canRenumber: boolean;
+  /** Section headings with no MathType break (keep mode, chapter.section.equation): a marker can be added. */
+  headingsWithoutBreak: { text: string; start: number; chapter: string; section: number; marked: boolean }[];
+}
+
+export interface NumberingOptions {
+  /** Add a section marker after each section heading that had no MathType break (keep mode). Default true. */
+  markHeadings?: boolean;
+}
+
+/**
+ * The chapter and section counters after a MathType break, evaluated as Word evaluates its hidden SEQ
+ * fields: "SEQ MTChap \r 3" sets 3, "SEQ MTChap" (no \r, no \c) adds one, "\c" leaves it; the same for
+ * MTSec. Without fields, the break's text ("Equation Chapter 3 Section 2") is read.
+ */
+export function breakCounters(code: string[] | undefined, label: string, prev: { chap: number; sec: number }): { chap: number; sec: number } {
+  let { chap, sec } = prev;
+  const seqs = (code ?? []).map((c) => /SEQ\s+(MTChap|MTSec)\b(.*)$/i.exec(c)).filter((m): m is RegExpExecArray => !!m);
+  if (!seqs.length) {
+    const c = /Chapter\s+(\d+)/i.exec(label);
+    const sn = /Section\s+(\d+)/i.exec(label);
+    if (/Chapter\s*\(Next\)/i.test(label)) chap++;
+    else if (c) chap = Number(c[1]);
+    if (/Section\s*\(Next\)/i.test(label)) sec++;
+    else if (sn) sec = Number(sn[1]);
+    return { chap, sec };
+  }
+  for (const m of seqs) {
+    const sw = m[2]!;
+    const r = /\\r\s*(\d+)/.exec(sw);
+    const next = (cur: number) => (r ? Number(r[1]) : /\\c\b/.test(sw) ? cur : cur + 1);
+    if (/^MTChap$/i.test(m[1]!)) chap = next(chap);
+    else sec = next(sec);
+  }
+  return { chap, sec };
 }
 
 /** "(A.1)" → ["A", "1"]; "(3.2.5)" → ["3", "2", "5"]; null when it is not a number. */
@@ -72,7 +106,8 @@ export function headingSection(h: { text: string; list: string }): { chapter: st
   return null;
 }
 
-export function planNumberingConversion(scan: NumberingScan, mode: NumberingMode): NumberingPlan {
+export function planNumberingConversion(scan: NumberingScan, mode: NumberingMode, o: NumberingOptions = {}): NumberingPlan {
+  const markHeadings = o.markHeadings ?? true;
   const items = [...scan.items].sort((a, b) => a.start - b.start);
   const problems: NumberingProblem[] = [];
   const writes: NumberingWrite[] = [];
@@ -94,24 +129,54 @@ export function planNumberingConversion(scan: NumberingScan, mode: NumberingMode
   const format = { open: "(", close: ")", chapter: parts !== "eq", parts, separator: "." as const, restart: (parts === "section" ? "section" : "chapter") as "chapter" | "section", source: "markers" as const };
   const fmt = (chap: string | null, sec: number, n: number) => `(${parts === "eq" || !chap ? "" : `${chap}.`}${parts === "section" ? `${sec}.` : ""}${n})`;
 
-  // The chapter of each MathType break: that of the first number after it (before the next break).
-  const breakChapter = new Map<number, string>();
+  // Every MathType break becomes a marker. Its chapter and section: what its own fields set (evaluated
+  // as Word does), checked against the first number after it (before the next break), which wins.
+  const breakAt = new Map<number, { key: string; sec: number }>();
   {
-    let pending: number | null = null;
-    for (const it of items) {
-      if (it.type === "mtBreak") pending = it.start;
-      else if (it.type === "mbMarker") pending = null;
-      else if (it.type === "mtNumber" && pending !== null) {
+    let counters = { chap: 0, sec: 0 };
+    let letters = false;
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i]!;
+      if (it.type === "mtNumber") {
         const p = parseNumber(it.text);
-        if (p && p.length >= 2) breakChapter.set(pending, p[0]!);
-        pending = null;
+        if (p && p.length >= 2) letters = /^[A-Z]$/.test(p[0]!);
+        continue;
       }
+      if (it.type !== "mtBreak") continue;
+      counters = breakCounters(it.code, it.label, counters);
+      let next: string[] | null = null;
+      for (let j = i + 1; j < items.length; j++) {
+        const x = items[j]!;
+        if (x.type === "mtBreak" || x.type === "mbMarker") break;
+        if (x.type === "mtNumber") {
+          next = parseNumber(x.text);
+          break;
+        }
+      }
+      const appendix: boolean = next && next.length >= 2 ? /^[A-Z]$/.test(next[0]!) : letters;
+      const declaredKey = appendix ? String.fromCharCode(64 + Math.max(1, counters.chap)) : String(counters.chap);
+      let key = declaredKey;
+      let sec = counters.sec;
+      if (next && next.length >= 2) {
+        key = next[0]!;
+        if (next.length >= 3) sec = Number(next[1]);
+        if (key !== declaredKey || (next.length >= 3 && sec !== counters.sec))
+          problem("warning", `MathType break “${it.label}” sets ${declaredKey}${levels >= 3 ? `.${counters.sec}` : ""}, the first number after it says ${next.slice(0, -1).join(".")}: the number's is used`, it.label, it.start);
+        counters = { chap: appendix ? key.charCodeAt(0) - 64 : Number(key), sec };
+      }
+      letters = appendix;
+      if (counters.chap < 1) {
+        problem("warning", `MathType break “${it.label}” sets no chapter: chapter 1 is used`, it.label, it.start);
+        counters = { chap: 1, sec };
+        key = appendix ? "A" : "1";
+      }
+      breakAt.set(it.start, { key, sec });
     }
   }
+  const headingsWithoutBreak: NumberingPlan["headingsWithoutBreak"] = [];
 
   let ctx: { chap: string | null; sec: number } | null = null;
   let counter = 0;
-  let pendingBreak: Extract<NumberingItem, { type: "mtBreak" }> | null = null;
   let inChapter = false;
   let sectionCount = 0;
   const warnedNoSection = new Set<string>();
@@ -119,35 +184,43 @@ export function planNumberingConversion(scan: NumberingScan, mode: NumberingMode
   let breaks = 0;
   let warnedMixed = false;
 
-  for (const it of items) {
+  for (let idx = 0; idx < items.length; idx++) {
+    const it = items[idx]!;
     switch (it.type) {
       case "mtBreak": {
-        if (renumber) {
-          const chap = breakChapter.get(it.start);
-          if (!chap) {
-            problem("warning", "MathType break with no numbered equation after it: left as it is", it.label, it.start);
-            inChapter = false;
-            break;
-          }
-          writes.push({ kind: "replaceBreak", start: it.start, section: 0, ...chapterNumber(chap) });
-          breaks++;
-          ctx = { chap, sec: 0 };
-          counter = 0;
-          inChapter = true;
-          sectionCount = 0;
-        } else {
-          if (pendingBreak) problem("warning", "MathType break with no numbered equation after it: left as it is", pendingBreak.label, pendingBreak.start);
-          pendingBreak = it;
-        }
+        const b = breakAt.get(it.start)!;
+        const sec = renumber ? 0 : levels >= 3 ? b.sec : 0;
+        writes.push({ kind: "replaceBreak", start: it.start, section: sec, ...chapterNumber(b.key) });
+        breaks++;
+        ctx = { chap: b.key, sec };
+        counter = 0;
+        inChapter = true;
+        sectionCount = 0;
         break;
       }
       case "heading": {
-        if (!renumber) break;
         if (it.level === 1) {
-          inChapter = false;
+          if (renumber) inChapter = false;
           break;
         }
-        if (it.level !== 2 || !inChapter || !ctx?.chap) break;
+        if (it.level !== 2) break;
+        // A heading whose section has its own MathType break (in the heading or right after it) needs nothing.
+        const nextItem = items.slice(idx + 1).find((x) => x.type !== "heading" || x.level <= 2);
+        const hasBreak = nextItem?.type === "mtBreak" || nextItem?.type === "mbMarker";
+        if (!renumber) {
+          if (levels < 3 || hasBreak || !ctx?.chap) break;
+          const found = headingSection(it);
+          const sec: number = found ? found.section : (ctx.sec ?? 0) + 1;
+          headingsWithoutBreak.push({ text: it.text, start: it.start, chapter: ctx.chap, section: sec, marked: markHeadings });
+          if (markHeadings) {
+            writes.push({ kind: "insertMarker", start: it.after, section: sec, ...chapterNumber(ctx.chap) });
+            sectionMarkers++;
+            ctx = { chap: ctx.chap, sec };
+            counter = 0;
+          } else problem("warning", `Section heading “${it.text}” has no MathType break: equations added to it later would continue the section before`, it.text, it.start);
+          break;
+        }
+        if (!inChapter || !ctx?.chap) break;
         const found = headingSection(it);
         let sec: number;
         if (found) {
@@ -167,7 +240,6 @@ export function planNumberingConversion(scan: NumberingScan, mode: NumberingMode
       case "mbMarker": {
         ctx = { chap: it.appendix ? String.fromCharCode(64 + it.chapter) : String(it.chapter), sec: it.section };
         counter = 0;
-        pendingBreak = null;
         break;
       }
       case "mbNumber": {
@@ -206,22 +278,13 @@ export function planNumberingConversion(scan: NumberingScan, mode: NumberingMode
             problem("warning", `Missing section heading: ${it.text} comes before the first section heading of ${/^[A-Z]$/.test(chap) ? "appendix" : "chapter"} ${chap} (numbered ${chap}.0.n)`, snippet, it.start);
             warnedNoSection.add(chap);
           }
-        } else {
-          const key = { chap, sec };
-          if (pendingBreak) {
-            writes.push({ kind: "replaceBreak", start: pendingBreak.start, section: sec, ...(chap ? chapterNumber(chap) : { chapter: 1, appendix: false }) });
-            breaks++;
-            pendingBreak = null;
-            ctx = key;
-            counter = 0;
-          } else if (!ctx || ctx.chap !== chap || ctx.sec !== sec) {
-            if (chap) {
-              writes.push({ kind: "insertMarker", start: it.paraStart, section: sec, ...chapterNumber(chap) });
-              if (ctx) problem("warning", `No MathType break before ${it.text}: a marker is added before it`, snippet, it.start);
-            }
-            ctx = key;
-            counter = 0;
+        } else if (!ctx || ctx.chap !== chap || ctx.sec !== sec) {
+          if (chap) {
+            writes.push({ kind: "insertMarker", start: it.paraStart, section: sec, ...chapterNumber(chap) });
+            if (ctx) problem("warning", `No MathType break before ${it.text}: a marker is added before it`, snippet, it.start);
           }
+          ctx = { chap, sec };
+          counter = 0;
         }
         counter++;
         const next = fmt(chap, sec, counter);
@@ -234,7 +297,6 @@ export function planNumberingConversion(scan: NumberingScan, mode: NumberingMode
       }
     }
   }
-  if (pendingBreak) problem("warning", "MathType break with no numbered equation after it: left as it is", pendingBreak.label, pendingBreak.start);
   problems.sort((a, b) => a.at - b.at);
   return {
     mode,
@@ -244,6 +306,7 @@ export function planNumberingConversion(scan: NumberingScan, mode: NumberingMode
     changes,
     problems,
     canRenumber,
+    headingsWithoutBreak,
     counts: { numbers: changes.length, breaks, sectionMarkers, changed: changes.filter((c) => c.old.replace(/\s+/g, "") !== c.new).length },
   };
 }

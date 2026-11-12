@@ -898,11 +898,19 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       check("text guard: no false alarm on Convert numbering", !!rn && !rn.guardFailed, rn?.guardFailed ?? "no other text changed");
       check("every converted number shows what was planned", !!rn && rn.mismatches.length === 0 && rn.problems.length === 0, rn ? `${JSON.stringify(rn.mismatches)} ${rn.problems.join("; ")}` : "did not run");
       const shows = async (bm: string) => String((await smoke("bookmarkText", { bookmark: bm })).text).replace(/\s/g, "");
-      check("MathType's bookmarks now carry the new numbers", (await shows("ZEqnNum100001")) === "(A.1.1)" && (await shows("ZEqnNum100003")) === "(A.1.3)", `ZEqnNum100001 ${await shows("ZEqnNum100001")}, ZEqnNum100003 ${await shows("ZEqnNum100003")}`);
+      // Each MathType number now has a MathBlocks bookmark (_MBEq_…); MathType's references point at it.
+      const mb = (zeqn: string) => rn?.aliases?.[zeqn] ?? "?";
+      const mbN = (zeqn: string) => mb(zeqn).replace(/^_MBEq_/, "_MBEqN_");
+      check("the converted numbers have MathBlocks bookmarks with the new numbers", (await shows(mb("ZEqnNum100001"))) === "(A.1.1)" && (await shows(mb("ZEqnNum100003"))) === "(A.1.3)", `${mb("ZEqnNum100001")} ${await shows(mb("ZEqnNum100001"))}, ${mb("ZEqnNum100003")} ${await shows(mb("ZEqnNum100003"))}`);
       const refs = async (bm: string) => (await smoke("refResults", { bookmark: bm })).results as string[];
-      const old1 = await refs("ZEqnNum100001");
-      const old3 = await refs("ZEqnNum100003");
-      check("MathType's references follow their equations", old1.length === 1 && old1[0] === "(A.1.1)" && old3.length === 1 && old3[0] === "(A.1.3)", `to (A.1): ${JSON.stringify(old1)}, to (A.3): ${JSON.stringify(old3)}`);
+      const old1 = await refs(mb("ZEqnNum100001"));
+      const old3 = await refs(mb("ZEqnNum100003"));
+      check("MathType's references are now MathBlocks references and follow their equations", old1.length === 1 && old1[0] === "(A.1.1)" && old3.length === 1 && old3[0] === "(A.1.3)", `to (A.1): ${JSON.stringify(old1)}, to (A.3): ${JSON.stringify(old3)}`);
+      check(
+        "every reference verified, MathType's bookmarks removed, no MathType numbering field left",
+        !!rn && rn.referencesConverted === 2 && (rn.referenceMismatches ?? []).length === 0 && (rn.aliasesRemoved ?? 0) > 0 && (await refs("ZEqnNum100001")).length === 0 && (rn.leftovers ?? []).length === 0,
+        rn ? `${rn.referencesConverted} reference(s), ${(rn.referenceMismatches ?? []).length} mismatch(es), ${rn.aliasesRemoved} MathType bookmark(s) removed, left: ${(rn.leftovers ?? []).map((l) => l.code).join(" | ") || "none"}` : "did not run",
+      );
       // The pasted section: one more equation in A.1, section A.2, references to old and new equations.
       const { convertLatexDocument } = await import("./latexInterchangeRun");
       let resL: Awaited<ReturnType<typeof convertLatexDocument>> = null;
@@ -914,8 +922,8 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       await connector.request("updateNumbers", {}, SLOW);
       const all = (await scanNumbering())!.items.filter((i) => i.type === "mbNumber").map((i) => (i as { text: string }).text.replace(/\s/g, ""));
       check("after Update numbers: every number correct and unique", all.join(" ") === "(A.1.1) (A.1.2) (A.1.3) (A.1.4) (A.2.1)", all.join(" "));
-      const r13 = await refs("ZEqnNum100003");
-      const r11n = await refs("ZEqnNum100001N");
+      const r13 = await refs(mb("ZEqnNum100003"));
+      const r11n = await refs(mbN("ZEqnNum100001"));
       const r14 = await refs("_MBEq_A_1_4");
       const r21 = await refs("_MBEq_A_2_1");
       check(
@@ -940,9 +948,41 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const rk = resK as Awaited<ReturnType<typeof convertNumbering>> | null;
       const all = (await scanNumbering())!.items.filter((i) => i.type === "mbNumber").map((i) => (i as { text: string }).text.replace(/\s/g, ""));
       check("keep the existing numbers: (A.1)–(A.3) unchanged, now MathBlocks numbers", !!rk && rk.mismatches.length === 0 && all.join(" ") === "(A.1) (A.2) (A.3)", `${all.join(" ")}${rk?.mismatches.length ? `; ${JSON.stringify(rk.mismatches)}` : ""}`);
-      const r1 = (await smoke("refResults", { bookmark: "ZEqnNum100001" })).results as string[];
-      check("keep: references unchanged", r1.length === 1 && r1[0] === "(A.1)", JSON.stringify(r1));
+      const r1 = (await smoke("refResults", { bookmark: rk?.aliases?.["ZEqnNum100001"] ?? "?" })).results as string[];
+      check("keep: references unchanged (now MathBlocks references)", r1.length === 1 && r1[0] === "(A.1)", JSON.stringify(r1));
       await smoke("save", { file: "numbering keep test (converted).docx" });
+    });
+    await step("mathtype numbering, chapters with empty sections", async () => {
+      const { mathTypeChaptersDocx } = await import("./interchangeFixture");
+      const { toBase64 } = await import("./render");
+      const docC = await smoke("openDocx", { file: "numbering chapters test.docx", base64: toBase64(await mathTypeChaptersDocx()) });
+      const { convertOpenDocument } = await import("./convertMathType");
+      await convertOpenDocument(undefined, { quiet: true });
+      const { scanNumbering, convertNumbering } = await import("./numberingConversionRun");
+      const { planNumberingConversion } = await import("./numberingConversion");
+      const scanC = (await scanNumbering())!;
+      const planC = planNumberingConversion(scanC, "keep");
+      check("pre-flight: every MathType break becomes a marker (also without equations)", planC.counts.breaks === 6, `${planC.counts.breaks} break(s); ${planC.problems.map((p) => p.what).join(" | ") || "no problems"}`);
+      check("pre-flight: the section heading without a MathType break is listed, with a marker offered", planC.headingsWithoutBreak.map((h) => `${h.text}→${h.chapter}.${h.section}`).join(" ") === "2.3 Control→2.3", planC.headingsWithoutBreak.map((h) => `${h.text}→${h.chapter}.${h.section}`).join(" ") || "none");
+      let resC: Awaited<ReturnType<typeof convertNumbering>> | null = null;
+      await oneCtrlZ("Convert numbering (chapters, keep)", docC.name, async () => {
+        resC = await convertNumbering(scanC, "keep");
+      });
+      const rc = resC as Awaited<ReturnType<typeof convertNumbering>> | null;
+      const after = (await scanNumbering())!;
+      const markers = after.items.filter((i) => i.type === "mbMarker").length;
+      check("every break is now a MathBlocks marker, plus the one for the heading", markers === 7 && after.items.every((i) => i.type !== "mtBreak"), `${markers} marker(s), ${after.items.filter((i) => i.type === "mtBreak").length} MathType break(s) left`);
+      check("no MathType numbering field left (MTEqn, MTSec, MTChap, breaks, numbers)", !!rc && (rc.leftovers ?? []).length === 0, (rc?.leftovers ?? []).map((l) => `${l.code} — ${l.snippet}`).join(" | ") || "none");
+      check("the reference is a MathBlocks reference showing its number", !!rc && rc.referencesConverted === 1 && (rc.referenceMismatches ?? []).length === 0, rc ? `${rc.referencesConverted} reference(s), mismatches ${JSON.stringify(rc.referenceMismatches)}` : "did not run");
+      // New equations in a later section, in the section without a MathType break, and in the next chapter.
+      const { convertLatexDocument } = await import("./latexInterchangeRun");
+      const rl = await convertLatexDocument({ yes: true });
+      check("new equations converted without problems", !!rl && rl.plan.issues.length === 0 && rl.failed.length === 0, rl ? `${rl.plan.issues.map((i) => i.what).join(" | ")} ${rl.failed.map((f) => f.problem).join("; ")}` : "did not run");
+      await connector.request("updateNumbers", {}, SLOW);
+      const shows = async (bm: string) => String((await smoke("bookmarkText", { bookmark: bm })).text).replace(/\s/g, "");
+      const got = [await shows("_MBEq_2_2_1"), await shows("_MBEq_2_3_1"), await shows("_MBEq_3_1_1")];
+      check("a new equation in a later section, in the heading-only section and in the next chapter: (2.2.1), (2.3.1), (3.1.1)", got.join(" ") === "(2.2.1) (2.3.1) (3.1.1)", got.join(" "));
+      await smoke("save", { file: "numbering chapters test (converted).docx" });
     });
 
     section = "Repair: Classic pictures become embedded objects";
