@@ -79,3 +79,21 @@ describe.skipIf(!available)("bold Greek (emboldened outlines)", () => {
     }
   });
 });
+
+describe.skipIf(!available)("accent rules reach the drawing", () => {
+  it("a heavier, larger harpoon draws differently; the letters stay the same", async () => {
+    const { renderSvg, CLASSIC, DEFAULT_ACCENTS } = await import("../src");
+    const fonts: FontSet = {
+      regular: loadFont(readFileSync(L + "Regular.ttf")),
+      italic: loadFont(readFileSync(L + "Italic.ttf")),
+      bold: loadFont(readFileSync(L + "Bold.ttf")),
+      boldItalic: loadFont(readFileSync(L + "BoldItalic.ttf")),
+      math: loadFont(readFileSync(STIX)),
+    };
+    const draw = (accents: typeof DEFAULT_ACCENTS) => renderSvg(parseLatex("\\overrightharpoon{r}").root, { fonts, style: { ...CLASSIC, accents }, display: false, sizePt: 12 }).svg;
+    const a = draw(DEFAULT_ACCENTS);
+    const b = draw({ ...DEFAULT_ACCENTS, stroke: 2.2, size: 1.3 });
+    expect(a).not.toBe(b);
+    expect(draw(DEFAULT_ACCENTS)).toBe(a);
+  });
+});

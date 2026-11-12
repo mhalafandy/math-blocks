@@ -74,15 +74,13 @@ completion, command palette, library on SQLite, linked blocks, parameterized tem
 by meaning, numbering/references, MathType migration, precision mode, dependency manager.
 
 ### Order of work
-1. **LaTeX interchange** (in test): transcribed documents with LaTeX text become finished equations,
-   numbers and cross-references in one Convert LaTeX — convention in [LATEX-INTERCHANGE.md](LATEX-INTERCHANGE.md).
-2. **Embedded-object build**, remaining steps: 5 (menus and clicks) and 6 (self-test fully on objects:
-   tracked changes, undo/redo, per-user class registration, PDF from Word and Acrobat); then the
-   one-day trial on a copy of a real chapter.
-3. **Priority 2:** own notation kinds, quick-style bar, bold Greek, upright frame labels.
-4. 1c.
-5. The Accents page.
-6. **MathType parity and beyond** (below).
+1. ✅ LaTeX interchange; ✅ embedded-object build (steps 1–6); ✅ one-day trial checklist
+   ([TRIAL-CHECKLIST.md](TRIAL-CHECKLIST.md)).
+2. ✅ **Priority 2:** own notation kinds, quick-style bar, bold Greek, frame-label shape (per kind, and the
+   document style's index labels).
+3. ✅ 1c (one palette: search, Quick access, Recent, collections; compact in the floating editor).
+4. ✅ The Accents page.
+5. **MathType parity and beyond** (below) — in progress.
 
 ### MathType parity and beyond (from the MathType Add-in for Microsoft 365)
 Not started. Ordered by value for the thesis.

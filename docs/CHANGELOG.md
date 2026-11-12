@@ -25,6 +25,16 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added — one-day trial checklist; Priority 2 (quick-style bar, frame-label shape); Accents page
+- docs/TRIAL-CHECKLIST.md: a working day on a copy of a real chapter, step by step, with what should happen.
+- Quick-style bar in the editor (replaces the bold popup): with a selection, or after a symbol once typing
+  pauses — Bold, Italic/Upright, harpoon, arrow, hat, bar, dot, Make → kind; on a kind, Convert to plain and
+  Edit kind style. Ctrl+Shift+B on a kind points to it.
+- Frame-label shape per kind (as the document style's index labels, italic, or upright), in Notation settings.
+- Accents page (Ctrl+K, Word style tab, Document style): harpoon/arrow size and stroke (× MathType's),
+  gap above the letter, barb angle, smallest gap, fixed or adaptive length, with a live preview on this PC's
+  fonts at 12 and 10 pt; MathBlocks default / MathType-like; Save and redraw the document (one Ctrl+Z).
+
 ### Added — embedded objects, steps 5 and 6 (menus and clicks; end-to-end checks)
 - Right-click on a MathBlocks equation object: a MathBlocks menu at the pointer — Edit equation here
   (the floating editor), Edit in the MathBlocks window, Number / Unnumber, Copy LaTeX, Convert to LaTeX

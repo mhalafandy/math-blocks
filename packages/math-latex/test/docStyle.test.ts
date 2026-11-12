@@ -63,4 +63,11 @@ describe("document style (render time)", () => {
     expect(styleHash(normalizeStyle(JSON.parse(JSON.stringify(s))))).toBe(styleHash(s));
     expect(styleHash({ ...s, exceptions: ["x"] })).toBe(styleHash(s));
   });
+
+  it("a kind can set its own frame-label shape", () => {
+    const up = withLooks({ labels: "upright" });
+    const own = { ...up, notation: { ...up.notation, overrides: { ...up.notation.overrides, dcm: { frames: { position: "sub" as const, separator: "" as const, shape: "italic" as const } } } } };
+    expect(drawn("\\dcm{A}{B}+\\pvec[P]{r}", own)).toBe("\\dcm{A}{B}+\\pvec[\\mathrm{P}]{r}");
+    expect(drawn("\\dcm{A}{B}", up)).toBe("\\dcm{\\mathrm{A}}{\\mathrm{B}}");
+  });
 });

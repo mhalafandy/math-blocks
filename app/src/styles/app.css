@@ -712,6 +712,13 @@ html.panel-window, html.panel-window body, html.panel-window #root { height: aut
 .kind-popup-actions { display: flex; flex-direction: column; gap: 6px; }
 .kind-popup-actions button { text-align: left; }
 
+/* Quick-style bar (above the selection in the editor) */
+.quick-style { position: fixed; z-index: 70; display: flex; gap: 2px; align-items: center; padding: 3px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow); font-size: 13px; }
+.quick-style button { min-width: 28px; height: 26px; padding: 0 6px; border: 0; border-radius: 6px; background: none; color: inherit; font: inherit; cursor: pointer; }
+.quick-style button:hover { background: var(--surface-2); }
+.quick-style select { height: 26px; font-size: 12px; margin-left: 4px; }
+.quick-style .qs-kind { padding: 0 8px; color: var(--text-2); }
+
 /* Notation settings */
 .notation-settings { display: flex; flex-direction: column; gap: 10px; }
 .ns-top { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }

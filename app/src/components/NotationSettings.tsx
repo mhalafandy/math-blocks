@@ -231,6 +231,14 @@ export function NotationSettings() {
                     </select>
                   </label>
                   <label>
+                    Frame label shape
+                    <select value={st.frames.shape ?? ""} onChange={(e) => change({ frames: { ...st.frames, shape: (e.target.value || undefined) as KindStyle["frames"]["shape"] } })}>
+                      <option value="">as the document style's index labels</option>
+                      <option value="italic">italic</option>
+                      <option value="upright">upright</option>
+                    </select>
+                  </label>
+                  <label>
                     Between two frames
                     <select value={st.frames.separator} onChange={(e) => change({ frames: { ...st.frames, separator: e.target.value as KindStyle["frames"]["separator"] } })}>
                       {FRAME_SEP.map(([v, l]) => (

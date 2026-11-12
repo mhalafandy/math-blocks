@@ -23,7 +23,8 @@ export interface KindStyle {
   accent: KindAccent;
   /** The accent drawn in the base's weight (renderer hint; Classic draws accents regular by default). */
   accentWeight: "regular" | "follow";
-  frames: { position: FramePosition; separator: "" | "/" | "," };
+  /** Where frame labels go, how two are separated, and their shape (absent: the document style's index labels). */
+  frames: { position: FramePosition; separator: "" | "/" | ","; shape?: "italic" | "upright" };
   wrap: "none" | "brackets" | "braces" | "bars";
   /** Added after the base: "×" as a superscript (Hughes' ω^×) or inside the wrap ([ω×]). */
   suffix?: { text: string; as: "sup" | "inline" };

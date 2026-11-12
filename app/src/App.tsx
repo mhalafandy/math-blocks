@@ -1,6 +1,6 @@
 import { MathPreview } from "./components/MathPreview";
 import { NotationSettings } from "./components/NotationSettings";
-import { KindPopup } from "./components/KindPopup";
+import { QuickStyleBar } from "./components/QuickStyleBar";
 import { WidthBar } from "./components/WidthBar";
 import { useCallback, useEffect, useMemo } from "react";
 import { BottomPanel } from "./components/BottomPanel";
@@ -39,6 +39,7 @@ import { KindsReviewDialog } from "./components/KindsReviewDialog";
 import { DocumentStyleDialog } from "./components/DocumentStyleDialog";
 import { CheckStyleDialog } from "./components/CheckStyleDialog";
 import { BoldGreekSheet } from "./components/BoldGreekSheet";
+import { AccentsDialog } from "./components/AccentsDialog";
 import { sendToWord } from "./lib/sendToWord";
 import { ConversionReport } from "./components/ConversionReport";
 import { SaveDialog } from "./components/SaveDialog";
@@ -315,7 +316,7 @@ export function App() {
       <TemplateDialog onSend={() => void insertIntoWord()} />
       <NotationDialog />
       <NotationSettings />
-      <KindPopup />
+      <QuickStyleBar />
       <NomenclatureDialog />
       <ThesisDialog />
       <NormalizeBoldDialog />
@@ -328,6 +329,7 @@ export function App() {
       <DocumentStyleDialog />
       <CheckStyleDialog />
       <BoldGreekSheet />
+      <AccentsDialog />
       <ShortcutsDialog />
       <RecognitionDialog />
       <SnippetsDialog />

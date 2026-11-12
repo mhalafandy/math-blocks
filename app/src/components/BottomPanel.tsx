@@ -166,6 +166,9 @@ function StylePanel() {
       <button className="link-button" onClick={() => void import("./CheckStyleDialog").then((m) => m.openCheckStyle())}>
         Check style…
       </button>
+      <button className="link-button" onClick={() => void import("./AccentsDialog").then((m) => m.openAccents())}>
+        Accents… (harpoons, arrows, hats: size, stroke, gap)
+      </button>
       <button className="link-button" onClick={() => void import("./NotationSettings").then((m) => m.openNotationSettings())}>
         Kinds and their styles, my own kinds…
       </button>

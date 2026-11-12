@@ -199,6 +199,13 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => import("./selfTest").then((m) => void m.runWordSelfTest({ spike: true })),
     },
     {
+      id: "app.accents",
+      title: "Accents: how harpoons, arrows, hats and dots sit over letters (size, stroke, gap, angle)…",
+      group: "View",
+      keywords: "accents harpoon arrow hat bar dot stroke gap barb angle length adaptive mathtype settings",
+      run: () => import("../components/AccentsDialog").then((m) => m.openAccents()),
+    },
+    {
       id: "app.boldGreekSheet",
       title: "Bold Greek comparison sheet (bold upright and italic Greek next to bold Latin, on this PC's fonts)",
       group: "View",

@@ -1,5 +1,5 @@
 import { ContextMenu } from "./ContextMenu";
-import { KindPopup } from "./KindPopup";
+import { QuickStyleBar } from "./QuickStyleBar";
 import { NotationSettings } from "./NotationSettings";
 import { useWidthMeasure, WidthBar } from "./WidthBar";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -322,7 +322,7 @@ export function PanelApp() {
           />
         </div>
       </div>
-      <KindPopup />
+      <QuickStyleBar />
       <NotationSettings />
       <ContextMenu />
     </div>

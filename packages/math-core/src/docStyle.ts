@@ -1,6 +1,6 @@
 import type { MathNode, MathVariant, Row } from "./ast";
 import { isTransposeMark } from "./bold";
-import { DEFAULT_PROFILE, type NotationProfile } from "./kinds";
+import { DEFAULT_PROFILE, styleOf, type NotationProfile } from "./kinds";
 
 /**
  * Document style: how a document's equations look, kept apart from what they mean.
@@ -366,9 +366,14 @@ export function styleAst(root: Row, style: MathStyle): Row {
         return;
       case "notation":
         // Frame labels are labels; the arguments are drawn by the kind (frames of a DCM are labels too).
-        if (n.frames) styleLabelRow(n.frames, style);
-        if (n.name === "dcm" || n.name === "frm") n.args.forEach((a) => styleLabelRow(a, style));
-        else n.args.forEach((a) => visitRow(a, { ...ctx, inFraction: false }));
+        {
+          // A kind may set its own frame-label shape (C_AB with italic labels while other labels are upright).
+          const own = styleOf(style.notation, n.name).frames.shape;
+          const labels = own ? { ...style, labels: own } : style;
+          if (n.frames) styleLabelRow(n.frames, labels);
+          if (n.name === "dcm" || n.name === "frm") n.args.forEach((a) => styleLabelRow(a, labels));
+          else n.args.forEach((a) => visitRow(a, { ...ctx, inFraction: false }));
+        }
         return;
       default:
         for (const [k, v] of Object.entries(n)) {

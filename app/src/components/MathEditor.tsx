@@ -191,10 +191,11 @@ export function toggleBold() {
   const mf = activeField;
   if (!mf) return;
   mf.focus();
-  // A kind's look comes from its kind: say so and offer the two ways on, instead of failing silently.
+  // A kind's look comes from its kind: the quick-style bar offers Convert to plain and Edit kind style.
   const k = kindAt(mf as unknown as KindField);
   if (k) {
-    void import("./KindPopup").then((m) => m.showKindPopup(k.id, caretRect(mf)));
+    showQuickStyle(mf, true);
+    useApp.getState().notify(`${KIND_BY_ID.get(k.id)?.name ?? "This kind"}: its look comes from its kind — Convert to plain, or edit the kind's style (on the bar above).`);
     return;
   }
   const collapsed = mf.selectionIsCollapsed;
@@ -206,6 +207,37 @@ export function toggleBold() {
   const src = mf.getValue(mf.selection, "latex").trim();
   if (!src) return;
   mf.insert(toggledBold(src), { insertionMode: "replaceSelection", selectionMode: collapsed ? "after" : "item", format: "latex" });
+}
+
+/** Applies a LaTeX transformation to the selection, or to the symbol before the cursor (the quick-style bar). */
+export function applyToSelection(f: (src: string) => string) {
+  const mf = activeField;
+  if (!mf) return;
+  mf.focus();
+  const collapsed = mf.selectionIsCollapsed;
+  if (collapsed) {
+    if (mf.position === 0) return;
+    mf.executeCommand("extendSelectionBackward");
+  }
+  const src = fromMathLive(mf.getValue(mf.selection, "latex")).trim();
+  if (!src) return;
+  mf.insert(toMathLive(f(src)), { insertionMode: "replaceSelection", selectionMode: collapsed ? "after" : "item", format: "latex" });
+}
+
+let quickTimer: ReturnType<typeof setTimeout> | undefined;
+/** Shows (or hides) the quick-style bar for the editor's selection or the symbol before the caret. */
+function showQuickStyle(mf: MathfieldElement, now = false) {
+  clearTimeout(quickTimer);
+  const update = () => {
+    void import("./QuickStyleBar").then(({ useQuickStyle }) => {
+      const focused = mf.matches(":focus-within") || document.activeElement === mf;
+      if (!focused || (mf.selectionIsCollapsed && mf.position === 0)) return useQuickStyle.getState().set({ at: null, kind: null });
+      const k = kindAt(mf as unknown as KindField);
+      useQuickStyle.getState().set({ at: caretRect(mf), kind: k?.id ?? null });
+    });
+  };
+  if (now) update();
+  else quickTimer = setTimeout(update, mf.selectionIsCollapsed ? 700 : 150);
 }
 
 const BOLD_CMD = /\\(mathbf|boldsymbol|bm|pmb)\{/g;
@@ -405,7 +437,16 @@ export function MathEditor() {
     mf.className = "mathfield";
     mf.setAttribute("aria-label", "Equation editor");
     mf.value = toMathLive(useApp.getState().latex);
+    // The quick-style bar follows the selection; typing hides it until a pause.
+    mf.addEventListener("selection-change", () => showQuickStyle(mf));
+    mf.addEventListener("focusout", () => {
+      clearTimeout(quickTimer);
+      quickTimer = setTimeout(() => {
+        if (!document.querySelector(".quick-style:hover, .quick-style:focus-within")) void import("./QuickStyleBar").then(({ useQuickStyle }) => useQuickStyle.getState().set({ at: null }));
+      }, 200);
+    });
     mf.addEventListener("input", () => {
+      void import("./QuickStyleBar").then(({ useQuickStyle }) => useQuickStyle.getState().set({ at: null }));
       onInputDone(mf);
       // A kind macro that arrived raw (pasted, dropped, inserted as LaTeX: \pvec{r}_2, {\pvec{r}_2})
       // is shown as its kind at once, never as an unknown red command.

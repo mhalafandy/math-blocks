@@ -19,31 +19,34 @@ recording stays in the add-in and in the self-test, so a recurrence will name it
 
 ## This round
 
-**Process (owner, 13 Nov):** rounds continue through the plan without waiting for test results; every feature
-gets a self-test check, STATUS is updated each round, a build is published at the end of each milestone, and
-anything reported is fixed in the next round.
+**Milestone: trial checklist, Priority 2, 1c, Accents page.**
 
-**Milestone: embedded objects, steps 5 and 6.**
+- **One-day trial checklist:** [TRIAL-CHECKLIST.md](TRIAL-CHECKLIST.md) — preparation, converting the chapter,
+  a day of writing, end of day (PDF from Word and Acrobat, print, reopen, another PC).
+- **Priority 2:**
+  - quick-style bar in the editor, replacing the bold popup: Bold, Italic/Upright, five accents, Make → kind;
+    on a kind, Convert to plain and Edit kind style (checked in the browser preview: the bar appears after a
+    pause and the harpoon button turns `x+r` into `x+\overrightharpoon{r}`);
+  - frame-label shape per kind (follow the document style, italic, upright);
+  - own kinds, bold Greek: done in earlier rounds.
+- **1c:** already in place (one set of palette parts: search, Quick access, Recent, collections; the floating
+  editor uses the same grid and search) — nothing new needed.
+- **Accents page:** sliders for size, stroke, gap, barb angle, smallest gap, fixed/adaptive length; live preview
+  at 12 and 10 pt on this PC's fonts; MathBlocks default / MathType-like; Save and redraw the document.
+- Previous milestone (objects steps 5–6) is in 0.1.123.
 
-- **Step 5 — menus and clicks.** Right-click on an equation object shows a MathBlocks menu at the pointer:
-  Edit equation here (first), Edit in the MathBlocks window, Number / Unnumber, Copy LaTeX, Convert to LaTeX
-  text, Cut, Copy, Paste, Delete. Before, right-click opened the floating editor directly and Word's Cut/Copy/
-  Paste were not reachable on an equation. (Word's own menu cannot be used: it offers OLE verbs that need a
-  server.) Double-click still opens the equation for editing.
-- **Step 6 — objects end to end, in the self-test:** undo/redo of an insert and an edit; Track Changes (insert
-  is tracked, an edit leaves exactly one equation with its ID — the old one is a tracked deletion — accept all,
-  reject all); per-user class registration (HKCU, no server: Word names the objects) and what Word reports;
-  PDF from Word (pages, alternative text). Acrobat's "Save as Adobe PDF" is detected and left to the trial
-  checklist (printing through Acrobat can open dialogs that would block an unattended test).
+Tests: unit tests for the quick-style actions, the frame-label shape and the accent rules reaching the drawing;
+the bar was checked in the browser preview. These are editor and settings features, so the Word self-test has no
+new section this round.
 
 ## What to test (next build)
 
-1. **Self-test.** New sections: "Equation objects: the right-click menu" and "Equation objects: tracked changes,
-   undo/redo, class registration, PDF". The PDF is saved in the self-test folder ("objects test.pdf").
-2. In a document: right-click an equation — the MathBlocks menu; try Copy LaTeX (paste into Notepad), Cut and
-   Paste, Number.
-3. Acrobat: open "objects test.docx" from the self-test folder, Acrobat → Create PDF; the equations should be
-   sharp when zoomed.
+1. **Self-test** (sections added in 0.1.123: the right-click menu; objects end to end).
+2. **Quick-style bar:** type a letter, pause → the bar above it; try Bold, Upright, the accents, Make → kind;
+   on a kind (`;pv` Tab r Space, then click it) → Plain / Style….
+3. **Notation settings → a kind → Frame label shape:** italic for the DCM, then check `\dcm{A}{B}` in Word.
+4. **Accents** (Ctrl+K → Accents): move the sliders, compare with MathType's harpoon, Save and redraw.
+5. The trial checklist when you have a day for it.
 
 ## Last self-test analysed
 
@@ -80,12 +83,16 @@ left is the empty one listed by the pre-flight.
 
 ## Next
 
-1. Checklist for a one-day trial on a copy of a real chapter.
+1. MathType parity and beyond (FEATURES.md), in order: handwriting pad, accessible alt text, rich clipboard,
+   context-aware quick-style bar, entry points in Word, higher-fidelity MathType conversion, export one
+   equation as PDF.
 2. The look of individual symbols (owner's request, after functionality).
-4. Then: Priority 2 → 1c → Accents page → MathType parity (see FEATURES.md).
+
+The one-day trial checklist is in [TRIAL-CHECKLIST.md](TRIAL-CHECKLIST.md).
 
 ## History
 
+- **0.1.124** — Trial checklist; quick-style bar; frame-label shape per kind; Accents page.
 - **0.1.123** — Embedded objects steps 5–6: MathBlocks right-click menu; per-user class registration; self-test of undo/redo, Track Changes, PDF.
 - **0.1.122** — Self-test: the undo check compares the kind of each number.
 - **0.1.121** — Convert MathType/numbering fixes from a real chapter (breaks, references, private use, empty objects, number sets, look-alikes, interchange forms).

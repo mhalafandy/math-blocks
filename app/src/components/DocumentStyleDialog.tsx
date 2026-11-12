@@ -318,7 +318,10 @@ export function DocumentStyleDialog() {
                 </select>{" "}
                 <label className="check">
                   <input type="checkbox" checked={d.accentsFollowBold} onChange={(e) => up({ accentsFollowBold: e.target.checked })} /> accents over bold letters in bold
-                </label>
+                </label>{" "}
+                <button className="link-button" onClick={() => void import("./AccentsDialog").then((m) => m.openAccents())}>
+                  Accents…
+                </button>
               </Row>
               <Row label="Notation kinds" sample={<StylePreview latex="\pvec[B/N]{r}=\dcm{B}{N}\cmat{v}" style={d} />}>
                 <select value={d.notation.preset} onChange={(e) => up({ notation: { ...d.notation, preset: e.target.value as PresetId } })}>
