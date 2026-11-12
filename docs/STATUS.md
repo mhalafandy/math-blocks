@@ -48,6 +48,8 @@ document's style decides the look at render time.** No command forces a look int
    - Check style lists the forced \mathrm on an index and on a symbol and the index written two ways;
      "keep as exception" removes it from the list; Conform removes the forced looks (one Ctrl+Z);
    - preset exported and imported into a second document: identical drawings.
+   Please avoid clicking in Word while the self-test runs (a window that comes forward can make checks read
+   the wrong document; the self-test now brings its document back, but it still slows the run).
 2. **On a copy of a converted chapter:** ribbon → Style → Document style…: pick a preset or set index labels
    upright, classify the single-letter indices (check the proposals and reasons), Save and redraw. Expected:
    every equation redrawn, the LaTeX unchanged (double-click one), one Ctrl+Z undoes the redraw.
@@ -56,8 +58,20 @@ document's style decides the look at render time.** No command forces a look int
 
 ## Last self-test analysed
 
-**0.1.114:** 216 checks — 193 passed, 1 failed (the check, not the app; fixed in 0.1.115). 0.1.115 has not
-been run yet.
+**0.1.115** (run before 0.1.116 was published): 214 checks — 188 passed, 6 failed, 20 for information;
+embedded-object spike 123 checks, 0 failed.
+
+- "Normalize bold" and "Change notation (transpose form)": changed nothing. In 0.1.115 the notation-kinds
+  step rewrote every equation of the test document, including the bold spread and the transpose these two
+  checks use. Already fixed in 0.1.116 (the kinds step touches only its own equation).
+- "keep the existing numbers" and "keep: references unchanged": the numbers read, (A.1.1)…(A.2.1), are
+  those of the other test document (numbering test.docx), and the conversion itself passed its checks
+  (in front, one Ctrl+Z). After undo/redo another Word document was in front, so the checks read the wrong
+  document. The self-test's own calls do not switch documents and the same code passed in 0.1.114, so a
+  window came forward from outside the test. Fix: after every undo/redo the self-test brings its document
+  back to the front and notes it (for information) when another one was in front.
+- "a second Repair changes nothing" and "after Repair the number ends at the right margin again": the same
+  cause (they ran on another document after Ctrl+Y). The Repair checks now bring their document to the front.
 
 ## Waiting for the owner
 

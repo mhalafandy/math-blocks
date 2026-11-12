@@ -137,6 +137,13 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     check(`${label}: one Ctrl+Z undoes it`, now === before && steps === 1, now === before ? `${steps} Ctrl+Z` : `not restored after ${steps} Ctrl+Z`);
     await smoke("redo", { times: steps });
     check(`${label}: Ctrl+Y redoes it`, null, (await docState()) === after ? "redone" : "differs from the result after redo");
+    // The checks after it read the document in front: make sure it is still this one (another Word
+    // window coming forward during the long test would make them read the wrong document).
+    const still = (await smoke("activeName")).name as string;
+    if (still !== docName) {
+      check(`${label}: another document came to the front after undo/redo`, null, `in front: ${still}; ${docName} brought back`);
+      await smoke("activate", { name: docName });
+    }
   };
   /** Undo until the document's text equals `target` again (at most 4 steps); returns the steps used, or -1. */
   const undoTo = async (target: string) => {
@@ -806,7 +813,10 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const redone = await Promise.all(tags.map(async (t) => (await smoke("pictureInfo", { tag: t }).catch(() => ({ frame: "missing" }))).frame));
       check("Ctrl+Y redoes the Repair", null, redone.join(", "));
       if (!redone.every((f) => f === "object")) await repairDocument(undefined, { quiet: true });
-      // Converting twice changes nothing.
+      // Converting twice changes nothing (on this document: it is brought to the front first).
+      const frontR = (await smoke("activeName")).name as string;
+      if (frontR !== docR.name) check("another document came to the front during the Repair test", null, `in front: ${frontR}; ${docR.name} brought back`);
+      await smoke("activate", { name: docR.name });
       const again = await snap();
       const rep2 = await repairDocument(undefined, { quiet: true });
       const after2 = await snap();
@@ -815,6 +825,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       // left): Repair gives them back, so the number is at the right margin again.
       const { buildObjectInsertion } = await import("./equation");
       const lost = await buildObjectInsertion("E=mc^2", false, undefined, true, { keepParagraph: true, mode: "numbered" });
+      await smoke("activate", { name: docR.name });
       const made = await smoke("makeEquationParagraph", { flatOpc: lost.flatOpc, withoutTabs: true, numberField: true });
       const l0 = await smoke("paraInfo", { pos: made.start });
       const rep3 = await repairDocument(undefined, { quiet: true });
