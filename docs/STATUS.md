@@ -5,7 +5,7 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.113 (commit `e068bd6`), CI passed. This round's build: pending CI (see the next update).
+- **Published:** 0.1.114 (commit `bd4e47e`), CI passed — contains this round's notation kinds work and the two self-test fixes.
 
 ## Root cause: the "text loss" in the 0.1.108 self-test
 
@@ -32,7 +32,7 @@ and the self-test's own re-scan found them intact. The text guard (0.1.112) stay
 
 **Commits:** this round's commit "Notation kinds on conversion; Review notation kinds".
 
-## What to test (next build)
+## What to test (0.1.114)
 
 1. **Self-test.** Expected: all checks pass, including
    - "Apply notation kinds: the older forms became kinds" and its one-Ctrl+Z check;
