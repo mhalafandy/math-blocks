@@ -5,7 +5,7 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.112 (commit `cb9275b`), CI passed. This round's fix is building as the next build.
+- **Published:** 0.1.113 (commit `e068bd6`), CI passed — contains this round's number-reading fix.
 
 ## Root cause: the "text loss" in the 0.1.108 self-test
 
@@ -27,7 +27,7 @@ and the self-test's own re-scan found them intact. The text guard (0.1.112) stay
 
 **Commits:** this round's commit "Fix number reading (nested field without result)".
 
-## What to test (next build)
+## What to test (0.1.113)
 
 1. **Self-test.** Expected:
    - Insert reference / Repair: "reference shows the equation's number": PASS (numbers read as "(2)", not "2)").
