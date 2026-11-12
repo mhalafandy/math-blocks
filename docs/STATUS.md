@@ -5,7 +5,7 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.115 (commit `a36ddd4`), CI passed. This round's build: pending CI (see the next update).
+- **Published:** 0.1.116 (commit `e5512d2`), CI passed — the document style round.
 
 ## Root cause: the "text loss" in the 0.1.108 self-test
 
@@ -39,7 +39,7 @@ document's style decides the look at render time.** No command forces a look int
 
 **Commits:** this round's commit "Document style: looks per document, meaning in the LaTeX".
 
-## What to test (next build)
+## What to test (0.1.116)
 
 1. **Self-test.** Expected: all checks pass, including the new section "Document style":
    - "Restyle (index labels upright / italic)": LaTeX unchanged, every equation drawn in the new style,
@@ -83,6 +83,7 @@ been run yet.
 
 ## History
 
+- **0.1.116** — Document style: looks per document (render time), meaning in the LaTeX; Check style; classification; presets.
 - **0.1.115** — Self-test: Apply notation kinds runs before Normalize bold.
 - **0.1.114** — Notation kinds on conversion; Review notation kinds (Ctrl+K); fixes after the 0.1.113 self-test.
 - **0.1.113** — Number reading after fields without a result (bracket kept); undo checks compare numbers.
