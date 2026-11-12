@@ -5,7 +5,7 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.117 (commit `3dd9aa3`), CI passed. This round's build: pending CI (see the next update).
+- **Published:** 0.1.118 (commit `653a3a0`), CI passed — My styles, restyle undo, window activations. This round's build (bold Greek): pending CI.
 
 ## Window switching (0.1.115 self-test): what was checked, what is known
 
@@ -31,6 +31,20 @@ forward not by a self-test step. **Open until the next self-test reports.**
 
 ## This round
 
+**4. Bold Greek was not drawn bold (bug).** Classic draws Greek from the Symbol font, which has no bold face;
+the renderer slanted it for italic but ignored bold. Now bold Greek's outlines are emboldened: every point moves
+outward by an offset measured on this PC's fonts — half the difference between the stem of Times New Roman Bold
+"I" and Symbol's capital Iota (Bold Italic for italic) — so the stroke weight matches bold Latin letters; the
+advance grows by twice the offset. On a PC without Symbol, Times' own bold Greek is used, then STIX's math bold
+Greek. It applies everywhere the Classic engine draws (pictures, objects, the Classic preview, comparison
+sheet); native Word equations already mark bold Greek bold (Word draws it); the visual editor shows it bold.
+The Hughes preset now draws Greek in bold kinds as bold upright, like Latin: \pvec{\omega} (bold upright,
+harpoon), \cmat{\omega} (bold upright), plain \omega (document style). In LaTeX export, lowercase bold Greek
+stays bold italic (LaTeX has no upright bold lowercase Greek without extra packages).
+MathType gets bold Greek from Windows' synthetic bold of Symbol; the self-test saves a sheet document so the
+two can be compared side by side.
+
+
 1. **Window switching**: investigation above; activation recording; two-document self-test section.
 2. **Restyle undo restores the stored style too.** Word's undo does not cover the Custom XML Part, so the stored
    style keeps a short history and the ID of one redrawn equation (probe). When the probe's drawing is in a
@@ -46,6 +60,10 @@ forward not by a self-test step. **Open until the next self-test reports.**
 **Commits:** this round's commit "My styles, restyle undo, window activations".
 
 ## What to test (next build)
+
+0. **Bold Greek:** Ctrl+K → "Bold Greek comparison sheet": bold Greek should look as heavy as the bold Latin
+   letters next to it, at 12 and 10 pt. The self-test section "Bold Greek" checks the stroke weight and saves
+   "bold greek sheet.docx": please compare it with the same letters made bold in MathType.
 
 1. **Self-test** (please don't click in Word while it runs). Expected: all checks pass, including
    - "Document style": restyle labels upright / italic — drawn in the new style, one Ctrl+Z each;
@@ -92,6 +110,7 @@ Not received yet (the template lines for Convert numbering and Review notation k
 
 ## History
 
+- **0.1.118** — My styles; restyle undo follows the drawings; window activations recorded; two-document check.
 - **0.1.117** — Self-test keeps its document in front after undo/redo and in Repair.
 - **0.1.116** — Document style: looks per document (render time), meaning in the LaTeX; Check style; classification; presets.
 - **0.1.115** — Self-test: Apply notation kinds runs before Normalize bold.

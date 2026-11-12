@@ -199,6 +199,13 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => import("./selfTest").then((m) => void m.runWordSelfTest({ spike: true })),
     },
     {
+      id: "app.boldGreekSheet",
+      title: "Bold Greek comparison sheet (bold upright and italic Greek next to bold Latin, on this PC's fonts)",
+      group: "View",
+      keywords: "bold greek symbol embolden stroke weight boldsymbol mathbf omega sheet compare",
+      run: () => import("../components/BoldGreekSheet").then((m) => m.openBoldGreekSheet()),
+    },
+    {
       id: "app.fontCompare",
       title: "Compare symbol fonts on this PC (STIX / thinned / MT Extra)…",
       group: "View",

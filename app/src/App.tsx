@@ -38,6 +38,7 @@ import { NumberingDialog } from "./components/NumberingDialog";
 import { KindsReviewDialog } from "./components/KindsReviewDialog";
 import { DocumentStyleDialog } from "./components/DocumentStyleDialog";
 import { CheckStyleDialog } from "./components/CheckStyleDialog";
+import { BoldGreekSheet } from "./components/BoldGreekSheet";
 import { sendToWord } from "./lib/sendToWord";
 import { ConversionReport } from "./components/ConversionReport";
 import { SaveDialog } from "./components/SaveDialog";
@@ -326,6 +327,7 @@ export function App() {
       <KindsReviewDialog />
       <DocumentStyleDialog />
       <CheckStyleDialog />
+      <BoldGreekSheet />
       <ShortcutsDialog />
       <RecognitionDialog />
       <SnippetsDialog />

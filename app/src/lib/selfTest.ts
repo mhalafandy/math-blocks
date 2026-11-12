@@ -713,6 +713,52 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       await smoke("save", { file: "two documents A.docx" });
     });
 
+    section = "Bold Greek (Symbol has no bold face: its outlines are emboldened)";
+    await step("bold greek", async () => {
+      const mr = await import("@mathblocks/math-render");
+      const { loadFonts, classicStyle } = await import("./render");
+      const { boldGreekStems } = await import("../components/BoldGreekSheet");
+      const fonts = await loadFonts();
+      const st = boldGreekStems(fonts);
+      if (!fonts.symbol) check("bold Greek: the Symbol font was not found (drawn from Times New Roman Bold instead)", null);
+      else {
+        const em = (x: number) => `${(x * 1000).toFixed(1)}/1000 em`;
+        check("stroke of emboldened bold Greek (upright) matches Times New Roman Bold", Math.abs(st.emboldened - st.timesBold) / st.timesBold < 0.08, `Symbol ${em(st.symbol)} → ${em(st.emboldened)}; Times Bold ${em(st.timesBold)} (offset ${em(st.offsetUpright)})`);
+        check("stroke of emboldened bold Greek (italic) matches Times New Roman Bold Italic", Math.abs(st.emboldenedItalic - st.timesBoldItalic) / st.timesBoldItalic < 0.1, `→ ${em(st.emboldenedItalic)}; Times Bold Italic ${em(st.timesBoldItalic)} (offset ${em(st.offsetItalic)})`);
+      }
+      // The three meanings of one letter, Latin or Greek: \pvec bold upright with a harpoon, \cmat bold upright, plain italic.
+      const ds = await import("./docStyle");
+      const style = ds.activeStyle();
+      const drawn = (latex: string) => {
+        const out: { bold: boolean; slant: boolean }[] = [];
+        const walk = (b: { items: unknown[] }) => {
+          for (const it of b.items as { k: string; g?: { font: unknown }; thin?: number; slant?: number; box?: { items: unknown[] } }[]) {
+            if (it.k === "g" && it.g) out.push({ bold: (it.thin ?? 0) < 0 || it.g.font === fonts.bold || it.g.font === fonts.boldItalic, slant: !!it.slant || it.g.font === fonts.italic || it.g.font === fonts.boldItalic });
+            if (it.box) walk(it.box);
+          }
+        };
+        walk(mr.layout(parseLatex(latex).root, { fonts, style: classicStyle(), display: false, mathStyle: style }));
+        return out;
+      };
+      for (const l of ["\\omega", "r"]) {
+        const p = drawn(`\\pvec{${l}}`)[0];
+        const c = drawn(`\\cmat{${l}}`)[0];
+        const plain = drawn(l)[0];
+        check(`three meanings of ${l.replace("\\", "")}: \\pvec bold upright, \\cmat bold upright, plain ${style.greekLower === "italic" || l === "r" ? "italic" : "as the document style says"}`, !!p?.bold && !p.slant && !!c?.bold && !c.slant && !!plain && !plain.bold, `pvec ${JSON.stringify(p)}, cmat ${JSON.stringify(c)}, plain ${JSON.stringify(plain)}`);
+      }
+      // The sheet in Word (Classic pictures), to compare with MathType's bold Greek.
+      await smoke("newDocument");
+      await smoke("typeText", { text: "Bold Greek sheet: bold upright, bold italic, plain; then bold Latin." });
+      for (const l of ["\\alpha", "\\beta", "\\gamma", "\\omega", "\\sigma", "\\tau", "\\theta", "\\phi", "\\Gamma", "\\Omega"]) {
+        await smoke("newParagraph");
+        await insert(`\\mathbf{${l}}\\ \\boldsymbol{${l}}\\ ${l}\\quad\\mathbf{a}\\,\\mathbf{r}\\ \\boldsymbol{a}\\,\\boldsymbol{r}`, false);
+      }
+      await smoke("newParagraph");
+      await insert("\\pvec{\\omega},\\ \\cmat{\\omega},\\ \\omega\\qquad\\pvec{r},\\ \\cmat{r},\\ r", false);
+      await smoke("save", { file: "bold greek sheet.docx" });
+      check("bold Greek sheet saved (compare with MathType's bold Greek; the comparison sheet in the app shows 12 pt and 10 pt)", null, "bold greek sheet.docx");
+    });
+
     section = "Convert LaTeX: interchange convention document";
     await step("interchange conversion", async () => {
       const { interchangeDocx, INTERCHANGE_EXPECTED: X } = await import("./interchangeFixture");

@@ -6,6 +6,7 @@ import type { MathNode, MathVariant, Row } from "@mathblocks/math-core";
 import { expandNotation, styleAst, styleNotation, type MathStyle, type NotationProfile } from "@mathblocks/math-core";
 import { charGlyph, glyphName, namedGlyph, symbolGlyph, type FontSet, type GlyphInfo } from "./fonts";
 import type { RenderStyle } from "./style";
+import { boldGreek } from "./embolden";
 
 // ------------------------------------------------------------------ boxes
 
@@ -142,7 +143,18 @@ const ALPHA_HOLES: Record<number, string> = {
   0x1d4ba: "ℯ", 0x1d4bc: "ℊ", 0x1d4c4: "ℴ", 0x1d506: "ℭ", 0x1d50b: "ℌ", 0x1d50c: "ℑ", 0x1d515: "ℜ", 0x1d51d: "ℨ",
 };
 
+/** Unicode math bold / bold italic Greek (capital Alpha, small alpha) — the STIX fallback for bold Greek. */
+const MATH_GREEK: Partial<Record<MathVariant, [number, number]>> = { bold: [0x1d6a8, 0x1d6c2], "bold-italic": [0x1d71c, 0x1d736] };
+const GREEK_EXTRA: Record<string, number> = { "ϵ": 26, "ϑ": 27, "ϰ": 28, "ϕ": 29, "ϱ": 30, "ϖ": 31 };
+
 function mathAlpha(ch: string, variant: MathVariant): string | null {
+  const greek = MATH_GREEK[variant];
+  if (greek) {
+    const c = ch.codePointAt(0)!;
+    if (c >= 0x391 && c <= 0x3a9 && c !== 0x3a2) return String.fromCodePoint(greek[0] + (c - 0x391));
+    if (c >= 0x3b1 && c <= 0x3c9) return String.fromCodePoint(greek[1] + (c - 0x3b1));
+    if (GREEK_EXTRA[ch] !== undefined) return String.fromCodePoint(greek[1] + GREEK_EXTRA[ch]!);
+  }
   const base = MATH_ALPHA[variant];
   if (!base) return null;
   const c = ch.codePointAt(0)!;
@@ -183,6 +195,8 @@ interface Resolved {
   source: GlyphSource;
   /** Greek from the Symbol font drawn oblique (italic). */
   slanted?: boolean;
+  /** Greek from the Symbol font drawn bold (its outlines emboldened: Symbol has no bold face). */
+  bold?: boolean;
 }
 
 /** The font decision for one character; charBox draws what this returns (one source of truth for drawing and audits). */
@@ -193,8 +207,13 @@ function resolveGlyph(ch: string, face: FaceName, fonts: FontSet, st: RenderStyl
     const greek = isLowerGreek(ch) || isUpperGreek(ch) || ch === "ϕ" || ch === "φ";
     if (greek || SYMBOL_STYLE.has(ch)) {
       const g = symbolGlyph(sym, ch);
-      if (g) return { g, source: "symbol", slanted: greek && (face === "italic" || face === "boldItalic") };
+      if (g) return { g, source: "symbol", slanted: greek && (face === "italic" || face === "boldItalic"), bold: greek && (face === "bold" || face === "boldItalic") };
     }
+  }
+  // Bold Greek without Symbol: Times' own Greek in the face (a real bold) before the STIX math alphabet.
+  if ((face === "bold" || face === "boldItalic") && (isLowerGreek(ch) || isUpperGreek(ch)) && fonts[face] !== fonts.math) {
+    const g = charGlyph(fonts[face], ch);
+    if (g) return { g, source: "text" };
   }
   const alpha = variant ? mathAlpha(ch, variant) : null;
   if (alpha) {
@@ -263,6 +282,16 @@ function charBox(ch: string, face: FaceName, c: Ctx, variant?: MathVariant): Box
       const k = c.st.obliqueSlant;
       b.items[0] = { ...(b.items[0] as Extract<Item, { k: "g" }>), slant: k };
       b.overhang = Math.max(0, (r.g.xMax + k * r.g.h - r.g.w) * c.s);
+    }
+    if (r.bold) {
+      // Emboldened outlines (outward offset), the glyph moved right by the offset and the advance
+      // widened by twice it, so the heavier letter keeps its spacing.
+      const off = (r.slanted ? boldGreek(c.fonts).italic : boldGreek(c.fonts).upright) * c.s;
+      const it = b.items[0] as Extract<Item, { k: "g" }>;
+      b.items[0] = { ...it, x: it.x + off, thin: -off };
+      b.w += 2 * off;
+      b.h += off;
+      b.d += off;
     }
     b.char = { italic: !!r.slanted };
     return b;

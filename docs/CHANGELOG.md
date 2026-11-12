@@ -25,6 +25,18 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed — bold Greek is drawn bold
+- Classic: Greek comes from the Symbol font, which has no bold face; bold Greek was drawn regular. Its
+  outlines are now emboldened (outward offset), calibrated on the PC's fonts so the stroke matches Times
+  New Roman Bold (upright) and Bold Italic (italic): offset = (Times Bold "I" stem − Symbol Iota stem) / 2.
+  The advance widens by twice the offset. Without Symbol, Times' own bold Greek, then STIX's math bold Greek.
+- Hughes preset: bold kinds draw Greek like Latin (bold upright): \pvec{\omega} bold upright with a harpoon,
+  \cmat{\omega} bold upright, plain \omega from the document style — as \pvec{r}, \cmat{r}, r.
+- Bold Greek comparison sheet (Ctrl+K): α β γ ω σ τ θ φ Γ Ω bold upright and bold italic next to bold Latin
+  at 12 pt and 10 pt, the three meanings, and the stems measured on this PC.
+- Self-test section "Bold Greek": stroke weight against Times Bold / Bold Italic, the three meanings, and a
+  sheet document to compare with MathType.
+
 ### Added — My styles; restyle undo; window activations traced
 - My styles on the Document style page: New style… (from blank — neutral starting values — or from any
   style, with a name and description), rename, edit and Save style, duplicate, delete (confirmed), set as

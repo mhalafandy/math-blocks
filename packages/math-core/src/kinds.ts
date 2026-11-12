@@ -151,6 +151,8 @@ const BASE: KindStyle = {
 };
 const S = (over: Partial<KindStyle>): KindStyle => ({ ...BASE, ...over, frames: { ...BASE.frames, ...(over.frames ?? {}) } });
 const BOLD: Partial<KindStyle> = { weight: "bold", shape: "upright" };
+/** Bold upright for Greek too (\pvec{\omega}, \cmat{\omega} as \pvec{r}, \cmat{r}): the Hughes convention. */
+const BOLD_UP: Partial<KindStyle> = { ...BOLD, greek: "as-latin" };
 
 export type PresetId = "hughes" | "schaub" | "markley";
 
@@ -159,20 +161,20 @@ export const PRESETS: Record<PresetId, { name: string; kinds: Record<string, Kin
   hughes: {
     name: "Hughes (vectrix)",
     kinds: {
-      pvec: S({ ...BOLD, accent: "harpoon" }),
+      pvec: S({ ...BOLD_UP, accent: "harpoon" }),
       uvec: S({ accent: "hat" }),
-      bvec: S({ ...BOLD, accent: "hat" }),
-      vectrix: S({ ...BOLD, accent: "arrow" }),
-      cmat: S(BOLD),
-      mat: S(BOLD),
-      dcm: S({ ...BOLD, symbol: "C" }),
-      crossmat: S({ ...BOLD, suffix: { text: "×", as: "sup" } }),
+      bvec: S({ ...BOLD_UP, accent: "hat" }),
+      vectrix: S({ ...BOLD_UP, accent: "arrow" }),
+      cmat: S(BOLD_UP),
+      mat: S(BOLD_UP),
+      dcm: S({ ...BOLD_UP, symbol: "C" }),
+      crossmat: S({ ...BOLD_UP, suffix: { text: "×", as: "sup" } }),
       // Bold capital with an arrow, as the frames; I and J (inertia) are the dyadics.
-      dyadic: S({ ...BOLD, accent: "arrow" }),
-      tens: S({ ...BOLD, letters: "sans" }),
-      quat: S(BOLD),
+      dyadic: S({ ...BOLD_UP, accent: "arrow" }),
+      tens: S({ ...BOLD_UP, letters: "sans" }),
+      quat: S(BOLD_UP),
       frm: S({ letters: "calligraphic", shape: "upright", accent: "arrow", symbol: "F" }),
-      body: S(BOLD),
+      body: S(BOLD_UP),
       T: S({ shape: "upright" }),
       diff: S({ shape: "upright" }),
     },
@@ -557,8 +559,9 @@ export function kindNewcommand(kind: string, st: KindStyle, serialize: (r: Row) 
     for (const [m, v] of Object.entries(map)) out = out.split(m).join(v);
     // Arguments may be several tokens (P/O): always brace them in scripts.
     out = out.replace(/([_^])(#\d)/g, "$1{$2}");
-    // \mathbf on an argument that may be Greek: bold upright for letters, \boldsymbol for commands.
-    return out.replace(/\\mathbf\{(#\d)\}/g, st.greek === "bold-italic" ? "\\mbbold{$1}" : "\\mathbf{$1}");
+    // \mathbf on an argument that may be Greek: bold upright for letters, \boldsymbol for commands
+    // (LaTeX has no upright bold lowercase Greek without extra packages, so "as Latin" Greek is bold italic there too).
+    return out.replace(/\\mathbf\{(#\d)\}/g, "\\mbbold{$1}");
   };
   if (def.args === 0) return `\\newcommand{\\${name}}{${serialize(row(expandKind({ kind: "notation", name: kind, args: [] }, st)))}}`;
   if (kind === "dcm" || kind === "frm") {

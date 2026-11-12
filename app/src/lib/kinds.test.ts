@@ -17,7 +17,7 @@ describe("notation kinds: source ⇄ editor form", () => {
     expect(toEditorLatex("\\pvec{r}")).toBe("\\class{nk-pvec}{\\overrightharpoon{\\mathbf{r}}}");
     expect(toEditorLatex("\\pvec[P/O]{r}")).toBe("\\class{nk-pvec}{\\overrightharpoon{\\mathbf{r}}_{P/O}}");
     expect(toEditorLatex("\\dcm{b}{a}")).toBe("\\class{nk-dcm}{\\mathbf{C}_{ba}}");
-    expect(toEditorLatex("\\crossmat{\\omega}")).toBe("\\class{nk-crossmat}{\\boldsymbol{\\omega}^{\\times}}");
+    expect(toEditorLatex("\\crossmat{\\omega}")).toBe("\\class{nk-crossmat}{\\mathbf{\\omega}^{\\times}}");
   });
 
   for (const preset of Object.keys(PRESETS) as PresetId[]) {
