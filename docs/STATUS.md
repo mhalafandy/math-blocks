@@ -5,7 +5,7 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.120 (commit `6b820b6`), CI passed. This round's build: pending CI (see the next update).
+- **Published:** 0.1.121 (commit `7b23488`), CI passed — Convert MathType/numbering fixes from a real chapter.
 
 ## Window switching (0.1.115 self-test): cause
 
@@ -47,7 +47,7 @@ Fixes from converting a real chapter (owner's report; priority 2, 1, 4, 3, 7, 5,
 **Commits:** "Convert numbering: every MathType break becomes a marker; references unified"; "Convert MathType:
 nothing passes through silently".
 
-## What to test (next build)
+## What to test (0.1.121)
 
 1. **Self-test** (please don't click in Word while it runs). Expected: all checks pass, including
    - "One numbering scheme": the converted numbers have MathBlocks bookmarks, MathType's references are now
