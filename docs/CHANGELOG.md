@@ -25,6 +25,14 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed — equation numbers still read without their opening bracket
+- Reading a number walks its button field: for a nested field without a result part (MathType's and
+  MathBlocks' hidden counter), Word reports an empty result just past the field, and the walk skipped one
+  character — the opening bracket. The walk now checks for the field's separator before using its result.
+- Self-test: the whole-document undo checks also compare equation numbers (fields are not in the document
+  text); the text-guard probe deletes the first plain letter of any paragraph; a diagnosis line shows how
+  MathType's numbers read.
+
 ### Added — text guard on every whole-document operation; missing section marker is an error
 - Every whole-document operation (Repair, restyle, Normalize bold, Change notation, rename, Convert LaTeX,
   Convert numbering, Convert MathType, Update numbers, Upgrade numbering) records the document's text outside

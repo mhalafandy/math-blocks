@@ -386,20 +386,41 @@ namespace MathBlocks.WordConnector
                         d.Bookmarks.ShowHidden = hidden;
                     }
                 }
+                case "numberDebug":
+                {
+                    // How the first number fields read: Word's code text (field marks made visible) and what is shown.
+                    var list = new List<object>();
+                    foreach (Word.Field f in d.Fields)
+                    {
+                        string code;
+                        try { code = f.Code.Text ?? ""; } catch (Exception) { continue; }
+                        if (!code.Contains("PlaceRef")) continue;
+                        string vis(string s) => s.Replace("\u0013", "{").Replace("\u0014", "|").Replace("\u0015", "}");
+                        string result = "";
+                        try { result = f.Result?.Text ?? ""; } catch (Exception) { }
+                        list.Add(new Dictionary<string, object> { ["code"] = vis(code), ["result"] = vis(result), ["shows"] = ButtonDisplay(f) });
+                        if (list.Count >= 3) break;
+                    }
+                    return new Dictionary<string, object> { ["fields"] = list };
+                }
                 case "guardProbe":
                 {
                     // A whole-document change that also deletes a letter outside the equations: the text guard must
                     // notice and undo it.
                     return InOneUndo("Text guard probe", () =>
                     {
+                        // The first plain letter of the document (not inside a field or an equation).
                         foreach (Word.Paragraph para in d.Paragraphs)
                         {
-                            var t = para.Range.Text ?? "";
-                            int i = 0;
-                            while (i < t.Length && !char.IsLetter(t[i])) i++;
-                            if (i >= t.Length || para.Range.Fields.Count > 0 || para.Range.InlineShapes.Count > 0) continue;
-                            d.Range(para.Range.Start + i, para.Range.Start + i + 1).Delete();
-                            return new Dictionary<string, object> { ["deleted"] = t[i].ToString() };
+                            var pr = para.Range;
+                            for (int pos = pr.Start; pos < Math.Min(pr.End - 1, pr.Start + 200); pos++)
+                            {
+                                var c = d.Range(pos, pos + 1);
+                                var t = c.Text ?? "";
+                                if (t.Length != 1 || !char.IsLetter(t[0]) || c.Fields.Count > 0 || c.InlineShapes.Count > 0) continue;
+                                c.Delete();
+                                return new Dictionary<string, object> { ["deleted"] = t };
+                            }
                         }
                         return new Dictionary<string, object> { ["deleted"] = "" };
                     }, null, d);

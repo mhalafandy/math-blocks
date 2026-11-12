@@ -236,11 +236,16 @@ namespace MathBlocks.WordConnector
                     int begin = n.Code.Start - 1;
                     if (begin < pos) continue; // nested deeper (inside a field already taken)
                     sb.Append(doc.Range(pos, begin).Text ?? "");
+                    // A field without a result part (MathType's hidden counter) ends right after its code; Word
+                    // then reports an empty "result" just past the field, which must not be skipped over (it is
+                    // the next character — the number's opening bracket).
                     int end = n.Code.End + 1;
                     try
                     {
+                        var mark = doc.Range(n.Code.End, n.Code.End + 1).Text ?? "";
+                        bool hasResult = mark == "\u0014";
                         var r = n.Result;
-                        if (r != null && r.End > n.Code.End)
+                        if (hasResult && r != null && r.End >= r.Start && r.Start > n.Code.End)
                         {
                             sb.Append(r.Text ?? "");
                             end = r.End + 1;

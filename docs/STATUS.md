@@ -5,52 +5,53 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.112 (commit `cb9275b`), CI passed — contains the text guard, the missing-section-marker
-  error, and last round's fixes (number brackets, cursor after a section marker).
+- **Published:** 0.1.112 (commit `cb9275b`), CI passed. This round's fix is building as the next build.
 
 ## Root cause: the "text loss" in the 0.1.108 self-test
 
-**There was no text loss in the document.** The two paragraphs that looked shortened (in the convention test
-document, after the later self-test steps) are intact in the saved files of both the 0.1.108 and the 0.1.110
-self-tests, character for character as generated.
-
-- Cause: the script I used to read the saved .docx matched Word's tab element (`<w:tab/>`) as if it were a
-  text element, and in doing so skipped the start of the next text element of the same run — so everything
-  after a tab in those paragraphs looked missing. Read with a correct extractor, both paragraphs are complete.
-- Confirmed also inside Word: the 0.1.110 self-test re-scanned the document after all later steps and still
-  found both deliberate errors in those paragraphs (check "the paragraphs with the deliberate errors are
-  unchanged by the steps above": PASS).
-- Safety net added anyway (it stays): the text guard below.
+No text was lost: the script that read the saved .docx mistook Word's tab element for a text element and
+skipped the text after each tab. The saved test documents of 0.1.108 and 0.1.110 hold both paragraphs complete,
+and the self-test's own re-scan found them intact. The text guard (0.1.112) stays as a safety net.
 
 ## This round
 
-- **Text guard.** Every whole-document operation (Repair, restyle, Normalize bold, Change notation, rename,
-  Convert LaTeX, Convert numbering, Convert MathType, Update numbers, Upgrade numbering) records the document's
-  text outside equations, fields, Word equations and the ranges it is meant to change; afterwards it compares,
-  and if anything else changed it undoes itself automatically and says where.
-- **Missing section marker is an error.** With section numbering, a numbered equation before its chapter's
-  first section marker is a pre-flight error and is not converted (it used to become (4.0.1) with a warning).
-- Self-test: a probe that deletes a letter outside the equations inside an operation — the guard must undo it;
-  the interchange and numbering conversions must raise no false alarm.
+**Fix after the 0.1.112 self-test: equation numbers still read without their opening bracket.**
 
-**Commits:** this round's commit "Text guard on whole-document operations; missing section marker is an error".
+- Reading a number walks its button field's code; for a nested field without a result part (the hidden
+  counter in front of the bracket), Word reports an empty result just past the field, and the walk skipped
+  one character — the bracket. The walk now checks for the field's separator first. This is the cause of the
+  remaining failures in "One numbering scheme", Insert reference and Repair's reference check.
+- Self-test: the undo checks now compare equation numbers too (the Update numbers check saw no change only
+  because numbers are fields, not document text — the command itself worked: "1) 2)" → "2) 3)"); the text-guard
+  probe now finds a letter to delete; a diagnosis line shows how MathType's numbers read.
 
-## What to test (0.1.112)
+**Commits:** this round's commit "Fix number reading (nested field without result)".
 
-1. **Self-test.** Expected, in addition to last round's list:
+## What to test (next build)
+
+1. **Self-test.** Expected:
+   - Insert reference / Repair: "reference shows the equation's number": PASS (numbers read as "(2)", not "2)").
+   - "One numbering scheme": renumber (A.1)–(A.3) → (A.1.1)–(A.1.3); the pasted section adds (A.1.4), (A.2.1);
+     all references right; "keep" leaves (A.1)–(A.3). If it fails, send the line "how MathType's numbers read
+     (diagnosis)".
    - "text guard: a change that touches text outside the equations is undone automatically": PASS.
-   - "text guard: no false alarm on the conversion" and "…on Convert numbering": PASS.
-   - Interchange pre-flight: 6 errors, 3 warnings; the equation before chapter 4's first section marker is an
-     error and is not converted.
-   - "One numbering scheme": renumber (A.1)–(A.3) → (A.1.1)–(A.1.3), the pasted section adds (A.1.4) and (A.2.1),
-     all references right; "keep" leaves (A.1)–(A.3).
-2. **Convert numbering on a copy of the thesis** (ribbon → Convert numbering → renumber): check the old → new
-   list before confirming. If the text guard undoes it, send the message it shows.
+   - "Update numbers: one Ctrl+Z undoes it": PASS.
+2. **Convert numbering on a copy of the thesis** (ribbon → Convert numbering → renumber): check the old → new list.
 
 ## Last self-test analysed
 
-**0.1.110** (analysed last round): 204 checks — 173 passed, 16 failed; causes fixed in 0.1.111 (number
-brackets, cursor after a section marker, broken-reference snippet check). No newer report yet.
+**0.1.112:** 207 checks — 175 passed, 16 failed, 16 for information; spike 123 checks, 0 failed.
+
+- Passed: text guard — no false alarm on the interchange conversion or on Convert numbering; the interchange
+  conversion with the missing-section-marker error; the equation after a new section marker is in section A.3.
+- Failures and causes:
+  - 13 checks: numbers still read as "A.1)" (one character skipped after the hidden counter) — fixed.
+  - "Update numbers: changed the document": the check compared document text only; numbers are fields. The
+    diagnosis showed the numbers did change ("1) 2)" → "2) 3)") — the check now compares numbers too.
+  - "text guard: …undone automatically": the probe found no paragraph to change (it skipped every paragraph
+    with an equation) — fixed.
+  - "An equation after the new section marker is numbered (A.3.1)": numbered A.3.1 correctly; only the
+    bracket was missing in the reading — fixed with the above.
 
 ## Waiting for the owner
 
@@ -60,8 +61,6 @@ brackets, cursor after a section marker, broken-reference snippet check). No new
 ## Known problems
 
 - Writing equations into Word takes about 0.3 s per equation (150 equations ≈ 45 s); could be optimised.
-- The Update numbers undo check sees no change in its test document; diagnosis line added (the command itself
-  works — numbers shift and references follow in the interchange checks).
 
 ## Next
 
@@ -73,6 +72,8 @@ brackets, cursor after a section marker, broken-reference snippet check). No new
 
 ## History
 
+- **0.1.112** — Text guard on every whole-document operation; missing section marker is a pre-flight error;
+  number brackets; cursor after an inserted section marker.
 - **0.1.110** — Equation numbers read from the button fields' display text; Section marker at the cursor;
   readable broken-reference snippets; self-test fixes.
 - **0.1.108** — Convert numbering (MathType → MathBlocks: keep, or renumber to chapter.section.equation);

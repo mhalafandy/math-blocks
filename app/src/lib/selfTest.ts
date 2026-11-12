@@ -106,7 +106,9 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const rd = i.flatOpc ? readEquationXml(i.flatOpc) : null;
       return `${i.tag}=${rd ? serializeLatex(rd.root) : "?"}`;
     });
-    return `${s.text}\n§${eqs.sort().join("|")}`;
+    // Equation numbers are fields: their text is not in the document text above.
+    const numbers = (await connector.request("listNumbered", {}, SLOW).catch(() => ({ equations: [] as { number: string }[] }))).equations.map((e) => e.number).join(" ");
+    return `${s.text}\n§${eqs.sort().join("|")}\n#${numbers}`;
   };
   /**
    * A whole-document operation: it must leave its document in front, change it, and be undone by exactly
@@ -574,6 +576,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const { planNumberingConversion } = await import("./numberingConversion");
       const scanN = (await scanNumbering())!;
       const planN = planNumberingConversion(scanN, "renumber");
+      check("how MathType's numbers read (diagnosis)", null, JSON.stringify((await smoke("numberDebug")).fields));
       check("renumber plan: (A.1)–(A.3) → (A.1.1)–(A.1.3), no problems", planN.changes.map((c) => `${c.old}→${c.new}`).join(" ") === "(A.1)→(A.1.1) (A.2)→(A.1.2) (A.3)→(A.1.3)" && planN.problems.length === 0, `${planN.changes.map((c) => `${c.old}→${c.new}`).join(" ")}; ${planN.problems.map((p) => p.what).join(" | ")}`);
       let resN: Awaited<ReturnType<typeof convertNumbering>> | null = null;
       await oneCtrlZ("Convert numbering (renumber)", docM.name, async () => {
