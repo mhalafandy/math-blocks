@@ -159,6 +159,11 @@ class ConnectorClient {
         if (isRequest(msg)) this.reply(msg.id, null);
         void bringToFront();
         break;
+      case "documentIdle":
+        // After Ctrl+Z / Ctrl+Y of a restyle: the stored style follows the drawings.
+        void import("./docStyle").then((m) => m.loadDocumentStyle()).catch(() => undefined);
+        if (isRequest(msg)) this.reply(msg.id, null);
+        break;
       case "documentOpened": {
         if (isRequest(msg)) this.reply(msg.id, null);
         const params = msg.params as ConnectorToApp["documentOpened"]["params"];

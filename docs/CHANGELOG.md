@@ -25,6 +25,24 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added — My styles; restyle undo; window activations traced
+- My styles on the Document style page: New style… (from blank — neutral starting values — or from any
+  style, with a name and description), rename, edit and Save style, duplicate, delete (confirmed), set as
+  my default, export. Built-in styles are read-only (Save style asks for a new name). A document stores the
+  name and description of its style and shows "…, modified" when its look was changed after applying.
+- Restyle undo: the stored style keeps a short history and a probe equation; after Ctrl+Z / Ctrl+Y of a
+  restyle (Word's undo does not cover Custom XML Parts) the stored style follows the drawings, with a
+  status-bar note. The add-in tells the app when Word is idle in such a document.
+- The add-in records every Word window activation with the MathBlocks request during which it happened
+  (or "no MathBlocks request"); the self-test reports them.
+- Self-test: My styles (create, rename, duplicate, delete, export/import into a second document with
+  identical drawings, built-in styles unchanged); two documents open — no operation (insert, update
+  numbers, Convert LaTeX, Repair, Apply style, restyle, Check style, status message, Ctrl+Z, Ctrl+Y)
+  changes which one is in front; restyle Ctrl+Z / Ctrl+Y restore the stored style.
+
+### Fixed — after the 0.1.117 self-test
+- Embedded objects' style fingerprint was not read back (the restyle checks saw "no change").
+
 ### Added — document style: the look belongs to the document, the LaTeX keeps the meaning
 - Equations store meaning; the document's style decides at render time how letters look (Classic
   pictures, embedded objects, native Word equations, previews). Changing the style redraws equations and

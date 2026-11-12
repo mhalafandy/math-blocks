@@ -16,9 +16,22 @@ export const STYLE_NS = "urn:mathblocks:style:v1";
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const unesc = (s: string) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&");
 
-/** The Custom XML Part that carries a style (its JSON as the element's text). */
-export function styleXml(style: MathStyle): string {
-  return `<style xmlns="${STYLE_NS}">${esc(JSON.stringify(style))}</style>`;
+/** The Custom XML Part that carries a style (its JSON as the element's text), with its recent history and probe. */
+export function styleXml(style: MathStyle, extra: { history?: DocStyleState["history"]; probe?: string } = {}): string {
+  return `<style xmlns="${STYLE_NS}">${esc(JSON.stringify({ ...style, ...(extra.history?.length ? { _history: extra.history } : {}), ...(extra.probe ? { _probe: extra.probe } : {}) }))}</style>`;
+}
+
+/** The stored part's history and probe (besides the style itself). */
+export function parseStyleExtras(xml: string | null | undefined): { history: NonNullable<DocStyleState["history"]>; probe?: string } {
+  const m = xml ? /<(?:\w+:)?style\b[^>]*>([\s\S]*)<\/(?:\w+:)?style>/.exec(xml) : null;
+  if (!m) return { history: [] };
+  try {
+    const o = JSON.parse(unesc(m[1]!)) as { _history?: { hash?: string; style?: unknown }[]; _probe?: string };
+    const history = (o._history ?? []).filter((h) => typeof h.hash === "string" && h.style).map((h) => ({ hash: h.hash!, style: normalizeStyle(h.style) }));
+    return { history, ...(typeof o._probe === "string" ? { probe: o._probe } : {}) };
+  } catch {
+    return { history: [] };
+  }
 }
 
 /** The style in a stored part; null when there is none or it cannot be read. */
@@ -93,8 +106,11 @@ export async function loadDocumentStyle(document?: string): Promise<DocStyleStat
   try {
     const r = await (await connection()).request("getDocumentStyle", document ? { document } : {});
     const stored = parseStyleXml(r.xml);
-    const next: DocStyleState = { document: r.fullName, name: r.name, style: stored ?? userDefaultStyle(), stored: !!stored };
+    const extras = parseStyleExtras(r.xml);
+    const next: DocStyleState = { document: r.fullName, name: r.name, style: stored ?? userDefaultStyle(), stored: !!stored, history: extras.history, ...(extras.probe ? { probe: extras.probe } : {}) };
     if (JSON.stringify(next) !== JSON.stringify(useApp.getState().docStyle)) setDocStyle(next);
+    // Word's undo does not cover the stored style: follow the drawings back (or forward) to it.
+    if (!document && next.probe && next.history?.length) return (await followUndo(next)) ?? next;
     return next;
   } catch (e) {
     console.warn("loadDocumentStyle", e);
@@ -108,12 +124,52 @@ export async function readDocumentStyle(document: string): Promise<MathStyle | n
   return parseStyleXml(r.xml);
 }
 
-/** Stores a style in a document (the current one when none is named) and makes it the style in effect. */
-export async function saveDocumentStyle(style: MathStyle, document?: string): Promise<void> {
-  const target = document ?? useApp.getState().docStyle?.document;
-  const r = await (await connection()).request("setDocumentStyle", { ...(target ? { document: target } : {}), xml: styleXml(style) });
-  const name = useApp.getState().docStyle?.name ?? r.fullName.split(/[\\/]/).pop() ?? r.fullName;
-  setDocStyle({ document: r.fullName, name, style, stored: true });
+/**
+ * Stores a style in a document (the current one when none is named) and makes it the style in effect.
+ * The style it replaces goes into the document's recent history (Ctrl+Z of a restyle returns to it).
+ * `probe`: the equation whose drawing tells which style the document is drawn in (null clears it).
+ */
+export async function saveDocumentStyle(style: MathStyle, document?: string, o: { probe?: string | null } = {}): Promise<void> {
+  const cur = useApp.getState().docStyle;
+  const target = document ?? cur?.document;
+  const same = !!cur && (!target || cur.document === target);
+  const hash = styleHash(style);
+  const prev = same && cur?.stored ? [{ hash: styleHash(cur.style), style: cur.style }] : [];
+  const seen = new Set<string>([hash]);
+  const history = [...prev, ...(same ? (cur?.history ?? []) : [])].filter((h) => !seen.has(h.hash) && (seen.add(h.hash), true)).slice(0, 10);
+  // The probe stays only while the style is the one the equations were drawn in: a changed style (not
+  // yet redrawn) clears it, so the old drawings are not taken for an undo.
+  const probe = o.probe === undefined ? (same && cur && styleHash(cur.style) === hash ? cur.probe : undefined) : (o.probe ?? undefined);
+  const r = await (await connection()).request("setDocumentStyle", { ...(target ? { document: target } : {}), xml: styleXml(style, { history, probe }) });
+  const name = (same ? cur?.name : undefined) ?? r.fullName.split(/[\\/]/).pop() ?? r.fullName;
+  setDocStyle({ document: r.fullName, name, style, stored: true, history, ...(probe ? { probe } : {}) });
+}
+
+/**
+ * After Ctrl+Z (or Ctrl+Y) of a restyle the drawings are in an earlier (or later) style than the stored
+ * one: the stored style follows them, from the document's history. Returns the new state, or null.
+ */
+export async function followUndo(d: DocStyleState): Promise<DocStyleState | null> {
+  if (!d.probe || !d.history?.length) return null;
+  try {
+    const c = await connection();
+    const r = await c.request("readEquation", { tag: d.probe, quiet: true });
+    const { readEquationXml } = await import("./readEquation");
+    const drawn = readEquationXml(r.flatOpc)?.styleHash;
+    if (!drawn || drawn === styleHash(d.style)) return null;
+    const entry = d.history.find((h) => h.hash === drawn);
+    if (!entry) return null;
+    // That earlier style, keeping the exceptions and classification decided since.
+    const style = { ...entry.style, exceptions: d.style.exceptions };
+    await saveDocumentStyle(style, d.document, { probe: d.probe });
+    const note = "The document style followed Ctrl+Z / Ctrl+Y: the stored style is again the one the equations are drawn in.";
+    useApp.getState().notify(note);
+    void c.request("showMessage", { text: `MathBlocks: ${note}`, kind: "info" }).catch(() => undefined);
+    return useApp.getState().docStyle;
+  } catch {
+    // The probe equation is gone (deleted): nothing to follow.
+    return null;
+  }
 }
 
 /** Changes the style in effect: in the document when one is open, else the user's default. */

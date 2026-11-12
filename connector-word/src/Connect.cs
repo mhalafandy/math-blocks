@@ -53,6 +53,7 @@ namespace MathBlocks.WordConnector
                 _app.WindowSelectionChange += OnWindowSelectionChange;
                 _app.DocumentOpen += OnDocumentOpen;
                 _app.DocumentBeforeSave += OnDocumentBeforeSave;
+                _app.WindowActivate += _ops.OnWindowActivate;
 
                 // Pastes follow Word's "Insert/paste pictures as" option: a floating setting makes pasted equations float.
                 try
@@ -99,6 +100,7 @@ namespace MathBlocks.WordConnector
                     _app.WindowSelectionChange -= OnWindowSelectionChange;
                     _app.DocumentOpen -= OnDocumentOpen;
                     _app.DocumentBeforeSave -= OnDocumentBeforeSave;
+                    _app.WindowActivate -= _ops.OnWindowActivate;
                 }
                 _ui?.Dispose();
                 Log.Info("connector unloaded");
@@ -498,6 +500,7 @@ namespace MathBlocks.WordConnector
                 if (_ops.Testing) return; // the self-test runs these checks itself, at known moments
                 _guarding = true;
                 IdleChecks();
+                NotifyStyleIdle();
             }
             catch (Exception ex)
             {
@@ -506,6 +509,29 @@ namespace MathBlocks.WordConnector
             finally
             {
                 _guarding = false;
+            }
+        }
+
+        private DateTime _lastStyleIdle = DateTime.MinValue;
+
+        /// <summary>
+        /// Ctrl+Z / Ctrl+Y of a restyle changes the drawings but not the stored style (Word's undo does not
+        /// cover Custom XML Parts): when the document's style has a probe equation, the app is told Word is
+        /// idle, and it makes the stored style follow the drawings.
+        /// </summary>
+        private void NotifyStyleIdle()
+        {
+            try
+            {
+                if (_pipe == null || !_pipe.IsConnected || (DateTime.Now - _lastStyleIdle).TotalMilliseconds < 1200) return;
+                var doc = _app.ActiveDocument;
+                if (!_ops.HasStyleProbe(doc)) return;
+                _lastStyleIdle = DateTime.Now;
+                SendRequest("documentIdle", new Dictionary<string, object> { ["document"] = doc.FullName });
+            }
+            catch (Exception ex)
+            {
+                Log.Error("style idle", ex);
             }
         }
 
@@ -755,6 +781,8 @@ namespace MathBlocks.WordConnector
         private void Handle(object id, string method, Dictionary<string, object> p)
         {
             string reply;
+            // Window activations during this request are attributed to it (see WordOps.Activations).
+            _ops.CurrentRequest = method == "smoke" && p.TryGetValue("op", out var sop) ? "smoke " + sop : method;
             try
             {
                 object result;
@@ -826,6 +854,7 @@ namespace MathBlocks.WordConnector
                 Log.Error(method + " failed", ex);
                 reply = Rpc.Error(id, Rpc.Internal, ex.Message);
             }
+            _ops.EndRequest();
             if (id != null) _pipe.Send(reply);
         }
 

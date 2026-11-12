@@ -146,6 +146,8 @@ namespace MathBlocks.WordConnector
                     d.Activate();
                     return new Dictionary<string, object> { ["name"] = d.Name, ["fullName"] = d.FullName };
                 }
+                case "activations":
+                    return new Dictionary<string, object> { ["list"] = TakeActivations() };
                 case "activeName":
                     return new Dictionary<string, object> { ["name"] = _app.ActiveDocument.Name };
                 case "activate":

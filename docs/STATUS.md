@@ -5,85 +5,80 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.117 (commit `3dd9aa3`), CI passed — document style plus the self-test fixes after 0.1.115.
+- **Published:** 0.1.117 (commit `3dd9aa3`), CI passed. This round's build: pending CI (see the next update).
 
-## Root cause: the "text loss" in the 0.1.108 self-test
+## Window switching (0.1.115 self-test): what was checked, what is known
 
-No text was lost: the script that read the saved .docx mistook Word's tab element for a text element and
-skipped the text after each tab. The text guard (0.1.112) stays as a safety net.
+In 0.1.115 another Word document was in front after undo/redo, twice. Every path that can bring a Word window
+forward was checked:
+
+- **Progress window** (whole-document operations): the document's window is enabled again *before* the progress
+  window closes, and the window that was in front is activated again after it — correct.
+- **Confirmations and messages over Word**: owned by the active Word window, so closing them returns to it.
+  Status-bar messages open no window.
+- **Attaching to open windows** (when the add-in is loaded mid-session): activates every window once, then the one
+  that was in front — runs only at that load.
+- **The app**: no automatic path activates a Word document; "Go to equation" (symbol index) does, only when
+  clicked.
+- **Undo / redo in the self-test**: act on the active document only.
+
+No MathBlocks path was found that activates another document during undo/redo, and in the 0.1.117 self-test no
+switch happened. To settle it rather than assume: the add-in now records every Word window activation with the
+MathBlocks request during which it happened (or "no MathBlocks request" — then it came from outside MathBlocks),
+and the self-test reports them: a new section with two documents open checks after each operation that the one
+worked on stays in front, and names the request if another came forward; a final line lists windows that came
+forward not by a self-test step. **Open until the next self-test reports.**
 
 ## This round
 
-**Change of approach: styling is a per-document choice. The equation source stores meaning; the
-document's style decides the look at render time.** No command forces a look into the LaTeX any more.
+1. **Window switching**: investigation above; activation recording; two-document self-test section.
+2. **Restyle undo restores the stored style too.** Word's undo does not cover the Custom XML Part, so the stored
+   style keeps a short history and the ID of one redrawn equation (probe). When the probe's drawing is in a
+   different style than the stored one and that style is in the history (after Ctrl+Z or Ctrl+Y), the stored
+   style follows it, with a status-bar note. The add-in tells the app when Word is idle after a selection change
+   in such a document; every operation that reads the style checks too. A style changed but not yet redrawn has
+   no probe, so it is never mistaken for an undo.
+3. **My styles**: New style… (blank or from any style; name, description), rename, edit + Save style, duplicate,
+   delete, set as my default, export/import; built-in styles read-only; the document shows its style's name,
+   "…, modified" after changes.
+- Fix after the 0.1.117 self-test: the restyle checks could not read the style fingerprint of embedded objects.
 
-- **Render-time style** (math-core `docStyle.ts`): a style pass before drawing gives each letter its
-  shape from the style — index labels, index variables, numbers, Latin/Greek variables, d (detected in
-  derivatives and integrals), e (exponential), i (when classified), π, function names, text, transpose
-  mark, bold scope, accents over bold letters; notation kinds as before. Letters written with an explicit
-  style keep it. The "MathBlocks default" style draws exactly as before, so existing documents do not change.
-- **Stored in the document** (Custom XML Part `urn:mathblocks:style:v1`); documents without one are drawn
-  in the user's default (made from the earlier settings). The style is read at the start of every
-  operation that draws, and when Word connects.
-- **Document style… page** (ribbon → Style, Word style tab, Ctrl+K): one setting per category with a live
-  preview; presets (MathBlocks default, MathType Classic, ISO 80000-2, physics/engineering, pure
-  mathematics, chemistry-friendly); save/export/import presets; save as my default; copy style from another
-  open document; the classification of single-letter indices with the reason for each proposal.
-- **Check style**: forced \mathrm/\mathit, bold in indices, an index written two ways, a letter in several
-  forms, older drawings — conform (one Ctrl+Z) or keep as exception. **Apply style to document**: redraw all.
-- **Existing commands keep meaning:** Review notation kinds' "upright labels" rule replaced by "plain
-  indices" (also on conversion); Convert MathType/LaTeX drop forced index looks; transposes become the
-  transpose kind; Normalize bold only removes bold. docs/LATEX-INTERCHANGE.md updated.
-- **Native equations:** when the style changes how one is drawn, its source is kept in the registry (as for
-  kinds), so reading it back never turns a look into LaTeX.
+**Commits:** this round's commit "My styles, restyle undo, window activations".
 
-**Commits:** this round's commit "Document style: looks per document, meaning in the LaTeX".
+## What to test (next build)
 
-## What to test (0.1.117)
-
-1. **Self-test.** Expected: all checks pass, including the new section "Document style":
-   - "Restyle (index labels upright / italic)": LaTeX unchanged, every equation drawn in the new style,
-     one Ctrl+Z each, Ctrl+Y redoes;
-   - classification: i → index variable, t → variable, q → undecided;
-   - Check style lists the forced \mathrm on an index and on a symbol and the index written two ways;
-     "keep as exception" removes it from the list; Conform removes the forced looks (one Ctrl+Z);
-   - preset exported and imported into a second document: identical drawings.
-   Please avoid clicking in Word while the self-test runs (a window that comes forward can make checks read
-   the wrong document; the self-test now brings its document back, but it still slows the run).
-2. **On a copy of a converted chapter:** ribbon → Style → Document style…: pick a preset or set index labels
-   upright, classify the single-letter indices (check the proposals and reasons), Save and redraw. Expected:
-   every equation redrawn, the LaTeX unchanged (double-click one), one Ctrl+Z undoes the redraw.
-3. **Check style** on the same copy: review the list; conform a few, keep one as an exception, run again.
-4. **Copy style from…**: open a second document, copy the style, Save and redraw.
+1. **Self-test** (please don't click in Word while it runs). Expected: all checks pass, including
+   - "Document style": restyle labels upright / italic — drawn in the new style, one Ctrl+Z each;
+   - "My styles": create from blank, rename, duplicate, delete, export/import → identical drawings, built-in
+     styles unchanged, your own styles as before;
+   - "Two documents open": every operation keeps the worked-on document in front; Ctrl+Z / Ctrl+Y of a restyle
+     restore the stored style, Check style lists nothing;
+   - "Window activations": send the line — it tells whether anything outside the test brought a window forward.
+2. **Document style page on a copy of a converted chapter**: New style… (from a preset or blank, name it), set it
+   up, Save style, Save and redraw; Ctrl+Z in Word, then reopen the page: the previous style is shown again.
 
 ## Last self-test analysed
 
-**0.1.115** (run before 0.1.116 was published): 214 checks — 188 passed, 6 failed, 20 for information;
-embedded-object spike 123 checks, 0 failed.
+**0.1.117:** 240 checks — 213 passed, 4 failed, 23 for information; spike 123, 0 failed. No window switch.
 
-- "Normalize bold" and "Change notation (transpose form)": changed nothing. In 0.1.115 the notation-kinds
-  step rewrote every equation of the test document, including the bold spread and the transpose these two
-  checks use. Already fixed in 0.1.116 (the kinds step touches only its own equation).
-- "keep the existing numbers" and "keep: references unchanged": the numbers read, (A.1.1)…(A.2.1), are
-  those of the other test document (numbering test.docx), and the conversion itself passed its checks
-  (in front, one Ctrl+Z). After undo/redo another Word document was in front, so the checks read the wrong
-  document. The self-test's own calls do not switch documents and the same code passed in 0.1.114, so a
-  window came forward from outside the test. Fix: after every undo/redo the self-test brings its document
-  back to the front and notes it (for information) when another one was in front.
-- "a second Repair changes nothing" and "after Repair the number ends at the right margin again": the same
-  cause (they ran on another document after Ctrl+Y). The Repair checks now bring their document to the front.
+- The 4 failures were the restyle checks "changed the document" and "drawn in the new style (0 of 5)": the
+  restyle worked (σ_sf's size in Word changed both times, LaTeX unchanged), but the test equations are embedded
+  objects and their style fingerprint was not read back from the object's data. Fixed.
+
+## Thesis-copy results
+
+Not received yet (the template lines for Convert numbering and Review notation kinds were sent unfilled).
 
 ## Waiting for the owner
 
-- Self-test of the next build; the Document style page on a copy of a real chapter.
-- No open decisions.
+- Self-test of the next build; thesis-copy results for Convert numbering and Review notation kinds.
 
 ## Known problems
 
 - The visual editor (MathLive) shows letters in its own convention while typing; the Classic preview under
   it and every drawing in Word use the document style.
-- After Ctrl+Z of a restyle, the drawings go back but the stored style stays the new one: Check style lists
-  them as drawn in an earlier style, and Apply style redraws them.
+- Restyle undo follows the drawings of one probe equation; a document of native Word equations only has no
+  probe (their look is in Word's own equations), so there the stored style does not follow Ctrl+Z yet.
 - The font is Times New Roman with Symbol (Classic); choosing another font is not available yet.
 - Writing equations into Word takes about 0.3 s per equation (150 equations ≈ 45 s); could be optimised.
 

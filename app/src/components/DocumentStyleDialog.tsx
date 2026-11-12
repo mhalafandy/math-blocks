@@ -1,9 +1,9 @@
 import { useMemo, useRef } from "react";
 import { create } from "zustand";
 import { convertLatexToMarkup } from "mathlive/ssr";
-import { applyPreset, expandNotation, PRESETS, presetFrom, STYLE_PRESETS, styleAst, styleNotation, type LetterRole, type MathStyle, type PresetId, type Shape, type StylePreset } from "@mathblocks/math-core";
+import { applyPreset, expandNotation, PRESETS, presetFrom, STYLE_PRESETS, styleAst, styleLabel, styleNotation, type LetterRole, type MathStyle, type PresetId, type Shape, type StylePreset } from "@mathblocks/math-core";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
-import { Modal, askText } from "./Dialogs";
+import { Modal, askConfirm, askText } from "./Dialogs";
 import type { LetterProposal } from "../lib/styleCheck";
 import { useApp } from "../lib/store";
 
@@ -24,10 +24,12 @@ interface State {
   roles: Record<string, LetterRole | null>;
   others: { name: string; fullName: string; hasStyle: boolean }[];
   message?: string;
+  /** New style… form (null: closed). */
+  newForm: { name: string; description: string; from: string } | null;
   set: (s: Partial<Omit<State, "set">>) => void;
 }
 
-export const useDocumentStyle = create<State>((set) => ({ open: false, busy: false, document: "", stored: false, draft: null, proposals: [], roles: {}, others: [], set: (s) => set(s) }));
+export const useDocumentStyle = create<State>((set) => ({ open: false, busy: false, document: "", stored: false, draft: null, proposals: [], roles: {}, others: [], newForm: null, set: (s) => set(s) }));
 
 export async function openDocumentStyle() {
   const app = useApp.getState();
@@ -82,6 +84,7 @@ const ROLE_LABEL: Record<LetterRole, string> = { label: "label (upright if label
 
 export function DocumentStyleDialog() {
   const s = useDocumentStyle();
+  const mine = useApp((st) => st.stylePresets);
   const fileRef = useRef<HTMLInputElement>(null);
   if (!s.open) return null;
   const close = () => s.set({ open: false, draft: null });
@@ -127,34 +130,79 @@ export function DocumentStyleDialog() {
       useApp.getState().setPrefs({ defaultStyle: { ...style, letters: {}, exceptions: [] } });
       return "Saved as your default for documents without a style of their own.";
     });
-  const savePreset = () =>
+  /** Save style: into one of my styles; a built-in one is read-only, so it asks for a new name. */
+  const saveStyle = () =>
     run(async () => {
       if (!d) return;
-      const name = await askText("Save as preset", "My style", "Name of the preset");
+      const sp = await import("../lib/stylePresets");
+      if (!sp.isBuiltIn(d.preset) && sp.myStyles().some((p) => p.id === d.preset)) {
+        const p = sp.updateStyle(d.preset, d);
+        s.set({ draft: applyPreset(d, p) });
+        return `Style “${p.name}” saved.`;
+      }
+      const name = await askText("Save as a new style", `${d.presetName ?? "My style"} (mine)`, "Built-in styles are read-only. Name of the new style");
       if (!name) return;
-      const p = presetFrom(d, `user-${Date.now()}`, name);
-      useApp.getState().setPrefs({ stylePresets: [...useApp.getState().stylePresets.filter((x) => x.name !== name), p] });
-      up({ preset: p.id });
-      return `Preset “${name}” saved.`;
+      const p = sp.createStyle(name, "", "blank");
+      const saved = sp.updateStyle(p.id, d);
+      s.set({ draft: applyPreset(d, saved) });
+      return `Style “${saved.name}” saved in My styles.`;
+    });
+  const createNew = () =>
+    run(async () => {
+      if (!d || !s.newForm) return;
+      const sp = await import("../lib/stylePresets");
+      const p = sp.createStyle(s.newForm.name, s.newForm.description, s.newForm.from);
+      s.set({ draft: applyPreset(d, p), newForm: null });
+      return `Style “${p.name}” created and opened here: change it, then Save style (and Save and redraw for this document).`;
+    });
+  const manage = (what: "apply" | "rename" | "duplicate" | "delete" | "default" | "export", p: StylePreset) =>
+    run(async () => {
+      if (!d) return;
+      const sp = await import("../lib/stylePresets");
+      if (what === "apply") {
+        s.set({ draft: applyPreset(d, p) });
+        return `“${p.name}” applied here (Save and redraw to keep it in the document; Save style after changes).`;
+      }
+      if (what === "rename") {
+        const name = await askText("Rename style", p.name, "New name");
+        if (!name || name === p.name) return;
+        const description = await askText("Description", p.description, "Description (optional)");
+        const r = sp.renameStyle(p.id, name, description ?? p.description);
+        if (d.preset === p.id) s.set({ draft: { ...d, presetName: r.name, presetDescription: r.description } });
+        return `Renamed to “${r.name}”.`;
+      }
+      if (what === "duplicate") return `Copy made: “${sp.duplicateStyle(p.id).name}”.`;
+      if (what === "delete") {
+        if (!(await askConfirm("Delete style", `Delete “${p.name}” from My styles? Documents that use it keep their look.`, "Delete", true))) return;
+        sp.deleteStyle(p.id);
+        return `“${p.name}” deleted.`;
+      }
+      if (what === "default") {
+        sp.setDefaultStyle(p.id);
+        return `“${p.name}” is now your default for documents without a style of their own.`;
+      }
+      const { presetToJson } = await import("../lib/docStyle");
+      const { saveFile } = await import("../lib/export");
+      const path = await saveFile(p.name.replace(/[\\/:*?"<>|]/g, "_"), "json", presetToJson(p), "application/json");
+      return path ? `Style exported: ${path}` : undefined;
     });
   const exportPreset = () =>
     run(async () => {
       if (!d) return;
       const { presetToJson } = await import("../lib/docStyle");
       const { saveFile } = await import("../lib/export");
-      const all = [...STYLE_PRESETS, ...useApp.getState().stylePresets];
-      const name = all.find((p) => p.id === d.preset)?.name ?? "Document style";
-      const path = await saveFile(name.replace(/[\\/:*?"<>|]/g, "_"), "json", presetToJson(presetFrom(d, d.preset, name)), "application/json");
-      return path ? `Preset exported: ${path}` : undefined;
+      const name = styleLabel(d, [...STYLE_PRESETS, ...useApp.getState().stylePresets]);
+      const path = await saveFile(name.replace(/[\\/:*?"<>|]/g, "_"), "json", presetToJson(presetFrom(d, d.preset, name, d.presetDescription ?? "")), "application/json");
+      return path ? `Style exported: ${path}` : undefined;
     });
   const importPreset = (file: File) =>
     run(async () => {
       if (!d) return;
       const { presetFromJson } = await import("../lib/docStyle");
-      const p: StylePreset = presetFromJson(await file.text());
-      useApp.getState().setPrefs({ stylePresets: [...useApp.getState().stylePresets.filter((x) => x.id !== p.id), p] });
+      const { addImportedStyle } = await import("../lib/stylePresets");
+      const p = addImportedStyle(presetFromJson(await file.text()));
       s.set({ draft: applyPreset(d, p) });
-      return `Preset “${p.name}” imported and applied here (Save to keep it in the document).`;
+      return `Style “${p.name}” imported into My styles and applied here (Save and redraw to keep it in the document).`;
     });
   const copyFrom = (fullName: string) =>
     run(async () => {
@@ -178,10 +226,63 @@ export function DocumentStyleDialog() {
               {s.document && !s.stored ? " This document has no style of its own yet: it is drawn in your default." : ""}
             </p>
             <div style={{ maxHeight: 520, overflow: "auto", display: "grid", gap: 10 }}>
+              <div>
+                <strong>Style: {styleLabel(d, [...STYLE_PRESETS, ...mine])}</strong>
+                {d.presetDescription ? <span className="hint"> — {d.presetDescription}</span> : null}
+              </div>
               <label>
-                Preset{" "}
+                Start from{" "}
                 <PresetSelect value={d.preset} onPick={(p) => s.set({ draft: applyPreset(d, p) })} />
               </label>
+              {s.newForm ? (
+                <div style={{ border: "1px solid var(--border, #ddd)", borderRadius: 6, padding: 8, display: "grid", gap: 6 }}>
+                  <strong>New style</strong>
+                  <label>
+                    Name <input value={s.newForm.name} onChange={(e) => s.set({ newForm: { ...s.newForm!, name: e.target.value } })} autoFocus />
+                  </label>
+                  <label>
+                    Description (optional) <input style={{ width: "60%" }} value={s.newForm.description} onChange={(e) => s.set({ newForm: { ...s.newForm!, description: e.target.value } })} />
+                  </label>
+                  <label>
+                    Start from{" "}
+                    <select value={s.newForm.from} onChange={(e) => s.set({ newForm: { ...s.newForm!, from: e.target.value } })}>
+                      <option value="blank">Blank — neutral starting values (LaTeX's defaults: italic letters; upright digits, Greek capitals, functions, text)</option>
+                      {[...STYLE_PRESETS, ...mine].map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button className="primary" onClick={() => void createNew()} disabled={s.busy || !s.newForm.name.trim()}>
+                      Create
+                    </button>
+                    <button onClick={() => s.set({ newForm: null })}>Cancel</button>
+                  </div>
+                </div>
+              ) : null}
+              <div>
+                <strong>My styles</strong>{" "}
+                <button className="link-button" onClick={() => s.set({ newForm: { name: "", description: "", from: "blank" } })} disabled={s.busy}>
+                  New style…
+                </button>
+                {mine.length === 0 && <p className="hint">None yet: New style…, or change a style here and Save style.</p>}
+                {mine.map((p) => (
+                  <div key={p.id} style={{ display: "flex", gap: 6, alignItems: "center", borderBottom: "1px solid var(--border, #ddd)", padding: "3px 0" }}>
+                    <span style={{ flex: 1 }}>
+                      {p.name}
+                      {p.id === d.preset ? " (in use here)" : ""}
+                      {p.description ? <span className="hint"> — {p.description}</span> : null}
+                    </span>
+                    {(["apply", "rename", "duplicate", "default", "export", "delete"] as const).map((w) => (
+                      <button key={w} className="link-button" onClick={() => void manage(w, p)} disabled={s.busy}>
+                        {w === "apply" ? "Edit / apply" : w === "default" ? "Set as my default" : w[0]!.toUpperCase() + w.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
               <Row label="Index labels (descriptive: b, sf, max…)" sample={<StylePreview latex="\sigma_{sf}+v_{max}+E_{b}" style={sample!} />}>
                 <ShapeChoice value={d.labels} onChange={(v) => up({ labels: v })} />
               </Row>
@@ -268,14 +369,14 @@ export function DocumentStyleDialog() {
         )}
         <input ref={fileRef} type="file" accept=".json,application/json" style={{ display: "none" }} onChange={(e) => e.target.files?.[0] && void importPreset(e.target.files[0])} />
         <div className="modal-actions" style={{ flexWrap: "wrap" }}>
-          <button onClick={() => void savePreset()} disabled={s.busy || !d}>
-            Save as preset…
+          <button onClick={() => void saveStyle()} disabled={s.busy || !d} title="Into the style in use when it is one of yours; a built-in style asks for a new name">
+            Save style
           </button>
           <button onClick={() => void exportPreset()} disabled={s.busy || !d}>
-            Export preset…
+            Export…
           </button>
           <button onClick={() => fileRef.current?.click()} disabled={s.busy || !d}>
-            Import preset…
+            Import…
           </button>
           {s.others.length > 0 && (
             <select value="" onChange={(e) => void copyFrom(e.target.value)} disabled={s.busy || !d}>

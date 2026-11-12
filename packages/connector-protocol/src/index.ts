@@ -167,6 +167,8 @@ export interface ConnectorToApp {
   runCommand: { params: { command: string; document?: string; tag?: string; flatOpc?: string; numbered?: boolean; fingerprint?: string; problem?: string; hasSelection?: boolean }; result: void };
   /** Ribbon button "Open MathBlocks". */
   showApp: { params: Record<string, never>; result: void };
+  /** Word is idle after a selection change in a document whose style follows undo (it has a probe). */
+  documentIdle: { params: { document: string }; result: void };
 }
 
 // ------------------------------------------------------------------ app → connector
@@ -337,7 +339,7 @@ export interface AppToConnector {
   ping: { params: Record<string, never>; result: { pong: true } };
   insertEquation: { params: InsertEquationParams; result: InsertEquationResult };
   replaceEquation: { params: ReplaceEquationParams; result: InsertEquationResult };
-  readEquation: { params: { tag: string }; result: ReadEquationResult & { number?: NumberInfo | null } };
+  readEquation: { params: { tag: string; quiet?: boolean }; result: ReadEquationResult & { number?: NumberInfo | null } };
   listMathTypeParagraphs: {
     params: DocTarget & { from: number; limit: number };
     result: { name: string; fullName: string; total: number; totalObjects: number; paragraphs: MathTypeParagraph[] };

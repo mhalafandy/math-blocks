@@ -95,6 +95,10 @@ export interface DocStyleState {
   style: MathStyle;
   /** False: the document has no style stored yet (it is drawn in the user's default). */
   stored: boolean;
+  /** Recent earlier styles of the document (newest first): Ctrl+Z / Ctrl+Y of a restyle returns to one. */
+  history?: { hash: string; style: MathStyle }[];
+  /** An equation redrawn by the last restyle: the style its drawing carries tells which style is in the document. */
+  probe?: string;
 }
 
 export interface UpdateState {

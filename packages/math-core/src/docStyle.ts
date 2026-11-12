@@ -21,6 +21,9 @@ export interface MathStyle {
   version: 1;
   /** Preset this style started from (for display only; every field below is the truth). */
   preset: string;
+  /** Name and description of that style (shown, exported; "modified" when the look differs from it). */
+  presetName?: string;
+  presetDescription?: string;
   /** Descriptive index labels: multi-letter subscripts (b, sf, max) and letters classified as labels. */
   labels: Shape;
   /** Index variables (letters classified as counters: i, j, k, n…). */
@@ -153,6 +156,10 @@ export function normalizeStyle(raw: unknown, fallback: MathStyle = DEFAULT_STYLE
   if (typeof o.accentsFollowBold === "boolean") out.accentsFollowBold = o.accentsFollowBold;
   if (typeof o.sizePt === "number" && o.sizePt >= 6 && o.sizePt <= 72) out.sizePt = o.sizePt;
   if (typeof o.preset === "string") out.preset = o.preset;
+  if (typeof o.presetName === "string") out.presetName = o.presetName;
+  else if (raw && typeof raw === "object" && "preset" in (raw as object)) delete out.presetName;
+  if (typeof o.presetDescription === "string") out.presetDescription = o.presetDescription;
+  else if (raw && typeof raw === "object" && "preset" in (raw as object)) delete out.presetDescription;
   const n = o.notation as Record<string, unknown> | undefined;
   if (n && typeof n === "object" && typeof n.preset === "string") out.notation = { preset: n.preset as NotationProfile["preset"], overrides: (n.overrides as NotationProfile["overrides"]) ?? {} };
   if (o.letters && typeof o.letters === "object") {
@@ -165,8 +172,27 @@ export function normalizeStyle(raw: unknown, fallback: MathStyle = DEFAULT_STYLE
 
 /** Applies a preset's look to a style (size, notation, classification and exceptions are kept). */
 export function applyPreset(style: MathStyle, preset: StylePreset): MathStyle {
-  return { ...style, ...preset.values, preset: preset.id };
+  return { ...style, ...preset.values, preset: preset.id, presetName: preset.name, presetDescription: preset.description };
 }
+
+/** Whether a style's look differs from a preset's. */
+export function differsFrom(style: MathStyle, preset: StylePreset): boolean {
+  return LOOK_KEYS.some((k) => k in preset.values && JSON.stringify(style[k]) !== JSON.stringify(preset.values[k]));
+}
+
+/** What a document says about its style: "Thesis style", or "Thesis style, modified" after changes. */
+export function styleLabel(style: MathStyle, presets: StylePreset[]): string {
+  const p = presets.find((x) => x.id === style.preset);
+  const name = style.presetName ?? p?.name ?? "Custom style";
+  return p && differsFrom(style, p) ? `${name}, modified` : name;
+}
+
+/**
+ * Neutral starting values for a new style: LaTeX's own defaults — italic letters (Latin, lowercase
+ * Greek, indices), upright digits, Greek capitals, d, e, i, π as variables (italic), upright function
+ * names, text and transpose; bold on the base only.
+ */
+export const BLANK_STYLE_VALUES: StylePreset["values"] = looks({ ...BASE });
 
 /** The look part of a style, as a preset (save / export). */
 export function presetFrom(style: MathStyle, id: string, name: string, description = ""): StylePreset {

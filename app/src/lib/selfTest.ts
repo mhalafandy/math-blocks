@@ -111,6 +111,17 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     const numbers = (await connector.request("listNumbered", {}, SLOW).catch(() => ({ equations: [] as { number: string }[] }))).equations.map((e) => e.number).join(" ");
     return `${s.text}\n§${eqs.sort().join("|")}\n#${numbers}`;
   };
+  /** Word window activations recorded by the add-in (with the MathBlocks request during which each happened). */
+  type Activation = { document: string; during: string; ms: number };
+  const activationLog: Activation[] = [];
+  const takeActivations = async (): Promise<Activation[]> => {
+    if (!addinSupports("smoke")) return [];
+    const r = (await smoke("activations").catch(() => ({ list: [] }))) as { list?: Activation[] };
+    const list = r.list ?? [];
+    activationLog.push(...list);
+    return list;
+  };
+  const describeActivations = (list: Activation[]) => list.map((a) => `${a.document} during ${a.during}`).join("; ") || "none recorded";
   /**
    * A whole-document operation: it must leave its document in front, change it, and be undone by exactly
    * one Ctrl+Z (text and every equation as before); Ctrl+Y redoes it.
@@ -141,7 +152,8 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     // window coming forward during the long test would make them read the wrong document).
     const still = (await smoke("activeName")).name as string;
     if (still !== docName) {
-      check(`${label}: another document came to the front after undo/redo`, null, `in front: ${still}; ${docName} brought back`);
+      const acts = (await takeActivations()).filter((a) => a.document === still);
+      check(`${label}: another document came to the front after undo/redo`, null, `in front: ${still} (${describeActivations(acts)}); ${docName} brought back`);
       await smoke("activate", { name: docName });
     }
   };
@@ -154,6 +166,8 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     return -1;
   };
   const begin = await smoke("begin");
+  await takeActivations();
+  activationLog.length = 0;
   let closedDocs: { closed: number; saved: string[] } | null = null;
   let appVersion = "browser preview";
   try {
@@ -562,6 +576,143 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       void docB;
     });
 
+    section = "My styles: create, rename, duplicate, delete, export and import";
+    await step("my styles", async () => {
+      const ds = await import("./docStyle");
+      const run = await import("./styleRun");
+      const sp = await import("./stylePresets");
+      const core = await import("@mathblocks/math-core");
+      const builtIn = JSON.stringify(core.STYLE_PRESETS);
+      const mineBefore = sp.myStyles().map((p) => p.id);
+      // Names nobody would use, removed again at the end (your own styles are not touched).
+      const stamp = Date.now().toString(36);
+      const made: string[] = [];
+      try {
+        const a = sp.createStyle(`Self-test style ${stamp}`, "made by the self-test", "blank");
+        made.push(a.id);
+        check("New style from blank: neutral starting values", JSON.stringify(a.values) === JSON.stringify(core.BLANK_STYLE_VALUES), a.name);
+        const r = sp.renameStyle(a.id, `Self-test style ${stamp} renamed`, "renamed by the self-test");
+        check("Rename: the new name and description", r.name.endsWith("renamed") && r.description === "renamed by the self-test", r.name);
+        const c = sp.duplicateStyle(r.id);
+        made.push(c.id);
+        check("Duplicate: a copy with the same look", c.name === `${r.name} (copy)` && JSON.stringify(c.values) === JSON.stringify(r.values), c.name);
+        sp.deleteStyle(c.id);
+        check("Delete: the copy is gone, the original stays", !sp.myStyles().some((p) => p.id === c.id) && sp.myStyles().some((p) => p.id === r.id));
+        // Make it distinctive, then use it in one document, export it, import it into a second one.
+        const edited = sp.updateStyle(r.id, { ...ds.activeStyle(), ...r.values, labels: "upright", differential: "upright" });
+        const SAMPLE = ["\\sigma_{sf}+\\frac{dx}{dt}", "v_{max}=x_i"];
+        const pics = async () => {
+          const front = (await smoke("activeName")).name as string;
+          const lr = await connector.request("listInstances", { includeContent: true }, SLOW);
+          const d = lr.documents.find((x) => x.name === front) ?? lr.documents[0];
+          return (d?.instances ?? []).map((i) => {
+            const rd = i.flatOpc ? readEquationXml(i.flatOpc) : null;
+            const size = /width:([\d.]+)pt;height:([\d.]+)pt/.exec(i.flatOpc ?? "");
+            return { latex: rd ? serializeLatex(rd.root) : "?", styleHash: rd?.styleHash ?? "", size: size ? `${size[1]}×${size[2]}` : "?" };
+          });
+        };
+        const docX = await smoke("newDocument");
+        for (const l of SAMPLE) {
+          await insert(l, true);
+          await smoke("caretTo", { where: "end" });
+          await smoke("newParagraph");
+        }
+        await ds.loadDocumentStyle();
+        await run.restyleDocument({ ...core.applyPreset(ds.activeStyle(), edited), letters: {}, exceptions: [] });
+        const picsX = await pics();
+        check("the document says which style it uses", core.styleLabel(ds.activeStyle(), sp.allStyles()) === edited.name, core.styleLabel(ds.activeStyle(), sp.allStyles()));
+        check("…and “modified” once its look differs", core.styleLabel({ ...ds.activeStyle(), labels: "italic" }, sp.allStyles()) === `${edited.name}, modified`);
+        const json = ds.presetToJson(edited);
+        sp.deleteStyle(edited.id);
+        const imported = sp.addImportedStyle(ds.presetFromJson(json));
+        made.push(imported.id);
+        check("Export and import: name and description kept", imported.name === edited.name && imported.description === edited.description, imported.name);
+        await smoke("save", { file: "my style X.docx" });
+        const docY = await smoke("newDocument");
+        for (const l of SAMPLE) {
+          await insert(l, true);
+          await smoke("caretTo", { where: "end" });
+          await smoke("newParagraph");
+        }
+        await ds.loadDocumentStyle();
+        await run.restyleDocument({ ...core.applyPreset(ds.activeStyle(), imported), letters: {}, exceptions: [] });
+        const picsY = await pics();
+        const pairs = picsY.map((y) => [y, picsX.find((x) => x.latex === y.latex)] as const);
+        check("Imported into a second document: identical drawings", pairs.length === SAMPLE.length && pairs.every(([y, x]) => !!x && x.styleHash === y.styleHash && x.size === y.size), pairs.map(([y, x]) => `${y.latex}: ${x?.size ?? "?"} / ${y.size}`).join("; "));
+        check("the built-in styles are unchanged", JSON.stringify(core.STYLE_PRESETS) === builtIn);
+        await smoke("save", { file: "my style Y.docx" });
+        void docX;
+        void docY;
+      } finally {
+        for (const id of made) if (!mineBefore.includes(id) && sp.myStyles().some((p) => p.id === id)) sp.deleteStyle(id);
+      }
+      check("your own styles are as before the test", JSON.stringify(sp.myStyles().map((p) => p.id)) === JSON.stringify(mineBefore));
+    });
+
+    section = "Two documents open: no operation changes which one is in front";
+    await step("two documents", async () => {
+      const ds = await import("./docStyle");
+      const run = await import("./styleRun");
+      const { repairDocument } = await import("./repair");
+      const { convertAllLatex } = await import("./wordShortcuts");
+      const docA = await smoke("newDocument");
+      await smoke("typeText", { text: "The other open document: " });
+      await insert("a+b", false);
+      const docB = await smoke("newDocument");
+      await smoke("typeText", { text: "The document worked on: " });
+      await insert("x_i+y", false);
+      await smoke("newParagraph");
+      const nb = await insert("F=ma", true);
+      await number(nb.tag, "F=ma");
+      await smoke("caretTo", { where: "end" });
+      await smoke("newParagraph");
+      await smoke("typeText", { text: "LaTeX: $E=mc^2$." });
+      await takeActivations();
+      // Activations arrive a moment after the request that causes them (e.g. a closing window).
+      const settle = () => new Promise((r) => setTimeout(r, 700));
+      const OPS: [string, () => Promise<unknown>][] = [
+        ["Insert equation", () => insert("c=d", true)],
+        ["Update numbers", () => connector.request("updateNumbers", {}, SLOW)],
+        ["Convert LaTeX (progress window)", () => convertAllLatex(undefined, { yes: true })],
+        ["Repair", () => repairDocument(undefined, { quiet: true })],
+        ["Apply style to document (progress window)", () => run.applyStyleCommand()],
+        ["Restyle", () => run.restyleDocument({ ...ds.activeStyle(), labels: "upright" })],
+        ["Check style", () => run.checkDocumentStyle()],
+        ["Status-bar message", () => connector.request("showMessage", { text: "MathBlocks self-test: status message", kind: "info" })],
+        ["Ctrl+Z", () => smoke("undo", { times: 1 })],
+        ["Ctrl+Y", () => smoke("redo", { times: 1 })],
+      ];
+      for (const [label, op] of OPS) {
+        await op();
+        await settle();
+        const front = (await smoke("activeName")).name as string;
+        const acts = await takeActivations();
+        const other = acts.filter((a) => a.document !== docB.name);
+        check(`${label}: ${docB.name} stays in front (${docA.name} open too)`, front === docB.name && other.length === 0, front === docB.name && !other.length ? "no other window came forward" : `in front: ${front}; activations: ${describeActivations(acts)}`);
+        if (front !== docB.name) await smoke("activate", { name: docB.name });
+      }
+      // Restyle undo: Word's Ctrl+Z restores the drawings; the stored style follows them.
+      await ds.loadDocumentStyle();
+      const before = ds.activeStyle();
+      const newer = { ...before, labels: before.labels === "upright" ? ("italic" as const) : ("upright" as const) };
+      await run.restyleDocument(newer);
+      const { styleHash } = await import("@mathblocks/math-core");
+      await smoke("undo", { times: 1 });
+      // What Word's idle notification after Ctrl+Z makes the app do (the self-test turns those checks off).
+      await ds.loadDocumentStyle();
+      check("Ctrl+Z of a restyle: the stored style is the previous one again", styleHash(ds.activeStyle()) === styleHash(before), `labels ${ds.activeStyle().labels} (before: ${before.labels}, new: ${newer.labels})`);
+      const cs = await run.checkDocumentStyle();
+      check("…and Check style lists nothing", cs.issues.length === 0, cs.issues.map((i) => i.message).join(" | ") || "nothing");
+      await smoke("redo", { times: 1 });
+      await ds.loadDocumentStyle();
+      check("Ctrl+Y of a restyle: the new style again", styleHash(ds.activeStyle()) === styleHash(newer), `labels ${ds.activeStyle().labels}`);
+      const cs2 = await run.checkDocumentStyle();
+      check("…and Check style lists nothing", cs2.issues.length === 0, cs2.issues.map((i) => i.message).join(" | ") || "nothing");
+      await smoke("save", { file: "two documents B.docx" });
+      await smoke("activate", { name: docA.name });
+      await smoke("save", { file: "two documents A.docx" });
+    });
+
     section = "Convert LaTeX: interchange convention document";
     await step("interchange conversion", async () => {
       const { interchangeDocx, INTERCHANGE_EXPECTED: X } = await import("./interchangeFixture");
@@ -836,6 +987,13 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     });
 
     // ------------------------------------------------------------ save
+    section = "Window activations";
+    {
+      await takeActivations();
+      const outside = activationLog.filter((a) => !a.during.startsWith("smoke"));
+      check("windows that came forward not by a self-test step", null, describeActivations(outside));
+    }
+
     section = "Saved test documents";
     const a = await step("save A", () => smoke("save", { file: "self-test A.docx" }));
     await smoke("activate", { name: docB.name });

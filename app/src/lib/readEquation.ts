@@ -39,7 +39,7 @@ function emfSource(xml: string): { latex: string; mode: string; fallback?: strin
 }
 
 /** The data inside a MathBlocks embedded object ("MathBlocks" stream of its compound file), if any. */
-function objectSource(xml: string): { latex: string; mode: string } | null {
+function objectSource(xml: string): { latex: string; mode: string; styleHash?: string } | null {
   if (!/ProgID="MathBlocks\.Equation/.test(xml)) return null;
   for (const m of xml.matchAll(/<pkg:part\b[^>]*pkg:contentType="application\/vnd\.openxmlformats-officedocument\.oleObject"[^>]*>\s*<pkg:binaryData>([\s\S]*?)<\/pkg:binaryData>/g)) {
     try {
@@ -48,8 +48,8 @@ function objectSource(xml: string): { latex: string; mode: string } | null {
       for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
       const s = readCfb(bytes).get("MathBlocks");
       if (!s) continue;
-      const src = JSON.parse(new TextDecoder().decode(s.data)) as { latex?: string; mode?: string };
-      if (typeof src.latex === "string") return { latex: src.latex, mode: src.mode ?? "inline" };
+      const src = JSON.parse(new TextDecoder().decode(s.data)) as { latex?: string; mode?: string; styleHash?: string };
+      if (typeof src.latex === "string") return { latex: src.latex, mode: src.mode ?? "inline", ...(src.styleHash ? { styleHash: src.styleHash } : {}) };
     } catch {
       // Damaged: the picture's own source or alt text below.
     }
@@ -64,7 +64,7 @@ function objectSource(xml: string): { latex: string; mode: string } | null {
 export function readEquationXml(xml: string): ReadEquation | null {
   // A MathBlocks embedded object: its own data first (it holds the full source).
   const obj = objectSource(xml);
-  if (obj) return { root: parseLatex(obj.latex).root, display: obj.mode !== "inline", numbered: obj.mode === "numbered", unknown: [], kind: "picture" };
+  if (obj) return { root: parseLatex(obj.latex).root, display: obj.mode !== "inline", numbered: obj.mode === "numbered", unknown: [], kind: "picture", ...(obj.styleHash ? { styleHash: obj.styleHash } : {}) };
   const emf = emfSource(xml);
   if (emf) return { root: parseLatex(emf.latex).root, display: emf.mode !== "inline", numbered: emf.mode === "numbered", unknown: [], kind: "picture", ...(emf.fallback ? { fallback: emf.fallback } : {}), ...(emf.styleHash ? { styleHash: emf.styleHash } : {}) };
   const pic = ALT.exec(xml);

@@ -21,6 +21,10 @@ export async function applyStyleToDocument(index?: DocumentIndex): Promise<Style
   if (doc && !doc.stored) await saveDocumentStyle(doc.style, doc.document);
   const ix = index ?? (await buildDocumentIndex());
   const r = await rewriteDocument(ix, ix.equations, (l) => l, "Apply style", () => true);
+  // One redrawn picture/object carries the style it was drawn in: after Ctrl+Z / Ctrl+Y of this redraw,
+  // the stored style follows it (Word's undo does not cover the stored style).
+  const probe = ix.equations.find((e) => e.kind === "picture" && !(e.editedInWord && !e.blockId))?.tag ?? null;
+  await saveDocumentStyle(activeStyle(), undefined, { probe });
   return { equations: r.equations, note: r.note };
 }
 

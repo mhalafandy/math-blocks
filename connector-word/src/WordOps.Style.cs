@@ -40,6 +40,17 @@ namespace MathBlocks.WordConnector
             return new Dictionary<string, object> { ["ok"] = true, ["fullName"] = doc.FullName };
         }
 
+        /// <summary>Whether the document's style has a probe equation (its stored style follows undo of a restyle).</summary>
+        internal bool HasStyleProbe(Word.Document doc)
+        {
+            foreach (var part in StyleParts(doc))
+            {
+                string xml = part.XML;
+                return xml != null && xml.Contains("_probe");
+            }
+            return false;
+        }
+
         /// <summary>The open documents (for "copy style from another document").</summary>
         public Dictionary<string, object> ListDocuments()
         {

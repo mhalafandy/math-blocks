@@ -182,7 +182,7 @@ namespace MathBlocks.WordConnector
             if (found.Count == 0) throw new RpcException(Rpc.NotFound, "No equation with tag " + tag);
             var eq = found[0];
             var xml = PictureXmlForApp(eq);
-            LogMathStructure("readEquation " + tag, xml);
+            if (!Rpc.GetBool(p, "quiet")) LogMathStructure("readEquation " + tag, xml);
             return new Dictionary<string, object> { ["flatOpc"] = xml, ["locked"] = false, ["number"] = NumberInfo(eq) };
         }
 
