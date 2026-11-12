@@ -5,7 +5,7 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.121 (commit `7b23488`), CI passed — Convert MathType/numbering fixes from a real chapter.
+- **Published:** 0.1.121 (commit `7b23488`), CI passed. This round's build (self-test check fix): pending CI.
 
 ## Window switching (0.1.115 self-test): cause
 
@@ -47,7 +47,7 @@ Fixes from converting a real chapter (owner's report; priority 2, 1, 4, 3, 7, 5,
 **Commits:** "Convert numbering: every MathType break becomes a marker; references unified"; "Convert MathType:
 nothing passes through silently".
 
-## What to test (0.1.121)
+## What to test (next build)
 
 1. **Self-test** (please don't click in Word while it runs). Expected: all checks pass, including
    - "One numbering scheme": the converted numbers have MathBlocks bookmarks, MathType's references are now
@@ -64,13 +64,23 @@ nothing passes through silently".
 
 ## Last self-test analysed
 
-**0.1.119:** 272 checks — 245 passed, **0 failed**, 27 for information; spike 123, 0 failed. Two documents open:
-every operation kept the worked-on document in front; no window came forward outside the test. Bold Greek: the
-stem checks passed, but the result looked heavier than bold Latin (owner) — recalibrated by darkness this round.
+**0.1.121:** 285 checks — 284 passed, 1 failed, 27 for information; spike 123, 0 failed; no window came forward
+outside the test; two documents: every operation kept the worked-on document in front.
+
+- All new checks passed: every MathType break a marker (also in empty sections), the heading without a break
+  listed and marked, new equations numbered right in a later section, the heading-only section and the next
+  chapter; references verified and MathType's bookmarks removed; no MathType numbering field left; the private-use
+  dot became \cdot; the empty object listed with where it is and the only one left.
+- The failure — "Convert numbering (keep the numbers): changed the document" — is the check: keeping the numbers
+  changes the number fields (MathType's → MathBlocks') but not their text, and the undo check compared the text
+  only. It now compares the kind of each number too. The conversion itself passed its checks.
 
 ## Thesis-copy results
 
-Not received yet (the template lines for Convert numbering and Review notation kinds were sent unfilled).
+Owner's chapter copy converted with 0.1.121 (checked on the saved file): no MathType numbering field left, every
+heading break a MathBlocks marker, every equation reference a MathBlocks reference (no MathType bookmark left), no
+private-use character in any equation, the dot operator and number sets converted, and the only MathType object
+left is the empty one listed by the pre-flight.
 
 ## Waiting for the owner
 

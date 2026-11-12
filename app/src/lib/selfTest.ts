@@ -108,7 +108,8 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       return `${i.tag}=${rd ? serializeLatex(rd.root) : "?"}${rd?.styleHash ? `#${rd.styleHash}` : ""}`;
     });
     // Equation numbers are fields: their text is not in the document text above.
-    const numbers = (await connector.request("listNumbered", {}, SLOW).catch(() => ({ equations: [] as { number: string }[] }))).equations.map((e) => e.number).join(" ");
+    // With the kind of number (MathType's or MathBlocks'): keeping the numbers changes the fields, not their text.
+    const numbers = (await connector.request("listNumbered", {}, SLOW).catch(() => ({ equations: [] as { number: string; kind?: string }[] }))).equations.map((e) => `${e.number}${e.kind === "mathtype" ? "·MT" : ""}`).join(" ");
     return `${s.text}\n§${eqs.sort().join("|")}\n#${numbers}`;
   };
   /** Word window activations recorded by the add-in (with the MathBlocks request during which each happened). */
