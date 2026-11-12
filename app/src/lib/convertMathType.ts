@@ -69,7 +69,8 @@ export async function convertMathTypeDocument() {
     // Let the "Converting…" state paint before the (synchronous) conversion runs.
     await new Promise((r) => setTimeout(r, 30));
     const { convertDocx } = await import("@mathblocks/mathtype");
-    const plan = convertDocx(bytes, { profile: currentProfile() });
+    const { kindTransform } = await import("./kindRules");
+    const plan = convertDocx(bytes, { profile: currentProfile(), transform: kindTransform });
     let docx = plan.docx;
     const { docx: _unused, ...result } = plan;
     void _unused;
@@ -78,7 +79,7 @@ export async function convertMathTypeDocument() {
       const pics = await renderAll(plan.equations, (done) => ui.set({ progress: `Typesetting equations… ${done} / ${plan.converted}` }));
       let k = 0;
       // Same IDs as the planning run: each picture's hidden source already carries its ID.
-      docx = convertDocx(bytes, { profile: currentProfile(), picture: () => pics[k++] ?? null, tags: plan.equations.map((e) => e.tag) }).docx;
+      docx = convertDocx(bytes, { profile: currentProfile(), picture: () => pics[k++] ?? null, tags: plan.equations.map((e) => e.tag), transform: kindTransform }).docx;
     }
     if (result.equations.length === 0) {
       ui.set({ busy: false });
@@ -165,6 +166,7 @@ const SLOW = 180_000;
 
 async function convertParagraphs(paragraphs: MathTypeParagraph[], equations: ConvertedEquation[]) {
   const { convertFlatOpc } = await import("@mathblocks/mathtype");
+  const { kindTransform } = await import("./kindRules");
   const { buildObjectInsertion, buildNativeInsertion } = await import("./equation");
   const profile = currentProfile();
   const classic = useApp.getState().look === "classic";
@@ -173,7 +175,7 @@ async function convertParagraphs(paragraphs: MathTypeParagraph[], equations: Con
     // The conversion reads each MathType object (LaTeX, display or inline, its number); what goes into
     // Word is one equation per object, replacing only that object — never the paragraph, whose
     // properties (MTDisplayEquation's tab stops, spacing…) must stay exactly as they are.
-    const r = convertFlatOpc(p.flatOpc, { profile });
+    const r = convertFlatOpc(p.flatOpc, { profile, transform: kindTransform });
     const packages: (string | null)[] = [];
     for (const e of r.equations) {
       if (e.status !== "converted" || !e.latex || !e.tag) {

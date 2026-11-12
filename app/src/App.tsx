@@ -35,6 +35,7 @@ import { NumberMarkerDialog } from "./components/NumberMarkerDialog";
 import { InterchangeDialog } from "./components/InterchangeDialog";
 import { BrokenReferencesDialog } from "./components/BrokenReferencesDialog";
 import { NumberingDialog } from "./components/NumberingDialog";
+import { KindsReviewDialog } from "./components/KindsReviewDialog";
 import { sendToWord } from "./lib/sendToWord";
 import { ConversionReport } from "./components/ConversionReport";
 import { SaveDialog } from "./components/SaveDialog";
@@ -320,6 +321,7 @@ export function App() {
       <InterchangeDialog />
       <BrokenReferencesDialog />
       <NumberingDialog />
+      <KindsReviewDialog />
       <ShortcutsDialog />
       <RecognitionDialog />
       <SnippetsDialog />

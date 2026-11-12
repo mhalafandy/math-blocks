@@ -53,7 +53,7 @@ namespace MathBlocks.WordConnector
                     {
                         string bookmark = null;
                         foreach (Word.Bookmark bm in para.Bookmarks)
-                            if (bm.Name.StartsWith(MathTypeBookmarkPrefix, StringComparison.Ordinal)) bookmark = bm.Name;
+                            if (bm.Name.StartsWith(MathTypeBookmarkPrefix, StringComparison.Ordinal) && (bookmark == null || bm.Name.Length < bookmark.Length)) bookmark = bm.Name;
                         var nested = NestedCodes(f);
                         items.Add(new Dictionary<string, object>
                         {

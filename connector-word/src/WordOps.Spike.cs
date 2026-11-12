@@ -407,23 +407,19 @@ namespace MathBlocks.WordConnector
                 {
                     // A whole-document change that also deletes a letter outside the equations: the text guard must
                     // notice and undo it.
-                    return InOneUndo("Text guard probe", () =>
+                    // A plain paragraph of its own (outside the operation), then an operation that deletes one of
+                    // its letters: the guard must notice and undo it, leaving the paragraph as it was.
+                    const string probeText = "Guard probe paragraph.";
+                    d.Content.InsertParagraphAfter();
+                    int at = d.Content.End - 1;
+                    d.Range(at, at).InsertAfter(probeText);
+                    var r = InOneUndo("Text guard probe", () =>
                     {
-                        // The first plain letter of the document (not inside a field or an equation).
-                        foreach (Word.Paragraph para in d.Paragraphs)
-                        {
-                            var pr = para.Range;
-                            for (int pos = pr.Start; pos < Math.Min(pr.End - 1, pr.Start + 200); pos++)
-                            {
-                                var c = d.Range(pos, pos + 1);
-                                var t = c.Text ?? "";
-                                if (t.Length != 1 || !char.IsLetter(t[0]) || c.Fields.Count > 0 || c.InlineShapes.Count > 0) continue;
-                                c.Delete();
-                                return new Dictionary<string, object> { ["deleted"] = t };
-                            }
-                        }
-                        return new Dictionary<string, object> { ["deleted"] = "" };
+                        d.Range(at, at + 1).Delete();
+                        return new Dictionary<string, object> { ["deleted"] = probeText.Substring(0, 1) };
                     }, null, d);
+                    r["textAfter"] = (d.Range(at, at + probeText.Length).Text ?? "");
+                    return r;
                 }
                 case "staleNumbers":
                 {

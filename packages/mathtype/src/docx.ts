@@ -24,6 +24,8 @@ export interface ConvertOptions {
    * before the final run and carry the ID in their hidden source, so it must stay the same.
    */
   tags?: (string | undefined)[];
+  /** Rewrites each equation's LaTeX after conversion (MathBlocks: older forms → notation kinds). */
+  transform?: (latex: string) => string;
 }
 
 export interface PictureData {
@@ -107,7 +109,7 @@ export function convertDocx(input: Uint8Array, options: ConvertOptions = {}): Co
     const rels = zip[relsName] ? parseRels(strFromU8(zip[relsName]!)) : new Map<string, string>();
     const xml = strFromU8(zip[part]!);
     if (!xml.includes("<w:object")) continue;
-    const out = convertPartXml(part, xml, rels, (path) => zip[path], profile, equations, options.picture, media, options.tags);
+    const out = convertPartXml(part, xml, rels, (path) => zip[path], profile, equations, options.picture, media, options.tags, options.transform);
     zip[part] = strToU8(out.xml);
     if (out.dropped.size) removedRels.set(relsName, out.dropped);
   }
@@ -129,6 +131,7 @@ function convertPartXml(
   picture?: ConvertOptions["picture"],
   media?: MediaOut[],
   tags?: ConvertOptions["tags"],
+  transform?: ConvertOptions["transform"],
 ): { xml: string; dropped: Set<string> } {
   const hasW15 = source.includes(`xmlns:w15="${W15}"`);
   const dropped = new Set<string>();
@@ -158,7 +161,9 @@ function convertPartXml(
       return null;
     }
     try {
-      const { latex, warnings } = mathTypeObjectToLatex(bin);
+      const converted = mathTypeObjectToLatex(bin);
+      const warnings = converted.warnings;
+      const latex = transform ? transform(converted.latex) : converted.latex;
       const parsed = parseLatex(latex);
       entry.latex = latex;
       entry.messages.push(...warnings, ...parsed.diagnostics.map((x) => x.message));
@@ -232,7 +237,7 @@ export function convertFlatOpc(flat: string, options: ConvertOptions = {}): Flat
     return b64 ? base64ToBytes(b64) : undefined;
   };
   const media: MediaOut[] = [];
-  const out = convertPartXml(docName, xmlData[1]!, rels, getBinary, profile, equations, options.picture, media, options.tags);
+  const out = convertPartXml(docName, xmlData[1]!, rels, getBinary, profile, equations, options.picture, media, options.tags, options.transform);
   if (!equations.some((e) => e.status === "converted")) return { flatOpc: null, equations };
   const body = doc.body.replace(xmlData[1]!, () => out.xml);
   let result = flat.slice(0, doc.start) + `<pkg:part${doc.attrs}>${body}</pkg:part>` + flat.slice(doc.end);

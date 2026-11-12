@@ -5,7 +5,7 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.113 (commit `e068bd6`), CI passed — contains this round's number-reading fix.
+- **Published:** 0.1.113 (commit `e068bd6`), CI passed. This round's build: pending CI (see the next update).
 
 ## Root cause: the "text loss" in the 0.1.108 self-test
 
@@ -15,48 +15,49 @@ and the self-test's own re-scan found them intact. The text guard (0.1.112) stay
 
 ## This round
 
-**Fix after the 0.1.112 self-test: equation numbers still read without their opening bracket.**
+**Notation kinds on conversion, and a review dialog to fix a document's notation quickly.**
 
-- Reading a number walks its button field's code; for a nested field without a result part (the hidden
-  counter in front of the bracket), Word reports an empty result just past the field, and the walk skipped
-  one character — the bracket. The walk now checks for the field's separator first. This is the cause of the
-  remaining failures in "One numbering scheme", Insert reference and Repair's reference check.
-- Self-test: the undo checks now compare equation numbers too (the Update numbers check saw no change only
-  because numbers are fields, not document text — the command itself worked: "1) 2)" → "2) 3)"); the text-guard
-  probe now finds a letter to delete; a diagnosis line shows how MathType's numbers read.
+- Convert MathType now writes notation kinds wherever the older form is unambiguous: arrowed lowercase
+  letters → `\pvec` (with frames such as `_{A/B}` as its option), arrowed bold capitals → `\vectrix`
+  (`I`, `J`, double arrows → `\dyadic`), hatted bold letters → `\bvec`, transposes → `^{\T}`; it also
+  repairs broken double primes and makes bold punctuation and bold digits plain.
+- New command **Review notation kinds** (Ctrl+K): lists each older form found in the open document with a
+  count and two examples before → after, ticked by default when it is a suggestion (bold lowercase → column
+  matrix, bold capital → matrix, labels in indices upright, body letters plain). Two rules are offered
+  unticked: `[\mathbf{A}\mathbf{B}]` → `\dcm{A}{B}` (the kind draws its own brackets style) and bold letters
+  without a hat → unit vector. Nothing is written before Apply; one Ctrl+Z undoes it; backup as usual.
+- Fixes after the 0.1.113 self-test: references by number picked MathType's twin bookmark (`…N`); the
+  text-guard probe changed a field code instead of text.
+- The look of individual symbols is left for later, once the functions are settled (owner's request).
 
-**Commits:** this round's commit "Fix number reading (nested field without result)".
+**Commits:** this round's commit "Notation kinds on conversion; Review notation kinds".
 
-## What to test (0.1.113)
+## What to test (next build)
 
-1. **Self-test.** Expected:
-   - Insert reference / Repair: "reference shows the equation's number": PASS (numbers read as "(2)", not "2)").
-   - "One numbering scheme": renumber (A.1)–(A.3) → (A.1.1)–(A.1.3); the pasted section adds (A.1.4), (A.2.1);
-     all references right; "keep" leaves (A.1)–(A.3). If it fails, send the line "how MathType's numbers read
-     (diagnosis)".
-   - "text guard: a change that touches text outside the equations is undone automatically": PASS.
-   - "Update numbers: one Ctrl+Z undoes it": PASS.
-2. **Convert numbering on a copy of the thesis** (ribbon → Convert numbering → renumber): check the old → new list.
+1. **Self-test.** Expected: all checks pass, including
+   - "Apply notation kinds: the older forms became kinds" and its one-Ctrl+Z check;
+   - "text guard: a change that touches text outside the equations is undone automatically";
+   - "references to old and new equations".
+2. **Review notation kinds on a copy of the thesis** (Ctrl+K → Review notation kinds): check the counts and
+   examples, untick anything unwanted, Apply; check a few equations; Ctrl+Z once should undo all of it.
+3. **Convert MathType on a copy of an unconverted chapter:** converted equations should already use
+   `\pvec`, `\vectrix`, `\bvec` and `^{\T}`.
 
 ## Last self-test analysed
 
-**0.1.112:** 207 checks — 175 passed, 16 failed, 16 for information; spike 123 checks, 0 failed.
+**0.1.113:** 191 checks — 189 passed, 2 failed.
 
-- Passed: text guard — no false alarm on the interchange conversion or on Convert numbering; the interchange
-  conversion with the missing-section-marker error; the equation after a new section marker is in section A.3.
+- Passed: number reading ("(A.1)" with its bracket), One numbering scheme, Update numbers' one Ctrl+Z.
 - Failures and causes:
-  - 13 checks: numbers still read as "A.1)" (one character skipped after the hidden counter) — fixed.
-  - "Update numbers: changed the document": the check compared document text only; numbers are fields. The
-    diagnosis showed the numbers did change ("1) 2)" → "2) 3)") — the check now compares numbers too.
-  - "text guard: …undone automatically": the probe found no paragraph to change (it skipped every paragraph
-    with an equation) — fixed.
-  - "An equation after the new section marker is numbered (A.3.1)": numbered A.3.1 correctly; only the
-    bracket was missing in the reading — fixed with the above.
+  - "text guard: …undone automatically": the probe deleted a letter inside a field code, which the guard
+    does not compare — the probe now uses a paragraph of its own. Fixed.
+  - "references to old and new equations": a reference by number used MathType's number-only twin
+    bookmark — the shortest name is used now. Fixed.
 
 ## Waiting for the owner
 
-- Self-test of the next build; Convert numbering on a thesis copy.
-- No open decisions.
+- Self-test of the next build; Review notation kinds on a thesis copy.
+- Open question: should `[\mathbf{A}\mathbf{B}]` become `\dcm{A}{B}` (unticked for now)?
 
 ## Known problems
 
@@ -72,6 +73,7 @@ and the self-test's own re-scan found them intact. The text guard (0.1.112) stay
 
 ## History
 
+- **0.1.113** — Number reading after fields without a result (bracket kept); undo checks compare numbers.
 - **0.1.112** — Text guard on every whole-document operation; missing section marker is a pre-flight error;
   number brackets; cursor after an inserted section marker.
 - **0.1.110** — Equation numbers read from the button fields' display text; Section marker at the cursor;

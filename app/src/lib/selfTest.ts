@@ -421,6 +421,9 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       await smoke("caretTo", { where: "end" });
       await smoke("newParagraph");
       await smoke("typeText", { text: "LaTeX to convert: $E=mc^2$ and $a^2+b^2=c^2$." });
+      await smoke("newParagraph");
+      await smoke("typeText", { text: "Older forms: " });
+      await insert("\\overrightharpoon{\\mathbf{v}}=\\vec{\\mathbf{F}}^{\\mathbf{T}}\\mathbf{v}_{\\mathbf{f}}+\\hat{\\mathbf{f}}_{\\mathbf{1}}", false);
       const { buildDocumentIndex, rewriteDocument } = await import("./symbolIndex");
       const { normalizeBold } = await import("@mathblocks/math-core");
       const bolded = (l: string) => {
@@ -432,6 +435,12 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const { changeTranspose } = await import("./notation");
       index = await buildDocumentIndex();
       await oneCtrlZ("Change notation (transpose form)", docU.name, () => rewriteDocument(index, index.equations, (l) => changeTranspose(l, "upright"), "Transpose form"));
+      // Review notation kinds (suggested rules): older forms become kinds, one Ctrl+Z.
+      const { applyKindRules, SUGGESTED_KIND_RULES } = await import("./kindRules");
+      index = await buildDocumentIndex();
+      await oneCtrlZ("Apply notation kinds", docU.name, () => rewriteDocument(index, index.equations, (l) => applyKindRules(l, SUGGESTED_KIND_RULES).latex, "Apply notation kinds"));
+      const kinded = (await buildDocumentIndex()).equations.map((e) => e.latex).find((l) => l.includes("\\pvec{v}"));
+      check("Apply notation kinds: the older forms became kinds", !!kinded && /\\vectrix\{F\}\^\{\\T\}/.test(kinded) && /\\cmat\{v\}_\{\\mathrm\{f\}\}/.test(kinded) && /\\bvec\{f\}_\{1\}/.test(kinded), kinded ?? "no equation with \\pvec{v}");
       const numbersNow = async () => (await connector.request("listNumbered", {}, SLOW)).equations.map((e) => e.number).join(" ");
       const before0 = await numbersNow();
       const stale = await smoke("staleNumbers");
@@ -441,10 +450,8 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const { convertAllLatex } = await import("./wordShortcuts");
       await oneCtrlZ("Convert LaTeX", docU.name, () => convertAllLatex(undefined, { yes: true }));
       // Text guard: a change that also deletes a letter outside the equations is undone automatically.
-      const beforeProbe = await docState();
       const probe = await smoke("guardProbe");
-      const afterProbe = await docState();
-      check("text guard: a change that touches text outside the equations is undone automatically", !!probe.guardFailed && probe.guardRestored === true && afterProbe === beforeProbe, `deleted "${probe.deleted}"; guard: ${probe.guardFailed ?? "did not notice"}; restored ${probe.guardRestored}; document ${afterProbe === beforeProbe ? "as before" : "changed"}`);
+      check("text guard: a change that touches text outside the equations is undone automatically", !!probe.guardFailed && probe.guardRestored === true && probe.textAfter === "Guard probe paragraph.", `deleted "${probe.deleted}"; guard: ${probe.guardFailed ?? "did not notice"}; restored ${probe.guardRestored}; the paragraph reads "${probe.textAfter}"`);
       await smoke("save", { file: "undo test.docx" });
     });
 

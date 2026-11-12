@@ -136,6 +136,13 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => import("../components/NumberMarkerDialog").then((m) => m.openNumberMarker()),
     },
     {
+      id: "word.reviewKinds",
+      title: "Review notation kinds: turn older forms (harpoons, bold letters, hats…) into notation kinds…",
+      group: "Word",
+      keywords: "notation kinds pvec vectrix bvec cmat dcm transpose consistency review fix forms converted mathtype",
+      run: () => import("../components/KindsReviewDialog").then((m) => m.openKindsReview()),
+    },
+    {
       id: "word.convertNumbering",
       title: "Convert MathType numbering to MathBlocks numbers (keep, or renumber to chapter.section.equation)…",
       group: "Word",

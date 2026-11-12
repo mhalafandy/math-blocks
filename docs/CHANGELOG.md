@@ -25,6 +25,22 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added — notation kinds on conversion; Review notation kinds
+- Convert MathType applies the unambiguous kind rules to every converted equation: harpoon and plain
+  arrows on lowercase letters → `\pvec` (frames such as `_{A/B}` move into its option), arrowed bold
+  capitals → `\vectrix` (`I`, `J` and double arrows → `\dyadic`), hatted bold letters → `\bvec`, bold or
+  italic `T` exponents → `^{\T}`, broken double primes repaired, bold punctuation and bold digits made plain.
+- Review notation kinds (Ctrl+K): one line per older form found in the open document, with how many
+  equations it changes and examples before → after. Suggested rules are ticked (column matrices, matrices,
+  upright labels in indices, plain body letters); `[\mathbf{A}\mathbf{B}]` → `\dcm{A}{B}` and hat-less unit
+  vectors are offered unticked. Nothing is written before Apply; one Ctrl+Z undoes it.
+- Self-test: Apply notation kinds (result and one Ctrl+Z).
+
+### Fixed — after the 0.1.113 self-test
+- A reference by number picked MathType's number-only twin bookmark (`…N`) instead of the number's own;
+  the shortest bookmark name is now used.
+- The text-guard probe changes a paragraph it inserts itself (it had changed a field code).
+
 ### Fixed — equation numbers still read without their opening bracket
 - Reading a number walks its button field: for a nested field without a result part (MathType's and
   MathBlocks' hidden counter), Word reports an empty result just past the field, and the walk skipped one

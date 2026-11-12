@@ -62,8 +62,9 @@ namespace MathBlocks.WordConnector
                         {
                             bool hid = doc.Bookmarks.ShowHidden;
                             doc.Bookmarks.ShowHidden = true;
+                            // The number's bookmark, not its number-only twin (…N / _MBEqN_): the shortest name.
                             foreach (Word.Bookmark bm in f.Code.Paragraphs[1].Range.Bookmarks)
-                                if (bm.Name.StartsWith(BookmarkPrefix, StringComparison.Ordinal) || bm.Name.StartsWith(MathTypeBookmarkPrefix, StringComparison.Ordinal)) bookmark = bm.Name;
+                                if ((bm.Name.StartsWith(BookmarkPrefix, StringComparison.Ordinal) || bm.Name.StartsWith(MathTypeBookmarkPrefix, StringComparison.Ordinal)) && (bookmark.Length == 0 || bm.Name.Length < bookmark.Length)) bookmark = bm.Name;
                             doc.Bookmarks.ShowHidden = hid;
                         }
                         catch (COMException) { }
