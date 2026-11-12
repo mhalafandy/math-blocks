@@ -996,6 +996,55 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       check("150-equation document: time per equation", null, r ? describeResult(r) : "");
     });
 
+    section = "Intermediate frames: F, F_I, F_II, their unit vectors and DCMs";
+    await step("intermediate frames", async () => {
+      // Generic example: a frame F, intermediate frames F_I and F_II, unit vectors with the frame's
+      // numeral as a superscript, DCMs between them.
+      const EQS = [
+        { latex: "\\vectrix{F}_{I}=\\dcm{F_{I}}{F}\\vectrix{F}", display: false },
+        { latex: "\\vectrix{F}_{II}=\\dcm{F_{II}}{F_{I}}\\vectrix{F}_{I}", display: true },
+        { latex: "\\pvec{r}=x\\bvec{f}_1^{I}+y\\bvec{f}_2^{II}+z\\bvec{f}_3^{II}", display: false },
+      ];
+      const paragraphs = EQS.map((e) => (e.display ? { style: "MTDisplayEquation", text: `\t$$${e.latex}$$` } : { style: "Normal", text: `With $${e.latex}$ in the text.` }));
+      const { interchangeDocx } = await import("./interchangeFixture");
+      const { toBase64 } = await import("./render");
+      const { activeStyle } = await import("./docStyle");
+      const docF = await smoke("openDocx", { file: "intermediate frames test.docx", base64: toBase64(interchangeDocx(paragraphs)) });
+      const scan = (await connector.request("scanInterchange", {}, SLOW)) as InterchangeScan;
+      const style = activeStyle();
+      const plan = planInterchange(scan, { frameSubscriptWarning: style.frameSubscriptWarning });
+      check("pre-flight: no warning for frames with a Roman-numeral index (the document's notation allows them)", style.frameSubscriptWarning ? null : plan.issues.length === 0, style.frameSubscriptWarning ? "this document asks for the warning (Document style)" : plan.issues.map((i) => i.what).join(" | ") || "none");
+      const strict = planInterchange(scan, { frameSubscriptWarning: true });
+      check("with “warn when a frame has a subscript” on: each frame subscript is listed", strict.issues.length === 3, `${strict.issues.length} warning(s)`);
+      // How the style draws them: numerals in indices, superscripts and DCM frames in the Roman-numeral shape.
+      const { styleAst } = await import("@mathblocks/math-core");
+      const want = style.romans === "upright";
+      for (const e of EQS) {
+        const drawn = serializeLatex(styleAst(parseLatex(e.latex).root, style));
+        const plainNumeral = /[_^]\{?(?:I{1,3}|IV|V)(?![A-Za-z])/.test(drawn);
+        const upright = (drawn.match(/\\mathrm\{(?:I{1,3}|IV|V)\}/g) ?? []).length;
+        check(`${e.latex}: Roman numerals drawn ${style.romans}`, want ? !plainNumeral && upright >= 2 : upright === 0, drawn);
+      }
+      const { convertLatexDocument } = await import("./latexInterchangeRun");
+      let res: Awaited<ReturnType<typeof convertLatexDocument>> = null;
+      await oneCtrlZ("Convert LaTeX (intermediate frames)", docF.name, async () => {
+        res = await convertLatexDocument({ yes: true });
+      });
+      const r = res as Awaited<ReturnType<typeof convertLatexDocument>>;
+      check("Convert LaTeX wrote the three equations", !!r && r.equations === 3 && r.failed.length === 0, r ? `${r.equations} equation(s), ${r.failed.length} not written` : "did not run");
+      // Round trip: each equation keeps exactly the LaTeX written (no \mathrm added; frames and DCMs intact).
+      const list = await connector.request("listInstances", { includeContent: true }, SLOW);
+      const d = (list.documents as { name: string; instances: { tag: string; flatOpc?: string }[] }[]).find((x) => x.name === docF.name);
+      const got = (d?.instances ?? []).map((i) => (i.flatOpc ? readEquationXml(i.flatOpc) : null)).filter((x) => !!x);
+      for (const e of EQS) {
+        const g = got.find((x) => serializeLatex(x!.root) === norm(e.latex));
+        check(`round trip: ${e.latex}`, !!g, g ? `stored as written, drawn in style ${g.styleHash ?? "?"}` : `stored: ${got.map((x) => serializeLatex(x!.root)).join(" | ")}`);
+      }
+      const again = planInterchange((await connector.request("scanInterchange", {}, SLOW)) as InterchangeScan);
+      check("a second Convert LaTeX finds nothing left", again.equations.length === 0 && again.issues.length === 0, `${again.equations.length} equation(s), ${again.issues.length} issue(s)`);
+      await smoke("save", { file: "intermediate frames test.docx" });
+    });
+
     section = "One numbering scheme: MathType numbers → MathBlocks, then pasted LaTeX";
     await step("mathtype numbering, renumbered", async () => {
       const { mathTypeNumberingDocx } = await import("./interchangeFixture");

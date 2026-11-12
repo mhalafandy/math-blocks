@@ -265,11 +265,17 @@ const snippetOf = (text: string, from: number, to: number) => {
   return (a > 0 ? "…" : "") + text.slice(a, b).replace(/\t/g, " ⇥ ").replace(/\s+/g, " ").trim() + (b < text.length ? "…" : "");
 };
 
-/** Notation the convention rules out (warnings): a frame never takes a subscript. */
-function notationWarnings(latex: string): string[] {
+/** Per-document notation checks (from the document style). */
+export interface InterchangeOptions {
+  /** Warn when a frame (\vectrix) has a subscript. Off by default: intermediate frames S_I, S_II are common. */
+  frameSubscriptWarning?: boolean;
+}
+
+/** Notation warnings: look-alike characters; frames with a subscript when the document asks for it. */
+function notationWarnings(latex: string, o: InterchangeOptions): string[] {
   const out: string[] = [...lookalikeWarnings(latex)];
-  for (const m of latex.matchAll(/\\vectrix\s*\{\s*([^}]*)\}\s*_/g)) {
-    out.push(`\\vectrix{${m[1]}} has a subscript: frames never do (only I and J are dyadics, \\dyadic{J}_{c})`);
+  if (o.frameSubscriptWarning) for (const m of latex.matchAll(/\\vectrix\s*\{\s*([^}]*)\}\s*_/g)) {
+    out.push(`\\vectrix{${m[1]}} has a subscript: this document warns about frames with subscripts (Document style)`);
   }
   return out;
 }
@@ -286,7 +292,7 @@ const DISPLAY_RE = /^([\t ]*)(\$\$|\\\[)([\s\S]*?)(\$\$|\\\])([\t ]*)([\s\S]*?)\
 const TYPED_NUMBER_RE = /^\(\s*(?:[A-Z]|[0-9]+)(?:\s*[.\-]\s*[0-9]+)*\s*\)$/;
 const REF_RE = /\\(eqref|ref)\s*\{([^}]*)\}/g;
 
-export function planInterchange(scan: InterchangeScan): InterchangePlan {
+export function planInterchange(scan: InterchangeScan, options: InterchangeOptions = {}): InterchangePlan {
   const issues: Issue[] = [];
   const equations: PlannedEquation[] = [];
   const references: PlannedReference[] = [];
@@ -360,7 +366,7 @@ export function planInterchange(scan: InterchangeScan): InterchangePlan {
         issue("error", problem, p, text.indexOf(m[3]!), text.indexOf(m[3]!) + m[3]!.length);
         eq.invalid = true;
       }
-      for (const w of notationWarnings(latex)) issue("warning", w, p, text.indexOf(m[3]!), text.indexOf(m[3]!) + m[3]!.length);
+      for (const w of notationWarnings(latex, options)) issue("warning", w, p, text.indexOf(m[3]!), text.indexOf(m[3]!) + m[3]!.length);
       equations.push(eq);
       continue;
     }
@@ -409,7 +415,7 @@ export function planInterchange(scan: InterchangeScan): InterchangePlan {
         issue("error", problem, p, i, end);
         eq.invalid = true;
       }
-      for (const w of notationWarnings(latex)) issue("warning", w, p, i, end);
+      for (const w of notationWarnings(latex, options)) issue("warning", w, p, i, end);
       if (/\\label\s*\{/.test(typed)) {
         issue("error", "\\label belongs after a display equation ($$…$$ TAB \\label{eq:KEY}), not inside an inline one", p, i, end);
         eq.invalid = true;

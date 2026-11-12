@@ -28,6 +28,8 @@ export interface MathStyle {
   labels: Shape;
   /** Index variables (letters classified as counters: i, j, k, n…). */
   counters: Shape;
+  /** Roman numerals in indices (S_I, S_II, s_1^{IV}): labels, recognised without \\mathrm. */
+  romans: Shape;
   /** Digits, in indices and elsewhere. */
   numbers: Shape;
   latinLower: Shape;
@@ -54,6 +56,8 @@ export interface MathStyle {
   font: "times";
   /** Notation kinds: preset and per-kind changes. */
   notation: NotationProfile;
+  /** Notation check (Convert LaTeX): warn when a frame (\\vectrix) has a subscript. Off: intermediate frames S_I, S_II are fine. */
+  frameSubscriptWarning: boolean;
   /** Per-letter classification of single-letter indices (confirmed by the user). */
   letters: Record<string, LetterRole>;
   /** Check-style findings kept as deliberate exceptions (their keys). */
@@ -65,6 +69,7 @@ const BASE: MathStyle = {
   preset: "mathblocks",
   labels: "italic",
   counters: "italic",
+  romans: "upright",
   numbers: "upright",
   latinLower: "italic",
   latinUpper: "italic",
@@ -80,6 +85,7 @@ const BASE: MathStyle = {
   sizePt: 12,
   font: "times",
   notation: DEFAULT_PROFILE,
+  frameSubscriptWarning: false,
   letters: {},
   exceptions: [],
 };
@@ -93,7 +99,7 @@ export interface StylePreset {
 }
 
 /** The look settings a preset may set (not size, notation, classification or exceptions). */
-export const LOOK_KEYS = ["labels", "counters", "numbers", "latinLower", "latinUpper", "greekLower", "greekUpper", "differential", "constants", "functions", "text", "transpose", "boldScope", "accentsFollowBold"] as const;
+export const LOOK_KEYS = ["labels", "counters", "romans", "numbers", "latinLower", "latinUpper", "greekLower", "greekUpper", "differential", "constants", "functions", "text", "transpose", "boldScope", "accentsFollowBold"] as const;
 export type LookKey = (typeof LOOK_KEYS)[number];
 
 const looks = (s: MathStyle): Pick<MathStyle, LookKey> => Object.fromEntries(LOOK_KEYS.map((k) => [k, s[k]])) as Pick<MathStyle, LookKey>;
@@ -147,13 +153,14 @@ export function normalizeStyle(raw: unknown, fallback: MathStyle = DEFAULT_STYLE
   const o = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
   const out: MathStyle = { ...fallback, letters: { ...fallback.letters }, exceptions: [...fallback.exceptions] };
   const shape = (v: unknown): Shape | undefined => (v === "italic" || v === "upright" ? v : undefined);
-  for (const k of ["labels", "counters", "numbers", "latinLower", "latinUpper", "greekLower", "greekUpper", "differential", "constants", "functions", "text"] as const) {
+  for (const k of ["labels", "counters", "romans", "numbers", "latinLower", "latinUpper", "greekLower", "greekUpper", "differential", "constants", "functions", "text"] as const) {
     const v = shape(o[k]);
     if (v) out[k] = v;
   }
   if (o.transpose === "italic" || o.transpose === "upright" || o.transpose === "bold") out.transpose = o.transpose;
   if (o.boldScope === "base" || o.boldScope === "scripts") out.boldScope = o.boldScope;
   if (typeof o.accentsFollowBold === "boolean") out.accentsFollowBold = o.accentsFollowBold;
+  if (typeof o.frameSubscriptWarning === "boolean") out.frameSubscriptWarning = o.frameSubscriptWarning;
   if (typeof o.sizePt === "number" && o.sizePt >= 6 && o.sizePt <= 72) out.sizePt = o.sizePt;
   if (typeof o.preset === "string") out.preset = o.preset;
   if (typeof o.presetName === "string") out.presetName = o.presetName;
@@ -201,7 +208,10 @@ export function presetFrom(style: MathStyle, id: string, name: string, descripti
 
 /** A short fingerprint of everything that changes a drawing (recorded on each picture). */
 export function styleHash(style: MathStyle): string {
-  const s = JSON.stringify([looks(style), style.sizePt, style.font, style.notation, Object.entries(style.letters).sort()]);
+  const lk: Partial<Pick<MathStyle, LookKey>> = looks(style);
+  // Added later: left out at its default so documents drawn before keep their fingerprint.
+  if (lk.romans === "upright") delete lk.romans;
+  const s = JSON.stringify([lk, style.sizePt, style.font, style.notation, Object.entries(style.letters).sort()]);
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) {
     h ^= s.charCodeAt(i);
@@ -234,10 +244,16 @@ function variableShape(style: MathStyle, ch: string): Shape {
 }
 
 /** What a run of letters in an index is (null: undecided, drawn as written). */
-export type IndexRunRole = "label" | "counter" | "variable" | "constant" | "transpose" | null;
+export type IndexRunRole = "label" | "counter" | "variable" | "constant" | "transpose" | "roman" | null;
+
+/** I, II, III, IV, V … XXXIX: capital Roman numerals as written in indices. */
+const ROMAN = /^(?=[IVX])X{0,3}(?:IX|IV|V?I{0,3})$/;
+export const isRomanNumeral = (letters: string) => ROMAN.test(letters);
 
 /** Role of a run of index letters: several letters → label (unless all are counters); one letter → its classification. */
 export function indexRunRole(letters: string[], style: Pick<MathStyle, "letters">): IndexRunRole {
+  // A Roman numeral (S_I, S_II, s_1^{IV}) is a label: a single I is not a variable unless the user said so.
+  if (isRomanNumeral(letters.join(""))) return letters.length === 1 && style.letters[letters[0]!] ? style.letters[letters[0]!]! : "roman";
   if (letters.length >= 2) {
     if (letters.every((l) => style.letters[l] === "counter")) return "counter";
     // A word of Latin letters (sf, max, eff) is a label; a run with Greek letters is an expression.
@@ -391,8 +407,16 @@ export function styleAst(root: Row, style: MathStyle): Row {
   return out;
 }
 
+/** Frame labels: their letters are labels; a frame's own index (S_I, S_{II}) is drawn as an index. */
 function styleLabelRow(r: Row, style: MathStyle) {
-  for (const n of r.children) if (isPlainLetter(n)) shapeLetter(n, style.labels);
+  for (const n of r.children) {
+    if (isPlainLetter(n)) shapeLetter(n, style.labels);
+    else if (n.kind === "scripts") {
+      styleLabelRow(n.base, style);
+      if (n.sub) styleIndexRow(n.sub, style, false);
+      if (n.sup) styleIndexRow(n.sup, style, false);
+    }
+  }
 }
 
 function styleTranspose(r: Row, style: MathStyle) {
@@ -410,7 +434,7 @@ function styleIndexRow(r: Row, style: MathStyle, boldBase: boolean) {
     for (const l of run) {
       const role = whole ?? (run.length > 1 ? indexRunRole([l.text], style) : null);
       // Undecided letters (and letters classified as variables) are drawn like variables.
-      const shape = role === "label" ? style.labels : role === "counter" ? style.counters : role === "constant" ? style.constants : null;
+      const shape = role === "roman" ? style.romans : role === "label" ? style.labels : role === "counter" ? style.counters : role === "constant" ? style.constants : null;
       const sh = shape ?? variableShape(style, l.text);
       if (boldBase && style.boldScope === "scripts") l.variant = sh === "upright" ? "bold" : "bold-italic";
       else shapeLetter(l, sh);

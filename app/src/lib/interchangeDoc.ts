@@ -105,9 +105,14 @@ thesis template).
 ### Notation
 
 - **Physical vectors:** \`\\pvec{r}\`, index outside: \`\\pvec{r}_1\`.
-- **Frames (vectrices):** \`\\vectrix{F}\` — a bold capital with an arrow; never with a subscript.
+- **Frames (vectrices):** \`\\vectrix{F}\` — a bold capital with an arrow. Intermediate frames take a
+  Roman-numeral index: \`\\vectrix{F}_{I}\`, \`\\vectrix{F}_{II}\` (a document can ask Convert LaTeX to warn
+  about frame subscripts: Document style → Roman numerals row).
 - **Unit vectors of a frame:** the frame's letter in lowercase with \`\\bvec\`, index outside:
   \`\\bvec{f}_1\`, \`\\bvec{f}_2\`, \`\\bvec{f}_3\` for frame F (bold, with a hat).
+- **Unit vectors of an intermediate frame:** the index, then the frame's numeral as a superscript:
+  \`\\bvec{f}_1^{I}\`, \`\\bvec{f}_2^{II}\`. Roman numerals in indices are drawn upright (Document style).
+- **DCM between frames with an index:** \`\\dcm{F_{I}}{F}\` (C with subscript F_I F, a thin space between).
 - **Dyadics:** only \`\\dyadic{I}\` and \`\\dyadic{J}\` (bold capital with an arrow), subscripts outside when
   needed: \`\\dyadic{J}_{c}\`.
 - **Column matrices:** \`\\cmat{r}\`; **transpose:** \`^{\\T}\`.

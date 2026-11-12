@@ -289,6 +289,12 @@ export function DocumentStyleDialog() {
               <Row label="Index variables (i, j, k, n…) and numbers" sample={<StylePreview latex="x_i+A_{ij}+a_{2}+3.5" style={sample!} />}>
                 <ShapeChoice value={d.counters} onChange={(v) => up({ counters: v })} /> numbers <ShapeChoice value={d.numbers} onChange={(v) => up({ numbers: v })} />
               </Row>
+              <Row label="Roman numerals in indices (I, II, III, IV…)" sample={<StylePreview latex="\\vectrix{F}_{I}+\\vectrix{F}_{II}+\\bvec{f}_1^{IV}" style={d} />}>
+                <ShapeChoice value={d.romans} onChange={(v) => up({ romans: v })} />{" "}
+                <label className="check">
+                  <input type="checkbox" checked={d.frameSubscriptWarning} onChange={(e) => up({ frameSubscriptWarning: e.target.checked })} /> warn when a frame has a subscript (Convert LaTeX)
+                </label>
+              </Row>
               <Row label="Latin variables (lowercase, capitals)" sample={<StylePreview latex="x+y=A+B" style={d} />}>
                 <ShapeChoice value={d.latinLower} onChange={(v) => up({ latinLower: v })} /> <ShapeChoice value={d.latinUpper} onChange={(v) => up({ latinUpper: v })} />
               </Row>

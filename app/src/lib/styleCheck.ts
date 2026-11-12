@@ -1,4 +1,4 @@
-import { isStyleLetter, isTransposeMark, type LetterRole, type MathNode, type MathStyle, type Row } from "@mathblocks/math-core";
+import { isRomanNumeral, isStyleLetter, isTransposeMark, type LetterRole, type MathNode, type MathStyle, type Row } from "@mathblocks/math-core";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { peel } from "./notation";
 
@@ -127,6 +127,8 @@ export function classifyIndices(latexes: string[]): LetterProposal[] {
           (isRel(next, "=") && r.children[i + 2]?.kind === "number" && ellipsis) ||
           (isRel(prev, "≤", "<") && isRel(next, "≤", "<")));
       if (ctx.index && single) {
+        // A Roman numeral (S_I, s_1^{V}) is a label by the document style, not a letter to classify.
+        if (isRomanNumeral(n.text)) return;
         const e = get(n.text);
         if (!ctx.limit) {
           e.uses++;

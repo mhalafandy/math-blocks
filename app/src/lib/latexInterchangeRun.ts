@@ -48,7 +48,8 @@ export async function convertLatexDocument(o: { document?: string; fromWord?: bo
   const tellUser = async (text: string, kind: "info" | "error") => (await import("./wordUi")).tell(text, kind, !!o.fromWord);
   if (!addinSupports("scanInterchange")) return null;
   const scan = (await connector.request("scanInterchange", o.document ? { document: o.document } : {}, 300_000)) as InterchangeScan;
-  const plan = planInterchange(scan);
+  const { activeStyle } = await import("./docStyle");
+  const plan = planInterchange(scan, { frameSubscriptWarning: activeStyle().frameSubscriptWarning });
   const work = plan.equations.filter((e) => !e.invalid).length + plan.markers.length + plan.references.length;
   if (!work && !plan.issues.length) {
     await tellUser(`No LaTeX found in “${scan.name}” to convert.`, "info");

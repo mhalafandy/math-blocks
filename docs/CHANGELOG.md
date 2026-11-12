@@ -25,6 +25,19 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added — intermediate frames (notation decisions)
+- Frame subscripts are a per-document notation option, off by default: `\vectrix{F}_{I}`, `\vectrix{F}_{II}`
+  and unit vectors `\bvec{f}_1^{I}` are not reported. Document style → "warn when a frame has a subscript"
+  turns the Convert LaTeX warning back on.
+- Roman numerals in indices and superscripts (I, II, III, IV, V … XXXIX) are a document-style category,
+  upright by default, recognised without `\mathrm`. A single I in an index is never classified as a variable
+  (it is left out of Classify indices); a letter the user has classified explicitly keeps that meaning.
+  Pictures drawn before keep their style fingerprint; Apply style redraws them with upright numerals.
+- DCMs between frames with an index: `\dcm{F_{I}}{F}` draws C with subscript F_I F (the frame letters as labels,
+  the numeral as an index, a thin space after the frame with an index).
+- Self-test: "Intermediate frames" (no warning, upright numerals in indices, superscripts and DCM frames,
+  Convert LaTeX round trip, one Ctrl+Z).
+
 ### Added — one-day trial checklist; Priority 2 (quick-style bar, frame-label shape); Accents page
 - docs/TRIAL-CHECKLIST.md: a working day on a copy of a real chapter, step by step, with what should happen.
 - Quick-style bar in the editor (replaces the bold popup): with a selection, or after a symbol once typing

@@ -39,6 +39,8 @@ describe("classification of indices", () => {
 
   it("an equals sign without a range does not make a counter", () => {
     expect(classifyIndices(["x=y_z", "y_z=2"]).find((x) => x.letter === "z")?.proposed).toBeNull();
+    // Roman numerals in indices are not letters to classify, even when I is also a variable elsewhere.
+    expect(classifyIndices(["\\vectrix{F}_{I}=\\dcm{F_I}{F}\\vectrix{F}", "\\bvec{f}_1^{I}+\\bvec{f}_2^{V}", "I=mr^2"]).map((x) => x.letter)).toEqual(["F"]); // F: a frame label of the DCM
   });
 });
 

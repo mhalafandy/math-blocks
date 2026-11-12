@@ -73,10 +73,11 @@ describe("LaTeX interchange plan (synthetic convention document)", () => {
     expect(mapLegacyForms("\\vec{\\mathbf{J}}_{c}").latex).toBe("\\dyadic{J}_{c}");
   });
 
-  it("warns about a frame with a subscript (only I and J are dyadics)", () => {
+  it("a frame with a subscript: fine by default (intermediate frames), a warning when the document asks", () => {
     let pos = 0;
     const paragraphs = ["\\mbnumbering{1}", "\\mbnumbering{1.1}", "\t$$\\vec{\\mathbf{F}}_{1}$$\t\\label{eq:1.1.1}"].map((text) => ({ text, style: text.startsWith("\t") ? "MTDisplayEquation" : "Normal", start: pos, end: (pos += text.length + 1) - 1 }));
-    const p = planInterchange({ name: "f", fullName: "f", bookmarks: [], paragraphs });
+    expect(planInterchange({ name: "f", fullName: "f", bookmarks: [], paragraphs }).issues).toEqual([]);
+    const p = planInterchange({ name: "f", fullName: "f", bookmarks: [], paragraphs }, { frameSubscriptWarning: true });
     expect(p.issues.map((i) => i.what)).toEqual([expect.stringMatching(/\\vectrix\{F\} has a subscript/)]);
   });
 

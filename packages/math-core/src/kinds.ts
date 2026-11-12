@@ -295,6 +295,8 @@ function joinFrames(rows: Row[], sep: string): Row {
   const out: MathNode[] = [];
   rows.forEach((r, i) => {
     if (i && sep) out.push({ kind: "operator", text: sep, opClass: "ordinary" });
+    // C_{S_I S}: a thin space after a frame with its own index, so the next frame does not read as part of it.
+    else if (i && rows[i - 1]!.children.at(-1)?.kind === "scripts") out.push({ kind: "space", width: "thin" });
     out.push(...clone(r).children);
   });
   return row(out);

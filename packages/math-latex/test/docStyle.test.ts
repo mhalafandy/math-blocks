@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyPreset, DEFAULT_STYLE, normalizeStyle, STYLE_PRESET_BY_ID, styleAst, styleHash, type MathStyle } from "@mathblocks/math-core";
+import { applyPreset, DEFAULT_PROFILE, DEFAULT_STYLE, expandNotation, normalizeStyle, STYLE_PRESET_BY_ID, styleAst, styleHash, type MathStyle } from "@mathblocks/math-core";
 import { parseLatex, serializeLatex } from "../src";
 
 /** How the style draws an equation, written as explicit LaTeX (what the renderer receives). */
@@ -69,5 +69,28 @@ describe("document style (render time)", () => {
     const own = { ...up, notation: { ...up.notation, overrides: { ...up.notation.overrides, dcm: { frames: { position: "sub" as const, separator: "" as const, shape: "italic" as const } } } } };
     expect(drawn("\\dcm{A}{B}+\\pvec[P]{r}", own)).toBe("\\dcm{A}{B}+\\pvec[\\mathrm{P}]{r}");
     expect(drawn("\\dcm{A}{B}", up)).toBe("\\dcm{\\mathrm{A}}{\\mathrm{B}}");
+  });
+
+  it("Roman numerals in indices are labels, upright by default, recognised without \\mathrm", () => {
+    // Default style: other index letters italic, numerals upright.
+    expect(drawn("\\vectrix{F}_{I}+\\vectrix{F}_{II}+\\bvec{f}_1^{I}+\\bvec{f}_2^{IV}+x_{i}", DEFAULT_STYLE)).toBe("\\vectrix{F}_{\\mathrm{I}}+\\vectrix{F}_{\\mathrm{II}}+\\bvec{f}_1^{\\mathrm{I}}+\\bvec{f}_2^{\\mathrm{IV}}+x_i");
+    // Not Roman numerals: IIV, lowercase, other capitals.
+    expect(drawn("A_{IIV}+A_{ii}+A_{B}", DEFAULT_STYLE)).toBe("A_{IIV}+A_{ii}+A_B");
+    // The category can be italic; a single letter the user classified keeps that meaning.
+    expect(drawn("F_{II}", withLooks({ romans: "italic" }))).toBe("F_{II}");
+    expect(drawn("F_{I}+F_{II}", withLooks({ letters: { I: "variable" } }))).toBe("F_I+F_{\\mathrm{II}}");
+    // Outside indices an I is a variable as before.
+    expect(drawn("I+V", DEFAULT_STYLE)).toBe("I+V");
+  });
+
+  it("a DCM between frames with their own index: the frame letters labels, the numerals upright", () => {
+    const up = withLooks({ labels: "upright" });
+    // Drawn as C with subscript F_I F, a thin space after the frame with an index.
+    expect(serializeLatex(expandNotation(parseLatex("\\dcm{F_I}{F}").root, DEFAULT_PROFILE))).toBe("\\mathbf{C}_{F_I \\,F}");
+    expect(drawn("\\dcm{F_{I}}{F}", DEFAULT_STYLE)).toBe("\\dcm{F_{\\mathrm{I}}}{F}");
+    expect(drawn("\\dcm{F_{II}}{F_{I}}", up)).toBe("\\dcm{\\mathrm{F}_{\\mathrm{II}}}{\\mathrm{F}_{\\mathrm{I}}}");
+    // Stored styles from before keep their fingerprint (the numerals' default is left out of it).
+    expect(styleHash(normalizeStyle({ labels: "upright" }))).toBe(styleHash({ ...normalizeStyle({ labels: "upright" }), romans: "upright" }));
+    expect(styleHash({ ...DEFAULT_STYLE, romans: "italic" })).not.toBe(styleHash(DEFAULT_STYLE));
   });
 });

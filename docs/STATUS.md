@@ -19,6 +19,20 @@ recording stays in the add-in and in the self-test, so a recurrence will name it
 
 ## This round
 
+**Notation decisions for intermediate frames (your message):**
+
+1. **Frame subscripts:** now a per-document option, off by default (Document style → Roman numerals row →
+   "warn when a frame has a subscript"). `\vectrix{F}_{I}` and `\bvec{f}_1^{I}` are no longer reported.
+2. **Roman numerals:** new document-style category "Roman numerals in indices", upright by default,
+   recognised in subscripts and superscripts without `\mathrm`. A single I in an index is not taken for a
+   variable (Classify indices leaves numerals out; only an explicit classification of the letter overrides).
+   Existing pictures keep their fingerprint: run Apply style (Document style) once to redraw them.
+3. **DCMs:** `\dcm{F_{I}}{F}` is the recommended form; it draws C with subscript F_I F, numeral upright, with a
+   thin space after the frame that has an index. `\dcm{F_{II}}{F_{I}}` works too.
+
+Self-test section "Intermediate frames" checks all three on a generic F, F_I, F_II example.
+
+
 **Milestone: trial checklist, Priority 2, 1c, Accents page.**
 
 - **One-day trial checklist:** [TRIAL-CHECKLIST.md](TRIAL-CHECKLIST.md) — preparation, converting the chapter,
@@ -41,6 +55,8 @@ new section this round.
 
 ## What to test (next build)
 
+0. **Intermediate frames:** self-test section "Intermediate frames"; then Document style → Apply style on
+   your converted chapter, and check `\vectrix{S}_{I}`-type frames show an upright numeral.
 1. **Self-test** (sections added in 0.1.123: the right-click menu; objects end to end).
 2. **Quick-style bar:** type a letter, pause → the bar above it; try Bold, Upright, the accents, Make → kind;
    on a kind (`;pv` Tab r Space, then click it) → Plain / Style….
