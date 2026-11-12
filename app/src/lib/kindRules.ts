@@ -154,17 +154,26 @@ export const KIND_RULES: KindRule[] = [
     apply: (s) => s.replace(/\\left\s*\[\s*\\mathbf\s*\{\s*([A-Z])\s*\}\s*\\mathbf\s*\{\s*([A-Z])\s*\}\s*\\right\s*\]/g, "\\dcm{$1}{$2}"),
   },
   {
-    id: "upright-labels",
-    label: "Bold letters in indices and frame superscripts (frame labels, 𝐫_𝐧, 𝐟^𝐈𝐈) → upright labels",
-    auto: false,
+    id: "plain-indices",
+    label: "Hand-styled letters in indices (bold, \\mathrm, \\mathit: frame labels, 𝐫_𝐧, v_{\\mathrm{max}}) → plain letters, drawn by the document style",
+    auto: true,
     suggested: true,
+    note: "The look of index labels (italic or upright) is a document style setting: Word style → Document style.",
     apply: (s) =>
       insideScripts(s, (inner) =>
-        // Only bold letters, with primes, slashes or commas between them (frame labels: G, GH, G'/H, II).
-        /^(?:\s*(?:\\(?:mathbf|boldsymbol)\{[A-Za-z]+\}|[/,'])\s*)+$/.test(inner) && /\\(?:mathbf|boldsymbol)\{/.test(inner)
-          ? `\\mathrm{${inner.replace(/\\(?:mathbf|boldsymbol)\{([A-Za-z]+)\}/g, "$1").replace(/\s+/g, "")}}`
+        // Only letters (styled or plain), digits, primes, slashes or commas (frame labels: G, GH, G'/H, II, max).
+        /^(?:\s*(?:\\(?:mathbf|boldsymbol|mathrm|mathit)\{[A-Za-z0-9]+\}|[A-Za-z0-9/,'])\s*)+$/.test(inner) && /\\(?:mathbf|boldsymbol|mathrm|mathit)\{/.test(inner)
+          ? inner.replace(/\\(?:mathbf|boldsymbol|mathrm|mathit)\{([A-Za-z0-9]+)\}/g, "$1").replace(/\s+/g, "")
           : inner,
       ),
+  },
+  {
+    id: "plain-symbols",
+    label: "Single letters forced upright or italic outside indices (\\mathrm{d}, \\mathrm{e}, \\mathit{x}) → plain letters",
+    auto: false,
+    suggested: false,
+    note: "An upright d, e or i may be on purpose: the document style can draw d, e, i and π upright everywhere instead.",
+    apply: (s) => outsideScripts(s, (p) => p.replace(/\\(?:mathrm|mathit)\s*\{\s*([A-Za-z])\s*\}/g, "$1")),
   },
   {
     id: "body-plain",

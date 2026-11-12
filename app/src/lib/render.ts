@@ -3,6 +3,8 @@ import { CLASSIC, loadFont, renderEmf, renderSvg, mathTypePadding, type FontSet,
 import { useApp } from "./store";
 import stixUrl from "@fontsource/stix-two-math/files/stix-two-math-latin-400-normal.woff?url";
 import { isDesktop } from "./connector";
+import { activeNotation, activeStyle } from "./docStyle";
+import { styleHash } from "@mathblocks/math-core";
 
 /**
  * Classic pictures: equations typeset by the MathBlocks engine with MathType's fonts
@@ -66,6 +68,8 @@ export interface PictureSource {
   tag?: string;
   /** Depth below the baseline (pt): Repair restores the picture's lowering from it. */
   depthPt?: number;
+  /** Fingerprint of the document style it was drawn in (Check style lists drawings in an older style). */
+  styleHash?: string;
 }
 
 /** Which fallback font a drawing used. */
@@ -124,16 +128,17 @@ export function classicStyle(): RenderStyle {
   return { ...CLASSIC, accents: useApp.getState().accentRules ?? CLASSIC.accents };
 }
 
-/** Notation profile of the current document/thesis. */
-export const notationProfile = () => useApp.getState().notationProfile;
+/** Notation profile of the current document (its style's, else the user's). */
+export const notationProfile = () => activeNotation();
 
 export async function renderPicture(latex: string, display: boolean, sizePt: number, mode: PictureMode = display ? "display" : "inline", withPng = false, extra: { block?: string | null; tag?: string | null } = {}): Promise<Picture> {
   const fonts = await loadFonts();
   // Picture padding like MathType's (2 pt around the ink at 12 pt, whole-point depth: exact baseline).
-  const r = renderSvg(parseLatex(latex).root, { fonts, style: classicStyle(), display, sizePt, notation: notationProfile(), padding: mathTypePadding(sizePt) });
+  const ms = activeStyle();
+  const r = renderSvg(parseLatex(latex).root, { fonts, style: classicStyle(), display, sizePt, mathStyle: ms, padding: mathTypePadding(sizePt) });
   const fallback = fallbackOf(r.sources);
   if (fallback === "stix" && !fonts.extra && fonts.symbol) warnNoExtra();
-  const source: PictureSource = { latex, mode, style: CLASSIC.id, sizePt, ...(fallback ? { fallback } : {}), ...(extra.block ? { block: extra.block } : {}), ...(extra.tag ? { tag: extra.tag } : {}), depthPt: Math.round(r.depthPt * 1000) / 1000 };
+  const source: PictureSource = { latex, mode, style: CLASSIC.id, sizePt, ...(fallback ? { fallback } : {}), ...(extra.block ? { block: extra.block } : {}), ...(extra.tag ? { tag: extra.tag } : {}), depthPt: Math.round(r.depthPt * 1000) / 1000, styleHash: styleHash(ms) };
   const emf = renderEmf(r, { comment: JSON.stringify(source) });
   const png = withPng ? await rasterise(r) : new Uint8Array();
   return { ...r, png, emf };

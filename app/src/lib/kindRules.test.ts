@@ -17,10 +17,13 @@ describe("notation kinds from older forms (generic examples)", () => {
   });
 
   it("the rules that need a decision only run when chosen", () => {
-    expect(auto("\\mathbf{q}_{\\mathbf{g}}=\\left[\\mathbf{G}\\mathbf{H}\\right]\\mathbf{q}_{\\mathbf{h}}")).toBe("\\mathbf{q}_{\\mathbf{g}}=\\left[\\mathbf{G}\\mathbf{H}\\right]\\mathbf{q}_{\\mathbf{h}}");
-    expect(suggested("\\mathbf{q}_{\\mathbf{g}}=\\left[\\mathbf{G}\\mathbf{H}\\right]\\mathbf{q}_{\\mathbf{h}}")).toBe("\\cmat{q}_{\\mathrm{g}}=\\left[\\mat{G}\\mat{H}\\right]\\cmat{q}_{\\mathrm{h}}");
-    expect(only("upright-labels", "x_{\\mathbf{G}/\\mathbf{H}}+y_{\\mathbf{G},\\mathbf{H}}+z_{\\mathbf{g}}+w_{1}")).toBe("x_{\\mathrm{G/H}}+y_{\\mathrm{G,H}}+z_{\\mathrm{g}}+w_{1}");
-    expect(only("upright-labels", "\\bvec{f}_{1}^{\\mathbf{I}\\mathbf{I}}+x_{\\mathbf{G}'/\\mathbf{H}''}")).toBe("\\bvec{f}_{1}^{\\mathrm{II}}+x_{\\mathrm{G'/H''}}");
+    // Index labels lose their hand-forced look on conversion (the document style draws them); bold letters stay until decided.
+    expect(auto("\\mathbf{q}_{\\mathbf{g}}=\\left[\\mathbf{G}\\mathbf{H}\\right]\\mathbf{q}_{\\mathbf{h}}")).toBe("\\mathbf{q}_{g}=\\left[\\mathbf{G}\\mathbf{H}\\right]\\mathbf{q}_{h}");
+    expect(suggested("\\mathbf{q}_{\\mathbf{g}}=\\left[\\mathbf{G}\\mathbf{H}\\right]\\mathbf{q}_{\\mathbf{h}}")).toBe("\\cmat{q}_{g}=\\left[\\mat{G}\\mat{H}\\right]\\cmat{q}_{h}");
+    expect(only("plain-indices", "x_{\\mathbf{G}/\\mathbf{H}}+y_{\\mathbf{G},\\mathbf{H}}+z_{\\mathbf{g}}+v_{\\mathrm{max}}+w_{1}")).toBe("x_{G/H}+y_{G,H}+z_{g}+v_{max}+w_{1}");
+    expect(only("plain-indices", "\\bvec{f}_{1}^{\\mathbf{I}\\mathbf{I}}+x_{\\mathbf{G}'/\\mathbf{H}''}")).toBe("\\bvec{f}_{1}^{II}+x_{G'/H''}");
+    expect(only("plain-symbols", "\\mathrm{d}x+\\mathrm{e}^{x}+v_{\\mathrm{max}}+\\mathrm{kg}")).toBe("dx+e^{x}+v_{\\mathrm{max}}+\\mathrm{kg}");
+    expect(SUGGESTED_KIND_RULES.has("plain-symbols")).toBe(false);
     expect(auto("\\overrightharpoon{\\boldsymbol{\\omega}}_{\\mathbf{G}'\\boldsymbol{/}\\mathbf{H}}")).toBe("\\pvec[G'/H]{\\omega}");
     expect(only("dcm", "\\left[\\mathbf{G}\\mathbf{H}\\right]^{-1}")).toBe("\\dcm{G}{H}^{-1}");
     expect(only("body-plain", "\\int_{\\mathbf{B}_{2}}x\\,\\mathrm{d}m+\\mathbf{B}")).toBe("\\int_{B_{2}}x\\,\\mathrm{d}m+\\mathbf{B}");

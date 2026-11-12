@@ -180,7 +180,7 @@ namespace MathBlocks.WordConnector
         private static readonly string[] Methods =
         {
             "ping", "insertEquation", "replaceEquation", "readEquation", "documentInfo",
-            "listInstances", "replaceMany", "verifyMany", "scanInterchange", "convertInterchange", "scanNumbering", "convertNumbering", "retag", "selectInstance", "getRegistry", "setRegistry",
+            "listInstances", "replaceMany", "verifyMany", "scanInterchange", "convertInterchange", "scanNumbering", "convertNumbering", "retag", "selectInstance", "getRegistry", "setRegistry", "getDocumentStyle", "setDocumentStyle", "listDocuments",
             "listMathTypeParagraphs", "replaceParagraphs", "activateObject",
             "numberEquation", "unnumberEquation", "listNumbered", "insertReference", "updateNumbers",
             "showWordMenu", "selectionInfo", "findLatex", "replaceRanges", "equationToText",
@@ -301,6 +301,9 @@ namespace MathBlocks.WordConnector
         public void OnNumberEquation(IRibbonControl control) => RunAppCommand("numberEquation");
         public void OnSectionMarker(IRibbonControl control) => RunAppCommand("sectionMarker");
         public void OnConvertNumbering(IRibbonControl control) => RunAppCommand("convertNumbering");
+        public void OnDocumentStyle(IRibbonControl control) => RunAppCommand("documentStyle");
+        public void OnCheckStyle(IRibbonControl control) => RunAppCommand("checkStyle");
+        public void OnApplyStyle(IRibbonControl control) => RunAppCommand("applyStyle");
 
         public void OnUpdateNumbers(IRibbonControl control)
         {
@@ -782,6 +785,9 @@ namespace MathBlocks.WordConnector
                     case "selectInstance": result = _ops.SelectInstance(p); break;
                     case "getRegistry": result = _ops.GetRegistry(p); break;
                     case "setRegistry": result = _ops.SetRegistry(p); break;
+                    case "getDocumentStyle": result = _ops.GetDocumentStyle(p); break;
+                    case "setDocumentStyle": result = _ops.SetDocumentStyle(p); break;
+                    case "listDocuments": result = _ops.ListDocuments(); break;
                     case "readEquation": result = _ops.ReadEquation(p); break;
                     case "documentInfo": result = _ops.DocumentInfo(); break;
                     case "listMathTypeParagraphs": result = _ops.ListMathTypeParagraphs(p); break;

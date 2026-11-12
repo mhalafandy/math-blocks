@@ -65,6 +65,8 @@ describe("LaTeX interchange plan (synthetic convention document)", () => {
     expect(normalizeWordText("\u201Ca\u201D \u2018b\u2019 c\u2013d e\u2014f g\u2212h i\u00A0j k\u000Bl m\u00ADn")).toBe("\"a\" 'b' c-d e-f g-h i j k l mn");
     expect(mapLegacyForms("\\overset{\\scriptscriptstyle\\rightharpoonup}{\\mathbf{r}}").latex).toBe("\\pvec{r}");
     expect(mapLegacyForms("\\left(\\begin{array}{cc}a&b\\\\c&d\\end{array}\\right)").latex).toBe("\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}");
+    // Indices are written plainly: the document style draws them.
+    expect(mapLegacyForms("\\sigma_{\\mathrm{sf}}+r_{\\mathbf{n}}+\\mathrm{d}x").latex).toBe("\\sigma_{sf}+r_{n}+\\mathrm{d}x");
     expect(mapLegacyForms("\\hat{s}_1+\\hat{\\mathbf{s}}_2+\\mathbf{\\hat{s}}_3+\\hat{x}").latex).toBe("\\bvec{s}_1+\\bvec{s}_2+\\bvec{s}_3+\\hat{x}");
     expect(mapLegacyForms("\\vec{\\mathbf{J}}_{c}").latex).toBe("\\dyadic{J}_{c}");
   });

@@ -1,4 +1,4 @@
-import type { NotationProfile, Row } from "@mathblocks/math-core";
+import type { MathStyle, NotationProfile, Row } from "@mathblocks/math-core";
 import { layout, type Box, type GlyphSource } from "./layout";
 import type { FontSet } from "./fonts";
 import { CLASSIC, type RenderStyle } from "./style";
@@ -20,6 +20,8 @@ export interface RenderOptions {
   padding?: PicturePadding;
   /** Notation profile for kind objects (\pvec…); default: Hughes. */
   notation?: NotationProfile;
+  /** Document style (letters' shapes, transpose, differential, kinds); replaces `notation` when given. */
+  mathStyle?: MathStyle;
 }
 
 /** Glyph outline command (opentype.js form, y down). */
@@ -153,7 +155,7 @@ export const mathTypePadding = (sizePt: number): PicturePadding => {
 export function renderSvg(root: Row, o: RenderOptions): RenderResult {
   const style = o.style ?? CLASSIC;
   const used = new Set<GlyphSource>();
-  const box = layout(root, { fonts: o.fonts, style, display: o.display ?? true, notation: o.notation, used });
+  const box = layout(root, { fonts: o.fonts, style, display: o.display ?? true, notation: o.notation, mathStyle: o.mathStyle, used });
   const sizePt = o.sizePt ?? 12;
   const pad = o.padding;
   const mm = o.margin ?? 0.04;

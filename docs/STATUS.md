@@ -5,68 +5,77 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.115 (commit `a36ddd4`), CI passed — the notation kinds work plus the corrected self-test check.
+- **Published:** 0.1.115 (commit `a36ddd4`), CI passed. This round's build: pending CI (see the next update).
 
 ## Root cause: the "text loss" in the 0.1.108 self-test
 
 No text was lost: the script that read the saved .docx mistook Word's tab element for a text element and
-skipped the text after each tab. The saved test documents of 0.1.108 and 0.1.110 hold both paragraphs complete,
-and the self-test's own re-scan found them intact. The text guard (0.1.112) stays as a safety net.
+skipped the text after each tab. The text guard (0.1.112) stays as a safety net.
 
 ## This round
 
-**Notation kinds on conversion, and a review dialog to fix a document's notation quickly.**
+**Change of approach: styling is a per-document choice. The equation source stores meaning; the
+document's style decides the look at render time.** No command forces a look into the LaTeX any more.
 
-- Convert MathType now writes notation kinds wherever the older form is unambiguous: arrowed lowercase
-  letters → `\pvec` (with frames such as `_{A/B}` as its option), arrowed bold capitals → `\vectrix`
-  (`I`, `J`, double arrows → `\dyadic`), hatted bold letters → `\bvec`, transposes → `^{\T}`; it also
-  repairs broken double primes and makes bold punctuation and bold digits plain.
-- New command **Review notation kinds** (Ctrl+K): lists each older form found in the open document with a
-  count and two examples before → after, ticked by default when it is a suggestion (bold lowercase → column
-  matrix, bold capital → matrix, labels in indices upright, body letters plain). Two rules are offered
-  unticked: `[\mathbf{A}\mathbf{B}]` → `\dcm{A}{B}` (the kind draws its own brackets style) and bold letters
-  without a hat → unit vector. Nothing is written before Apply; one Ctrl+Z undoes it; backup as usual.
-- Fixes after the 0.1.113 self-test: references by number picked MathType's twin bookmark (`…N`); the
-  text-guard probe changed a field code instead of text.
-- The look of individual symbols is left for later, once the functions are settled (owner's request).
+- **Render-time style** (math-core `docStyle.ts`): a style pass before drawing gives each letter its
+  shape from the style — index labels, index variables, numbers, Latin/Greek variables, d (detected in
+  derivatives and integrals), e (exponential), i (when classified), π, function names, text, transpose
+  mark, bold scope, accents over bold letters; notation kinds as before. Letters written with an explicit
+  style keep it. The "MathBlocks default" style draws exactly as before, so existing documents do not change.
+- **Stored in the document** (Custom XML Part `urn:mathblocks:style:v1`); documents without one are drawn
+  in the user's default (made from the earlier settings). The style is read at the start of every
+  operation that draws, and when Word connects.
+- **Document style… page** (ribbon → Style, Word style tab, Ctrl+K): one setting per category with a live
+  preview; presets (MathBlocks default, MathType Classic, ISO 80000-2, physics/engineering, pure
+  mathematics, chemistry-friendly); save/export/import presets; save as my default; copy style from another
+  open document; the classification of single-letter indices with the reason for each proposal.
+- **Check style**: forced \mathrm/\mathit, bold in indices, an index written two ways, a letter in several
+  forms, older drawings — conform (one Ctrl+Z) or keep as exception. **Apply style to document**: redraw all.
+- **Existing commands keep meaning:** Review notation kinds' "upright labels" rule replaced by "plain
+  indices" (also on conversion); Convert MathType/LaTeX drop forced index looks; transposes become the
+  transpose kind; Normalize bold only removes bold. docs/LATEX-INTERCHANGE.md updated.
+- **Native equations:** when the style changes how one is drawn, its source is kept in the registry (as for
+  kinds), so reading it back never turns a look into LaTeX.
 
-**Commits:** this round's commit "Notation kinds on conversion; Review notation kinds".
+**Commits:** this round's commit "Document style: looks per document, meaning in the LaTeX".
 
-## What to test (0.1.115)
+## What to test (next build)
 
-1. **Self-test.** Expected: all checks pass, including "Apply notation kinds: the older forms became kinds"
-   (now run before Normalize bold).
-2. **Review notation kinds on a copy of the thesis** (Ctrl+K → Review notation kinds): check the counts and
-   examples, untick anything unwanted, Apply; check a few equations; Ctrl+Z once should undo all of it.
-3. **Convert MathType on a copy of an unconverted chapter:** converted equations should already use
-   `\pvec`, `\vectrix`, `\bvec` and `^{\T}`.
+1. **Self-test.** Expected: all checks pass, including the new section "Document style":
+   - "Restyle (index labels upright / italic)": LaTeX unchanged, every equation drawn in the new style,
+     one Ctrl+Z each, Ctrl+Y redoes;
+   - classification: i → index variable, t → variable, q → undecided;
+   - Check style lists the forced \mathrm on an index and on a symbol and the index written two ways;
+     "keep as exception" removes it from the list; Conform removes the forced looks (one Ctrl+Z);
+   - preset exported and imported into a second document: identical drawings.
+2. **On a copy of a converted chapter:** ribbon → Style → Document style…: pick a preset or set index labels
+   upright, classify the single-letter indices (check the proposals and reasons), Save and redraw. Expected:
+   every equation redrawn, the LaTeX unchanged (double-click one), one Ctrl+Z undoes the redraw.
+3. **Check style** on the same copy: review the list; conform a few, keep one as an exception, run again.
+4. **Copy style from…**: open a second document, copy the style, Save and redraw.
 
 ## Last self-test analysed
 
-**0.1.114:** 216 checks — 193 passed, 1 failed, 22 for information; embedded-object spike 123 checks, 0 failed.
-
-- Passed: text guard (the probe's change was undone automatically), references to old and new equations,
-  Apply notation kinds' one Ctrl+Z, every other whole-document undo check.
-- Failure and cause:
-  - "Apply notation kinds: the older forms became kinds": the app was right, the check was wrong. Normalize
-    bold ran earlier on the same test equation and had already made its bold index label plain, so there was
-    nothing left for the upright-labels rule. The kinds step now runs first, on the untouched equation.
-- Note for the owner: Normalize bold makes bold index labels plain italic, while Review notation kinds makes
-  them upright. On a document, run Review notation kinds first if upright labels are wanted.
+**0.1.114:** 216 checks — 193 passed, 1 failed (the check, not the app; fixed in 0.1.115). 0.1.115 has not
+been run yet.
 
 ## Waiting for the owner
 
-- Self-test of the next build; Review notation kinds on a thesis copy.
-- Decided: the `\dcm` rule stays unticked by default (ticked per document when its examples show rotation
-  matrices); labels in indices become upright, ticked by default. No open decisions.
+- Self-test of the next build; the Document style page on a copy of a real chapter.
+- No open decisions.
 
 ## Known problems
 
+- The visual editor (MathLive) shows letters in its own convention while typing; the Classic preview under
+  it and every drawing in Word use the document style.
+- After Ctrl+Z of a restyle, the drawings go back but the stored style stays the new one: Check style lists
+  them as drawn in an earlier style, and Apply style redraws them.
+- The font is Times New Roman with Symbol (Classic); choosing another font is not available yet.
 - Writing equations into Word takes about 0.3 s per equation (150 equations ≈ 45 s); could be optimised.
 
 ## Next
 
-1. Owner's results; fixes if needed.
+1. Owner's results; fixes if needed. The look of individual symbols (owner's request, after functionality).
 2. Embedded-object build step 5 (menus and clicks) and step 6 (self-test fully on objects: tracked changes,
    undo/redo, per-user class registration, PDF from Word and Acrobat).
 3. Checklist for a one-day trial on a copy of a real chapter.
@@ -74,6 +83,7 @@ and the self-test's own re-scan found them intact. The text guard (0.1.112) stay
 
 ## History
 
+- **0.1.115** — Self-test: Apply notation kinds runs before Normalize bold.
 - **0.1.114** — Notation kinds on conversion; Review notation kinds (Ctrl+K); fixes after the 0.1.113 self-test.
 - **0.1.113** — Number reading after fields without a result (bracket kept); undo checks compare numbers.
 - **0.1.112** — Text guard on every whole-document operation; missing section marker is a pre-flight error;

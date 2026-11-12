@@ -10,6 +10,7 @@ import { makeKindLatex, plainLatex } from "../lib/kindStyles";
 export { restoreEditorFocus } from "../lib/editorFocus";
 import { multlineFromEditor, multlineToEditor } from "../lib/multiline";
 import { useApp } from "../lib/store";
+import { activeNotation, useActiveNotation } from "../lib/docStyle";
 
 // Fonts are served locally (copied by scripts/copy-mathlive-assets.mjs): no internet needed.
 MathfieldElement.fontsDirectory = "/mathlive/fonts";
@@ -40,12 +41,12 @@ function toEditorKinds(latex: string): string {
   if (!kindMacroRe().test(latex)) return latex;
   const marked = latex.replace(/#\?/g, SLOT_MARK["#?"]).replace(/#0/g, SLOT_MARK["#0"]);
   // Adjacent slots inside a kind get a thin space (MathLive empties both when the first is typed into).
-  return toEditorLatex(marked, useApp.getState().notationProfile).replaceAll(`${SLOT_MARK["#?"]}${SLOT_MARK["#?"]}`, `${SLOT_MARK["#?"]}\\,${SLOT_MARK["#?"]}`).replaceAll(SLOT_MARK["#?"], "#?").replaceAll(SLOT_MARK["#0"], "#0");
+  return toEditorLatex(marked, activeNotation()).replaceAll(`${SLOT_MARK["#?"]}${SLOT_MARK["#?"]}`, `${SLOT_MARK["#?"]}\\,${SLOT_MARK["#?"]}`).replaceAll(SLOT_MARK["#?"], "#?").replaceAll(SLOT_MARK["#0"], "#0");
 }
 
 function fromEditorKinds(latex: string): string {
   if (!latex.includes(`\\class{${CLASS_PREFIX}`)) return latex;
-  const r = fromEditorLatex(latex, useApp.getState().notationProfile);
+  const r = fromEditorLatex(latex, activeNotation());
   if (r.handStyled.length) noteHandStyled(r.handStyled.map((h) => h.kind));
   return r.latex;
 }
@@ -468,7 +469,7 @@ export function MathEditor() {
 
   // A different notation (preset, vector style, a kind's style) restyles the open equation at
   // once: its kinds are expanded again in the new style, the caret kept where possible.
-  const profile = useApp((s) => s.notationProfile);
+  const profile = useActiveNotation();
   const firstProfile = useRef(true);
   useEffect(() => {
     if (firstProfile.current) {

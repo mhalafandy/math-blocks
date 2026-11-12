@@ -143,6 +143,27 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => import("../components/KindsReviewDialog").then((m) => m.openKindsReview()),
     },
     {
+      id: "word.documentStyle",
+      title: "Document style: how this document's equations look (labels, variables, d/e/i/π, kinds, size)…",
+      group: "Word",
+      keywords: "document style italic upright labels index counters variables greek constants differential functions text transpose bold preset iso",
+      run: () => import("../components/DocumentStyleDialog").then((m) => m.openDocumentStyle()),
+    },
+    {
+      id: "word.checkStyle",
+      title: "Check style: list equations that deviate from the document style…",
+      group: "Word",
+      keywords: "check style consistency forced mathrm mathit mathbf mixed index exceptions conform",
+      run: () => import("../components/CheckStyleDialog").then((m) => m.openCheckStyle()),
+    },
+    {
+      id: "word.applyStyle",
+      title: "Apply style to document: redraw every equation in the document style",
+      group: "Word",
+      keywords: "apply style redraw restyle document equations",
+      run: () => import("./styleRun").then((m) => m.applyStyleCommand()),
+    },
+    {
       id: "word.convertNumbering",
       title: "Convert MathType numbering to MathBlocks numbers (keep, or renumber to chapter.section.equation)…",
       group: "Word",

@@ -148,6 +148,8 @@ class ConnectorClient {
         const params = msg.params as ConnectorToApp["hello"]["params"];
         app.setConnector({ connected: true, hostVersion: `Word ${params.hostBuild}`, methods: params.methods });
         void checkAddinVersion(params);
+        // The style of the document in front (drawings, previews, the editor).
+        void import("./docStyle").then((m) => m.loadDocumentStyle()).catch(() => undefined);
         if (isRequest(msg)) this.reply(msg.id, { appVersion: APP_VERSION, protocolVersion: PROTOCOL_VERSION });
         // Once connected, check open documents for outdated linked equations.
         setTimeout(() => void import("./linking").then((m) => m.checkOpenDocuments()), 1500);
@@ -191,6 +193,9 @@ class ConnectorClient {
           else if (params.command === "convertNumbering") void import("./numberingConversionRun").then((m) => m.openNumberingConversion({ document: params.document, fromWord: true }));
           else if (params.command === "sectionMarker") void import("../components/NumberMarkerDialog").then((m) => m.openSectionMarker());
           else if (params.command === "insertReference") void import("./numbering").then((m) => m.openReferencePicker());
+          else if (params.command === "documentStyle") void import("../components/DocumentStyleDialog").then((m) => m.openDocumentStyle());
+          else if (params.command === "checkStyle") void import("../components/CheckStyleDialog").then((m) => m.openCheckStyle());
+          else if (params.command === "applyStyle") void import("./styleRun").then((m) => m.applyStyleCommand({ fromWord: true }));
           else if (params.command === "listOfSymbols") void import("../components/NomenclatureDialog").then((m) => m.openNomenclature());
         }
         break;

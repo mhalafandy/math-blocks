@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { DEFAULT_PROFILE, registerCustomKinds, type BoldScope, type CustomKind, type KindStyle, type NotationProfile } from "@mathblocks/math-core";
+import { DEFAULT_PROFILE, registerCustomKinds, type BoldScope, type CustomKind, type KindStyle, type MathStyle, type NotationProfile, type StylePreset } from "@mathblocks/math-core";
 import { DEFAULT_ACCENTS, type AccentRules } from "@mathblocks/math-render";
 import { DEFAULT_FAVORITES, setNotationRules, syncMyNotation, type Convention, type TransposeForm, type VectorStyle as SpacecraftVector } from "./palette";
 
@@ -82,6 +82,19 @@ interface Prefs {
   doubleSpaceMs: number;
   /** Ask (a small dialog over Word) before document-wide commands started from Word. */
   confirmWordCommands: boolean;
+  /** Document style a new document starts with (null: made from the settings above). */
+  defaultStyle: MathStyle | null;
+  /** The user's own style presets (saved, imported). */
+  stylePresets: StylePreset[];
+}
+
+/** The style of the Word document MathBlocks is working on (read from the document). */
+export interface DocStyleState {
+  document: string;
+  name: string;
+  style: MathStyle;
+  /** False: the document has no style stored yet (it is drawn in the user's default). */
+  stored: boolean;
 }
 
 export interface UpdateState {
@@ -132,6 +145,8 @@ interface AppState extends Prefs {
   toast: { text: string; kind: "info" | "error" } | null;
   update: UpdateState;
   setUpdate: (u: Partial<UpdateState>) => void;
+  /** Style of the current Word document; null until one is read (then the user's default applies). */
+  docStyle: DocStyleState | null;
 
   setLatex: (latex: string, source: ChangeSource) => void;
   setDisplay: (display: boolean) => void;
@@ -174,6 +189,8 @@ const DEFAULT_PREFS: Prefs = {
   doubleSpace: true,
   doubleSpaceMs: 300,
   confirmWordCommands: true,
+  defaultStyle: null,
+  stylePresets: [],
 };
 
 function loadPrefs(): Prefs {
@@ -216,6 +233,7 @@ export const useApp = create<AppState>((set, get) => ({
   connector: { available: false, connected: false },
   toast: null,
   update: { status: "idle" },
+  docStyle: null,
   editing: null,
   setEditing: (editing) => set({ editing }),
   textWidthPt: null,
@@ -260,17 +278,18 @@ registerCustomKinds(useApp.getState().customKinds ?? []);
 syncMyNotation(useApp.getState().customKinds ?? []);
 useApp.subscribe((s, prev) => s.customKinds !== prev.customKinds && syncMyNotation(s.customKinds));
 
-function broadcastNotation(s: Prefs) {
+export function broadcastNotation(s: Prefs = useApp.getState()) {
   if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) return;
   void import("@tauri-apps/api/event")
-    .then((m) => m.emit("prefs:notation", { notationProfile: s.notationProfile, customKinds: s.customKinds, accentRules: s.accentRules, from: window.location.search }))
+    .then((m) => m.emit("prefs:notation", { notationProfile: s.notationProfile, customKinds: s.customKinds, accentRules: s.accentRules, docStyle: useApp.getState().docStyle, from: window.location.search }))
     .catch(() => undefined);
 }
 
 /** A notation change made in the other window (explicit event; the storage event is the fallback). */
-function adoptNotation(p: Partial<Prefs>) {
+function adoptNotation(p: Partial<Prefs> & { docStyle?: DocStyleState | null }) {
   const cur = useApp.getState();
-  const change: Partial<Prefs> = {};
+  const change: Partial<Prefs> & { docStyle?: DocStyleState | null } = {};
+  if (p.docStyle !== undefined && JSON.stringify(p.docStyle) !== JSON.stringify(cur.docStyle)) change.docStyle = p.docStyle;
   if (p.customKinds && JSON.stringify(p.customKinds) !== JSON.stringify(cur.customKinds)) {
     registerCustomKinds(p.customKinds);
     change.customKinds = p.customKinds;
@@ -283,7 +302,7 @@ function adoptNotation(p: Partial<Prefs>) {
 if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
   void import("@tauri-apps/api/event")
     .then((m) =>
-      m.listen<Partial<Prefs> & { from?: string }>("prefs:notation", (e) => {
+      m.listen<Partial<Prefs> & { from?: string; docStyle?: DocStyleState | null }>("prefs:notation", (e) => {
         if (e.payload.from !== window.location.search) adoptNotation(e.payload);
       }),
     )

@@ -2,6 +2,7 @@ import { BUILTIN_KINDS, customKindProblem, expandNotation, isCustomKind, KIND_BY
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { kindMacroRe } from "./kinds";
 import { useApp } from "./store";
+import { activeNotation, setActiveNotation } from "./docStyle";
 
 /**
  * Notation settings: the style of every kind (built-in or the user's own), new kinds,
@@ -39,23 +40,23 @@ export function setKindStyle(id: string, style: KindStyle) {
     app.setPrefs({ customKinds: app.customKinds.map((c) => (c.id === id ? { ...c, style } : c)) });
     return;
   }
-  const p = app.notationProfile;
+  const p = activeNotation();
   const over = diff(presetStyle(p.preset, id), style);
   const overrides = { ...p.overrides };
   if (Object.keys(over).length) overrides[id] = over;
   else delete overrides[id];
-  app.setPrefs({ notationProfile: { ...p, overrides } });
+  setActiveNotation({ ...p, overrides });
 }
 
 /** Back to the preset's style (built-in kinds). */
 export function resetKind(id: string) {
-  const app = useApp.getState();
-  const overrides = { ...app.notationProfile.overrides };
+  const p = activeNotation();
+  const overrides = { ...p.overrides };
   delete overrides[id];
-  app.setPrefs({ notationProfile: { ...app.notationProfile, overrides } });
+  setActiveNotation({ ...p, overrides });
 }
 
-export const kindStyle = (id: string, profile: NotationProfile = useApp.getState().notationProfile) => styleOf(profile, id);
+export const kindStyle = (id: string, profile: NotationProfile = activeNotation()) => styleOf(profile, id);
 export const isModified = (id: string, profile: NotationProfile) => !isCustomKind(id) && !!profile.overrides[id] && Object.keys(profile.overrides[id]!).length > 0;
 
 /** A free macro and trigger for a copy ("pvec" → "pvecb", "pv" → "pv2"). */
@@ -126,7 +127,7 @@ export function makeKindLatex(selection: string, kindId: string): string | null 
 }
 
 /** A kind object as plain, hand-styled LaTeX in the current style (it no longer follows the kind). */
-export function plainLatex(kindLatex: string, profile: NotationProfile = useApp.getState().notationProfile): string {
+export function plainLatex(kindLatex: string, profile: NotationProfile = activeNotation()): string {
   return serializeLatex(expandNotation(parseLatex(kindLatex).root, profile));
 }
 

@@ -223,6 +223,18 @@ export function changeTranspose(latex: string, to: Exclude<TransposeStyle, "sans
   return changed && out !== latex ? out : latex;
 }
 
+/**
+ * Every transpose superscript as the transpose kind (\T): its look (upright, italic, bold) is then the
+ * document style's. ⊤ is another symbol and stays. Unchanged LaTeX when there is nothing to do.
+ */
+export function transposeToKind(latex: string): string {
+  const out = latex.replace(TRANSPOSE_RE, (all, minus: string | undefined, braced: string | undefined, bare: string | undefined) => {
+    const mark = braced ?? bare ?? "";
+    return mark.startsWith("\\top") ? all : `^{${minus ?? ""}\\T}`;
+  });
+  return out;
+}
+
 export interface StyleMix {
   /** What is written in several styles, e.g. "Unit vectors (hat)". */
   what: string;

@@ -53,6 +53,7 @@ export function wrapLatex(latex: string, display: boolean) {
 export async function editAtCursor() {
   if (!ready("selectionInfo")) return;
   try {
+    await import("./docStyle").then((m) => m.loadDocumentStyle()).catch(() => undefined);
     const s = await connector.request("selectionInfo", {});
     const rect = s.rect ?? { left: 200, top: 200, width: 0, height: 0 };
     if (s.tag && (s.flatOpc || s.problem)) return activateEquation({ tag: s.tag, flatOpc: s.flatOpc ?? "", number: s.number ?? null, panel: rect, fingerprint: s.fingerprint, problem: s.problem });
@@ -115,6 +116,7 @@ export async function numberAtCursor() {
  * Started from Word, it finishes in Word: the question and the result appear over Word.
  */
 export async function convertAllLatex(document?: string, o: { fromWord?: boolean; selectionOnly?: boolean; /** No confirmation (the self-test). */ yes?: boolean } = {}) {
+  await import("./docStyle").then((m) => m.loadDocumentStyle(document)).catch(() => undefined);
   // A whole document: the interchange conversion (display paragraphs, numbers, labels, references,
   // numbering markers; pre-flight report first). A selection keeps the simple conversion below.
   if (!o.selectionOnly && addinSupports("scanInterchange")) {

@@ -11,6 +11,7 @@
  * the add-in write them.
  */
 import { parseLatex } from "@mathblocks/math-latex";
+import { KIND_RULES } from "./kindRules";
 
 /** One paragraph as the add-in scanned it (only paragraphs that matter are sent). */
 export interface ScanParagraph {
@@ -219,6 +220,13 @@ export function mapLegacyForms(latex: string): { latex: string; mapped: string[]
       note("\\left…\\begin{array} → " + env);
       return `\\begin{${env}}${body}\\end{${env}}`;
     });
+  }
+  // Indices are written plainly: a forced look (\mathrm{sf}, \mathbf{n}, \mathit{i}) is dropped, the
+  // document style draws index labels (italic or upright).
+  const plain = KIND_RULES.find((r) => r.id === "plain-indices")!.apply(s);
+  if (plain !== s) {
+    note("\\mathrm{…} in an index → plain (the document style draws it)");
+    s = plain;
   }
   return { latex: s, mapped };
 }

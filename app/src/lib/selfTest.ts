@@ -104,7 +104,8 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     const d = r.documents.find((x) => x.name === front) ?? r.documents[0];
     const eqs = (d?.instances ?? []).map((i) => {
       const rd = i.flatOpc ? readEquationXml(i.flatOpc) : null;
-      return `${i.tag}=${rd ? serializeLatex(rd.root) : "?"}`;
+      // The style a picture was drawn in: a restyle changes drawings, not text.
+      return `${i.tag}=${rd ? serializeLatex(rd.root) : "?"}${rd?.styleHash ? `#${rd.styleHash}` : ""}`;
     });
     // Equation numbers are fields: their text is not in the document text above.
     const numbers = (await connector.request("listNumbered", {}, SLOW).catch(() => ({ equations: [] as { number: string }[] }))).equations.map((e) => e.number).join(" ");
@@ -432,16 +433,18 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       };
       let index = await buildDocumentIndex();
       // Review notation kinds (suggested rules): older forms become kinds, one Ctrl+Z. First, on the untouched
-      // equation (Normalize bold, below, makes bold index labels plain, leaving nothing for the upright-labels rule).
+      // equation (index labels lose their forced look: the document style draws them).
       const { applyKindRules, SUGGESTED_KIND_RULES } = await import("./kindRules");
-      await oneCtrlZ("Apply notation kinds", docU.name, () => rewriteDocument(index, index.equations, (l) => applyKindRules(l, SUGGESTED_KIND_RULES).latex, "Apply notation kinds"));
+      // Only its own equation: the bold spread and the transpose above are left for the next two checks.
+      const older = index.equations.filter((e) => e.latex.includes("overrightharpoon"));
+      await oneCtrlZ("Apply notation kinds", docU.name, () => rewriteDocument(index, older, (l) => applyKindRules(l, SUGGESTED_KIND_RULES).latex, "Apply notation kinds"));
       const kinded = (await buildDocumentIndex()).equations.map((e) => e.latex).find((l) => l.includes("\\pvec{v}"));
-      check("Apply notation kinds: the older forms became kinds", !!kinded && /\\vectrix\{F\}\^\{\\T\}/.test(kinded) && /\\cmat\{v\}_\{\\mathrm\{f\}\}/.test(kinded) && /\\bvec\{f\}_\{?1\}?/.test(kinded), kinded ?? "no equation with \\pvec{v}");
+      check("Apply notation kinds: the older forms became kinds", !!kinded && /\\vectrix\{F\}\^\{\\T\}/.test(kinded) && /\\cmat\{v\}_\{?f\}?/.test(kinded) && /\\bvec\{f\}_\{?1\}?/.test(kinded), kinded ?? "no equation with \\pvec{v}");
       index = await buildDocumentIndex();
       await oneCtrlZ("Normalize bold", docU.name, () => rewriteDocument(index, index.equations.filter((e) => bolded(e.latex) !== e.latex), bolded, "Normalize bold"));
-      const { changeTranspose } = await import("./notation");
+      const { transposeToKind } = await import("./notation");
       index = await buildDocumentIndex();
-      await oneCtrlZ("Change notation (transpose form)", docU.name, () => rewriteDocument(index, index.equations, (l) => changeTranspose(l, "upright"), "Transpose form"));
+      await oneCtrlZ("Change notation (transpose form)", docU.name, () => rewriteDocument(index, index.equations, (l) => transposeToKind(l), "Transpose form"));
       const numbersNow = async () => (await connector.request("listNumbered", {}, SLOW)).equations.map((e) => e.number).join(" ");
       const before0 = await numbersNow();
       const stale = await smoke("staleNumbers");
@@ -454,6 +457,102 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const probe = await smoke("guardProbe");
       check("text guard: a change that touches text outside the equations is undone automatically", !!probe.guardFailed && probe.guardRestored === true && probe.textAfter === "Guard probe paragraph.", `deleted "${probe.deleted}"; guard: ${probe.guardFailed ?? "did not notice"}; restored ${probe.guardRestored}; the paragraph reads "${probe.textAfter}"`);
       await smoke("save", { file: "undo test.docx" });
+    });
+
+    section = "Document style: the look is the document's, the LaTeX never changes";
+    await step("document style", async () => {
+      const ds = await import("./docStyle");
+      const run = await import("./styleRun");
+      const { renderSvg } = await import("@mathblocks/math-render");
+      const { loadFonts, classicStyle } = await import("./render");
+      const { applyPreset, presetFrom } = await import("@mathblocks/math-core");
+      const fonts = await loadFonts();
+      const drawing = (latex: string, st: import("@mathblocks/math-core").MathStyle) => renderSvg(parseLatex(latex).root, { fonts, style: classicStyle(), display: true, sizePt: st.sizePt, mathStyle: st }).svg;
+      /** Each equation of the document in front: its LaTeX, the style it was drawn in, its size in Word. */
+      const pictures = async () => {
+        const front = (await smoke("activeName")).name as string;
+        const r = await connector.request("listInstances", { includeContent: true }, SLOW);
+        const d = r.documents.find((x) => x.name === front) ?? r.documents[0];
+        return (d?.instances ?? []).map((i) => {
+          const rd = i.flatOpc ? readEquationXml(i.flatOpc) : null;
+          const size = /width:([\d.]+)pt;height:([\d.]+)pt/.exec(i.flatOpc ?? "");
+          return { tag: i.tag, latex: rd ? serializeLatex(rd.root) : "?", styleHash: rd?.styleHash ?? "", size: size ? `${size[1]}×${size[2]}` : "?" };
+        });
+      };
+      // A planted mix: labels (sf, max), a summation index, a variable used as an index, a letter with
+      // nothing to go by, a hand-forced \mathrm on an index and on a symbol, the same index written two ways.
+      const PLANTED = ["\\sigma_{sf}=E\\varepsilon_{sf}", "S=\\sum_{i=1}^{N}x_i", "u_t=a\\,t+b", "w_q=2", "v_{\\mathrm{max}}=\\mathrm{x}+v_{max}"];
+      const docS = await smoke("newDocument");
+      await smoke("typeText", { text: "Document style test." });
+      for (const l of PLANTED) {
+        await smoke("newParagraph");
+        await insert(l, true);
+        await smoke("caretTo", { where: "end" });
+      }
+      const loaded = await ds.loadDocumentStyle();
+      check("a new document has no style of its own (drawn in the user's default)", loaded ? !loaded.stored : null, loaded ? `stored: ${loaded.stored}` : "the add-in cannot read document styles");
+      await ds.saveDocumentStyle({ ...ds.activeStyle(), labels: "italic", letters: {}, exceptions: [] });
+      check("the style is stored in the document", (await ds.readDocumentStyle((await ds.loadDocumentStyle())!.document)) !== null);
+      let prev = ds.activeStyle();
+      for (const labels of ["upright", "italic"] as const) {
+        const before = await pictures();
+        const next = { ...ds.activeStyle(), labels };
+        await oneCtrlZ(`Restyle (index labels ${labels})`, docS.name, () => run.restyleDocument(next));
+        const after = await pictures();
+        const sameLatex = before.every((b) => after.find((a) => a.tag === b.tag)?.latex === b.latex);
+        check(`Restyle (index labels ${labels}): every equation's LaTeX is unchanged`, sameLatex && after.length === PLANTED.length, after.map((a) => a.latex).join(" | "));
+        const hash = ds.activeStyleHash();
+        check(`Restyle (index labels ${labels}): every equation is drawn in the new style`, after.every((a) => a.styleHash === hash), `${after.filter((a) => a.styleHash === hash).length} of ${after.length}`);
+        check(`Restyle (index labels ${labels}): the drawing of σ_sf changes`, drawing(PLANTED[0]!, prev) !== drawing(PLANTED[0]!, next), `size in Word before ${before[0]?.size}, after ${after[0]?.size}`);
+        prev = next;
+      }
+      // Classification proposed from the document itself.
+      const { proposals } = await run.proposeClassification();
+      const role = (l: string) => proposals.find((p) => p.letter === l);
+      check("Classification: i is proposed as an index variable (summation index)", role("i")?.proposed === "counter", role("i")?.reasons.join("; ") ?? "not found");
+      check("Classification: t is proposed as a variable (also used on its own)", role("t")?.proposed === "variable", role("t")?.reasons.join("; ") ?? "not found");
+      check("Classification: q has nothing to go by and is left undecided", !!role("q") && role("q")!.proposed === null, role("q")?.reasons.join("; ") ?? "not found");
+      // Check style: the planted override and the index written two ways; keep as exception; conform.
+      const c1 = await run.checkDocumentStyle();
+      const forcedMax = c1.issues.find((i) => i.kind === "forced" && i.message.includes("“max”"));
+      const forcedX = c1.issues.find((i) => i.kind === "forced" && i.message.includes("“x”"));
+      const mixed = c1.issues.find((i) => i.kind === "mixed" && i.message.includes("“max”"));
+      check("Check style: lists the hand-forced \\mathrm on an index", !!forcedMax, c1.issues.map((i) => i.message).join(" | "));
+      check("Check style: lists the hand-forced \\mathrm on a symbol", !!forcedX);
+      check("Check style: lists the index written two ways", !!mixed);
+      if (mixed) {
+        await run.keepAsExceptions([mixed.key]);
+        const c2 = await run.checkDocumentStyle();
+        check("Keep as exception: not listed again", !c2.issues.some((i) => i.key === mixed.key) && c2.issues.length === c1.issues.length - 1, `${c1.issues.length} → ${c2.issues.length} item(s)`);
+        const fix = c2.issues.filter((i) => i.kind === "forced" && i.fix);
+        await oneCtrlZ("Conform to style", docS.name, () => run.conformIssues(c2.index, fix));
+        const conformed = (await pictures()).find((p) => p.latex.includes("max"))?.latex ?? "";
+        check("Conform to style: the forced looks are gone, nothing else changed", !/\\mathrm/.test(conformed) && /v_\{?max\}?=x\+v_\{?max\}?/.test(conformed.replace(/\s/g, "")), conformed);
+      }
+      // A preset exported from this document and imported into a second one gives identical drawings.
+      await run.restyleDocument({ ...ds.activeStyle(), labels: "upright", differential: "upright", constants: "upright", letters: {}, exceptions: ds.activeStyle().exceptions });
+      const json = ds.presetToJson(presetFrom(ds.activeStyle(), "self-test", "Self-test preset"));
+      const picsA = await pictures();
+      const docB = await smoke("newDocument");
+      for (const l of PLANTED.slice(0, 3)) {
+        await insert(l, true);
+        await smoke("caretTo", { where: "end" });
+        await smoke("newParagraph");
+      }
+      await ds.loadDocumentStyle();
+      const imported = ds.presetFromJson(json);
+      await run.restyleDocument({ ...applyPreset(ds.activeStyle(), imported), letters: {}, exceptions: [] });
+      const picsB = await pictures();
+      const pairs = picsB.map((b) => [b, picsA.find((a) => a.latex === b.latex)] as const);
+      check(
+        "Preset exported and imported into a second document: identical drawings",
+        pairs.length === 3 && pairs.every(([b, a]) => !!a && a.styleHash === b.styleHash && a.size === b.size),
+        pairs.map(([b, a]) => `${b.latex}: ${a?.size ?? "?"} / ${b.size}`).join("; "),
+      );
+      await smoke("save", { file: "style test B.docx" });
+      await smoke("activate", { name: docS.name });
+      await smoke("save", { file: "style test.docx" });
+      void docB;
     });
 
     section = "Convert LaTeX: interchange convention document";

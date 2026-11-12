@@ -25,6 +25,41 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added — document style: the look belongs to the document, the LaTeX keeps the meaning
+- Equations store meaning; the document's style decides at render time how letters look (Classic
+  pictures, embedded objects, native Word equations, previews). Changing the style redraws equations and
+  never rewrites their LaTeX. Explicitly styled letters (\mathrm{x}) are kept and listed by Check style.
+- Document style… (ribbon Style group, Word style tab, Ctrl+K): one setting per category with a live
+  preview — index labels, index variables and numbers, Latin and Greek variables, d of derivatives and
+  integrals, constants e/i/π, function names, text, transpose mark, bold scope, accents over bold
+  letters, notation kinds (preset and each kind), size. Stored in the document (Custom XML Part
+  urn:mathblocks:style:v1), with a user default for documents without one and "Copy style from…" another
+  open document.
+- Presets: MathBlocks default (as before), MathType Classic, ISO 80000-2, physics/engineering, pure
+  mathematics, chemistry-friendly; save your own, export and import them as files.
+- Classification of single-letter indices proposed from the document itself, with the reason
+  (summation/product index or range → index variable; also used alone → variable; frame label of a kind
+  → label; conflicting or no evidence → undecided, for the user to choose). Multi-letter indices are labels.
+- Check style: hand-forced \mathrm/\mathit on symbols and indices, bold in indices, an index written two
+  ways, a letter written in several forms, pictures drawn in an older style — conform (one Ctrl+Z) or keep
+  as an exception (remembered in the document's style).
+- Apply style to document: redraws every equation (one Ctrl+Z, backup, text guard, progress).
+- Native Word equations whose look the style changes keep their source in the document registry, so
+  reading them back never turns a look into LaTeX.
+- Each Classic picture and object records the fingerprint of the style it was drawn in.
+- Self-test section "Document style": restyle labels italic → upright → italic (LaTeX unchanged, drawn in
+  the new style, one Ctrl+Z each), classification, Check style with an exception and a conform, a preset
+  exported and imported into a second document giving identical drawings.
+
+### Changed — commands keep meaning, not looks
+- Review notation kinds: "upright labels" replaced by "plain indices" (a forced look in an index is
+  removed; applied on conversion too) and "plain symbols" (\mathrm{d}, \mathrm{e} → plain; unticked).
+- Convert MathType and Convert LaTeX drop forced looks in indices; docs/LATEX-INTERCHANGE.md says to
+  write indices plainly (\sigma_{sf}, B_{sf}, x_i).
+- Palette and snippets insert a plain T for the transpose; "Change notation → transpose form" turns
+  transposes into the transpose kind and sets the document style's transpose look (⊤ stays a symbol).
+- Normalize bold only removes bold that spread onto indices; the style draws them.
+
 ### Added — notation kinds on conversion; Review notation kinds
 - Convert MathType applies the unambiguous kind rules to every converted equation: harpoon and plain
   arrows on lowercase letters → `\pvec` (frames such as `_{A/B}` move into its option), arrowed bold

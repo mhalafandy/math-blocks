@@ -1,4 +1,5 @@
 import { expandNotation, KINDS, macroClashes } from "@mathblocks/math-core";
+import { activeNotation } from "./docStyle";
 import { documentToLatex, standardDialect } from "./texExport";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { convertLatexToMathMl } from "mathlive/ssr";
@@ -18,7 +19,7 @@ export { toStandardLatex, documentToLatex, type ExportedEquation, type TexOption
 function forMathJax(latex: string) {
   const std = standardDialect(latex);
   if (!/\\(pvec|uvec|bvec|vectrix|cmat|mat|dcm|crossmat|dyadic|tens|quat|frm|body|T|diff)(?![a-zA-Z])/.test(std)) return std;
-  return serializeLatex(expandNotation(parseLatex(std).root, useApp.getState().notationProfile));
+  return serializeLatex(expandNotation(parseLatex(std).root, activeNotation()));
 }
 
 
@@ -213,7 +214,7 @@ export async function exportDocumentLatex() {
     const tex = documentToLatex(
       index.name,
       index.equations.map((e) => ({ latex: e.latex, display: e.display || numbers.has(e.tag), number: numbers.get(e.tag) ?? null, page: e.page })),
-      { profile: useApp.getState().notationProfile, renameOnClash },
+      { profile: activeNotation(), renameOnClash },
     );
     const path = await saveFile(index.name.replace(/\.\w+$/, "") + " equations", "tex", tex, "application/x-tex");
     if (path) notify(`Exported ${index.equations.length} equation(s) to ${path.split(/[\\/]/).pop()}`);

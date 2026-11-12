@@ -60,6 +60,11 @@ thesis template).
   needed: `\dyadic{J}_{c}`.
 - **Column matrices:** `\cmat{r}`; **transpose:** `^{\T}`.
 - **Bodies:** plain letters, no kind: `B_1`, `B_{a}`.
+- **Indices:** written plainly, with no `\mathrm`, `\mathit` or `\mathbf`: `\sigma_{sf}`, `B_{sf}`, `x_i`,
+  `v_{max}`. Whether index labels are drawn italic or upright is a setting of the document style
+  (Word style → Document style), not part of the LaTeX; a forced look in an index is dropped on conversion.
+- **No hand-forced looks:** write `d`, `e`, `i` plainly too; the document style can draw d, e, i and π
+  upright (ISO 80000-2). A `\mathrm{x}` that is left in is kept, and Check style lists it.
 
 Example (one chapter, one section; generic content):
 
@@ -129,6 +134,7 @@ end of section A.1 becomes (A.1.4)). A new label that repeats an existing number
   - `\vec{\mathbf{F}}` (capital) → `\vectrix{F}`; for `I` and `J` → `\dyadic{…}`
   - `\hat{f}_1`, `\hat{\mathbf{f}}_1`, `\mathbf{\hat{f}}_1` (lowercase letter with an index) → `\bvec{f}_1`
   - `\left[\begin{array}{…}…\end{array}\right]` → `bmatrix` (`( )` → `pmatrix`, `| |` → `vmatrix`)
+  - a forced look in an index (`\sigma_{\mathrm{sf}}`, `r_{\mathbf{n}}`) → plain (`\sigma_{sf}`, `r_{n}`)
 
 ## 4. What Word does to typed LaTeX, undone before parsing
 

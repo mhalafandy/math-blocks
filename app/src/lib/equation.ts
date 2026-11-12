@@ -4,6 +4,7 @@ import { parseLatex, type Diagnostic } from "@mathblocks/math-latex";
 import { toOmml, TUNED_PROFILE, WORD_DEFAULT_PROFILE, type StyleProfile } from "@mathblocks/math-omml";
 import { compObjStream, objInfoStream, contentControl, flatOpc, formatTag, newInstanceId, oleObjectRun, oleStream, paragraph, parseTag, REL_OLE_OBJECT, vmlPictureRun, writeCfb } from "@mathblocks/ooxml";
 import { useApp } from "./store";
+import { activeStyle, activeStyleHash } from "./docStyle";
 
 /** The Word style profile from the current preferences (outside React). */
 export function currentProfile(): StyleProfile {
@@ -35,6 +36,8 @@ export function useCompiledEquation(): CompiledEquation {
   const latex = useApp((s) => s.latex);
   const display = useApp((s) => s.display);
   const profile = useProfile();
+  const docStyle = useApp((s) => s.docStyle);
+  const notation = useApp((s) => s.notationProfile);
   return useMemo(() => {
     const { root, diagnostics } = parseLatex(latex);
     return {
@@ -42,16 +45,16 @@ export function useCompiledEquation(): CompiledEquation {
       diagnostics,
       errors: diagnostics.filter((d) => d.severity === "error").length,
       nodeCount: countNodes(root) - 1,
-      omml: toOmml(root, { display, profile, standalone: true, notation: useApp.getState().notationProfile }),
+      omml: toOmml(root, { display, profile, standalone: true, mathStyle: activeStyle() }),
     };
-  }, [latex, display, profile]);
+  }, [latex, display, profile, docStyle, notation]);
 }
 
 /** Native Word equation (OMML) as a Flat OPC package for Range.InsertXML. */
 export function buildNativeInsertion(latex: string, display: boolean, profile: StyleProfile, existingTag?: string) {
   const { root } = parseLatex(latex);
   const tag = existingTag ?? formatTag({ blockId: null, instanceId: newInstanceId() });
-  const omml = toOmml(root, { display, profile, notation: useApp.getState().notationProfile });
+  const omml = toOmml(root, { display, profile, mathStyle: activeStyle() });
   return { tag, flatOpc: flatOpc([paragraph(contentControl(omml, { tag, title: "MathBlocks equation" }))]) };
 }
 
@@ -91,7 +94,7 @@ export async function buildPictureInsertion(
   const { renderPicture, toBase64, altText } = await import("./render");
   const tag = existingTag ?? formatTag({ blockId: null, instanceId: newInstanceId() });
   const mode = display ? "display" : typesetDisplay ? "numbered" : "inline";
-  const pic = await renderPicture(latex, typesetDisplay, useApp.getState().equationSizePt, mode, false, { block: parseTag(tag)?.blockId, tag });
+  const pic = await renderPicture(latex, typesetDisplay, activeStyle().sizePt, mode, false, { block: parseTag(tag)?.blockId, tag });
   const n = ++pictureCounter;
   const run = vmlPictureRun({
     rId: "rIdMbE1",
@@ -127,6 +130,8 @@ export interface ObjectData {
   heightPt: number;
   sizePt: number;
   style: string;
+  /** Fingerprint of the document style it was drawn in (Check style lists drawings in an older style). */
+  styleHash?: string;
   block: string | null;
 }
 
@@ -146,10 +151,10 @@ export async function buildObjectInsertion(
   const { renderPicture, toBase64, altText } = await import("./render");
   const tag = existingTag ?? formatTag({ blockId: null, instanceId: newInstanceId() });
   const mode = o.mode ?? (display ? "display" : typesetDisplay ? "numbered" : "inline");
-  const sizePt = useApp.getState().equationSizePt;
+  const sizePt = activeStyle().sizePt;
   const pic = await renderPicture(latex, typesetDisplay, sizePt, mode, false, { block: parseTag(tag)?.blockId, tag });
   const { CLASSIC } = await import("@mathblocks/math-render");
-  const data: ObjectData = { version: 1, latex, mode, tag, depthPt: pic.depthPt, widthPt: pic.widthPt, heightPt: pic.heightPt, sizePt, style: CLASSIC.id, block: parseTag(tag)?.blockId ?? null };
+  const data: ObjectData = { version: 1, latex, mode, tag, depthPt: pic.depthPt, widthPt: pic.widthPt, heightPt: pic.heightPt, sizePt, style: CLASSIC.id, styleHash: activeStyleHash(), block: parseTag(tag)?.blockId ?? null };
   const bin = objectBin(data);
   const n = ++pictureCounter;
   const run = oleObjectRun({ imageRId: "rIdMbE1", oleRId: "rIdMbO1", progId: MB_OBJECT_PROGID, widthPt: pic.widthPt, heightPt: pic.heightPt, depthPt: pic.depthPt, id: (Date.now() % 1_000_000) * 10 + (n % 10), alt: altText(latex, mode, tag) });

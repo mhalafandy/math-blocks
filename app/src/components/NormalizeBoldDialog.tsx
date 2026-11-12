@@ -57,7 +57,7 @@ export function NormalizeBoldDialog() {
         {index && changes.length === 0 && <p className="empty">No equation has bold scripts: nothing to change.</p>}
         {changes.length > 0 && (
           <>
-            <p className="hint">Bold on a letter should not cover its subscripts and superscripts. These equations will change:</p>
+            <p className="hint">Bold on a letter should not cover its subscripts and superscripts: their bold is removed (nothing else is written), and the document style draws them — italic or upright, and bold too if its "bold base: index letters" setting says so. These equations will change:</p>
             <ul className="normalize-list">
               {changes.map(({ e, after }) => (
                 <li key={e.tag}>

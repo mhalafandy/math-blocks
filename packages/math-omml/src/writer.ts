@@ -1,5 +1,5 @@
 import type { AccentKind, MathNode, MathVariant, Matrix, MatrixKind, Row } from "@mathblocks/math-core";
-import { expandNotation, isRunNode, type NotationProfile } from "@mathblocks/math-core";
+import { expandNotation, isRunNode, styleAst, styleNotation, type MathStyle, type NotationProfile } from "@mathblocks/math-core";
 import { TUNED_PROFILE, type StyleProfile } from "./style";
 import { el, NS_M, NS_W, val } from "./xml";
 
@@ -11,6 +11,8 @@ export interface OmmlOptions {
   standalone?: boolean;
   /** Notation profile for kind objects (\pvec…); default: Hughes. */
   notation?: NotationProfile;
+  /** Document style (letters' shapes, transpose, differential, kinds); replaces `notation` when given. */
+  mathStyle?: MathStyle;
 }
 
 export const INTEGRALS = new Set(["∫", "∬", "∭", "∮", "∯", "∰"]);
@@ -96,8 +98,9 @@ interface RunOptions {
  * word/document.xml or a Flat OPC package passed to Range.InsertXML.
  */
 export function toOmml(root: Row, options: OmmlOptions = {}): string {
-  root = expandNotation(root, options.notation);
-  const w = new OmmlWriter(options.profile ?? TUNED_PROFILE);
+  const ms = options.mathStyle;
+  root = ms ? expandNotation(styleAst(root, ms), styleNotation(ms)) : expandNotation(root, options.notation);
+  const w = new OmmlWriter(options.profile ?? TUNED_PROFILE, ms);
   const ns = options.standalone ? { "xmlns:m": NS_M, "xmlns:w": NS_W } : null;
   const math = el("m:oMath", options.display ? null : ns, w.row(root));
   if (!options.display) return math;
@@ -110,7 +113,10 @@ class OmmlWriter {
   /** Overrides identifier style (vectorStyle = bold). */
   private forced: MathVariant | undefined;
 
-  constructor(private readonly profile: StyleProfile) {}
+  constructor(
+    private readonly profile: StyleProfile,
+    private readonly look?: Pick<MathStyle, "functions" | "text">,
+  ) {}
 
   // ------------------------------------------------------------- primitives
 
@@ -175,7 +181,7 @@ class OmmlWriter {
       case "operator":
         return this.run(n.text, n.opClass === "ordinary" && /[A-Za-z]/.test(n.text) ? { sty: "p" } : {});
       case "text":
-        return this.run(n.text, { nor: true });
+        return this.run(n.text, this.look?.text === "italic" ? { nor: true, sty: "i" } : { nor: true });
       case "space": {
         const ch = SPACE_CHARS[n.width] ?? "";
         return ch ? this.run(ch) : "";
@@ -227,7 +233,7 @@ class OmmlWriter {
       }
 
       case "function": {
-        const name = this.run(n.name, { sty: "p" });
+        const name = this.run(n.name, { sty: this.look?.functions === "italic" ? "i" : "p" });
         let fName: string;
         if (n.limits && n.sub) {
           fName = el("m:limLow", null, this.pr("m:limLowPr"), el("m:e", null, name), this.slot("m:lim", n.sub));

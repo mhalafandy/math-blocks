@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { create } from "zustand";
 import { Modal } from "./Dialogs";
 import { MathPreview } from "./MathPreview";
-import { CATALOG, changeForm, changeTranspose, findForms, findInconsistencies, findStyleMixes, formLabel, formLatex, templateOf, transposeForms, TRANSPOSE_STYLE_LABEL, type FormUse, type Inconsistency, type TransposeStyle } from "../lib/notation";
+import { CATALOG, changeForm, changeTranspose, transposeToKind, findForms, findInconsistencies, findStyleMixes, formLabel, formLatex, templateOf, transposeForms, TRANSPOSE_STYLE_LABEL, type FormUse, type Inconsistency, type TransposeStyle } from "../lib/notation";
 import { buildDocumentIndex, rewriteDocument, type DocumentIndex } from "../lib/symbolIndex";
 import { useApp } from "../lib/store";
 
@@ -118,7 +118,12 @@ export function NotationDialog() {
 
   /** Every transpose in one form (one undo step). */
   const fixTranspose = async () => {
-    const transform = (l: string) => changeTranspose(l, tTo);
+    // ⊤ is a symbol of its own; otherwise transposes become the transpose kind and the look goes into the document style.
+    const transform = (l: string) => (tTo === "top" ? changeTranspose(l, tTo) : transposeToKind(l));
+    if (tTo !== "top") {
+      const { updateActiveStyle } = await import("../lib/docStyle");
+      await updateActiveStyle((st) => ({ ...st, transpose: tTo }));
+    }
     const notify = useApp.getState().notify;
     setBusy(true);
     try {

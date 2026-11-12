@@ -1,0 +1,350 @@
+import { useMemo, useRef } from "react";
+import { create } from "zustand";
+import { convertLatexToMarkup } from "mathlive/ssr";
+import { applyPreset, expandNotation, PRESETS, presetFrom, STYLE_PRESETS, styleAst, styleNotation, type LetterRole, type MathStyle, type PresetId, type Shape, type StylePreset } from "@mathblocks/math-core";
+import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
+import { Modal, askText } from "./Dialogs";
+import type { LetterProposal } from "../lib/styleCheck";
+import { useApp } from "../lib/store";
+
+/**
+ * Document style… — how this document's equations look, one setting per category with a live
+ * preview. The equations' LaTeX never changes: saving stores the style in the document and redraws
+ * its equations (one Ctrl+Z). Also: the classification of single-letter indices, presets (built-in,
+ * saved, exported, imported), the user's default and copying another document's style.
+ */
+interface State {
+  open: boolean;
+  busy: boolean;
+  document: string;
+  stored: boolean;
+  draft: MathStyle | null;
+  proposals: LetterProposal[];
+  /** Per letter: the choice shown (stored, else proposed; null = undecided). */
+  roles: Record<string, LetterRole | null>;
+  others: { name: string; fullName: string; hasStyle: boolean }[];
+  message?: string;
+  set: (s: Partial<Omit<State, "set">>) => void;
+}
+
+export const useDocumentStyle = create<State>((set) => ({ open: false, busy: false, document: "", stored: false, draft: null, proposals: [], roles: {}, others: [], set: (s) => set(s) }));
+
+export async function openDocumentStyle() {
+  const app = useApp.getState();
+  const ui = useDocumentStyle.getState();
+  ui.set({ open: true, busy: true, draft: null, proposals: [], roles: {}, message: undefined });
+  try {
+    const { loadDocumentStyle, activeStyle, openDocuments } = await import("../lib/docStyle");
+    let document = "";
+    let stored = false;
+    let proposals: LetterProposal[] = [];
+    let others: State["others"] = [];
+    if (app.connector.connected) {
+      const d = await loadDocumentStyle();
+      document = d?.name ?? "";
+      stored = !!d?.stored;
+      const { proposeClassification } = await import("../lib/styleRun");
+      proposals = (await proposeClassification()).proposals;
+      others = (await openDocuments().catch(() => [])).filter((x) => !x.active);
+    }
+    const draft = activeStyle();
+    const roles: Record<string, LetterRole | null> = {};
+    for (const p of proposals) roles[p.letter] = draft.letters[p.letter] ?? p.proposed;
+    ui.set({ busy: false, document, stored, draft, proposals, roles, others });
+  } catch (e) {
+    ui.set({ open: false, busy: false });
+    app.notify(e instanceof Error ? e.message : String(e), "error");
+  }
+}
+
+/** How a style draws a sample (MathLive, with the style's choices written out). */
+function StylePreview({ latex, style }: { latex: string; style: MathStyle }) {
+  const html = useMemo(() => {
+    try {
+      return convertLatexToMarkup(serializeLatex(expandNotation(styleAst(parseLatex(latex).root, style), styleNotation(style))));
+    } catch {
+      return "";
+    }
+  }, [latex, style]);
+  return <span className="math-preview" style={{ fontSize: 15 }} dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
+function ShapeChoice({ value, onChange, disabled }: { value: Shape; onChange: (s: Shape) => void; disabled?: boolean }) {
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value as Shape)} disabled={disabled}>
+      <option value="italic">italic</option>
+      <option value="upright">upright</option>
+    </select>
+  );
+}
+
+const ROLE_LABEL: Record<LetterRole, string> = { label: "label (upright if labels are)", counter: "index variable", variable: "variable", constant: "constant" };
+
+export function DocumentStyleDialog() {
+  const s = useDocumentStyle();
+  const fileRef = useRef<HTMLInputElement>(null);
+  if (!s.open) return null;
+  const close = () => s.set({ open: false, draft: null });
+  const d = s.draft;
+  const up = (change: Partial<MathStyle>) => d && s.set({ draft: { ...d, ...change } });
+  const withRoles = (): MathStyle | null => {
+    if (!d) return null;
+    const letters = { ...d.letters };
+    for (const [l, r] of Object.entries(s.roles)) {
+      if (r) letters[l] = r;
+      else delete letters[l];
+    }
+    return { ...d, letters };
+  };
+  // Samples shown with sample classifications so every setting is visible.
+  const sample = d ? { ...d, letters: { ...d.letters, i: "counter" as const, j: "counter" as const } } : null;
+  const run = async (what: () => Promise<string | void>) => {
+    s.set({ busy: true, message: undefined });
+    try {
+      const msg = await what();
+      s.set({ busy: false, ...(msg ? { message: msg } : {}) });
+    } catch (e) {
+      s.set({ busy: false, message: e instanceof Error ? e.message : String(e) });
+    }
+  };
+  const save = () =>
+    run(async () => {
+      const style = withRoles();
+      if (!style) return;
+      if (!useApp.getState().connector.connected) {
+        useApp.getState().setPrefs({ defaultStyle: style });
+        return "Word is not connected: saved as your default for new documents.";
+      }
+      const { restyleDocument } = await import("../lib/styleRun");
+      const r = await restyleDocument(style);
+      s.set({ stored: true });
+      return `Saved in the document. ${r.equations ? `Redrew ${r.equations} equation(s); one Ctrl+Z in Word undoes the redraw.` : "No equation to redraw."}${r.note}`;
+    });
+  const saveDefault = () =>
+    run(async () => {
+      const style = withRoles();
+      if (!style) return;
+      useApp.getState().setPrefs({ defaultStyle: { ...style, letters: {}, exceptions: [] } });
+      return "Saved as your default for documents without a style of their own.";
+    });
+  const savePreset = () =>
+    run(async () => {
+      if (!d) return;
+      const name = await askText("Save as preset", "My style", "Name of the preset");
+      if (!name) return;
+      const p = presetFrom(d, `user-${Date.now()}`, name);
+      useApp.getState().setPrefs({ stylePresets: [...useApp.getState().stylePresets.filter((x) => x.name !== name), p] });
+      up({ preset: p.id });
+      return `Preset “${name}” saved.`;
+    });
+  const exportPreset = () =>
+    run(async () => {
+      if (!d) return;
+      const { presetToJson } = await import("../lib/docStyle");
+      const { saveFile } = await import("../lib/export");
+      const all = [...STYLE_PRESETS, ...useApp.getState().stylePresets];
+      const name = all.find((p) => p.id === d.preset)?.name ?? "Document style";
+      const path = await saveFile(name.replace(/[\\/:*?"<>|]/g, "_"), "json", presetToJson(presetFrom(d, d.preset, name)), "application/json");
+      return path ? `Preset exported: ${path}` : undefined;
+    });
+  const importPreset = (file: File) =>
+    run(async () => {
+      if (!d) return;
+      const { presetFromJson } = await import("../lib/docStyle");
+      const p: StylePreset = presetFromJson(await file.text());
+      useApp.getState().setPrefs({ stylePresets: [...useApp.getState().stylePresets.filter((x) => x.id !== p.id), p] });
+      s.set({ draft: applyPreset(d, p) });
+      return `Preset “${p.name}” imported and applied here (Save to keep it in the document).`;
+    });
+  const copyFrom = (fullName: string) =>
+    run(async () => {
+      if (!d || !fullName) return;
+      const { readDocumentStyle } = await import("../lib/docStyle");
+      const other = await readDocumentStyle(fullName);
+      if (!other) return "That document has no style of its own.";
+      // Its look and notation; this document keeps its own classification and exceptions.
+      s.set({ draft: { ...other, letters: d.letters, exceptions: d.exceptions } });
+      return "Style copied (Save to keep it in this document).";
+    });
+  return (
+    <Modal title={s.document ? `Document style — “${s.document}”` : "Document style"} onClose={close} width={860}>
+      <div className="form">
+        {!d ? (
+          <p className="hint">{s.busy ? "Reading the document…" : ""}</p>
+        ) : (
+          <>
+            <p className="hint">
+              How this document's equations look. Their LaTeX never changes: saving stores the style in the document and redraws them.
+              {s.document && !s.stored ? " This document has no style of its own yet: it is drawn in your default." : ""}
+            </p>
+            <div style={{ maxHeight: 520, overflow: "auto", display: "grid", gap: 10 }}>
+              <label>
+                Preset{" "}
+                <PresetSelect value={d.preset} onPick={(p) => s.set({ draft: applyPreset(d, p) })} />
+              </label>
+              <Row label="Index labels (descriptive: b, sf, max…)" sample={<StylePreview latex="\sigma_{sf}+v_{max}+E_{b}" style={sample!} />}>
+                <ShapeChoice value={d.labels} onChange={(v) => up({ labels: v })} />
+              </Row>
+              <Row label="Index variables (i, j, k, n…) and numbers" sample={<StylePreview latex="x_i+A_{ij}+a_{2}+3.5" style={sample!} />}>
+                <ShapeChoice value={d.counters} onChange={(v) => up({ counters: v })} /> numbers <ShapeChoice value={d.numbers} onChange={(v) => up({ numbers: v })} />
+              </Row>
+              <Row label="Latin variables (lowercase, capitals)" sample={<StylePreview latex="x+y=A+B" style={d} />}>
+                <ShapeChoice value={d.latinLower} onChange={(v) => up({ latinLower: v })} /> <ShapeChoice value={d.latinUpper} onChange={(v) => up({ latinUpper: v })} />
+              </Row>
+              <Row label="Greek variables (lowercase, capitals)" sample={<StylePreview latex="\alpha+\omega=\Gamma+\Omega" style={d} />}>
+                <ShapeChoice value={d.greekLower} onChange={(v) => up({ greekLower: v })} /> <ShapeChoice value={d.greekUpper} onChange={(v) => up({ greekUpper: v })} />
+              </Row>
+              <Row label="d in derivatives and integrals" sample={<StylePreview latex="\frac{dx}{dt}=\int f\,dt" style={d} />}>
+                <ShapeChoice value={d.differential} onChange={(v) => up({ differential: v })} />
+              </Row>
+              <Row label="Constants e, i, π (i when classified as a constant)" sample={<StylePreview latex="e^{i\pi}+1=0" style={{ ...d, letters: { ...d.letters, i: "constant" } }} />}>
+                <ShapeChoice value={d.constants} onChange={(v) => up({ constants: v })} />
+              </Row>
+              <Row label="Function names, text and units" sample={<StylePreview latex="\sin\theta+\det A\ \text{if }x>0" style={d} />}>
+                <ShapeChoice value={d.functions} onChange={(v) => up({ functions: v })} /> text <ShapeChoice value={d.text} onChange={(v) => up({ text: v })} />
+              </Row>
+              <Row label="Transpose mark" sample={<StylePreview latex="\mathbf{A}^{T}\mathbf{x}" style={d} />}>
+                <select value={d.transpose} onChange={(e) => up({ transpose: e.target.value as MathStyle["transpose"] })}>
+                  <option value="upright">upright</option>
+                  <option value="italic">italic</option>
+                  <option value="bold">bold</option>
+                </select>
+              </Row>
+              <Row label="Bold base: index letters" sample={<StylePreview latex="\mathbf{r}_{sf}+\mathbf{A}_{n}" style={d} />}>
+                <select value={d.boldScope} onChange={(e) => up({ boldScope: e.target.value as MathStyle["boldScope"] })}>
+                  <option value="base">regular (bold on the base only)</option>
+                  <option value="scripts">bold too</option>
+                </select>{" "}
+                <label className="check">
+                  <input type="checkbox" checked={d.accentsFollowBold} onChange={(e) => up({ accentsFollowBold: e.target.checked })} /> accents over bold letters in bold
+                </label>
+              </Row>
+              <Row label="Notation kinds" sample={<StylePreview latex="\pvec[B/N]{r}=\dcm{B}{N}\cmat{v}" style={d} />}>
+                <select value={d.notation.preset} onChange={(e) => up({ notation: { ...d.notation, preset: e.target.value as PresetId } })}>
+                  {(Object.keys(PRESETS) as PresetId[]).map((id) => (
+                    <option key={id} value={id}>
+                      {PRESETS[id].name}
+                    </option>
+                  ))}
+                </select>{" "}
+                <button className="link-button" onClick={() => void import("./NotationSettings").then((m) => m.openNotationSettings())}>
+                  Each kind's look…
+                </button>
+              </Row>
+              <Row label="Font and size" sample={<span className="hint">Times New Roman with Symbol (Classic); STIX Two for symbols they lack</span>}>
+                <select value={d.sizePt} onChange={(e) => up({ sizePt: Number(e.target.value) })}>
+                  {[9, 10, 10.5, 11, 12, 14, 16, 18, 20, 24].map((n) => (
+                    <option key={n} value={n}>
+                      {n} pt
+                    </option>
+                  ))}
+                </select>
+              </Row>
+              <div>
+                <strong>Single-letter indices in this document</strong>
+                <p className="hint">Proposed from the equations themselves; nothing ambiguous is guessed. Undecided letters are drawn as variables.</p>
+                {s.proposals.length === 0 && <p className="hint">{s.document ? "No single-letter indices found." : "Open a document in Word to classify its indices."}</p>}
+                {s.proposals.map((p) => (
+                  <div key={p.letter} style={{ display: "flex", gap: 10, alignItems: "center", borderBottom: "1px solid var(--border, #ddd)", padding: "3px 0" }}>
+                    <code style={{ minWidth: 24 }}>{p.letter}</code>
+                    <select value={s.roles[p.letter] ?? ""} onChange={(e) => s.set({ roles: { ...s.roles, [p.letter]: (e.target.value || null) as LetterRole | null } })}>
+                      <option value="">undecided</option>
+                      {(Object.keys(ROLE_LABEL) as LetterRole[]).map((r) => (
+                        <option key={r} value={r}>
+                          {ROLE_LABEL[r]}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="hint" style={{ flex: 1 }}>
+                      {p.uses}× — {p.reasons.join("; ")}
+                    </span>
+                    {p.examples[0] && <StylePreview latex={p.examples[0]} style={withRoles() ?? d} />}
+                  </div>
+                ))}
+              </div>
+            </div>
+            {s.message && <p>{s.message}</p>}
+          </>
+        )}
+        <input ref={fileRef} type="file" accept=".json,application/json" style={{ display: "none" }} onChange={(e) => e.target.files?.[0] && void importPreset(e.target.files[0])} />
+        <div className="modal-actions" style={{ flexWrap: "wrap" }}>
+          <button onClick={() => void savePreset()} disabled={s.busy || !d}>
+            Save as preset…
+          </button>
+          <button onClick={() => void exportPreset()} disabled={s.busy || !d}>
+            Export preset…
+          </button>
+          <button onClick={() => fileRef.current?.click()} disabled={s.busy || !d}>
+            Import preset…
+          </button>
+          {s.others.length > 0 && (
+            <select value="" onChange={(e) => void copyFrom(e.target.value)} disabled={s.busy || !d}>
+              <option value="">Copy style from…</option>
+              {s.others.map((o) => (
+                <option key={o.fullName} value={o.fullName} disabled={!o.hasStyle}>
+                  {o.name}
+                  {o.hasStyle ? "" : " (no style)"}
+                </option>
+              ))}
+            </select>
+          )}
+          <button onClick={() => void saveDefault()} disabled={s.busy || !d}>
+            Save as my default
+          </button>
+          <div className="spacer" />
+          <button onClick={close} disabled={s.busy}>
+            Close
+          </button>
+          <button className="primary" onClick={() => void save()} disabled={s.busy || !d}>
+            {s.busy && d ? "Working…" : s.document ? "Save and redraw" : "Save"}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function Row({ label, sample, children }: { label: string; sample: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 10, alignItems: "center", borderBottom: "1px solid var(--border, #ddd)", paddingBottom: 6 }}>
+      <div>
+        <div>{label}</div>
+        <div>{children}</div>
+      </div>
+      <div>{sample}</div>
+    </div>
+  );
+}
+
+function PresetSelect({ value, onPick }: { value: string; onPick: (p: StylePreset) => void }) {
+  const user = useApp((st) => st.stylePresets);
+  const all = [...STYLE_PRESETS, ...user];
+  const current = all.find((p) => p.id === value);
+  return (
+    <>
+      <select value={current ? value : ""} onChange={(e) => {
+        const p = all.find((x) => x.id === e.target.value);
+        if (p) onPick(p);
+      }}>
+        {!current && <option value="">(changed)</option>}
+        <optgroup label="Built-in">
+          {STYLE_PRESETS.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </optgroup>
+        {user.length > 0 && (
+          <optgroup label="Yours">
+            {user.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </optgroup>
+        )}
+      </select>
+      {current?.description && <span className="hint"> {current.description}</span>}
+    </>
+  );
+}

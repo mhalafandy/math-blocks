@@ -52,6 +52,7 @@ export interface RepairReport {
 export async function repairDocument(document?: string, o: { quiet?: boolean; fromWord?: boolean } = {}): Promise<RepairReport | null> {
   if (!addinSupports("repairEquations")) return null;
   const target = document ? { document } : {};
+  await import("./docStyle").then((m) => m.loadDocumentStyle(document)).catch(() => undefined);
   const dry = await connector.request("repairEquations", { ...target, dryRun: true }, 120_000);
   const changes = (dry.inlined ?? 0) + (dry.split?.length ?? 0) + (dry.converted ?? 0) + (dry.styled ?? 0) + (dry.lowered ?? 0) + (dry.redraw?.length ?? 0) + dry.renamed.length + dry.wrapped.length + dry.bookmarks;
   const report: RepairReport = { inlined: 0, split: 0, converted: 0, lowered: 0, toObjects: 0, idRewrites: 0, redrawn: 0, ms: 0, styled: 0, native: dry.native ?? 0, mathType: dry.mathType ?? 0, renamed: 0, wrapped: 0, fromAlt: 0, bookmarks: 0, linkedAdded: 0, unlinked: 0, otherPictures: dry.otherPictures };

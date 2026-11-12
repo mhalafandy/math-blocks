@@ -52,7 +52,8 @@ export const TRANSPOSE_FORMS: Record<TransposeForm, string> = {
   italic: "Italic T",
   top: "⊤",
 };
-const TRANSPOSE_MARK: Record<TransposeForm, string> = { upright: "\\mathrm{T}", bold: "\\mathbf{T}", italic: "T", top: "\\top" };
+// A plain T: the document style draws a transpose mark (upright, italic or bold); ⊤ is another symbol, kept as written.
+const TRANSPOSE_MARK: Record<TransposeForm, string> = { upright: "T", bold: "T", italic: "T", top: "\\top" };
 
 /** Rewrites transpose superscripts (^{T}, ^{\mathbf{T}}, ^{\mathrm{T}}, ^{\top}, and −T) in the chosen form. */
 export function applyTranspose(latex: string, form: TransposeForm): string {

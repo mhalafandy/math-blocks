@@ -30,6 +30,8 @@ export async function sendToWord(o: { errors: number; profile: StyleProfile }) {
     if (!c.available) return notify("Sending to Word works in the desktop app.", "error");
     if (!c.connected) return notify("Word is not connected. Start Word with the MathBlocks add-in installed.", "error");
     if (o.errors > 0) return notify("Fix the LaTeX errors first.", "error");
+    // Drawn in the style of the document it goes into.
+    await import("./docStyle").then((m) => m.loadDocumentStyle()).catch(() => undefined);
     try {
       const lib = useLibrary.getState();
       const libEq = lib.open ? lib.equations.find((q) => q.id === lib.open!.id) : undefined;

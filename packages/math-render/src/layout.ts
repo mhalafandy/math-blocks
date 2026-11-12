@@ -3,7 +3,7 @@
  * width/height/depth in em, glyphs from the text fonts (Times) or the math font (STIX Two Math).
  */
 import type { MathNode, MathVariant, Row } from "@mathblocks/math-core";
-import { expandNotation, type NotationProfile } from "@mathblocks/math-core";
+import { expandNotation, styleAst, styleNotation, type MathStyle, type NotationProfile } from "@mathblocks/math-core";
 import { charGlyph, glyphName, namedGlyph, symbolGlyph, type FontSet, type GlyphInfo } from "./fonts";
 import type { RenderStyle } from "./style";
 
@@ -108,6 +108,8 @@ interface Ctx {
   level: number;
   /** Fonts the drawing used (recorded with the picture). */
   used?: Set<GlyphSource>;
+  /** Document style settings the layout itself applies (function names, text, accents over bold). */
+  look?: Pick<MathStyle, "functions" | "text" | "accentsFollowBold">;
 }
 
 const script = (c: Ctx): Ctx => ({
@@ -365,7 +367,7 @@ function atomsOf(n: MathNode, c: Ctx, out: Atom[]) {
       out.push({ box: textBox(n.text, faceFor(n.text, n.variant, "number", c), c, n.variant), cls: "ord" });
       return;
     case "text":
-      out.push({ box: textBox(n.text, "regular", c), cls: "ord" });
+      out.push({ box: textBox(n.text, c.look?.text === "italic" ? "italic" : "regular", c), cls: "ord" });
       return;
     case "operator": {
       const cls: Cls =
@@ -395,7 +397,7 @@ function atomsOf(n: MathNode, c: Ctx, out: Atom[]) {
       for (const b of n.body.children) atomsOf(b, c, out);
       return;
     case "function": {
-      const name = textBox(n.name, "regular", c);
+      const name = textBox(n.name, c.look?.functions === "italic" ? "italic" : "regular", c);
       const limits = n.limits && c.display;
       out.push({ box: limits ? underOver(name, n.sub, n.sup, c) : n.sub || n.sup ? scripts(name, n.sub, n.sup, c) : name, cls: "op" });
       for (const b of n.arg.children) atomsOf(b, c, out);
@@ -765,6 +767,9 @@ function attach(body: Box): { cx: number; top: number; inkW: number; single: boo
 
 function accent(kind: string, bodyRow: Row, c: Ctx): Box {
   const body = layoutRow(bodyRow, c);
+  // Accents over bold letters in the bold weight (document style): heavier strokes, bold accent glyphs.
+  const boldBody = !!c.look?.accentsFollowBold && bodyRow.children.length > 0 && bodyRow.children.every((n) => (n.kind === "ident" || n.kind === "number") && (n.variant === "bold" || n.variant === "bold-italic"));
+  if (boldBody) c = { ...c, fonts: { ...c.fonts, regular: c.fonts.bold }, st: { ...c.st, rule: c.st.rule * 1.5, accents: { ...c.st.accents, stroke: c.st.accents.stroke * 1.6 } } };
   const t = c.st.rule * c.s;
   const rules = c.st.accents;
   if (kind === "underline") {
@@ -1057,11 +1062,14 @@ export interface LayoutOptions {
   notation?: NotationProfile;
   /** Collects the fonts the drawing used. */
   used?: Set<GlyphSource>;
+  /** Document style: letters' shapes, transpose, differential, kinds (its notation replaces `notation`). */
+  mathStyle?: MathStyle;
 }
 
 export function layout(root: Row, o: LayoutOptions): Box {
-  root = expandNotation(root, o.notation);
-  return layoutRow(root, { fonts: o.fonts, st: o.style, s: 1, display: o.display, level: 0, used: o.used });
+  const ms = o.mathStyle;
+  root = ms ? expandNotation(styleAst(root, ms), styleNotation(ms)) : expandNotation(root, o.notation);
+  return layoutRow(root, { fonts: o.fonts, st: o.style, s: 1, display: o.display, level: 0, used: o.used, look: ms ? { functions: ms.functions, text: ms.text, accentsFollowBold: ms.accentsFollowBold } : undefined });
 }
 
 // Re-exported for tests.

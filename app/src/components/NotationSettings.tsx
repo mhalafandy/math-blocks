@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { setActiveNotation, useActiveNotation } from "../lib/docStyle";
 import { create } from "zustand";
 import { isCustomKind, KIND_BY_ID, NEW_KIND_STYLE, PRESETS, presetStyle, type KindAccent, type KindStyle, type PresetId } from "@mathblocks/math-core";
 import { parseLatex } from "@mathblocks/math-latex";
@@ -47,7 +48,7 @@ function useFonts() {
 }
 
 function Sample({ latex, sizePt, fonts }: { latex: string; sizePt: number; fonts: FontSet }) {
-  const profile = useApp((s) => s.notationProfile);
+  const profile = useActiveNotation();
   const svg = useMemo(() => {
     try {
       return renderSvg(parseLatex(latex).root, { fonts, style: classicStyle(), display: false, sizePt, notation: profile }).svg;
@@ -60,7 +61,7 @@ function Sample({ latex, sizePt, fonts }: { latex: string; sizePt: number; fonts
 
 export function NotationSettings() {
   const { open, kind: wanted, set } = useNotationSettings();
-  const profile = useApp((s) => s.notationProfile);
+  const profile = useActiveNotation();
   const custom = useApp((s) => s.customKinds);
   const fonts = useFonts();
   const [sel, setSel] = useState<string>("pvec");
@@ -110,7 +111,7 @@ export function NotationSettings() {
         <div className="ns-top">
           <label>
             Preset{" "}
-            <select value={profile.preset} onChange={(e) => useApp.getState().setPrefs({ notationProfile: { ...profile, preset: e.target.value as PresetId } })}>
+            <select value={profile.preset} onChange={(e) => setActiveNotation({ ...profile, preset: e.target.value as PresetId })}>
               {(Object.keys(PRESETS) as PresetId[]).map((p) => (
                 <option key={p} value={p}>
                   {PRESETS[p].name}

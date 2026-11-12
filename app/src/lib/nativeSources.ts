@@ -1,11 +1,11 @@
-import { expandNotation, hasNotation } from "@mathblocks/math-core";
+import { hasNotation, styleAst } from "@mathblocks/math-core";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { readOmml, toOmml } from "@mathblocks/math-omml";
 import { parseTag } from "@mathblocks/ooxml";
 import { currentProfile } from "./equation";
 import { readRegistry, writeRegistry } from "./linking";
 import { readEquationXml } from "./readEquation";
-import { useApp } from "./store";
+import { activeStyle } from "./docStyle";
 
 /**
  * Native Word equations with notation kinds: Word's equations cannot hold \pvec, so the source
@@ -26,7 +26,7 @@ function fnv(s: string): string {
 
 /** Hash of what Word shows for this source (written as OMML and read back, so Word's rewriting does not matter). */
 export function nativeHash(latex: string): string {
-  const omml = toOmml(expandNotation(parseLatex(latex).root, useApp.getState().notationProfile), { display: true, profile: currentProfile(), standalone: true });
+  const omml = toOmml(parseLatex(latex).root, { display: true, profile: currentProfile(), standalone: true, mathStyle: activeStyle() });
   const back = readOmml(omml);
   return fnv(back ? serializeLatex(back.root) : latex);
 }
@@ -37,7 +37,14 @@ export function wordHash(flatOpc: string): string | null {
   return r && r.kind === "native" ? fnv(serializeLatex(r.root)) : null;
 }
 
-export const needsSource = (latex: string) => hasNotation(parseLatex(latex).root);
+/**
+ * Whether Word's copy cannot give the source back: kinds, or letters the document style draws
+ * differently from their default (an upright label read back would become \mathrm{…}).
+ */
+export const needsSource = (latex: string) => {
+  const root = parseLatex(latex).root;
+  return hasNotation(root) || serializeLatex(styleAst(root, activeStyle())) !== serializeLatex(root);
+};
 
 /** Records (or clears) the sources of native equations after they were written. */
 export async function recordNativeSources(document: string | undefined, entries: { tag: string; latex: string }[]) {

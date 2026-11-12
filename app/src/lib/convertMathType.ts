@@ -204,6 +204,7 @@ export async function convertOpenDocument(document?: string, o: { quiet?: boolea
   const ui = useConversion.getState();
   if (ui.busy) return;
   if (!app.connector.connected) return app.notify("Word is not connected. Start Word with the MathBlocks add-in.", "error");
+  await import("./docStyle").then((m) => m.loadDocumentStyle(document)).catch(() => undefined);
   if (!addinSupports("listMathTypeParagraphs")) return app.notify("The MathBlocks add-in loaded in Word is too old for this. Close Word completely and start it again.", "error");
   try {
     ui.set({ busy: true, progress: "Looking for MathType equations…" });

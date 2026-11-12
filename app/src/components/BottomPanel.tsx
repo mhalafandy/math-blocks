@@ -129,7 +129,8 @@ function StylePanel() {
   const vectorStyle = useApp((s) => s.vectorStyle);
   const numberStyle = useApp((s) => s.numberStyle);
   const look = useApp((s) => s.look);
-  const sizePt = useApp((s) => s.equationSizePt);
+  const docStyle = useApp((s) => s.docStyle);
+  const sizePt = useApp((s) => (s.docStyle?.stored ? s.docStyle.style.sizePt : s.equationSizePt));
   const width = useWidthMeasure();
   const convention = useApp((s) => s.spacecraftConvention);
   const scVector = useApp((s) => s.spacecraftVector);
@@ -159,6 +160,12 @@ function StylePanel() {
           ))}
         </select>
       </label>
+      <button className="link-button" onClick={() => void import("./DocumentStyleDialog").then((m) => m.openDocumentStyle())}>
+        Document style… (labels, variables, d/e/i/π, kinds, size — stored in the document)
+      </button>
+      <button className="link-button" onClick={() => void import("./CheckStyleDialog").then((m) => m.openCheckStyle())}>
+        Check style…
+      </button>
       <button className="link-button" onClick={() => void import("./NotationSettings").then((m) => m.openNotationSettings())}>
         Kinds and their styles, my own kinds…
       </button>
@@ -177,7 +184,15 @@ function StylePanel() {
         <>
           <label>
             Size
-            <select value={sizePt} onChange={(e) => setPrefs({ equationSizePt: Number(e.target.value) })}>
+            <select
+              value={sizePt}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                // A document with its own style keeps its size there (it travels with the document).
+                if (docStyle?.stored) void import("../lib/docStyle").then((m) => m.updateActiveStyle((st) => ({ ...st, sizePt: n })));
+                else setPrefs({ equationSizePt: n });
+              }}
+            >
               {[10, 10.5, 11, 12, 14, 16].map((n) => (
                 <option key={n} value={n}>
                   {n} pt{n === 12 ? " (MathType default)" : ""}

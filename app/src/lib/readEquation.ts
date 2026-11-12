@@ -13,12 +13,14 @@ export interface ReadEquation {
   numbered?: boolean;
   /** Classic pictures: the fallback symbol font used (MT Extra or STIX), if any. */
   fallback?: string;
+  /** Classic pictures: fingerprint of the document style they were drawn in. */
+  styleHash?: string;
 }
 
 const ALT = /(?:descr|alt)="MathBlocks (display|inline|numbered)(?: \([^)"]*\))?: ([^"]*)"/;
 
 /** The source a MathBlocks picture carries inside its EMF (a GDI comment), if any. */
-function emfSource(xml: string): { latex: string; mode: string; fallback?: string } | null {
+function emfSource(xml: string): { latex: string; mode: string; fallback?: string; styleHash?: string } | null {
   for (const m of xml.matchAll(/<pkg:part\b[^>]*pkg:contentType="image\/x-emf"[^>]*>\s*<pkg:binaryData>([\s\S]*?)<\/pkg:binaryData>/g)) {
     try {
       const bin = atob(m[1]!.replace(/\s+/g, ""));
@@ -26,8 +28,8 @@ function emfSource(xml: string): { latex: string; mode: string; fallback?: strin
       for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
       const text = emfComment(bytes);
       if (text) {
-        const src = JSON.parse(text) as { latex?: string; mode?: string; fallback?: string };
-        if (typeof src.latex === "string") return { latex: src.latex, mode: src.mode ?? "display", fallback: src.fallback };
+        const src = JSON.parse(text) as { latex?: string; mode?: string; fallback?: string; styleHash?: string };
+        if (typeof src.latex === "string") return { latex: src.latex, mode: src.mode ?? "display", fallback: src.fallback, styleHash: src.styleHash };
       }
     } catch {
       // Not ours, or damaged: try the next picture.
@@ -64,7 +66,7 @@ export function readEquationXml(xml: string): ReadEquation | null {
   const obj = objectSource(xml);
   if (obj) return { root: parseLatex(obj.latex).root, display: obj.mode !== "inline", numbered: obj.mode === "numbered", unknown: [], kind: "picture" };
   const emf = emfSource(xml);
-  if (emf) return { root: parseLatex(emf.latex).root, display: emf.mode !== "inline", numbered: emf.mode === "numbered", unknown: [], kind: "picture", ...(emf.fallback ? { fallback: emf.fallback } : {}) };
+  if (emf) return { root: parseLatex(emf.latex).root, display: emf.mode !== "inline", numbered: emf.mode === "numbered", unknown: [], kind: "picture", ...(emf.fallback ? { fallback: emf.fallback } : {}), ...(emf.styleHash ? { styleHash: emf.styleHash } : {}) };
   const pic = ALT.exec(xml);
   if (pic) {
     const latex = decodeEntities(pic[2]!);

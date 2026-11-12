@@ -1,7 +1,7 @@
 import { parseLatex } from "@mathblocks/math-latex";
 import { mathTypePadding, renderSvg, type FontSet } from "@mathblocks/math-render";
 import { addinSupports, connector } from "./connector";
-import { classicStyle, loadFonts, notationProfile } from "./render";
+import { classicStyle, loadFonts } from "./render";
 import { useApp, type NumberStyle } from "./store";
 import { availableWidth, DEFAULT_TEXT_WIDTH_PT } from "./pageWidth";
 
@@ -39,9 +39,10 @@ export interface WidthMeasure {
 export async function measureWidth(latex: string, numbered: boolean): Promise<WidthMeasure> {
   const app = useApp.getState();
   const fonts: FontSet = await loadFonts();
-  const sizePt = app.equationSizePt;
+  const ms = (await import("./docStyle")).activeStyle();
+  const sizePt = ms.sizePt;
   // Same padding as the picture in Word.
-  const opts = { fonts, style: classicStyle(), display: true, sizePt, notation: notationProfile(), padding: mathTypePadding(sizePt) };
+  const opts = { fonts, style: classicStyle(), display: true, sizePt, mathStyle: ms, padding: mathTypePadding(sizePt) };
   const measure = (l: string) => renderSvg(parseLatex(l).root, opts).widthPt;
   const textWidthPt = app.textWidthPt ?? DEFAULT_TEXT_WIDTH_PT;
   const numberPt = numbered ? measure(`\\text{${numberSample(app.numberStyle)}}`) : 0;

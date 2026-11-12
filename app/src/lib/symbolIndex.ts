@@ -35,6 +35,8 @@ export interface IndexedEquation {
   editedInWord?: boolean;
   /** Classic picture: fallback symbol font it was drawn with (mtextra / stix / both). */
   fallback?: string;
+  /** Classic picture: fingerprint of the document style it was drawn in. */
+  styleHash?: string;
 }
 
 export interface IndexedSymbol {
@@ -81,6 +83,7 @@ export interface DocumentIndex {
 export async function buildDocumentIndex(): Promise<DocumentIndex> {
   // Pasted copies first get their identity back (Repair equations), quietly unless it changed something.
   await import("./repair").then((m) => m.repairDocument(undefined, { quiet: true })).catch((e: unknown) => console.warn("repair", e));
+  await import("./docStyle").then((m) => m.loadDocumentStyle()).catch(() => undefined);
   const r = await connector.request("listInstances", { includeContent: true }, 120_000);
   const doc = r.documents[0];
   if (!doc) throw new Error("No document is open in Word");
@@ -97,7 +100,7 @@ export async function buildDocumentIndex(): Promise<DocumentIndex> {
       if (wordHash(i.flatOpc!) === src.hash) latex = src.latex;
       else editedInWord = true;
     }
-    equations.push({ tag: i.tag, page: i.page, context: i.context, latex, display: read.display, blockId: linkOf(i.tag)?.blockId ?? null, kind: read.kind, numbered: read.numbered, number: i.number ?? null, flatOpc: i.flatOpc ?? undefined, editedInWord, ...(read.fallback ? { fallback: read.fallback } : {}) });
+    equations.push({ tag: i.tag, page: i.page, context: i.context, latex, display: read.display, blockId: linkOf(i.tag)?.blockId ?? null, kind: read.kind, numbered: read.numbered, number: i.number ?? null, flatOpc: i.flatOpc ?? undefined, editedInWord, ...(read.fallback ? { fallback: read.fallback } : {}), ...(read.styleHash ? { styleHash: read.styleHash } : {}) });
   }
   return { document: doc.fullName, name: doc.name, equations, symbols: indexEquations(equations) };
 }
