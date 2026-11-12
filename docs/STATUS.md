@@ -5,8 +5,8 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.110 (commit `b7ff031`), CI passed. Last round's fixes (`158f689`) and this round's
-  changes are building together as the next build.
+- **Published:** 0.1.112 (commit `cb9275b`), CI passed — contains the text guard, the missing-section-marker
+  error, and last round's fixes (number brackets, cursor after a section marker).
 
 ## Root cause: the "text loss" in the 0.1.108 self-test
 
@@ -35,7 +35,7 @@ self-tests, character for character as generated.
 
 **Commits:** this round's commit "Text guard on whole-document operations; missing section marker is an error".
 
-## What to test (next build)
+## What to test (0.1.112)
 
 1. **Self-test.** Expected, in addition to last round's list:
    - "text guard: a change that touches text outside the equations is undone automatically": PASS.
@@ -73,7 +73,6 @@ brackets, cursor after a section marker, broken-reference snippet check). No new
 
 ## History
 
-- **Round after 0.1.110** — Number brackets read correctly; cursor after an inserted section marker (in the next build).
 - **0.1.110** — Equation numbers read from the button fields' display text; Section marker at the cursor;
   readable broken-reference snippets; self-test fixes.
 - **0.1.108** — Convert numbering (MathType → MathBlocks: keep, or renumber to chapter.section.equation);
