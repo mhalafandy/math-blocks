@@ -431,16 +431,17 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
         return normalizeBold(root) ? serializeLatex(root) : l;
       };
       let index = await buildDocumentIndex();
+      // Review notation kinds (suggested rules): older forms become kinds, one Ctrl+Z. First, on the untouched
+      // equation (Normalize bold, below, makes bold index labels plain, leaving nothing for the upright-labels rule).
+      const { applyKindRules, SUGGESTED_KIND_RULES } = await import("./kindRules");
+      await oneCtrlZ("Apply notation kinds", docU.name, () => rewriteDocument(index, index.equations, (l) => applyKindRules(l, SUGGESTED_KIND_RULES).latex, "Apply notation kinds"));
+      const kinded = (await buildDocumentIndex()).equations.map((e) => e.latex).find((l) => l.includes("\\pvec{v}"));
+      check("Apply notation kinds: the older forms became kinds", !!kinded && /\\vectrix\{F\}\^\{\\T\}/.test(kinded) && /\\cmat\{v\}_\{\\mathrm\{f\}\}/.test(kinded) && /\\bvec\{f\}_\{?1\}?/.test(kinded), kinded ?? "no equation with \\pvec{v}");
+      index = await buildDocumentIndex();
       await oneCtrlZ("Normalize bold", docU.name, () => rewriteDocument(index, index.equations.filter((e) => bolded(e.latex) !== e.latex), bolded, "Normalize bold"));
       const { changeTranspose } = await import("./notation");
       index = await buildDocumentIndex();
       await oneCtrlZ("Change notation (transpose form)", docU.name, () => rewriteDocument(index, index.equations, (l) => changeTranspose(l, "upright"), "Transpose form"));
-      // Review notation kinds (suggested rules): older forms become kinds, one Ctrl+Z.
-      const { applyKindRules, SUGGESTED_KIND_RULES } = await import("./kindRules");
-      index = await buildDocumentIndex();
-      await oneCtrlZ("Apply notation kinds", docU.name, () => rewriteDocument(index, index.equations, (l) => applyKindRules(l, SUGGESTED_KIND_RULES).latex, "Apply notation kinds"));
-      const kinded = (await buildDocumentIndex()).equations.map((e) => e.latex).find((l) => l.includes("\\pvec{v}"));
-      check("Apply notation kinds: the older forms became kinds", !!kinded && /\\vectrix\{F\}\^\{\\T\}/.test(kinded) && /\\cmat\{v\}_\{\\mathrm\{f\}\}/.test(kinded) && /\\bvec\{f\}_\{1\}/.test(kinded), kinded ?? "no equation with \\pvec{v}");
       const numbersNow = async () => (await connector.request("listNumbered", {}, SLOW)).equations.map((e) => e.number).join(" ");
       const before0 = await numbersNow();
       const stale = await smoke("staleNumbers");

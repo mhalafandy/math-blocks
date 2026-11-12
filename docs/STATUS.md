@@ -32,12 +32,10 @@ and the self-test's own re-scan found them intact. The text guard (0.1.112) stay
 
 **Commits:** this round's commit "Notation kinds on conversion; Review notation kinds".
 
-## What to test (0.1.114)
+## What to test (next build)
 
-1. **Self-test.** Expected: all checks pass, including
-   - "Apply notation kinds: the older forms became kinds" and its one-Ctrl+Z check;
-   - "text guard: a change that touches text outside the equations is undone automatically";
-   - "references to old and new equations".
+1. **Self-test.** Expected: all checks pass, including "Apply notation kinds: the older forms became kinds"
+   (now run before Normalize bold).
 2. **Review notation kinds on a copy of the thesis** (Ctrl+K → Review notation kinds): check the counts and
    examples, untick anything unwanted, Apply; check a few equations; Ctrl+Z once should undo all of it.
 3. **Convert MathType on a copy of an unconverted chapter:** converted equations should already use
@@ -45,14 +43,16 @@ and the self-test's own re-scan found them intact. The text guard (0.1.112) stay
 
 ## Last self-test analysed
 
-**0.1.113:** 191 checks — 189 passed, 2 failed.
+**0.1.114:** 216 checks — 193 passed, 1 failed, 22 for information; embedded-object spike 123 checks, 0 failed.
 
-- Passed: number reading ("(A.1)" with its bracket), One numbering scheme, Update numbers' one Ctrl+Z.
-- Failures and causes:
-  - "text guard: …undone automatically": the probe deleted a letter inside a field code, which the guard
-    does not compare — the probe now uses a paragraph of its own. Fixed.
-  - "references to old and new equations": a reference by number used MathType's number-only twin
-    bookmark — the shortest name is used now. Fixed.
+- Passed: text guard (the probe's change was undone automatically), references to old and new equations,
+  Apply notation kinds' one Ctrl+Z, every other whole-document undo check.
+- Failure and cause:
+  - "Apply notation kinds: the older forms became kinds": the app was right, the check was wrong. Normalize
+    bold ran earlier on the same test equation and had already made its bold index label plain, so there was
+    nothing left for the upright-labels rule. The kinds step now runs first, on the untouched equation.
+- Note for the owner: Normalize bold makes bold index labels plain italic, while Review notation kinds makes
+  them upright. On a document, run Review notation kinds first if upright labels are wanted.
 
 ## Waiting for the owner
 
