@@ -15,7 +15,7 @@ describe("LaTeX interchange plan (synthetic convention document)", () => {
 
   it("lists every problem with a snippet, in document order, and nothing else", () => {
     expect(plan.issues.map((e) => `${e.severity}: ${e.what}`)).toEqual([
-      expect.stringMatching(/^warning: Missing section marker: numbered equation in chapter 4 before its first \\mbnumbering\{4\.1\}/),
+      expect.stringMatching(/^error: Missing section marker: this numbered equation comes before the first \\mbnumbering\{4\.n\} of chapter 4 — not converted/),
       expect.stringMatching(/^warning: Label eq:4\.1\.9 is numbered \(4\.1\.2\) here/),
       expect.stringMatching(/^warning: Label eq:3\.3\.1 does not fit the markers: the equation is in 4\.2 and is numbered \(4\.2\.1\)/),
       expect.stringMatching(/^warning: Typed number \(A\.1\.5\) becomes \(A\.1\.2\)/),

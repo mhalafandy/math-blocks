@@ -204,7 +204,10 @@ namespace MathBlocks.WordConnector
             var items = new List<Dictionary<string, object>>();
             foreach (var o in list) if (o is Dictionary<string, object> d) items.Add(d);
             items.Sort((a, b) => Rpc.GetInt(b, "start").CompareTo(Rpc.GetInt(a, "start")));
-            return InOneUndo(undoLabel, () => ReplaceRangesCore(doc, items));
+            // The text guard ignores the ranges being replaced (their LaTeX becomes equations).
+            var exclude = new List<int[]>();
+            foreach (var it in items) exclude.Add(new[] { Rpc.GetInt(it, "start"), Rpc.GetInt(it, "end") });
+            return InOneUndo(undoLabel, () => ReplaceRangesCore(doc, items), exclude, doc);
         }
 
         private Dictionary<string, object> ReplaceRangesCore(Word.Document doc, List<Dictionary<string, object>> items)

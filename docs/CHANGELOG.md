@@ -25,6 +25,16 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added — text guard on every whole-document operation; missing section marker is an error
+- Every whole-document operation (Repair, restyle, Normalize bold, Change notation, rename, Convert LaTeX,
+  Convert numbering, Convert MathType, Update numbers, Upgrade numbering) records the document's text outside
+  equations, fields, Word equations and the ranges it is meant to change, compares it afterwards, and undoes
+  itself automatically if anything else changed, saying where.
+- Convert LaTeX: a numbered equation before its chapter's first section marker is a pre-flight error and is
+  not converted (it produced numbers like (4.0.1)).
+- Self-test: a probe deletes a letter outside the equations inside an operation (the guard must undo it); the
+  conversions must not raise a false alarm.
+
 ### Fixed — numbers read without their opening bracket; cursor after an inserted section marker
 - A number's opening bracket right after a field switch was taken as part of the switch ("A.1)" instead of
   "(A.1)"), so Convert numbering still could not read MathType's numbers and number comparisons failed.

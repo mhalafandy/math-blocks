@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -70,6 +71,9 @@ namespace MathBlocks.WordConnector
             var total = p.TryGetValue("total", out var n) ? Convert.ToInt32(n) : 0;
             EndOperationCore();
             _undoBrokenAt = null;
+            // Text guard: the document's text outside equations, fields and the ranges this operation is meant
+            // to change; compared at the end, and the operation undone if anything else changed.
+            if (!Rpc.GetBool(p, "noGuard")) GuardStart(doc, ExcludeOf(p));
             var undo = _app.UndoRecord;
             if (!undo.IsRecordingCustomRecord)
             {
@@ -152,9 +156,19 @@ namespace MathBlocks.WordConnector
             var ms = _operationClock.ElapsedMilliseconds;
             CheckOperationUndo("end of the operation");
             var broken = _undoBrokenAt ?? "";
+            var guardFailed = GuardCheck();
             EndOperationCore();
+            bool restored = false;
+            if (guardFailed != null) restored = GuardUndo();
+            _guardDoc = null;
             if (done > 0) Log.Info("operation finished: " + done + " equation(s) in " + ms + " ms (" + (ms / Math.Max(1, done)) + " ms each)");
-            return new Dictionary<string, object> { ["ms"] = ms, ["undoBrokenAt"] = broken };
+            var result = new Dictionary<string, object> { ["ms"] = ms, ["undoBrokenAt"] = broken };
+            if (guardFailed != null)
+            {
+                result["guardFailed"] = guardFailed;
+                result["guardRestored"] = restored;
+            }
+            return result;
         }
 
         private void EndOperationCore()
@@ -229,12 +243,13 @@ namespace MathBlocks.WordConnector
         /// Runs a whole-document change as one undo step (one Ctrl+Z) with a steady busy pointer; reports
         /// where Word closed the record early, if it did (undoBrokenAt). Inside an operation it just runs.
         /// </summary>
-        internal Dictionary<string, object> InOneUndo(string label, Func<Dictionary<string, object>> work)
+        internal Dictionary<string, object> InOneUndo(string label, Func<Dictionary<string, object>> work, List<int[]> exclude = null, Word.Document guardDoc = null)
         {
             var undo = _app.UndoRecord;
             bool own = !undo.IsRecordingCustomRecord;
             if (own)
             {
+                GuardStart(guardDoc ?? _app.ActiveDocument, exclude);
                 undo.StartCustomRecord(label);
                 _operationUndo = true;
                 _undoBrokenAt = null;
@@ -247,6 +262,14 @@ namespace MathBlocks.WordConnector
                 {
                     CheckOperationUndo("end of " + label);
                     r["undoBrokenAt"] = _undoBrokenAt ?? "";
+                    var failed = GuardCheck();
+                    if (failed != null)
+                    {
+                        try { undo.EndCustomRecord(); } catch (COMException) { }
+                        _operationUndo = false;
+                        r["guardFailed"] = failed;
+                        r["guardRestored"] = GuardUndo();
+                    }
                 }
                 return r;
             }
@@ -254,11 +277,120 @@ namespace MathBlocks.WordConnector
             {
                 if (own)
                 {
-                    try { undo.EndCustomRecord(); } catch (COMException) { }
+                    try { if (_operationUndo) undo.EndCustomRecord(); } catch (COMException) { }
                     _operationUndo = false;
+                    _guardDoc = null;
                     try { _app.System.Cursor = Word.WdCursorType.wdCursorNormal; } catch (COMException) { }
                 }
             }
+        }
+
+        // ------------------------------------------------------------------ text guard
+
+        private Word.Document _guardDoc;
+        private string _guardBefore, _guardBeforeFull;
+        private List<int[]> _guardExclude;
+
+        private static List<int[]> ExcludeOf(Dictionary<string, object> p)
+        {
+            var list = new List<int[]>();
+            if (p != null && p.TryGetValue("exclude", out var raw) && raw is IEnumerable items)
+                foreach (var o in items)
+                    if (o is Dictionary<string, object> d) list.Add(new[] { Rpc.GetInt(d, "start"), Rpc.GetInt(d, "end") });
+            return list;
+        }
+
+        private void GuardStart(Word.Document doc, List<int[]> exclude)
+        {
+            try
+            {
+                _guardDoc = doc;
+                _guardExclude = exclude ?? new List<int[]>();
+                _guardBefore = CanonicalText(doc, _guardExclude);
+                _guardBeforeFull = _guardExclude.Count > 0 ? CanonicalText(doc, null) : _guardBefore;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("text guard: reading the document", ex);
+                _guardDoc = null;
+            }
+        }
+
+        /// <summary>Null when the text outside what the operation may change is unchanged; else where it differs.</summary>
+        private string GuardCheck()
+        {
+            if (_guardDoc == null) return null;
+            string after;
+            try { after = CanonicalText(_guardDoc, null); }
+            catch (Exception ex)
+            {
+                Log.Error("text guard: reading the document afterwards", ex);
+                return null;
+            }
+            if (after == _guardBefore) return null;
+            int i = 0;
+            while (i < after.Length && i < _guardBefore.Length && after[i] == _guardBefore[i]) i++;
+            string around(string s) => s.Substring(Math.Max(0, i - 30), Math.Min(s.Length, i + 30) - Math.Max(0, i - 30));
+            var what = "text outside the equations changed near “…" + around(_guardBefore) + "…” (now “…" + around(after) + "…”)";
+            Log.Error("text guard: " + what);
+            return what;
+        }
+
+        /// <summary>Undoes until the document's text is what it was before the operation (at most 20 steps).</summary>
+        private bool GuardUndo()
+        {
+            var doc = _guardDoc;
+            if (doc == null) return false;
+            try
+            {
+                for (int n = 0; n < 20; n++)
+                {
+                    if (!doc.Undo(1)) break;
+                    if (CanonicalText(doc, null) == _guardBeforeFull)
+                    {
+                        Log.Info("text guard: the operation was undone (" + (n + 1) + " step(s))");
+                        return true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("text guard: undoing", ex);
+            }
+            return false;
+        }
+
+        private static readonly System.Text.RegularExpressions.Regex AnyField = new System.Text.RegularExpressions.Regex("\u0013[^\u0013\u0015]*\u0015");
+        private static readonly System.Text.RegularExpressions.Regex NotText = new System.Text.RegularExpressions.Regex("[\\s\u0001\u0002\u0005\u0007\u0008\u000B\u000C\u00A0]");
+
+        /// <summary>
+        /// The document's text as the guard compares it: without fields (numbers, references, equation objects,
+        /// markers), pictures, Word equations, white space and the excluded ranges.
+        /// </summary>
+        internal static string CanonicalText(Word.Document doc, List<int[]> exclude)
+        {
+            var ranges = new List<int[]>();
+            if (exclude != null) ranges.AddRange(exclude);
+            try { foreach (Word.OMath m in doc.OMaths) ranges.Add(new[] { m.Range.Start, m.Range.End }); } catch (COMException) { }
+            ranges.Sort((a, b) => a[0].CompareTo(b[0]));
+            var sb = new System.Text.StringBuilder();
+            int pos = 0, end = doc.Content.End;
+            foreach (var r in ranges)
+            {
+                if (r[1] <= pos) continue;
+                if (r[0] > pos) sb.Append(doc.Range(pos, Math.Min(r[0], end)).Text ?? "");
+                pos = Math.Max(pos, r[1]);
+            }
+            if (pos < end) sb.Append(doc.Range(pos, end).Text ?? "");
+            var text = sb.ToString();
+            for (int guard = 0; guard < 50; guard++)
+            {
+                var next = AnyField.Replace(text, "");
+                if (next == text) break;
+                text = next;
+            }
+            text = text.Replace("\u0013", "").Replace("\u0014", "").Replace("\u0015", "");
+            return NotText.Replace(text, "");
         }
 
         /// <summary>Where the operation's single undo record was found closed (diagnosis: one Ctrl+Z must undo it all).</summary>

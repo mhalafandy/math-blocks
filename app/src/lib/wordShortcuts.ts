@@ -159,6 +159,10 @@ export async function convertAllLatex(document?: string, o: { fromWord?: boolean
     }
     await backupIfMany(found.fullName, items.length);
     const r = items.length ? await connector.request("replaceRanges", { document: found.fullName, items, undoLabel: "Convert LaTeX to equations" }, 600_000) : { replaced: 0, skipped: 0 };
+    if ("guardFailed" in r && r.guardFailed) {
+      const { guardMessage } = await import("./docOps");
+      return say(guardMessage("Convert LaTeX", r.guardFailed, !!r.guardRestored), "error");
+    }
     say(
       `Converted ${r.replaced} LaTeX expression(s)${bad ? `; ${bad} with errors left as text` : ""}${r.skipped ? `; ${r.skipped} changed meanwhile and were skipped` : ""}${why ? `; skipped: ${why}` : ""}`,
       bad || r.skipped ? "error" : "info",

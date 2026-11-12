@@ -614,7 +614,7 @@ namespace MathBlocks.WordConnector
                 {
                     _app.ScreenUpdating = screen;
                 }
-            });
+            }, null, doc);
         }
 
         private static Dictionary<string, object> UpdateNumberFields(Word.Document doc)

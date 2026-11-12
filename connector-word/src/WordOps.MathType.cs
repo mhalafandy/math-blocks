@@ -96,7 +96,7 @@ namespace MathBlocks.WordConnector
             foreach (var o in list) if (o is Dictionary<string, object> d) items.Add(d);
             items.Sort((a, b) => Rpc.GetInt(b, "start").CompareTo(Rpc.GetInt(a, "start")));
 
-            return InOneUndo(undoLabel, () => ReplaceParagraphsCore(doc, items));
+            return InOneUndo(undoLabel, () => ReplaceParagraphsCore(doc, items), null, doc);
         }
 
         private Dictionary<string, object> ReplaceParagraphsCore(Word.Document doc, List<Dictionary<string, object>> items)

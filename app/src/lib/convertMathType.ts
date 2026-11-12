@@ -239,6 +239,12 @@ export async function convertOpenDocument(document?: string, o: { quiet?: boolea
     if (r.skipped) {
       app.notify(`${r.skipped} paragraph(s) changed while converting and were left as they were`, "error");
     }
+    if ("guardFailed" in r && r.guardFailed) {
+      const { guardMessage } = await import("./docOps");
+      app.notify(guardMessage("Convert MathType", r.guardFailed, !!r.guardRestored), "error");
+      ui.set({ busy: false, progress: null });
+      return;
+    }
     for (const e of equations) e.messages = e.messages.filter(Boolean);
     const converted = equations.filter((e) => e.status === "converted").length;
     ui.set({

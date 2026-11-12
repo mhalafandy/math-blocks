@@ -71,6 +71,11 @@ export function NumberingDialog() {
               Done in {(r.ms / 1000).toFixed(1)} s{r.backup ? `; backup ${r.backup.split(/[\\/]/).pop()}` : ""}. One Ctrl+Z in Word undoes it.
               {r.mismatches.length ? "" : " Every number shows what was planned."}
             </p>
+            {r.guardFailed && (
+              <p className="error">
+                The conversion was undone: {r.guardFailed}. {r.guardRestored ? "The document is as it was before." : "Undoing did not fully restore it — use Word's Undo or the backup."}
+              </p>
+            )}
             {r.undoBrokenAt && <p className="error">Word closed the undo record early ({r.undoBrokenAt}): it may take more than one Ctrl+Z.</p>}
             {(r.mismatches.length > 0 || r.problems.length > 0 || (r.broken?.length ?? 0) > 0) && (
               <ul className="issue-list">

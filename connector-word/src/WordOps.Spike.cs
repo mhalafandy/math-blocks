@@ -386,6 +386,24 @@ namespace MathBlocks.WordConnector
                         d.Bookmarks.ShowHidden = hidden;
                     }
                 }
+                case "guardProbe":
+                {
+                    // A whole-document change that also deletes a letter outside the equations: the text guard must
+                    // notice and undo it.
+                    return InOneUndo("Text guard probe", () =>
+                    {
+                        foreach (Word.Paragraph para in d.Paragraphs)
+                        {
+                            var t = para.Range.Text ?? "";
+                            int i = 0;
+                            while (i < t.Length && !char.IsLetter(t[i])) i++;
+                            if (i >= t.Length || para.Range.Fields.Count > 0 || para.Range.InlineShapes.Count > 0) continue;
+                            d.Range(para.Range.Start + i, para.Range.Start + i + 1).Delete();
+                            return new Dictionary<string, object> { ["deleted"] = t[i].ToString() };
+                        }
+                        return new Dictionary<string, object> { ["deleted"] = "" };
+                    }, null, d);
+                }
                 case "staleNumbers":
                 {
                     // Equation numbers out of date (as after moving equations), so Update numbers has work.

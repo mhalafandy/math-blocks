@@ -472,7 +472,6 @@ export function planInterchange(scan: InterchangeScan): InterchangePlan {
   const byStart = new Map(equations.filter((e) => e.kind === "display").map((e) => [e.start, e]));
   const markerAt = new Map(markers.map((m) => [m.start, m]));
   let warnedBeforeMarker = false;
-  const warnedNoSection = new Set<string>();
   for (const p of scan.paragraphs) {
     const planned = markerAt.get(p.start);
     const mk = planned ?? p.marker;
@@ -494,14 +493,18 @@ export function planInterchange(scan: InterchangeScan): InterchangePlan {
     const eq = byStart.get(p.start);
     // Equations with an error stay text: they get no number field and do not count.
     if (!eq || !eq.numbered || eq.invalid) continue;
+    // With section numbering, a numbered equation needs its section marker first: (4.0.1) is no number.
+    if (usesSections && chapter && section === 0) {
+      issue("error", `Missing section marker: this numbered equation comes before the first \\mbnumbering{${chapterLabel(chapter)}.n} of ${chapter.appendix ? "appendix" : "chapter"} ${chapterLabel(chapter)} — not converted (put the section marker after the section heading)`, p, 0, p.text.length);
+      eq.invalid = true;
+      delete eq.bookmark;
+      if (eq.label) defined.delete(eq.label);
+      continue;
+    }
     n++;
     if (usesMarkers && !chapter && !warnedBeforeMarker) {
       issue("warning", "Numbered equation before the first \\mbnumbering: put \\mbnumbering{…} right after the chapter heading", p, 0, p.text.length);
       warnedBeforeMarker = true;
-    }
-    if (usesSections && chapter && section === 0 && !warnedNoSection.has(chapterLabel(chapter))) {
-      issue("warning", `Missing section marker: numbered equation in ${chapter.appendix ? "appendix" : "chapter"} ${chapterLabel(chapter)} before its first \\mbnumbering{${chapterLabel(chapter)}.1}`, p, 0, p.text.length);
-      warnedNoSection.add(chapterLabel(chapter));
     }
     const prefix = chapter ? `${chapterLabel(chapter)}.${usesSections ? `${section}.` : ""}` : "";
     eq.number = `(${prefix}${n})`;

@@ -321,9 +321,9 @@ export interface AppToConnector {
   /** Whole-document backup (Flat OPC .xml in %LOCALAPPDATA%\MathBlocks\backups). */
   backupDocument: { params: DocTarget; result: { path: string } };
   /** Opens one undo record and a progress window owned by Word (document blocked). */
-  beginOperation: { params: DocTarget & { title: string; total: number; undoLabel: string }; result: { ok: true } };
+  beginOperation: { params: DocTarget & { title: string; total: number; undoLabel: string; exclude?: { start: number; end: number }[]; noGuard?: boolean }; result: { ok: true } };
   operationProgress: { params: { done: number; text?: string }; result: { cancelled: boolean } };
-  endOperation: { params: { done: number }; result: { ms: number; undoBrokenAt?: string } };
+  endOperation: { params: { done: number }; result: { ms: number; undoBrokenAt?: string; guardFailed?: string; guardRestored?: boolean } };
   retag: { params: DocTarget & { tag: string; newTag: string }; result: { found: number } };
   selectInstance: { params: DocTarget & { tag: string }; result: { found: number } };
   /** The document's MathBlocks registry (Custom XML Part), or null. */
@@ -337,7 +337,7 @@ export interface AppToConnector {
     params: DocTarget & { from: number; limit: number };
     result: { name: string; fullName: string; total: number; totalObjects: number; paragraphs: MathTypeParagraph[] };
   };
-  replaceParagraphs: { params: DocTarget & { items: MathTypeParagraph[]; undoLabel: string }; result: { replaced: number; skipped: number } };
+  replaceParagraphs: { params: DocTarget & { items: MathTypeParagraph[]; undoLabel: string }; result: { replaced: number; skipped: number; guardFailed?: string; guardRestored?: boolean } };
   activateObject: { params: DocTarget & { start: number; end: number; index: number }; result: { ok: true } };
   /** Puts the equation in its own numbered paragraph; flatOpc is its inline version. */
   numberEquation: { params: DocTarget & NumberFormat & { tag: string; flatOpc: string; expect?: string }; result: { bookmark: string; number: string } };
@@ -349,7 +349,7 @@ export interface AppToConnector {
   insertNumberMarker: { params: { chapter: number; section: number; appendix?: boolean; restartEquations?: boolean }; result: { ok: true } };
   /** Rebuilds MathBlocks numbers and references as single fields (bookmark names kept). */
   upgradeNumbering: { params: DocTarget & NumberFormat; result: { numbers: number; references: number } };
-  updateNumbers: { params: DocTarget; result: { numbers: number; references: number; broken?: BrokenReference[]; undoBrokenAt?: string } };
+  updateNumbers: { params: DocTarget; result: { numbers: number; references: number; broken?: BrokenReference[]; undoBrokenAt?: string; guardFailed?: string; guardRestored?: boolean } };
   /** The numbering marker nearest before the cursor (for "Insert section marker"). */
   markerBefore: { params: Record<string, never>; result: { chapter?: number; section?: number; appendix?: boolean; none?: boolean } };
   /** Text width (pt) of the paragraph holding the equation (tag) or the cursor: page minus margins, gutter, indents. */
@@ -371,7 +371,7 @@ export interface AppToConnector {
   /** Replaces ranges (still holding `expect`) by Flat OPC or text, one undo step. */
   replaceRanges: {
     params: DocTarget & { items: { start: number; end: number; expect?: string; flatOpc?: string; text?: string }[]; undoLabel: string };
-    result: { replaced: number; skipped: number };
+    result: { replaced: number; skipped: number; guardFailed?: string; guardRestored?: boolean };
   };
   /** Turns a MathBlocks equation into plain text (its LaTeX), selected. */
   equationToText: { params: DocTarget & { tag: string; text: string }; result: { ok: true } };

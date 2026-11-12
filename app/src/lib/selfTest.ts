@@ -438,6 +438,11 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       check("Update numbers: the numbers (diagnosis)", null, `before ${before0}; with an extra counter at the top (${stale.fields} field added) ${staleNow}; after Update numbers ${await numbersNow()}`);
       const { convertAllLatex } = await import("./wordShortcuts");
       await oneCtrlZ("Convert LaTeX", docU.name, () => convertAllLatex(undefined, { yes: true }));
+      // Text guard: a change that also deletes a letter outside the equations is undone automatically.
+      const beforeProbe = await docState();
+      const probe = await smoke("guardProbe");
+      const afterProbe = await docState();
+      check("text guard: a change that touches text outside the equations is undone automatically", !!probe.guardFailed && probe.guardRestored === true && afterProbe === beforeProbe, `deleted "${probe.deleted}"; guard: ${probe.guardFailed ?? "did not notice"}; restored ${probe.guardRestored}; document ${afterProbe === beforeProbe ? "as before" : "changed"}`);
       await smoke("save", { file: "undo test.docx" });
     });
 
@@ -461,6 +466,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const warns = r.plan.issues.filter((i) => i.severity === "warning").length;
       check("pre-flight: the counts of the convention document", c.inline === X.inline && c.display === X.display && c.numbered === X.numbered && c.references === X.references && c.markers === X.markers, `${c.inline} inline, ${c.display} display, ${c.numbered} numbered, ${c.references} references, ${c.markers} markers`);
       check("pre-flight: every deliberate error and warning is listed", errs === X.errors && warns === X.warnings, `${errs} error(s), ${warns} warning(s): ${r.plan.issues.map((i) => i.what.slice(0, 40)).join(" | ")}`);
+      check("text guard: no false alarm on the conversion", !r.guardFailed, r.guardFailed ?? "no other text changed");
       check("every planned item was written", r.failed.length === 0 && r.written === r.planned, `${r.written}/${r.planned}${r.failed.length ? `; ${r.failed.map((f) => `${f.what}: ${f.problem}`).join("; ")}` : ""}`);
       check("time per equation", null, describeResult(r));
       check("Word kept the conversion in one undo record", !r.undoBrokenAt, r.undoBrokenAt ? `closed early at: ${r.undoBrokenAt}` : "intact");
@@ -574,6 +580,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
         resN = await convertNumbering(scanN, "renumber");
       });
       const rn = resN as Awaited<ReturnType<typeof convertNumbering>> | null;
+      check("text guard: no false alarm on Convert numbering", !!rn && !rn.guardFailed, rn?.guardFailed ?? "no other text changed");
       check("every converted number shows what was planned", !!rn && rn.mismatches.length === 0 && rn.problems.length === 0, rn ? `${JSON.stringify(rn.mismatches)} ${rn.problems.join("; ")}` : "did not run");
       const shows = async (bm: string) => String((await smoke("bookmarkText", { bookmark: bm })).text).replace(/\s/g, "");
       check("MathType's bookmarks now carry the new numbers", (await shows("ZEqnNum100001")) === "(A.1.1)" && (await shows("ZEqnNum100003")) === "(A.1.3)", `ZEqnNum100001 ${await shows("ZEqnNum100001")}, ZEqnNum100003 ${await shows("ZEqnNum100003")}`);

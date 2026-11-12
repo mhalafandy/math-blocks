@@ -29,6 +29,9 @@ export interface InterchangeResult {
   tags: { kind: "inline" | "display"; tag: string; number?: string; bookmark?: string }[];
   /** References to equations that do not exist (after the final Update numbers). */
   broken?: BrokenReference[];
+  /** The text guard found other text changed and undid the conversion. */
+  guardFailed?: string;
+  guardRestored?: boolean;
 }
 
 /** The pre-flight decision (the dialog answers it; the self-test passes yes). */
@@ -97,21 +100,26 @@ export async function convertLatexDocument(o: { document?: string; fromWord?: bo
   // From the markers: (chapter.section.n) with section markers, else (chapter.n).
   const format = plan.usesMarkers ? { open: "(", close: ")", parts: plan.usesSections ? "section" : "chapter", separator: ".", restart: plan.usesSections ? "section" : "chapter", source: "markers" } : numberFormat(app.numberStyle);
   if (!o.yes) ui.show({ name: scan.name, plan, stage: "working", progress: `Writing ${items.length} item(s) into Word…` });
-  await connector.request("beginOperation", { document: scan.fullName, title: "Converting LaTeX", total: items.length, undoLabel: "Convert LaTeX" });
+  // The text guard compares everything else: the ranges written here (LaTeX → equations, references,
+  // markers) are excluded; highlighted references keep their text.
+  const exclude = items.filter((i) => i.kind !== "highlight").map((i) => ({ start: i.start, end: i.end }));
+  await connector.request("beginOperation", { document: scan.fullName, title: "Converting LaTeX", total: items.length, undoLabel: "Convert LaTeX", exclude });
   let r: { results: { id: number; ok: boolean; problem: string }[]; ms: number; broken?: BrokenReference[] };
   let undoBrokenAt = "";
+  let guard: { failed?: string; restored?: boolean } = {};
   try {
     r = await connector.request("convertInterchange", { document: scan.fullName, items, format, undoLabel: "Convert LaTeX" }, 1_800_000);
   } finally {
-    const end = await connector.request("endOperation", { done: items.length }).catch(() => ({ ms: 0, undoBrokenAt: "" }));
+    const end = await connector.request("endOperation", { done: items.length }).catch(() => ({ ms: 0, undoBrokenAt: "" }) as { ms: number; undoBrokenAt?: string; guardFailed?: string; guardRestored?: boolean });
     undoBrokenAt = end.undoBrokenAt ?? "";
+    if (end.guardFailed) guard = { failed: end.guardFailed, restored: !!end.guardRestored };
   }
   const failed = r.results.filter((x) => !x.ok).map((x) => ({ what: what.get(x.id) ?? `item ${x.id}`, problem: x.problem }));
   const okIds = new Set(r.results.filter((x) => x.ok).map((x) => x.id));
   const equations = items.filter((i) => (i.kind === "inline" || i.kind === "display") && okIds.has(i.id)).length;
   // In document order (the items' order), not the order Word wrote them in (last first).
   const tags = items.filter((i) => okIds.has(i.id)).map((i) => tagOf.get(i.id)).filter((t): t is NonNullable<typeof t> => !!t);
-  const result: InterchangeResult = { plan, written: okIds.size, planned: items.length, failed, equations, buildMs, writeMs: r.ms, tags, ...(r.broken?.length ? { broken: r.broken } : {}), ...(backup ? { backup } : {}), ...(undoBrokenAt ? { undoBrokenAt } : {}) };
+  const result: InterchangeResult = { ...(guard.failed ? { guardFailed: guard.failed, guardRestored: !!guard.restored } : {}), plan, written: okIds.size, planned: items.length, failed, equations, buildMs, writeMs: r.ms, tags, ...(r.broken?.length ? { broken: r.broken } : {}), ...(backup ? { backup } : {}), ...(undoBrokenAt ? { undoBrokenAt } : {}) };
   console.info(`[MathBlocks] Convert LaTeX: ${describeResult(result)}`);
   if (!o.yes) ui.show({ name: scan.name, plan, stage: "result", result });
   else if (o.fromWord) await tellUser(describeResult(result), failed.length ? "error" : "info");

@@ -18,6 +18,9 @@ export interface NumberingResult {
   broken?: BrokenReference[];
   undoBrokenAt?: string;
   backup?: string;
+  /** The text guard found other text changed and undid the conversion. */
+  guardFailed?: string;
+  guardRestored?: boolean;
 }
 
 /** Scans the document and plans both choices (the dialog switches between them). */
@@ -46,15 +49,19 @@ export async function convertNumbering(scan: NumberingScan, mode: NumberingMode)
   await connector.request("beginOperation", { document: scan.fullName, title: "Converting MathType numbering", total: plan.writes.length, undoLabel: "Convert MathType numbering" });
   let r: { problems: string[]; shows: Record<string, string>; ms: number; broken?: BrokenReference[] };
   let undoBrokenAt = "";
+  let guard: { failed?: string; restored?: boolean } = {};
   try {
     r = await connector.request("convertNumbering", { document: scan.fullName, items: plan.writes as unknown as Record<string, unknown>[], format: plan.format }, 1_800_000);
   } finally {
-    const end = await connector.request("endOperation", { done: plan.writes.length }).catch(() => ({ ms: 0, undoBrokenAt: "" }));
+    const end = await connector.request("endOperation", { done: plan.writes.length }).catch(() => ({ ms: 0, undoBrokenAt: "" }) as { ms: number; undoBrokenAt?: string; guardFailed?: string; guardRestored?: boolean });
     undoBrokenAt = end.undoBrokenAt ?? "";
+    if (end.guardFailed) guard = { failed: end.guardFailed, restored: !!end.guardRestored };
   }
   const mismatches = plan.changes
     .filter((c) => c.bookmark && r.shows[c.bookmark] !== undefined && r.shows[c.bookmark]!.replace(/\s+/g, "") !== c.new)
     .map((c) => ({ bookmark: c.bookmark, planned: c.new, shows: r.shows[c.bookmark]! }));
+  // Undone by the text guard: nothing changed, the number style stays.
+  if (guard.failed) return { plan, mismatches: [], problems: [], ms: r.ms, guardFailed: guard.failed, guardRestored: !!guard.restored, ...(backup ? { backup } : {}) };
   // New numbers in this document (equations numbered later, Convert LaTeX) use the same format.
   const app = useApp.getState();
   useApp.setState({ numberStyle: { ...app.numberStyle, open: "(", close: ")", chapter: plan.format.parts !== "eq", parts: plan.format.parts, separator: ".", restart: plan.format.restart, source: "markers" } });

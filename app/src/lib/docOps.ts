@@ -30,6 +30,9 @@ export interface OperationResult {
   backup?: string;
   /** Where Word closed the operation's single undo record early (diagnosis); absent when intact. */
   undoBrokenAt?: string;
+  /** The text guard found text outside the equations changed and undid the operation (where, and whether the undo restored it). */
+  guardFailed?: string;
+  guardRestored?: boolean;
 }
 
 export async function replaceInDocument(o: {
@@ -98,9 +101,14 @@ export async function replaceInDocument(o: {
     useApp.getState().notify(`Stopped: ${e instanceof Error ? e.message : String(e)}. Restoring the equations already changed…`, "error");
   }
   if (result.cancelled) result.restored = await restore(o.document, done, o.undoLabel);
-  const end = await connector.request("endOperation", { done: result.replaced }).catch(() => ({ ms: 0, undoBrokenAt: "" }));
+  const end = await connector.request("endOperation", { done: result.replaced }).catch(() => ({ ms: 0, undoBrokenAt: "" }) as { ms: number; undoBrokenAt?: string; guardFailed?: string; guardRestored?: boolean });
   result.ms = end.ms || performance.now() - t0;
   if (end.undoBrokenAt) result.undoBrokenAt = end.undoBrokenAt;
+  if (end.guardFailed) {
+    result.guardFailed = end.guardFailed;
+    result.guardRestored = !!end.guardRestored;
+    useApp.getState().notify(guardMessage(o.title, end.guardFailed, !!end.guardRestored), "error");
+  }
   console.info(`[MathBlocks] ${o.title}: ${result.replaced} equation(s) in ${Math.round(result.ms)} ms (${Math.round(result.ms / Math.max(1, result.replaced))} ms each)${result.cancelled ? `, cancelled, ${result.restored} restored` : ""}`);
   return result;
 }
@@ -129,4 +137,9 @@ export function describeOperation(r: OperationResult, what: string): string {
 export async function backupIfMany(document: string, count: number): Promise<string | undefined> {
   if (count <= BACKUP_ABOVE || !addinSupports("backupDocument")) return undefined;
   return (await connector.request("backupDocument", { document }, 120_000)).path;
+}
+
+/** The text guard undid an operation: what to tell the user. */
+export function guardMessage(what: string, where: string, restored: boolean): string {
+  return `${what} was undone: ${where}. ${restored ? "The document is as it was before." : "Undoing did not fully restore it — use Word's Undo, or the backup, and send connector.log."}`;
 }

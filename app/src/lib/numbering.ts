@@ -41,6 +41,10 @@ export async function updateNumbers() {
   if (!requireAddin("updateNumbers")) return;
   try {
     const r = await connector.request("updateNumbers", {}, SLOW);
+    if (r.guardFailed) {
+      const { guardMessage } = await import("./docOps");
+      return notify(guardMessage("Update numbers", r.guardFailed, !!r.guardRestored), "error");
+    }
     const broken = r.broken ?? [];
     notify(`Updated ${r.numbers} equation number(s) and ${r.references} reference(s)${broken.length ? `; ${broken.length} reference(s) point to an equation that no longer exists` : ""}`, broken.length ? "error" : "info");
     if (broken.length) (await import("../components/BrokenReferencesDialog")).showBrokenReferences(broken);

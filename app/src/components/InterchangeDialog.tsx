@@ -64,6 +64,11 @@ export function InterchangeDialog() {
               {s.result.equations} equation(s) written in {((s.result.buildMs + s.result.writeMs) / 1000).toFixed(1)} s —{" "}
               {s.result.equations ? Math.round((s.result.buildMs + s.result.writeMs) / s.result.equations) : 0} ms per equation (building {Math.round(s.result.buildMs)} ms, writing in Word {Math.round(s.result.writeMs)} ms). One Ctrl+Z in Word undoes it.
             </p>
+            {s.result.guardFailed && (
+              <p className="error">
+                The conversion was undone: {s.result.guardFailed}. {s.result.guardRestored ? "The document is as it was before." : "Undoing did not fully restore it — use Word's Undo or the backup, and send connector.log."}
+              </p>
+            )}
             {s.result.undoBrokenAt && <p className="error">Word closed the undo record early ({s.result.undoBrokenAt}): it may take more than one Ctrl+Z. Please send connector.log.</p>}
             {(s.result.broken?.length ?? 0) > 0 && (
               <ul className="issue-list">

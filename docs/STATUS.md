@@ -5,48 +5,52 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.110 (commit `b7ff031`), CI passed. This round's fixes are building as the next build.
+- **Published:** 0.1.110 (commit `b7ff031`), CI passed. Last round's fixes (`158f689`) and this round's
+  changes are building together as the next build.
+
+## Root cause: the "text loss" in the 0.1.108 self-test
+
+**There was no text loss in the document.** The two paragraphs that looked shortened (in the convention test
+document, after the later self-test steps) are intact in the saved files of both the 0.1.108 and the 0.1.110
+self-tests, character for character as generated.
+
+- Cause: the script I used to read the saved .docx matched Word's tab element (`<w:tab/>`) as if it were a
+  text element, and in doing so skipped the start of the next text element of the same run — so everything
+  after a tab in those paragraphs looked missing. Read with a correct extractor, both paragraphs are complete.
+- Confirmed also inside Word: the 0.1.110 self-test re-scanned the document after all later steps and still
+  found both deliberate errors in those paragraphs (check "the paragraphs with the deliberate errors are
+  unchanged by the steps above": PASS).
+- Safety net added anyway (it stays): the text guard below.
 
 ## This round
 
-**Fixes after the 0.1.110 self-test.**
+- **Text guard.** Every whole-document operation (Repair, restyle, Normalize bold, Change notation, rename,
+  Convert LaTeX, Convert numbering, Convert MathType, Update numbers, Upgrade numbering) records the document's
+  text outside equations, fields, Word equations and the ranges it is meant to change; afterwards it compares,
+  and if anything else changed it undoes itself automatically and says where.
+- **Missing section marker is an error.** With section numbering, a numbered equation before its chapter's
+  first section marker is a pre-flight error and is not converted (it used to become (4.0.1) with a warning).
+- Self-test: a probe that deletes a letter outside the equations inside an operation — the guard must undo it;
+  the interchange and numbering conversions must raise no false alarm.
 
-- Numbers were read without their opening bracket ("A.1)") when it followed a field switch directly; Convert
-  numbering therefore still found no readable MathType number, and number comparisons (Insert reference,
-  Repair, Number equation) failed. Fixed.
-- Insert section marker left the cursor in front of the hidden marker, so the next equation went into the
-  previous section. The cursor now goes after the marker.
-- Self-test: broken-reference check adjusted to the snippet window; the Update numbers undo check now reports
-  the numbers at each step (to find out why it sees no change).
-
-**Commits:** the commit "Fix number brackets and cursor after section marker…" (this round).
+**Commits:** this round's commit "Text guard on whole-document operations; missing section marker is an error".
 
 ## What to test (next build)
 
-1. **Self-test.** Expected:
-   - "One numbering scheme": renumber (A.1)–(A.3) → (A.1.1)–(A.1.3), no problems; MathType's references follow;
-     the pasted section adds (A.1.4) and (A.2.1); after Update numbers: (A.1.1) (A.1.2) (A.1.3) (A.1.4) (A.2.1);
-     references to old and new equations right; "keep" leaves (A.1)–(A.3).
-   - "Convert LaTeX: interchange convention document": the equation after the new section marker is (A.3.1).
-   - Insert reference / Repair: the reference shows the equation's number (these regressed in 0.1.110).
-   - "Update numbers: the numbers (diagnosis)" — send the line if "Update numbers: changed the document" fails.
+1. **Self-test.** Expected, in addition to last round's list:
+   - "text guard: a change that touches text outside the equations is undone automatically": PASS.
+   - "text guard: no false alarm on the conversion" and "…on Convert numbering": PASS.
+   - Interchange pre-flight: 6 errors, 3 warnings; the equation before chapter 4's first section marker is an
+     error and is not converted.
+   - "One numbering scheme": renumber (A.1)–(A.3) → (A.1.1)–(A.1.3), the pasted section adds (A.1.4) and (A.2.1),
+     all references right; "keep" leaves (A.1)–(A.3).
 2. **Convert numbering on a copy of the thesis** (ribbon → Convert numbering → renumber): check the old → new
-   list before confirming.
+   list before confirming. If the text guard undoes it, send the message it shows.
 
 ## Last self-test analysed
 
-**0.1.110:** 204 checks — 173 passed, 16 failed, 15 for information; spike 123 checks, 0 failed.
-
-- Now passing: inserting an equation in section 3.1 shifts the later numbers and references follow; the
-  deliberate-error paragraphs are unchanged (the text missing in the 0.1.108 test document was an artefact of
-  my script reading the saved file, not real damage); the broken-reference list finds the deleted equation.
-- Failures and causes:
-  - 13 checks (One numbering scheme, Insert reference, Repair's reference check): numbers read as "A.1)" —
-    the opening bracket was taken as part of a field switch. Fixed.
-  - "An equation after the new section marker is numbered (A.3.1)": the cursor stayed before the marker. Fixed.
-  - "Update numbers lists the reference…": the list was right; the check looked for words outside the
-    snippet window. Adjusted.
-  - "Update numbers: changed the document": still no change seen; diagnosis added.
+**0.1.110** (analysed last round): 204 checks — 173 passed, 16 failed; causes fixed in 0.1.111 (number
+brackets, cursor after a section marker, broken-reference snippet check). No newer report yet.
 
 ## Waiting for the owner
 
@@ -56,8 +60,8 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 ## Known problems
 
 - Writing equations into Word takes about 0.3 s per equation (150 equations ≈ 45 s); could be optimised.
-- The Update numbers undo check sees no change in its test document (cause being diagnosed; the Update numbers
-  command itself works — numbers shift and references follow in the interchange checks).
+- The Update numbers undo check sees no change in its test document; diagnosis line added (the command itself
+  works — numbers shift and references follow in the interchange checks).
 
 ## Next
 
@@ -69,6 +73,7 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## History
 
+- **Round after 0.1.110** — Number brackets read correctly; cursor after an inserted section marker (in the next build).
 - **0.1.110** — Equation numbers read from the button fields' display text; Section marker at the cursor;
   readable broken-reference snippets; self-test fixes.
 - **0.1.108** — Convert numbering (MathType → MathBlocks: keep, or renumber to chapter.section.equation);

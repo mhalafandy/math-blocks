@@ -80,7 +80,7 @@ thesis template).
 - The numbers come from the markers, never from typed text: \`\\mbnumbering{3}\` after the chapter
   heading, then \`\\mbnumbering{3.1}\`, \`\\mbnumbering{3.2}\`… after each section heading (appendix sections
   too: \`\\mbnumbering{A}\`, then \`\\mbnumbering{A.1}\`…). A numbered equation before its chapter's first
-  section marker is reported ("missing section marker").
+  section marker is an error in the pre-flight and is not converted ("missing section marker").
 
 ### Labels are the equation numbers
 
