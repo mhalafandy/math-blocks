@@ -309,14 +309,6 @@ export function PanelApp() {
           <button className="primary panel-apply" onClick={() => void apply()} disabled={eq.errors > 0} title={display ? "Ctrl+Enter" : "Enter"}>
             {info?.linked ? "Update everywhere" : "Apply"}
           </button>
-          <span
-            className="panel-grip"
-            title="Drag to change the width"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              void import("@tauri-apps/api/window").then((m) => m.getCurrentWindow().startResizeDragging("East")).catch(() => undefined);
-            }}
-          />
         </div>
       </div>
       <QuickStyleBar />

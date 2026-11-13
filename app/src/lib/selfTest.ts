@@ -1259,6 +1259,54 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       check("windows that came forward not by a self-test step", null, describeActivations(outside));
     }
 
+    section = "Every palette entry in Word, checked as it prints (inline and display, PDF)";
+    await step("print check", async () => {
+      const { printEntries, printParagraphs } = await import("./printCheck");
+      const { analysePrint, contactSheet } = await import("./printCheckPdf");
+      const { interchangeDocx } = await import("./interchangeFixture");
+      const { toBase64, loadFonts, classicStyle } = await import("./render");
+      const { activeStyle } = await import("./docStyle");
+      const { renderTile, SYMBOL_CELL, STRUCTURE_CELL } = await import("./tiles");
+      const entries = printEntries();
+      const docP = await smoke("openDocx", { file: "print check.docx", base64: toBase64(interchangeDocx(printParagraphs(entries))) });
+      const { convertLatexDocument } = await import("./latexInterchangeRun");
+      const t0 = performance.now();
+      const r = await convertLatexDocument({ yes: true });
+      check(`Convert LaTeX wrote every entry inline and as a display equation (${entries.length} entries)`, !!r && r.equations === 2 * entries.length && r.failed.length === 0, r ? `${r.equations} equation(s), ${r.failed.length} not written${r.failed.length ? `: ${r.failed.slice(0, 5).map((f) => `${f.what}: ${f.problem}`).join("; ")}` : ""}; ${Math.round((performance.now() - t0) / 1000)} s` : "did not run");
+      await smoke("save", { file: "print check.docx" });
+      const pdf = (await smoke("exportPdf", { file: "print check.pdf" })) as { path: string; pages: number };
+      const bytes = Uint8Array.from(atob(((await smoke("readFile", { file: "print check.pdf" })) as { base64: string }).base64), (c) => c.charCodeAt(0));
+      const fonts = await loadFonts();
+      const save = async (file: string, dataUrl: string) => void (await smoke("writeFile", { file, base64: dataUrl.slice(dataUrl.indexOf(",") + 1) }));
+      const { rows, pages } = await analysePrint(bytes, entries, { fonts, style: classicStyle(), mathStyle: activeStyle(), sizePt: useApp.getState().equationSizePt, save });
+      for (const row of rows) {
+        const cell = /\\begin|\\frac|\\sqrt|\\sum|\\int|\\prod|\\lim|\\left|\\over|\\under|[_^]/.test(row.entry.latex) ? STRUCTURE_CELL : SYMBOL_CELL;
+        try {
+          row.tile = renderTile(row.entry.latex, cell, { fonts, style: classicStyle(), mathStyle: activeStyle() }).svg;
+        } catch {
+          row.tile = "";
+        }
+      }
+      const sheet = contactSheet(rows, `MathBlocks print check — ${new Date().toLocaleString()}`);
+      await smoke("writeFile", { file: "print/contact-sheet.html", text: sheet });
+      check("PDF rendered to page images (print/page-NNN.png) and the contact sheet written (print/contact-sheet.html)", pages > 0, `${pages} page(s); ${pdf.path}`);
+      const flagged = rows.filter((x) => x.inline.flags.length || x.display.flags.length);
+      const count = (f: string) => rows.filter((x) => x.inline.flags.includes(f as never) || x.display.flags.includes(f as never)).length;
+      for (const f of ["not converted", "empty", "missing glyph", "clipped", "touches its neighbours", "off the baseline", "different size"]) check(`entries flagged “${f}”`, null, String(count(f)));
+      check(
+        "every palette entry printed faithfully (no flags; see print/contact-sheet.html)",
+        flagged.length === 0,
+        flagged
+          .slice(0, 25)
+          .map((x) => `${x.entry.name} [${[...new Set([...x.inline.flags.map((f) => `inline ${f}`), ...x.display.flags.map((f) => `display ${f}`)])].join(", ")}]`)
+          .join(" | ") || "none flagged",
+      );
+      // The square root, as MathType draws it: Symbol's radical and its extender bar.
+      const root = rows.find((x) => x.entry.latex === "\\sqrt{x}" || x.entry.latex.startsWith("\\sqrt{"));
+      if (root) check("square root printed (inline and display) without flags", !root.inline.flags.length && !root.display.flags.length, [...root.inline.flags, ...root.display.flags].join(", ") || "ok");
+      void docP;
+    });
+
     section = "Palette tiles: drawn by math-render in the document style, on this PC's fonts";
     await step("palette tiles", async () => {
       const { ALL_ITEMS, GROUPS } = await import("./palette");

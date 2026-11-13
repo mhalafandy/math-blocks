@@ -729,37 +729,61 @@ function delimited(open: string, close: string, parts: Row[], separator: string 
 
 // ------------------------------------------------------------------ radicals, accents, stacks
 
+/**
+ * A radical as MathType draws it: Symbol's √ with the bar of Symbol's radical extender — the same
+ * thickness and height as the sign's stroke where it ends, so they join without a step. Short contents
+ * (x, 2, a+b, x²) all get the full-size sign, so their bars sit at one height; taller contents stretch
+ * the sign vertically (the bar keeps its thickness). The index sits over the sign's short arm. Without
+ * the Symbol font: STIX's radical, its bar joined the same way.
+ */
 function radical(bodyRow: Row, index: Row | undefined, c: Ctx): Box {
   const body = layoutRow(bodyRow, c);
-  const m = c.fonts.math;
-  const t = c.st.rule * c.s;
-  const gap = c.st.radicalGap * c.s;
-  const need = body.h + body.d + gap + t;
-  let g = charGlyph(m, "√");
+  const symFont = c.fonts.symbol && c.st.useSymbolFont ? c.fonts.symbol : undefined;
+  const sym = symFont ? symbolGlyph(symFont, "√") : null;
+  // Symbol's radical extender (code 0x60): its ink is the bar; its top is the sign's top.
+  const ex = symFont ? (charGlyph(symFont, String.fromCharCode(0xf060)) ?? charGlyph(symFont, "`")) : null;
+  const useSymbol = !!sym && !!ex && ex.h + ex.d > 0 && ex.h + ex.d < 0.15;
+  if (useSymbol) c.used?.add("symbol");
+  let g = useSymbol ? sym! : charGlyph(c.fonts.math, "√");
   if (!g) return body;
+  const s = c.s;
+  // Bar thickness: the extender's own (Symbol), or the sign's stroke at its top (STIX: the rule setting).
+  const t = useSymbol ? (ex!.h + ex!.d) * s : c.st.rule * s;
+  // Measured on the ink (not the boxes), a smaller clearance does: MathType's is about 0.05 em.
+  const gap = (useSymbol ? Math.min(c.st.radicalGap, 0.05) : c.st.radicalGap) * s;
+  const below = body.d + 0.02 * s;
+  // Clear of the contents' ink, accents included (a harpoon's ink can rise above its box).
+  const inkTop = body.items.length ? Math.max(body.h, inkOf(body).top) : body.h;
+  const needTop = inkTop + gap + t;
   let sy = 1;
-  const variants = [g, ...[1, 2, 3].map((i) => namedGlyph(m, `uni221A.s${i}`)).filter((x): x is GlyphInfo => !!x)];
-  const fit = variants.find((v) => (v.h + v.d) * c.s >= need);
-  if (fit) g = fit;
-  else {
-    g = variants[variants.length - 1]!;
-    sy = need / ((g.h + g.d) * c.s);
+  if (!useSymbol) {
+    const variants = [g, ...[1, 2, 3].map((i) => namedGlyph(c.fonts.math, `uni221A.s${i}`)).filter((x): x is GlyphInfo => !!x)];
+    g = variants.find((v) => (v.h + v.d) * s >= needTop + below) ?? variants[variants.length - 1]!;
   }
-  // Top of the sign = top of the bar.
-  const top = body.h + gap + t;
-  const y = top - g.h * c.s * sy;
-  const signW = g.xMax * c.s;
-  const items: Item[] = [{ k: "g", g, x: 0, y, s: c.s, sy: sy !== 1 ? sy : undefined }];
-  const bodyX = signW + 0.03 * c.s;
-  items.push(rule(signW - 0.01 * c.s, top - t, bodyX - signW + body.w + 0.06 * c.s, t));
+  const natTop = g.h * s;
+  const natBottom = g.d * s;
+  // The full-size sign when the contents fit in it; otherwise stretched to them.
+  if (needTop > natTop + 1e-9 || below > natBottom + 0.12 * s) sy = (needTop + below) / (natTop + natBottom);
+  const top = Math.max(natTop, needTop);
+  const y = top - g.h * s * sy; // the glyph's baseline, so that its top is at `top`
+  const signW = g.xMax * s;
+  const items: Item[] = [{ k: "g", g, x: 0, y, s, sy: sy !== 1 ? sy : undefined }];
+  // The bar starts a little inside the sign's last stroke (no gap, no step) and runs past the contents.
+  const bodyX = (useSymbol ? g.w : g.xMax + 0.03) * s;
+  const barX = signW - Math.min(0.6 * t, 0.03 * s);
+  const barW = bodyX + body.w + 0.05 * s - barX;
+  items.push(rule(barX, top - t, barW, t));
   items.push(...shift(body.items, bodyX, 0));
-  let box: Box = { w: bodyX + body.w + 0.08 * c.s, h: top, d: Math.max(body.d, -(y - g.d * c.s * sy)), items };
+  let box: Box = { w: barX + barW + 0.03 * s, h: top, d: Math.max(body.d, -(y - g.d * s * sy)), items };
   if (index) {
     const ic = script(script(c));
     const ib = layoutRow(index, ic);
-    const raise = y + (g.h * c.s * sy) * 0.55;
-    const ix = Math.max(0, signW * 0.55 - ib.w);
-    const shiftX = Math.max(0, ib.w - signW * 0.55);
+    // Over the short arm, clear of it: the index's right end at the arm's top (about 40 % of the sign's
+    // width), its baseline above the arm (about 60 % of the sign's height), as MathType places it.
+    const signH = (g.h + g.d) * s * sy;
+    const raise = y - g.d * s * sy + signH * 0.6;
+    const ix = Math.max(0, signW * 0.4 - ib.w);
+    const shiftX = Math.max(0, ib.w - signW * 0.4);
     box = combine([{ box: { ...box }, x: shiftX, y: 0 }, { box: ib, x: ix, y: raise + ib.d }]);
   }
   return box;

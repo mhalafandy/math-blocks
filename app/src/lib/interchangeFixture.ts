@@ -108,8 +108,8 @@ const STYLES =
   `</w:styles>`;
 
 /** The document as a .docx (A4, 2.54 cm margins: centre tab 4513, right tab 9026 twips). */
-export function interchangeDocx(paragraphs = INTERCHANGE_PARAGRAPHS): Uint8Array {
-  const body = paragraphs.map((p) => `<w:p><w:pPr><w:pStyle w:val="${STYLE_ID[p.style]}"/></w:pPr>${runs(p.text)}</w:p>`).join("");
+export function interchangeDocx(paragraphs: { style: string; text: string; keepNext?: boolean }[] = INTERCHANGE_PARAGRAPHS): Uint8Array {
+  const body = paragraphs.map((p) => `<w:p><w:pPr><w:pStyle w:val="${STYLE_ID[p.style]}"/>${p.keepNext ? "<w:keepNext/>" : ""}</w:pPr>${runs(p.text)}</w:p>`).join("");
   return zipSync({
     "[Content_Types].xml": strToU8(
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>`,

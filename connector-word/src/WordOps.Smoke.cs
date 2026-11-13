@@ -346,6 +346,22 @@ namespace MathBlocks.WordConnector
                     }
                     return new Dictionary<string, object> { ["closed"] = closed, ["saved"] = saved };
                 }
+                case "readFile":
+                {
+                    // A file the self-test wrote in its folder (a PDF), as base64. Only names inside that folder.
+                    var path = SmokePath(Rpc.GetString(p, "file"));
+                    return new Dictionary<string, object> { ["base64"] = Convert.ToBase64String(File.ReadAllBytes(path)), ["path"] = path };
+                }
+                case "writeFile":
+                {
+                    // A file of the self-test (page images, the contact sheet) in its folder or a subfolder of it.
+                    var path = SmokePath(Rpc.GetString(p, "file"));
+                    Directory.CreateDirectory(Path.GetDirectoryName(path));
+                    var b64 = Rpc.GetString(p, "base64");
+                    if (!string.IsNullOrEmpty(b64)) File.WriteAllBytes(path, Convert.FromBase64String(b64));
+                    else File.WriteAllText(path, Rpc.GetString(p, "text") ?? "", System.Text.Encoding.UTF8);
+                    return new Dictionary<string, object> { ["path"] = path };
+                }
                 case "writeReport":
                 {
                     var path = Path.Combine(SmokeFolder ?? Path.GetTempPath(), "report.txt");
@@ -356,6 +372,16 @@ namespace MathBlocks.WordConnector
                 default:
                     return SpikeOp(op, p);
             }
+        }
+
+        /// <summary>A path inside the self-test folder (relative names only: no rooted paths, no "..").</summary>
+        private string SmokePath(string name)
+        {
+            if (string.IsNullOrEmpty(name) || Path.IsPathRooted(name) || name.Contains("..")) throw new RpcException(Rpc.InvalidParams, "a file name inside the self-test folder is needed");
+            var root = Path.GetFullPath(SmokeFolder ?? Path.GetTempPath());
+            var full = Path.GetFullPath(Path.Combine(root, name));
+            if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase)) throw new RpcException(Rpc.InvalidParams, "outside the self-test folder");
+            return full;
         }
 
         private Word.Document DocNamed(Dictionary<string, object> p)

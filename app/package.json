@@ -36,6 +36,7 @@
     "@tauri-apps/plugin-updater": "^2.14.1",
     "fflate": "^0.8.3",
     "mathlive": "^0.111.4",
+    "pdfjs-dist": "4.10.38",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "zustand": "^5.0.8"
