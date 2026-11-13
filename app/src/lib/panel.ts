@@ -113,6 +113,16 @@ export async function initPanelBridge() {
     await main.show();
     await main.setFocus();
   });
+  await listen<{ source: string }>("panel:saveBlock", async (e) => {
+    // Save as block from the floating editor: the dialog in the main window, brought to the front.
+    const { getCurrentWindow } = await import("@tauri-apps/api/window");
+    const main = getCurrentWindow();
+    await main.unminimize();
+    await main.show();
+    await main.setFocus();
+    const { openSaveBlock } = await import("../components/SaveBlockDialog");
+    openSaveBlock(e.payload.source);
+  });
   await listen("panel:wordMenu", () => {
     // For an equation object: the MathBlocks equation menu (cut, copy, paste, delete, number, copy LaTeX).
     const tag = panelTarget ?? useApp.getState().editing?.tag ?? "";

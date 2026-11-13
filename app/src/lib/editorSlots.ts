@@ -79,6 +79,8 @@ export function moveSlot(field: SlotField, dir: 1 | -1): SlotAction {
     }
   }
   if (!s || s.type === "root" || !here) return null;
+  // A block's slot (or the block itself): the block's own order (blocks/session.ts).
+  if (s.command === "\\class" && /^mb[sb]-/.test(String(s.args?.[0] ?? ""))) return null;
   // Inside a kind (its frame, its accent): the kind's own rule — its empty slots, then out of the kind.
   for (let p: Atom | undefined = s; p; p = p.parent) if (isKind(p)) return null;
   const slots = slotsOf(s);

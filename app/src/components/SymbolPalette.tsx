@@ -1,4 +1,8 @@
 import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useBlocks, blockByName } from "../lib/blocks/useBlocks";
+import { previewLatex } from "../lib/blocks/model";
+import { BlockTile, searchBlocks } from "./BlocksPanel";
+import { insertBlock } from "./MathEditor";
 import { findItem, GROUPS, itemKey, plainLatex, searchPalette, type IndexedItem, type PaletteGroup } from "../lib/palette";
 import { afterUse, nextRecents, recentItems, reorderFavorites } from "../lib/paletteUse";
 import { ICON_CELL, LARGE_CELL, STRUCTURE_CELL, SYMBOL_CELL, type TileCell } from "../lib/tiles";
@@ -148,11 +152,21 @@ function SearchBox({ query, setQuery, autoFocus }: { query: string; setQuery: (q
 export function SearchResults({ query }: { query: string }) {
   const favorites = useApp((s) => s.favorites);
   const results = useMemo(() => rankedSearch(query), [query, favorites]);
-  if (results.length === 0) return <p className="empty">No symbols match “{query}”.</p>;
+  const blocks = useBlocks((s) => s.blocks);
+  const docBlocks = useBlocks((s) => s.docBlocks);
+  const blockHits = useMemo(() => searchBlocks([...docBlocks, ...blocks], query).slice(0, 8), [docBlocks, blocks, query]);
+  if (results.length === 0 && blockHits.length === 0) return <p className="empty">No symbols match “{query}”.</p>;
   const symbols = results.filter((r) => r.item.glyph);
   const templates = results.filter((r) => !r.item.glyph);
   return (
     <>
+      {blockHits.length > 0 && (
+        <div className="block-grid search-blocks" aria-label="Blocks">
+          {blockHits.map((b) => (
+            <BlockTile key={b.id} b={b} manage={false} />
+          ))}
+        </div>
+      )}
       {symbols.length > 0 && <Grid items={symbols} size="glyph" />}
       {templates.length > 0 && <Grid items={templates} size="small" />}
     </>
@@ -163,9 +177,23 @@ export function SearchResults({ query }: { query: string }) {
 function ResultList({ query }: { query: string }) {
   const favorites = useApp((s) => s.favorites);
   const results = useMemo(() => rankedSearch(query, 80), [query, favorites]);
-  if (results.length === 0) return <p className="empty">No symbols match “{query}”.</p>;
+  const blocks = useBlocks((s) => s.blocks);
+  const docBlocks = useBlocks((s) => s.docBlocks);
+  const blockHits = useMemo(() => searchBlocks([...docBlocks, ...blocks], query).slice(0, 8), [docBlocks, blocks, query]);
+  if (results.length === 0 && blockHits.length === 0) return <p className="empty">No symbols match “{query}”.</p>;
   return (
     <ul className="result-list">
+      {blockHits.map((b) => (
+        <li key={`block-${b.id}`}>
+          <button type="button" title={`Block: ${b.name}${b.description ? `\n${b.description}` : ""}`} onMouseDown={(e) => e.preventDefault()} onClick={() => insertBlock(b)}>
+            <span className="preview">
+              <MathTile latex={previewLatex(b, blockByName, "#?")} cell={STRUCTURE_CELL} />
+            </span>
+            <span className="name">{b.name}</span>
+            <span className="where">Block</span>
+          </button>
+        </li>
+      ))}
       {results.map((x) => (
         <li key={x.key}>
           <button

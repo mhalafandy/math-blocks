@@ -349,6 +349,9 @@ export interface AppToConnector {
   /** The document's style (Custom XML Part urn:mathblocks:style:v1), or null when it has none. */
   getDocumentStyle: { params: DocTarget; result: { xml: string | null; fullName: string; name: string } };
   setDocumentStyle: { params: DocTarget & { xml: string }; result: { ok: true; fullName: string } };
+  /** The document's own blocks (Custom XML Part urn:mathblocks:blocks:v1), or null when it has none. */
+  getDocumentBlocks: { params: DocTarget; result: { xml: string | null; fullName: string; name: string } };
+  setDocumentBlocks: { params: DocTarget & { xml: string }; result: { ok: true; fullName: string } };
   /** Open documents (copy style from another document). */
   listDocuments: { params: Record<string, never>; result: { documents: { name: string; fullName: string; active: boolean; hasStyle: boolean }[] } };
   ping: { params: Record<string, never>; result: { pong: true } };

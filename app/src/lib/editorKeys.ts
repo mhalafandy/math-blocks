@@ -1,7 +1,10 @@
-import { acceptSuggestion, focusedMathField, fromMathLive, insertIntoVisual, toggleBold, toMathLive } from "../components/MathEditor";
+import { acceptSuggestion, focusedMathField, insertBlock, fromMathLive, insertIntoVisual, toggleBold, toMathLive } from "../components/MathEditor";
 import { firstSuggestion, hideSuggestions } from "../components/SuggestBar";
 import { breakLineAt, CARET, setAlignmentAt, type LineResult } from "./multiline";
-import { findTrigger, kindSnippets } from "./snippets";
+import { findTrigger, kindSnippetPrefix, kindSnippets } from "./snippets";
+import { allBlocks } from "./blocks/useBlocks";
+import { useBlockSession } from "./blocks/sessionStore";
+import { sessionMove, type SessionField } from "./blocks/session";
 import { KIND_BY_MACRO } from "@mathblocks/math-core";
 import { applySnippet, type SnippetField } from "./snippetApply";
 import { exitKind, kindAt, type KindField } from "./kindExit";
@@ -235,6 +238,18 @@ export function handleEditorKey(e: KeyboardEvent): boolean {
       e.stopPropagation();
       return true;
     }
+    // A block being filled: its next / previous slot; after the last, the caret leaves the block.
+    const bs = useBlockSession.getState().session;
+    if (bs) {
+      const r = sessionMove(mf as unknown as SessionField, bs.id, bs.order, e.shiftKey ? -1 : 1);
+      if (r) {
+        lastSpace = 0;
+        e.preventDefault();
+        e.stopPropagation();
+        if (r === "done") useBlockSession.getState().set(null);
+        return true;
+      }
+    }
     if (!e.shiftKey && mf.selectionIsCollapsed) {
       const k = kindAt(mf as unknown as KindField);
       const inside = !!k && k.a < mf.position && mf.position < k.b;
@@ -268,6 +283,19 @@ export function handleEditorKey(e: KeyboardEvent): boolean {
   // Tab after a snippet trigger ("ddt", "mat3"…) expands it; otherwise Tab moves between slots.
   if (e.key === "Tab" && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && mf.selectionIsCollapsed) {
     const pos = mf.position;
+    // A block's trigger (prefix + trigger, e.g. ;ke): the typed trigger becomes the block.
+    const prefix = kindSnippetPrefix();
+    const blocks = allBlocks().filter((b) => b.trigger);
+    if (blocks.length) {
+      const hit = findTrigger((k) => (pos >= k ? mf.getValue(pos - k, pos, "latex") : ""), blocks.map((b) => ({ trigger: prefix + b.trigger, latex: b.id, name: b.name })));
+      const block = hit && blocks.find((b) => b.id === hit.snippet.latex);
+      if (hit && block) {
+        e.preventDefault();
+        e.stopPropagation();
+        insertBlock(block, { replace: [pos - hit.positions, pos] });
+        return true;
+      }
+    }
     const found = findTrigger((k) => (pos >= k ? mf.getValue(pos - k, pos, "latex") : ""));
     if (found) {
       const snippet = found.snippet;
