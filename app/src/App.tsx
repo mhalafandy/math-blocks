@@ -324,7 +324,7 @@ export function App() {
             </div>
           </section>
           {s.bottomOpen ? (
-            <HSplitter height={s.bottomHeight} min={110} max={560} onChange={(h) => s.setPrefs({ bottomHeight: h })} />
+            <HSplitter height={s.bottomHeight} min={110} max={Math.max(300, window.innerHeight - 260)} onChange={(h) => s.setPrefs({ bottomHeight: h })} />
           ) : (
             <div />
           )}

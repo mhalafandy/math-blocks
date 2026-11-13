@@ -1,4 +1,5 @@
 import type { MathNode, MathVariant, Row } from "@mathblocks/math-core";
+import { toEditorLatex } from "./kinds";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { SPACE_CHARS, toOmml } from "@mathblocks/math-omml";
 import { CLASSIC, glyphSource, renderSvg, SYMBOL_CODES, type FontSet } from "@mathblocks/math-render";
@@ -77,7 +78,8 @@ const shape = (x: unknown): string =>
 /** Support of one LaTeX template (MathLive slots #0 / #?). */
 export function supportOf(latex: string, deps: SupportDeps): SupportResult {
   const notes: string[] = [];
-  const ml = deps.validate(latex.replace(/#0/g, "x").replace(/#\?/g, "\\placeholder{}"));
+  // What MathLive gets: the editor's form (kinds as their styled wrappers), as the palette inserts it.
+  const ml = deps.validate(toEditorLatex(latex.replace(/#0/g, "x").replace(/#\?/g, "y")).replace(/\by\b/g, "\\placeholder{}"));
   const mathlive: Support = ml.length ? "unsupported" : "full";
   if (ml.length) notes.push(`MathLive: ${ml.map((e) => `${e.code}${e.arg ? ` ${e.arg}` : ""}`).join(", ")}`);
 

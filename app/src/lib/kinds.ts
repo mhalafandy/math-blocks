@@ -1,4 +1,5 @@
 import { DEFAULT_PROFILE, expandKind, KIND_BY_ID, KINDS, peelKind, styleOf, type MathNode, type NotationProfile, type Row } from "@mathblocks/math-core";
+import { groupScriptedAccents, ungroupScriptedAccents } from "./editorAccents";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 
 /**
@@ -30,8 +31,9 @@ const SLOT = "\u24C8";
 export function toEditorLatex(latex: string, profile: NotationProfile = DEFAULT_PROFILE): string {
   if (!/\\[a-zA-Z]+/.test(latex)) return latex;
   const { root } = parseLatex(latex);
-  if (!containsKind(root)) return latex;
-  return serializeLatex(wrapKinds(root, profile));
+  // Stretchy accents with an index are grouped for the editor (editorAccents.ts): the index sits beside, not under.
+  if (!containsKind(root)) return groupScriptedAccents(latex);
+  return groupScriptedAccents(serializeLatex(wrapKinds(root, profile)));
 }
 
 function containsKind(r: Row): boolean {
@@ -97,6 +99,7 @@ export interface FromEditorResult {
 
 /** What the visual editor holds → source with \pvec…; unknown structures stay as typed. */
 export function fromEditorLatex(latex: string, profile: NotationProfile = DEFAULT_PROFILE): FromEditorResult {
+  latex = ungroupScriptedAccents(latex);
   const handStyled: FromEditorResult["handStyled"] = [];
   const convert = (s: string): string => {
     let out = "";

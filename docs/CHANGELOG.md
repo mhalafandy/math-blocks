@@ -25,6 +25,14 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Changed — docked preview height; indices after accent-style vectors
+- The bottom panel's splitter drags its height (remembered; default 280 px). Fit in the docked preview fits width
+  and height and keeps fitting while the panel is resized.
+- Editor: an index after a stretchy accent (harpoon, arrow, wide hat, overline) sits beside the letter, not under
+  it; the stored LaTeX is unchanged. Palette Collection entries and vector templates insert kinds; the LaTeX
+  check offers "Convert to kinds" for hand-styled vectors.
+- Checks: `tools/accent-index-check.ts` in CI; math-render and OMML tests for the repro; more UI checks.
+
 ### Changed — references are links to their equations
 - One field per reference, `REF _MBEq_… \h \* Charformat \! \* MERGEFORMAT` (instead of MathType's GOTOBUTTON
   around REF): Ctrl+click in Word, a click in Word's PDF export. Convert LaTeX, Insert reference, Convert MathType

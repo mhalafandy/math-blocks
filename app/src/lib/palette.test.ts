@@ -71,7 +71,7 @@ describe("spacecraft conventions", () => {
   const conv = (id: string, c: Convention, v: VectorStyle = "harpoon") => conventionLatex(findEntry(id)!.item, c, v);
 
   it("switches DCM, skew matrix and quaternion between Hughes, Schaub and Markley", () => {
-    expect(conv("tab-spacecraft.dcm", "hughes")).toBe("\\mathbf{C}_{#?#?}");
+    expect(conv("tab-spacecraft.dcm", "hughes")).toBe("\\dcm{#?}{#?}");
     expect(conv("tab-spacecraft.dcm", "schaub")).toContain("\\left[");
     expect(conv("tab-spacecraft.dcm", "markley")).toBe("\\mathbf{A}");
     expect(conv("tab-spacecraft.skewop", "hughes")).toBe("#0^{\\times}");
@@ -79,11 +79,14 @@ describe("spacecraft conventions", () => {
     expect(conv("tab-spacecraft.skewop", "markley")).toContain("\\times\\right]");
   });
 
-  it("draws physical vectors in the chosen style", () => {
+  it("inserts physical vectors as the kind, whatever the vector style (the kind's style draws them)", () => {
     const styles = Object.keys(VECTOR_STYLES) as VectorStyle[];
     const forms = styles.map((v) => conv("tab-spacecraft.torque", "hughes", v));
-    expect(forms).toEqual(["\\overrightharpoon{\\mathbf{g}}", "\\vec{\\mathbf{g}}", "\\vec{g}", "\\mathbf{g}"]);
-    expect(conv("tab-spacecraft.angvelframe", "schaub", "harpoon")).toBe("\\overrightharpoon{\\boldsymbol{\\omega}}_{B/N}");
+    expect(new Set(forms)).toEqual(new Set(["\\pvec{g}"]));
+    // Frame labels are the kind's; a point label is an ordinary index.
+    expect(conv("tab-spacecraft.posrel", "hughes", "harpoon")).toBe("\\pvec[P/O]{r}");
+    expect(conv("tab-spacecraft.angvelframe", "schaub", "harpoon")).toBe("\\pvec[B/N]{\\omega}");
+    expect(conv("tab-spacecraft.cop", "hughes", "harpoon")).toBe("\\pvec{r}_{cp}");
   });
 });
 

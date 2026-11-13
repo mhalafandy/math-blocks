@@ -467,7 +467,14 @@ export function setNotationRules(convention: Convention, vector: VectorStyle, tr
   NOTATION.transpose = transpose;
 }
 
-/** A physical vector in the given style; Greek letters use \boldsymbol. */
+/**
+ * A physical vector as the palette inserts it: the kind (\pvec), drawn in the style the "physical vectors"
+ * setting gives the kind (harpoon, arrow…) and the document style. `vectorLatex` is the hand-styled form
+ * (comparison sheets, older documents).
+ */
+export const kindVector = (x: string) => `\\pvec{${x}}`;
+
+/** A physical vector hand-styled in the given style; Greek letters use \boldsymbol. */
 export function vectorLatex(x: string, style: VectorStyle): string {
   const bold = /^\\[a-zA-Z]+$/.test(x) ? `\\boldsymbol{${x}}` : `\\mathbf{${x}}`;
   if (style === "harpoon") return `\\overrightharpoon{${bold}}`;
@@ -475,7 +482,8 @@ export function vectorLatex(x: string, style: VectorStyle): string {
   if (style === "plainArrow") return `\\vec{${x}}`;
   return bold;
 }
-const expandV = (t: string, style: VectorStyle) => t.replace(/V\{([^{}]*)\}/g, (_, x: string) => vectorLatex(x, style));
+// V{x}: a physical vector — the kind, whatever the vector style (the kind's style draws it).
+const expandV = (t: string, _style: VectorStyle) => t.replace(/V\{([^{}]*)\}/g, (_, x: string) => kindVector(x));
 
 /** The LaTeX of a spacecraft entry for a convention and vector style. */
 export function conventionLatex(item: PaletteItem, convention: Convention, vector: VectorStyle): string {
@@ -493,32 +501,32 @@ function sc(id: string, name: string, keys: string, conventions: Partial<Record<
 const CHECK = "Form to confirm against your documents.";
 
 const spacecraftConventional: PaletteItem[] = [
-  sc("posrel", "Position of P relative to O", "position vector relative frame", { hughes: "V{r}_{P/O}" }),
-  sc("velrel", "Velocity of P relative to O", "velocity vector", { hughes: "V{v}_{P/O}" }),
-  sc("accrel", "Acceleration of P relative to O", "acceleration vector", { hughes: "V{a}_{P/O}" }),
-  sc("angvelframe", "Angular velocity of B relative to N", "angular velocity omega frame", { hughes: "V{\\omega}_{ba}", schaub: "V{\\omega}_{B/N}", markley: "V{\\omega}^{B/N}" }, CHECK),
+  sc("posrel", "Position of P relative to O", "position vector relative frame", { hughes: "\\pvec[P/O]{r}" }),
+  sc("velrel", "Velocity of P relative to O", "velocity vector", { hughes: "\\pvec[P/O]{v}" }),
+  sc("accrel", "Acceleration of P relative to O", "acceleration vector", { hughes: "\\pvec[P/O]{a}" }),
+  sc("angvelframe", "Angular velocity of B relative to N", "angular velocity omega frame", { hughes: "\\pvec[ba]{\\omega}", schaub: "\\pvec[B/N]{\\omega}", markley: "\\pvec{\\omega}^{B/N}" }, CHECK),
   sc("angaccframe", "Angular acceleration", "angular acceleration alpha omega dot", { hughes: "\\dot{V{\\omega}}_{ba}", schaub: "\\dot{V{\\omega}}_{B/N}", markley: "\\dot{V{\\omega}}^{B/N}" }, CHECK),
   sc("angmomc", "Angular momentum about the centre of mass", "angular momentum h", { hughes: "V{h}_{c}", schaub: "V{H}_{c}", markley: "V{H}_{c}" }),
   sc("torque", "External torque", "torque moment", { hughes: "V{g}", schaub: "V{L}", markley: "V{L}" }, "Hughes writes torques as g; Schaub and Markley as L."),
   sc("force", "External force", "force", { hughes: "V{f}", schaub: "V{F}", markley: "V{F}" }),
-  sc("basisvec", "Basis unit vector", "unit vector basis axis b1 b2 b3", { hughes: "\\hat{\\mathbf{b}}_{#?}", schaub: "\\hat{b}_{#?}", markley: "\\hat{b}_{#?}" }),
-  sc("basistriad", "Basis triad / vectrix", "vectrix frame triad basis", { hughes: "\\vec{\\mathbf{F}}_{#?}", schaub: "\\left\\{\\hat{b}\\right\\}", markley: "\\left\\{\\hat{b}\\right\\}" }),
-  sc("framecomp", "Components of a vector in a frame", "components frame column", { hughes: "\\mathbf{#0}_{#?}", schaub: "{}^{#?}\\mathbf{#0}", markley: "\\mathbf{#0}_{#?}" }),
+  sc("basisvec", "Basis unit vector", "unit vector basis axis b1 b2 b3", { hughes: "\\bvec{b}_{#?}", schaub: "\\hat{b}_{#?}", markley: "\\hat{b}_{#?}" }),
+  sc("basistriad", "Basis triad / vectrix", "vectrix frame triad basis", { hughes: "\\vectrix{F}_{#?}", schaub: "\\left\\{\\hat{b}\\right\\}", markley: "\\left\\{\\hat{b}\\right\\}" }),
+  sc("framecomp", "Components of a vector in a frame", "components frame column", { hughes: "\\cmat{#0}_{#?}", schaub: "{}^{#?}\\mathbf{#0}", markley: "\\mathbf{#0}_{#?}" }),
   sc("framederiv", "Time derivative in a frame", "frame derivative rotating inertial", { hughes: "\\overset{\\circ}{V{#0}}", schaub: "\\frac{{}^{#?}\\mathrm{d}}{\\mathrm{d}t}\\left(V{#0}\\right)", markley: "\\frac{{}^{#?}\\mathrm{d}}{\\mathrm{d}t}\\left(V{#0}\\right)" }, "Hughes: ∘ = derivative relative to the rotating frame."),
-  sc("dcm", "Direction cosine (rotation) matrix", "dcm direction cosine matrix attitude rotation", { hughes: "\\mathbf{C}_{#?#?}", schaub: "\\left[#?#?\\right]", markley: "\\mathbf{A}" }),
+  sc("dcm", "Direction cosine (rotation) matrix", "dcm direction cosine matrix attitude rotation", { hughes: "\\dcm{#?}{#?}", schaub: "\\left[#?#?\\right]", markley: "\\mathbf{A}" }),
   sc("rot1", "Rotation about axis 1", "principal rotation matrix x axis dcm", { hughes: "\\mathbf{C}_{1}(#0)=\\begin{bmatrix}1&0&0\\\\ 0&\\cos #0&\\sin #0\\\\ 0&-\\sin #0&\\cos #0\\end{bmatrix}", schaub: "\\left[M_{1}(#0)\\right]=\\begin{bmatrix}1&0&0\\\\ 0&\\cos #0&\\sin #0\\\\ 0&-\\sin #0&\\cos #0\\end{bmatrix}", markley: "\\mathbf{R}_{1}(#0)=\\begin{bmatrix}1&0&0\\\\ 0&\\cos #0&\\sin #0\\\\ 0&-\\sin #0&\\cos #0\\end{bmatrix}" }, "Passive (frame) rotation."),
   sc("rot2", "Rotation about axis 2", "principal rotation matrix y axis dcm", { hughes: "\\mathbf{C}_{2}(#0)=\\begin{bmatrix}\\cos #0&0&-\\sin #0\\\\ 0&1&0\\\\ \\sin #0&0&\\cos #0\\end{bmatrix}", schaub: "\\left[M_{2}(#0)\\right]=\\begin{bmatrix}\\cos #0&0&-\\sin #0\\\\ 0&1&0\\\\ \\sin #0&0&\\cos #0\\end{bmatrix}", markley: "\\mathbf{R}_{2}(#0)=\\begin{bmatrix}\\cos #0&0&-\\sin #0\\\\ 0&1&0\\\\ \\sin #0&0&\\cos #0\\end{bmatrix}" }, "Passive (frame) rotation."),
   sc("rot3", "Rotation about axis 3", "principal rotation matrix z axis dcm", { hughes: "\\mathbf{C}_{3}(#0)=\\begin{bmatrix}\\cos #0&\\sin #0&0\\\\ -\\sin #0&\\cos #0&0\\\\ 0&0&1\\end{bmatrix}", schaub: "\\left[M_{3}(#0)\\right]=\\begin{bmatrix}\\cos #0&\\sin #0&0\\\\ -\\sin #0&\\cos #0&0\\\\ 0&0&1\\end{bmatrix}", markley: "\\mathbf{R}_{3}(#0)=\\begin{bmatrix}\\cos #0&\\sin #0&0\\\\ -\\sin #0&\\cos #0&0\\\\ 0&0&1\\end{bmatrix}" }, "Passive (frame) rotation."),
   sc("skewop", "Skew-symmetric (cross-product) matrix of", "skew symmetric cross product matrix tilde", { hughes: "#0^{\\times}", schaub: "\\left[\\tilde{#0}\\right]", markley: "\\left[#0\\times\\right]" }),
   sc("skewfilled", "Skew-symmetric matrix of ω, filled", "skew symmetric cross product matrix omega components", { hughes: "\\boldsymbol{\\omega}^{\\times}=\\begin{bmatrix}0&-\\omega_{3}&\\omega_{2}\\\\ \\omega_{3}&0&-\\omega_{1}\\\\ -\\omega_{2}&\\omega_{1}&0\\end{bmatrix}", schaub: "\\left[\\tilde{\\omega}\\right]=\\begin{bmatrix}0&-\\omega_{3}&\\omega_{2}\\\\ \\omega_{3}&0&-\\omega_{1}\\\\ -\\omega_{2}&\\omega_{1}&0\\end{bmatrix}", markley: "\\left[\\boldsymbol{\\omega}\\times\\right]=\\begin{bmatrix}0&-\\omega_{3}&\\omega_{2}\\\\ \\omega_{3}&0&-\\omega_{1}\\\\ -\\omega_{2}&\\omega_{1}&0\\end{bmatrix}" }),
-  sc("inertiadyadic", "Inertia dyadic", "inertia dyadic tensor", { hughes: "\\vec{\\vec{\\mathbf{I}}}", schaub: "\\bar{\\bar{I}}", markley: "\\bar{\\bar{J}}" }, CHECK),
-  sc("inertiamatrix", "Inertia matrix", "inertia matrix moment", { hughes: "\\mathbf{I}", schaub: "\\left[I\\right]", markley: "\\mathbf{J}" }),
+  sc("inertiadyadic", "Inertia dyadic", "inertia dyadic tensor", { hughes: "\\dyadic{I}", schaub: "\\bar{\\bar{I}}", markley: "\\bar{\\bar{J}}" }, CHECK),
+  sc("inertiamatrix", "Inertia matrix", "inertia matrix moment", { hughes: "\\mat{I}", schaub: "\\left[I\\right]", markley: "\\mathbf{J}" }),
   sc("quatconv", "Quaternion (convention form)", "quaternion euler parameters attitude", { hughes: "\\begin{bmatrix}\\boldsymbol{\\epsilon}\\\\ \\eta\\end{bmatrix}", schaub: "\\boldsymbol{\\beta}=\\begin{bmatrix}\\beta_{0}&\\beta_{1}&\\beta_{2}&\\beta_{3}\\end{bmatrix}^{T}", markley: "\\mathbf{q}=\\begin{bmatrix}\\mathbf{q}_{1:3}\\\\ q_{4}\\end{bmatrix}" }, "Hughes and Markley: scalar last; Schaub: scalar first."),
   sc("quatprod", "Quaternion product", "quaternion product multiplication composition", { hughes: "\\mathbf{q}_{1}\\otimes\\mathbf{q}_{2}", schaub: "\\boldsymbol{\\beta}^{\\prime\\prime}\\otimes\\boldsymbol{\\beta}^{\\prime}", markley: "\\mathbf{p}\\otimes\\mathbf{q}" }, CHECK),
   sc("mrp", "Modified Rodrigues parameters", "mrp rodrigues attitude sigma", { hughes: "\\boldsymbol{\\sigma}", schaub: "\\boldsymbol{\\sigma}", markley: "\\mathbf{p}" }),
-  sc("com", "Centre-of-mass position", "centre center of mass cm", { hughes: "V{r}_{c}" }),
-  sc("cop", "Centre-of-pressure position", "centre center of pressure cp", { hughes: "V{r}_{cp}" }),
-  sc("srp", "Solar radiation pressure force", "srp solar radiation pressure force", { hughes: "V{f}_{\\mathrm{SRP}}", schaub: "V{F}_{\\mathrm{SRP}}", markley: "V{F}_{\\mathrm{SRP}}" }),
+  sc("com", "Centre-of-mass position", "centre center of mass cm", { hughes: "\\pvec{r}_{c}" }),
+  sc("cop", "Centre-of-pressure position", "centre center of pressure cp", { hughes: "\\pvec{r}_{cp}" }),
+  sc("srp", "Solar radiation pressure force", "srp solar radiation pressure force", { hughes: "V{f}_{SRP}", schaub: "V{F}_{SRP}", markley: "V{F}_{SRP}" }),
   sc("orbelems", "Classical orbital elements", "orbital elements keplerian a e i raan argument perigee true anomaly", { hughes: "\\left(a,\\,e,\\,i,\\,\\Omega,\\,\\omega,\\,\\nu\\right)", schaub: "\\left(a,\\,e,\\,i,\\,\\Omega,\\,\\omega,\\,f\\right)", markley: "\\left(a,\\,e,\\,i,\\,\\Omega,\\,\\omega,\\,\\nu\\right)" }, "Schaub writes the true anomaly as f."),
   sc("gravparam", "Gravitational parameter", "mu gravitational parameter gm", { hughes: "\\mu=GM" }),
 ];
@@ -533,11 +541,11 @@ const quaternionForms: PaletteItem[] = [
 const spacecraft: PaletteItem[] = [
   ...spacecraftConventional,
   ...quaternionForms,
-  tpl("vecbold", "\\vec{\\mathbf{#0}}", "Geometric vector / vectrix (bold with arrow)", "physical vector arrow bold vectrix frame basis"),
-  tpl("vectrixT", "\\vec{\\mathbf{#0}}^{\\mathbf{T}}", "Vectrix transpose (frame)", "vectrix frame basis hughes transpose"),
-  tpl("vecharp", "\\overrightharpoon{\\mathbf{#0}}", "Bold vector with harpoon", "vector harpoon rightharpoonup bold physical"),
-  tpl("vectrixharpT", "\\overrightharpoon{\\mathbf{#0}}^{\\mathbf{T}}", "Vectrix transpose with harpoon", "vectrix frame harpoon transpose"),
-  tpl("colmat", "\\mathbf{#0}", "Bold upright (column matrix)", "components bold matrix column mathbf"),
+  // Kinds: the document style draws them (vector style, frames, transpose).
+  tpl("vecbold", "\\vectrix{#0}", "Vectrix (frame)", "physical vector arrow bold vectrix frame basis"),
+  tpl("vectrixT", "\\vectrix{#0}^{\\T}", "Vectrix transpose (frame)", "vectrix frame basis hughes transpose"),
+  tpl("vecharp", "\\pvec{#0}", "Physical vector", "vector harpoon rightharpoonup bold physical"),
+  tpl("colmat", "\\cmat{#0}", "Column matrix", "components bold matrix column mathbf"),
   tpl("transpose", "#0^{\\mathrm{T}}", "Transpose ᵀ", "transpose T"),
   tpl("colmatsub", "\\mathbf{#0}_{#?}", "Bold with subscript", "components index"),
   tpl("unitbold", "\\hat{\\mathbf{#0}}_{#?}", "Unit vector, bold (b̂₁)", "unit vector basis axis"),

@@ -131,6 +131,22 @@ for (const size of SIZES) {
   await ctx.close();
 }
 
+/** The docked preview's white page is inside its canvas (with a margin) and nothing has to be scrolled. */
+async function previewFits(page: Page, margin = 0) {
+  return page.evaluate((m) => {
+    const c = document.querySelector(".preview-canvas") as HTMLElement;
+    const p = document.querySelector(".preview-page") as HTMLElement | null;
+    const cr = c.getBoundingClientRect();
+    const pr = p?.getBoundingClientRect();
+    return {
+      noScroll: c.scrollWidth <= c.clientWidth + 1 && c.scrollHeight <= c.clientHeight + 1,
+      inside: !!pr && pr.left >= cr.left + m && pr.right <= cr.right - m && pr.top >= cr.top + m && pr.bottom <= cr.bottom - m,
+      canvas: `${Math.round(cr.width)}×${Math.round(cr.height)}`,
+      page: pr ? `${Math.round(pr.width)}×${Math.round(pr.height)}` : "none",
+    };
+  }, margin);
+}
+
 // ------------------------------------------------------------------ large equations: editor and docked preview
 const BIG = {
   wide: "E=" + Array.from({ length: 30 }, (_, i) => `a_{${i}}x^{${i}}`).join("+"),
@@ -195,7 +211,10 @@ const BIG = {
     await page.screenshot({ path: `${out}/preview-docked-${name}.png` });
     await page.locator(".preview-bar button", { hasText: "Fit" }).click();
     await page.waitForTimeout(500);
+    const pf = await previewFits(page);
+    check(pf.noScroll && pf.inside, `docked preview, ${name} equation: Fit shows it all, width and height, without scrolling (canvas ${pf.canvas}, page ${pf.page})`);
     await page.screenshot({ path: `${out}/preview-docked-${name}-fit.png` });
+    await page.locator(".preview-bar button", { hasText: "%" }).click(); // back to 100 %: Fit off
   }
   // Side panels collapsed: the docked preview widens with the editor.
   const before = await page.evaluate(() => document.querySelector(".preview-view")?.getBoundingClientRect().width ?? 0);
@@ -205,6 +224,84 @@ const BIG = {
   const after = await page.evaluate(() => document.querySelector(".preview-view")?.getBoundingClientRect().width ?? 0);
   check(after > before + 100, `docked preview widens when the side panels are collapsed (${Math.round(before)} → ${Math.round(after)} px)`);
   await page.screenshot({ path: `${out}/preview-docked-wide-panels-collapsed.png` });
+  await ctx.close();
+}
+// ------------------------------------------------------------------ docked preview: default height, splitter
+{
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 } });
+  const page = await ctx.newPage();
+  await open(page);
+  await page.evaluate(() => {
+    localStorage.setItem("mathblocks.preview.zoom", "2");
+    localStorage.removeItem("mathblocks.prefs.v3");
+  });
+  await page.reload();
+  await page.waitForSelector("math-field", { timeout: 30000 });
+  await page.evaluate(() => {
+    const mf = document.querySelector("math-field") as unknown as HTMLElement & { value: string };
+    mf.value = "x_{i}^{2}+y_{j}^{n}=z_{k}^{2}";
+    mf.dispatchEvent(new InputEvent("input", { bubbles: true, composed: true }));
+  });
+  if (!(await page.locator(".preview-view").count())) await page.locator(".panel-tabs button", { hasText: "Preview" }).click();
+  await page.waitForTimeout(1200);
+  // The line (text width) is wider than the panel at 200 %, so it may scroll sideways; the equation itself, centred
+  // in view, and the page's height must be clear of the panel's edges, with nothing to scroll down.
+  const at200 = await page.evaluate(() => {
+    const c = document.querySelector(".preview-canvas") as HTMLElement;
+    const cr = c.getBoundingClientRect();
+    const pr = document.querySelector(".preview-page")!.getBoundingClientRect();
+    const er = document.querySelector(".preview-eq")!.getBoundingClientRect();
+    const right = cr.left + c.clientWidth;
+    const bottom = cr.top + c.clientHeight;
+    return {
+      ok: c.scrollHeight <= c.clientHeight + 1 && pr.top >= cr.top + 4 && pr.bottom <= bottom - 4 && er.left >= cr.left + 8 && er.right <= right - 8 && er.top >= cr.top + 8 && er.bottom <= bottom - 8,
+      what: `canvas ${Math.round(c.clientWidth)}×${Math.round(c.clientHeight)}, equation ${Math.round(er.width)}×${Math.round(er.height)} at ${Math.round(er.left - cr.left)},${Math.round(er.top - cr.top)}`,
+    };
+  });
+  check(at200.ok, `docked preview at the default height, 200 %: a one-line equation with indices clear of the edges (${at200.what})`);
+  await page.screenshot({ path: `${out}/preview-docked-default-200.png` });
+  // Editor and Word preview of a run of accent-style vectors with indices (generic repro), at 200 %.
+  await page.evaluate(() => {
+    const mf = document.querySelector("math-field") as unknown as HTMLElement & { value: string };
+    mf.value = "{\\overrightharpoon{\\mathbf{r}}}_{P/O}{\\overrightharpoon{\\mathbf{v}}}_{P/O}{\\overrightharpoon{\\boldsymbol{\\omega}}}_{ba}{\\overrightharpoon{\\mathbf{h}}}_{c}";
+    mf.dispatchEvent(new InputEvent("input", { bubbles: true, composed: true }));
+  });
+  await page.waitForTimeout(1200);
+  await page.locator(".canvas").screenshot({ path: `${out}/accent-index-app-editor.png` });
+  await page.locator(".preview-canvas").screenshot({ path: `${out}/accent-index-word-preview.png` });
+  // The splitter above the tabs: drag it up 150 px; the height is remembered after a reload.
+  const sp = (await page.locator(".hsplitter").boundingBox())!;
+  const h0 = await page.evaluate(() => document.querySelector(".bottom-panel")!.getBoundingClientRect().height);
+  await page.mouse.move(sp.x + sp.width / 2, sp.y + sp.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(sp.x + sp.width / 2, sp.y - 150, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+  const h1 = await page.evaluate(() => document.querySelector(".bottom-panel")!.getBoundingClientRect().height);
+  check(Math.abs(h1 - h0 - 150) <= 4, `bottom panel: the splitter drags its height (${Math.round(h0)} → ${Math.round(h1)} px)`);
+  await page.reload();
+  await page.waitForSelector("math-field", { timeout: 30000 });
+  await page.waitForTimeout(500);
+  const h2 = await page.evaluate(() => document.querySelector(".bottom-panel")?.getBoundingClientRect().height ?? 0);
+  check(Math.abs(h2 - h1) <= 2, `bottom panel: its height is remembered (${Math.round(h2)} px after a reload)`);
+  // Fit stays on while the panel is resized.
+  if (!(await page.locator(".preview-view").count())) await page.locator(".panel-tabs button", { hasText: "Preview" }).click();
+  await page.evaluate((l) => {
+    const mf = document.querySelector("math-field") as unknown as HTMLElement & { value: string };
+    mf.value = l;
+    mf.dispatchEvent(new InputEvent("input", { bubbles: true, composed: true }));
+  }, BIG.derivation);
+  await page.waitForTimeout(1200);
+  await page.locator(".preview-bar button", { hasText: "Fit" }).click();
+  const sp2 = (await page.locator(".hsplitter").boundingBox())!;
+  await page.mouse.move(sp2.x + sp2.width / 2, sp2.y + 1);
+  await page.mouse.down();
+  await page.mouse.move(sp2.x + sp2.width / 2, sp2.y + 200, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(500);
+  const refit = await previewFits(page);
+  check(refit.noScroll && refit.inside, `docked preview: Fit follows the panel when it is made lower (canvas ${refit.canvas}, page ${refit.page})`);
+  await page.screenshot({ path: `${out}/preview-docked-derivation-lower-fit.png` });
   await ctx.close();
 }
 // ------------------------------------------------------------------ a block pinned to Quick access

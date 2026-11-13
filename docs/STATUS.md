@@ -23,6 +23,49 @@ recording stays in the add-in and in the self-test, so a recurrence will name it
 order, then MathType parity. Each item below is checked in the browser by `tools/ui-check.ts` (now in CI: 222
 checks) and with screenshots.
 
+### Docked preview height; indices after accent-style vectors — built
+
+- **Bottom panel height:** the splitter above the tabs drags it (up to the window's height less 260 px, so the
+  editor keeps its room), with the arrow keys too; the height is remembered (checked across a reload). The
+  default is now 280 px (was 210; a stored 210 is moved to the new default).
+- **Fit in the docked preview** fits width *and* height with nothing to scroll (the 8-line derivation included),
+  and stays on while the panel is resized or the equation changes, until you set a zoom by hand (Fit is then
+  shown highlighted). At the default height and 200 %, a one-line equation with sub- and superscripts sits
+  clear of the panel's edges (checked: 8 px or more on every side, no vertical scroll; the line itself, 439 pt,
+  is wider than the panel at 200 % and scrolls sideways, centred on the equation).
+  ![Docked preview, default height, 200 %](images/ui/preview-docked-default-200.png)
+  ![Docked preview, 8-line derivation, Fit](images/ui/preview-docked-derivation-fit.png)
+  ![Docked preview, panel made lower, Fit follows](images/ui/preview-docked-derivation-lower-fit.png)
+- **Indices after accent-style vectors (editor display):** MathLive lays a script after a stretchy accent
+  (`\overrightharpoon`, `\overrightarrow`, `\widehat`, `\overline`…) out as a limit under the letter. The editor
+  form now groups the accent (`{\overrightharpoon{\mathbf{r}}}_{P/O}`, also inside kind wrappers), so the index
+  sits at the subscript/superscript position; the grouping is removed on the way back, so the **stored LaTeX
+  does not change** (checked for every case). `\vec`, `\hat`, `\bar` were already right. In the editor the index
+  starts after the harpoon's end: MathLive's harpoon has a minimum width a little wider than one letter. The
+  harpoon's width depends on the letter only (checked with and without `_{c}`, `_{P/O}`, `_{max}`, `^{2}`).
+  Editor (app) and Word preview of the repro:
+  ![Editor, repro](images/ui/accent-index-app-editor.png)
+  ![Word preview, repro](images/ui/accent-index-word-preview.png)
+- **Word output of the repro confirmed:** pictures/preview (math-render): each index after its letter, lower and
+  smaller, no overlaps between the vectors or the harpoons, harpoon length independent of the index
+  (`packages/math-render/test/accent-scripts.test.ts`); native equations (OMML): four `sSub` with the accent as
+  the base, no limit objects (`packages/math-omml/test/accent-scripts.test.ts`).
+- **Kinds from the palette:** the Collection entries insert kinds (`\pvec[P/O]{r}`, `\pvec[P/O]{v}`,
+  `\pvec[P/O]{a}`, `\pvec[ba]{\omega}` / per convention, `\pvec{r}_{c}`, `\pvec{r}_{cp}`, `\bvec{b}_{…}`,
+  `\vectrix{F}_{…}`, `\dyadic{I}`, `\mat{I}`, `\dcm{…}{…}`); the vector templates insert `\pvec{…}`,
+  `\vectrix{…}`, `\vectrix{…}^{\T}`, `\cmat{…}` (the duplicate "harpoon with transpose" tile is gone). The
+  palette support record validates the editor form. The Change-notation dialog's forms are unchanged: they
+  describe hand-styled forms found in a document (what to find and replace), not what the palette inserts.
+- **LaTeX check:** typed or pasted hand-styled vectors (MathType-style) get "Convert to kinds" (with what it
+  would change) instead of "No problems".
+- **Checks:** `tools/accent-index-check.ts` (CI): 13 equations and 4 harpoon-width cases in headless MathLive —
+  the index's left edge right of the accented letter's right edge, a subscript's bottom below the letter's and
+  raised into it (not hanging under it), a superscript above, no vector overlapping the previous index in a run,
+  the stored LaTeX unchanged; it fails on the old editor form (all four vectors of the repro reported). The UI
+  check adds the default-height/200 % case, Fit without scrolling for every large equation, the splitter drag,
+  the remembered height and Fit following a resize.
+  ![MathLive, repro (check's screenshot)](images/ui/accent-index-mathlive.png)
+
 ### Reference links — built (0.1.141)
 
 - **Every reference is one field:** `{ REF _MBEq_… \h \* Charformat \! \* MERGEFORMAT }` — the number as before

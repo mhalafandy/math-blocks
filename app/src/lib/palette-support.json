@@ -2846,12 +2846,6 @@
   "omml": "full",
   "roundtrip": "full"
  },
- "tab-spacecraft.vectrixharpT": {
-  "mathlive": "full",
-  "classic": "full",
-  "omml": "full",
-  "roundtrip": "full"
- },
  "tab-spacecraft.vectrixrel": {
   "mathlive": "full",
   "classic": "full",

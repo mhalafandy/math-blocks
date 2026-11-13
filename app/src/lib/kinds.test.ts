@@ -15,7 +15,7 @@ describe("notation kinds: source ⇄ editor form", () => {
 
   it("wraps kinds for the editor in their style (Hughes)", () => {
     expect(toEditorLatex("\\pvec{r}")).toBe("\\class{nk-pvec}{\\overrightharpoon{\\mathbf{r}}}");
-    expect(toEditorLatex("\\pvec[P/O]{r}")).toBe("\\class{nk-pvec}{\\overrightharpoon{\\mathbf{r}}_{P/O}}");
+    expect(toEditorLatex("\\pvec[P/O]{r}")).toBe("\\class{nk-pvec}{{\\overrightharpoon{\\mathbf{r}}}_{P/O}}");
     expect(toEditorLatex("\\dcm{b}{a}")).toBe("\\class{nk-dcm}{\\mathbf{C}_{ba}}");
     expect(toEditorLatex("\\crossmat{\\omega}")).toBe("\\class{nk-crossmat}{\\mathbf{\\omega}^{\\times}}");
   });

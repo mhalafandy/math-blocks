@@ -36,6 +36,8 @@ jobs:
         run: pnpm tsx tools/editor-keys-check.ts
       - name: Kinds in the editor (hover gives each letter's kind, headless MathLive)
         run: pnpm tsx tools/kinds-hover-check.ts
+      - name: Indices after accent-style vectors in the editor (beside the letter, not under it; headless MathLive)
+        run: pnpm tsx tools/accent-index-check.ts ui-check
       - name: UI check in the browser (every settings page at 1366x768, 125 %, 150 % and the minimum window; no old settings dialog; large equations in the editor and the docked preview; a pinned block)
         run: |
           sudo apt-get install -y fonts-liberation > /dev/null 2>&1 || true

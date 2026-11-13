@@ -70,18 +70,48 @@ export function PreviewView({ latex, display, numbered, sizePt, textWidthPt, onC
     const el = canvasRef.current?.querySelector(".preview-eq");
     el?.scrollIntoView({ block: "nearest", inline: "center" });
   }, [drawn, zoom]);
-  const step = (dir: 1 | -1) => setZoom((z) => (dir > 0 ? (ZOOMS.find((x) => x > z + 1e-9) ?? z) : ([...ZOOMS].reverse().find((x) => x < z - 1e-9) ?? z)));
+  const step = (dir: 1 | -1) => manual((z) => (dir > 0 ? (ZOOMS.find((x) => x > z + 1e-9) ?? z) : ([...ZOOMS].reverse().find((x) => x < z - 1e-9) ?? z)));
   // The line as drawn: the line width, or the equation when it is wider (it then starts at the line's start).
   const lineW = display ? avail : text;
   const fullW = drawn && "w" in drawn ? Math.max(lineW, drawn.w) : lineW;
-  /** Fit: the whole equation (and the line) in view, width and height. */
-  const fit = () => {
+  /**
+   * Fit: the whole equation (and the line) in view, width and height, with nothing to scroll. It stays on while
+   * the panel is resized or the equation changes, until the zoom is set by hand.
+   */
+  const [fitting, setFitting] = useState(false);
+  const wider = !!drawn && "w" in drawn && display && drawn.w > avail + 0.5;
+  const fitZoom = (): number | null => {
     const c = canvasRef.current;
-    if (!c || !drawn || !("w" in drawn)) return;
-    const wz = (c.clientWidth - 2 * 20 - 2 * 20 - 8) / (fullW * PX_PER_PT);
-    const hz = (c.clientHeight - 2 * 20 - 2 * 20 - 36) / (drawn.h * PX_PER_PT);
-    setZoom(Math.max(0.1, Math.min(8, Math.min(wz, hz))));
+    if (!c || !drawn || !("w" in drawn)) return null;
+    // Canvas padding 2 × 20 and page padding 2 × 20 each way; the guide label sits 18 px above the line.
+    const wz = (c.clientWidth - 2 * 20 - 2 * 20 - 4) / (fullW * PX_PER_PT);
+    const hz = (c.clientHeight - 2 * 20 - 2 * 20 - (guides ? 18 : 0) - (wider ? 28 : 0) - 4) / (drawn.h * PX_PER_PT);
+    return Math.max(0.05, Math.min(8, Math.min(wz, hz)));
   };
+  const fit = () => {
+    const z = fitZoom();
+    if (z == null) return;
+    setFitting(true);
+    setZoom(z);
+  };
+  const manual = (z: number | ((z: number) => number)) => {
+    setFitting(false);
+    setZoom(z);
+  };
+  useEffect(() => {
+    if (!fitting) return;
+    const c = canvasRef.current;
+    const refit = () => {
+      const z = fitZoom();
+      if (z != null) setZoom((old) => (Math.abs(old - z) > 1e-3 ? z : old));
+    };
+    refit();
+    if (!c || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(refit);
+    ro.observe(c);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fitting, drawn, fullW, guides, wider]);
   return (
     <div className="preview-view">
       <div className="preview-bar">
@@ -89,11 +119,11 @@ export function PreviewView({ latex, display, numbered, sizePt, textWidthPt, onC
         <span className="muted">{drawn && "w" in drawn ? `${drawn.w.toFixed(1)} × ${(drawn.h).toFixed(1)} pt, depth ${drawn.d.toFixed(1)} pt · ${sizePt} pt · ${display ? (numbered ? "numbered" : "display") : "inline"}` : ""}</span>
         <div className="spacer" />
         <button className="icon-btn" title="Smaller" onClick={() => step(-1)}>−</button>
-        <button className="link-button" title="True size (as Word shows it at 100 %)" onClick={() => setZoom(1)}>
+        <button className="link-button" title="True size (as Word shows it at 100 %)" onClick={() => manual(1)}>
           {Math.round(zoom * 100)} %
         </button>
         <button className="icon-btn" title="Larger" onClick={() => step(1)}>+</button>
-        <button className="link-button" title="Fit: the whole equation in view" onClick={fit}>
+        <button className={fitting ? "link-button on" : "link-button"} aria-pressed={fitting} title="Fit: the whole equation in view, width and height (stays on while the panel is resized)" onClick={fit}>
           Fit
         </button>
         <label className="check" title="The line width (text width, or the room beside the number) and the baseline">
@@ -122,7 +152,7 @@ export function PreviewView({ latex, display, numbered, sizePt, textWidthPt, onC
         ) : "error" in drawn ? (
           <p className="bad">{drawn.error}</p>
         ) : (
-          <div className="preview-page" style={{ width: fullW * k + 40, minHeight: drawn.h * k + 40 }}>
+          <div className="preview-page" style={{ width: fullW * k }}>
             <div className="preview-line" style={{ width: fullW * k, height: drawn.h * k }}>
               {guides && (
                 <>
@@ -140,7 +170,7 @@ export function PreviewView({ latex, display, numbered, sizePt, textWidthPt, onC
                 dangerouslySetInnerHTML={{ __html: drawn.svg.replace(/width="[\d.]+pt" height="[\d.]+pt"/, `width="${drawn.w * k}" height="${drawn.h * k}"`) }}
               />
             </div>
-            {display && drawn.w > avail + 0.5 && <p className="bad">Wider than the line by {(drawn.w - avail).toFixed(1)} pt.</p>}
+            {wider && <p className="bad">Wider than the line by {(drawn.w - avail).toFixed(1)} pt.</p>}
           </div>
         )}
       </div>

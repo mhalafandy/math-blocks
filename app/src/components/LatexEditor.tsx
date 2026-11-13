@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { applyKindRules, KIND_RULES, SUGGESTED_KIND_RULES } from "../lib/kindRules";
 import { closeBrackets, closeBracketsKeymap, completionKeymap } from "@codemirror/autocomplete";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { bracketMatching } from "@codemirror/language";
@@ -87,6 +88,12 @@ export function LatexEditor({ diagnostics }: { diagnostics: Diagnostic[] }) {
     }
   }, [latex, source]);
 
+  // Hand-styled forms the kind rules turn into kinds (MathType's bold-with-harpoon vectors, \hat{\mathbf{f}}_1…).
+  const kinds = useMemo(() => {
+    const r = applyKindRules(latex, SUGGESTED_KIND_RULES);
+    return { ...r, labels: r.applied.map((id) => KIND_RULES.find((k) => k.id === id)?.label.split(" → ")[0] ?? id) };
+  }, [latex]);
+
   const jumpTo = (d: Diagnostic) => {
     const v = view.current;
     if (!v) return;
@@ -99,7 +106,15 @@ export function LatexEditor({ diagnostics }: { diagnostics: Diagnostic[] }) {
     <div className="latex-editor">
       <div className="cm-host" ref={host} />
       <ul className="diagnostics" aria-live="polite">
-        {diagnostics.length === 0 ? (
+        {kinds.applied.length > 0 && (
+          <li className="info kinds-offer">
+            <span>Written by hand ({kinds.labels.join("; ")}): as kinds, the document style draws them and the checks understand them.</span>{" "}
+            <button type="button" className="link-button" onClick={() => useApp.getState().setLatex(kinds.latex, "external")}>
+              Convert to kinds
+            </button>
+          </li>
+        )}
+        {diagnostics.length === 0 && kinds.applied.length > 0 ? null : diagnostics.length === 0 ? (
           <li className="ok">No problems</li>
         ) : (
           diagnostics.map((d, i) => (

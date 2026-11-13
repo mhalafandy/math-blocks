@@ -177,7 +177,7 @@ const DEFAULT_PREFS: Prefs = {
   leftOpen: true,
   rightOpen: true,
   bottomOpen: true,
-  bottomHeight: 210,
+  bottomHeight: 280,
   bottomTab: "latex",
   previewDocked: true,
   zoom: 1,
@@ -212,7 +212,11 @@ const DEFAULT_PREFS: Prefs = {
 function loadPrefs(): Prefs {
   try {
     const raw = localStorage.getItem(PREFS_KEY);
-    return raw ? { ...DEFAULT_PREFS, ...(JSON.parse(raw) as Partial<Prefs>) } : DEFAULT_PREFS;
+    if (!raw) return DEFAULT_PREFS;
+    const stored = JSON.parse(raw) as Partial<Prefs>;
+    // 210 px was the old default height of the bottom panel: too low for the docked preview at 200 %.
+    if (stored.bottomHeight === 210) delete stored.bottomHeight;
+    return { ...DEFAULT_PREFS, ...stored };
   } catch {
     return DEFAULT_PREFS;
   }
