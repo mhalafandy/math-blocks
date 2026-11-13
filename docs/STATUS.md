@@ -5,7 +5,7 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.126 (commit `1c42301`), CI passed: 1c finished (every palette tile drawn by math-render in the document style) and the self-test fixes. 0.1.125 held objects steps 5–6, the trial checklist, Priority 2, the Accents page and intermediate frames.
+- **Published:** 0.1.130 (commit `a03bb6a`), CI passed: the editor round (right-click → floating editor, resizable floating editor, Space through slots, safe Backspace, editor area, print check and the radical, Word preview window, settings window). 0.1.127–0.1.129 were superseded.
 
 ## Window switching (0.1.115 self-test): cause
 
@@ -199,6 +199,7 @@ The one-day trial checklist is in [TRIAL-CHECKLIST.md](TRIAL-CHECKLIST.md).
 
 ## History
 
+- **0.1.130** — Editor round: right-click opens the floating editor; resizable floating editor; Space through slots; Backspace never erases more than one thing; editor fills its area; print check of every palette entry; radical as MathType draws it; Word preview window; one settings window.
 - **0.1.126** — 1c finished: every palette tile drawn by math-render in the document style; drag to reorder favourites; Recent 16; ranked search; one-time hint. Self-test fixes (object Cut/Delete count, PDF alt text in compressed streams).
 - **0.1.125** — Intermediate frames: frame-subscript check per document, Roman numerals upright, DCMs between indexed frames. Also carries the two entries below (their own runs were superseded).
 - **0.1.124** (not published) — Trial checklist; quick-style bar; frame-label shape per kind; Accents page.
