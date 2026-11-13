@@ -21,8 +21,9 @@ export const useNotationSettings = create<{ open: boolean; kind: string | null; 
   set: (open, kind = null) => set({ open, kind }),
 }));
 export const openNotationSettings = (kind: string | null = null) => {
-  if (openSettings("kinds")) return;
-  useNotationSettings.getState().set(true, kind);
+  // The kind to show is kept; the page opens it (Settings → Notation kinds).
+  useNotationSettings.setState({ kind });
+  openSettings("kinds");
 };
 
 const OPTIONS: { key: keyof KindStyle; label: string; values: [string, string][] }[] = [

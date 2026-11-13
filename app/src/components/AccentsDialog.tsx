@@ -13,8 +13,7 @@ import { useApp } from "../lib/store";
  */
 export const useAccents = create<{ open: boolean; set: (o: boolean) => void }>((set) => ({ open: false, set: (open) => set({ open }) }));
 export const openAccents = () => {
-  if (openSettings("accents")) return;
-  useAccents.getState().set(true);
+  openSettings("accents");
 };
 
 /** Letters that are hard for accents: thin, wide, with ascenders, italic overhang, bold, Greek. */

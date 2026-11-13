@@ -27,6 +27,8 @@ export function Modal({ title, onClose, children, width = 440, page }: { title: 
       </section>
     );
   if (inSettings) return null;
+  // A settings page's dialog outside the settings window: never the old pop-up; the settings open at its page.
+  if (page) return <RedirectToSettings page={page} />;
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       {/* Never taller than the window: the title and the button row stay visible, the body scrolls. */}
@@ -36,6 +38,15 @@ export function Modal({ title, onClose, children, width = 440, page }: { title: 
       </div>
     </div>
   );
+}
+
+/** Opens the settings at a page instead of drawing the old dialog (once, on mount). */
+function RedirectToSettings({ page }: { page: SettingsPage }) {
+  useEffect(() => {
+    // From the floating editor this asks the main window (the settings live there).
+    void import("../lib/settingsStore").then((m) => m.openSettings(page));
+  }, [page]);
+  return null;
 }
 
 interface PromptRequest {

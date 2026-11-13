@@ -9,8 +9,7 @@ import { useApp } from "../lib/store";
 /** Edit the snippets (trigger + Tab in the equation editor). */
 export const useSnippets = create<{ open: boolean; set: (o: boolean) => void }>((set) => ({ open: false, set: (open) => set({ open }) }));
 export const openSnippets = () => {
-  if (openSettings("snippets")) return;
-  useSnippets.getState().set(true);
+  openSettings("snippets");
 };
 
 export function SnippetsDialog() {

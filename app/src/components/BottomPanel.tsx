@@ -1,4 +1,5 @@
 import { useWidthMeasure } from "./WidthBar";
+import { PreviewView } from "./PreviewView";
 import { CONVENTIONS, VECTOR_STYLES, type Convention, type VectorStyle } from "../lib/palette";
 import type { MathNode, Row } from "@mathblocks/math-core";
 import { childRows } from "@mathblocks/math-core";
@@ -11,6 +12,7 @@ import { ClassicPreview } from "./ClassicPreview";
 
 const TABS: { id: BottomTab; label: string }[] = [
   { id: "latex", label: "LaTeX" },
+  { id: "preview", label: "Preview" },
   { id: "details", label: "Library" },
   { id: "symbols", label: "Symbol index" },
   { id: "structure", label: "Structure" },
@@ -46,6 +48,7 @@ export function BottomPanel({ eq }: { eq: CompiledEquation }) {
       {open && (
         <div className="panel-body">
           {tab === "latex" && <LatexEditor diagnostics={eq.diagnostics} />}
+          {tab === "preview" && <DockedPreview />}
           {tab === "details" && <div className="scroll pad"><DetailsPanel /></div>}
           {tab === "symbols" && <div className="scroll pad"><SymbolsPanel /></div>}
           {tab === "structure" && <div className="scroll pad"><StructureTree root={eq.root} /></div>}
@@ -323,4 +326,18 @@ export function NumberingSettings() {
       </p>
     </fieldset>
   );
+}
+
+/** The Word preview docked under the editor (it widens with the editor); ⧉ pops it out into its own window. */
+function DockedPreview() {
+  const s = useApp();
+  const sizePt = s.docStyle?.stored ? s.docStyle.style.global.sizePt : s.equationSizePt;
+  if (!s.previewDocked)
+    return (
+      <div className="scroll pad">
+        <p className="hint">The preview is in its own window.</p>
+        <button onClick={() => void import("../lib/previewWindow").then((m) => m.dockPreview())}>Dock it here</button>
+      </div>
+    );
+  return <PreviewView latex={s.latex} display={s.display} numbered={s.numbered} sizePt={sizePt} textWidthPt={s.textWidthPt} onPopOut={() => void import("../lib/previewWindow").then((m) => m.popOutPreview())} />;
 }

@@ -1,4 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import type { Block } from "../lib/blocks/model";
+import { kindSnippetPrefix } from "../lib/snippets";
 import { useBlocks, blockByName } from "../lib/blocks/useBlocks";
 import { previewLatex } from "../lib/blocks/model";
 import { BlockTile, searchBlocks } from "./BlocksPanel";
@@ -33,7 +35,8 @@ export function rankedSearch(query: string, limit?: number): IndexedItem[] {
   return searchPalette(query, limit, { favorites: s.favorites, use: s.paletteUse });
 }
 
-function toggleFavorite(key: string) {
+/** Pins or unpins a Quick access entry (a palette item's key, or a block: "block:<id>"). */
+export function toggleFavorite(key: string) {
   const s = useApp.getState();
   const has = s.favorites.includes(key);
   s.setPrefs({ favorites: has ? s.favorites.filter((k) => k !== key) : [...s.favorites, key] });
@@ -96,9 +99,69 @@ export function Grid({ items, size, reorder }: { items: IndexedItem[]; size: "gl
 /** Quick access (the favourites), the same everywhere: drag to reorder, right-click to unpin. */
 export function QuickAccess({ empty, max }: { empty?: ReactNode; max?: number }) {
   const favorites = useApp((s) => s.favorites);
-  const items = useMemo(() => favorites.map(findItem).filter((x): x is IndexedItem => !!x).slice(0, max), [favorites, max]);
-  if (!items.length) return <>{empty ?? null}</>;
-  return <Grid items={items} size="glyph" reorder />;
+  const blocks = useBlocks((s) => s.blocks);
+  const docBlocks = useBlocks((s) => s.docBlocks);
+  const notation = useApp((s) => `${s.spacecraftConvention}|${s.spacecraftVector}`);
+  // Palette items and pinned blocks (block:<id>), in the order pinned; a deleted block drops out.
+  const entries = useMemo(
+    () =>
+      favorites
+        .map((k): QuickEntry | null => {
+          if (k.startsWith(BLOCK_PIN)) {
+            const b = [...docBlocks, ...blocks].find((x) => x.id === k.slice(BLOCK_PIN.length));
+            return b ? { key: k, block: b } : null;
+          }
+          const x = findItem(k);
+          return x ? { key: k, item: x } : null;
+        })
+        .filter((e): e is QuickEntry => !!e)
+        .slice(0, max),
+    [favorites, max, blocks, docBlocks],
+  );
+  if (!entries.length) return <>{empty ?? null}</>;
+  return (
+    <div className="pal-grid glyph">
+      {entries.map((e) =>
+        e.block ? (
+          <PinnedBlock key={e.key} pin={e.key} b={e.block} />
+        ) : (
+          <ItemButton key={e.item!.item.conventions ? `${e.key}|${notation}` : e.key} x={e.item!} size={e.item!.item.glyph ? "glyph" : "small"} reorder />
+        ),
+      )}
+    </div>
+  );
+}
+
+export const BLOCK_PIN = "block:";
+type QuickEntry = { key: string; item?: IndexedItem; block?: Block };
+
+/** A block pinned to Quick access: its tile; click inserts it (slots to fill), drag to reorder, right-click to unpin. */
+function PinnedBlock({ pin, b }: { pin: string; b: Block }) {
+  const latex = useMemo(() => previewLatex(b, blockByName, "#?"), [b]);
+  return (
+    <button
+      type="button"
+      className="pal-item small fav pinned-block"
+      title={`Block: ${b.name}${b.trigger ? `\n${kindSnippetPrefix()}${b.trigger} Tab` : ""}\nRight-click: unpin; drag to reorder`}
+      draggable
+      onDragStart={(e) => e.dataTransfer.setData("text/x-mathblocks-fav", pin)}
+      onDragOver={(e) => e.dataTransfer.types.includes("text/x-mathblocks-fav") && e.preventDefault()}
+      onDrop={(e) => {
+        const from = e.dataTransfer.getData("text/x-mathblocks-fav");
+        if (!from) return;
+        e.preventDefault();
+        const s = useApp.getState();
+        s.setPrefs({ favorites: reorderFavorites(s.favorites, from, pin) });
+      }}
+      onClick={() => insertBlock(b)}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        toggleFavorite(pin);
+      }}
+    >
+      <MathTile latex={latex} cell={STRUCTURE_CELL} />
+    </button>
+  );
 }
 
 /** Recent: newest first, one per LaTeX, at most 16. */

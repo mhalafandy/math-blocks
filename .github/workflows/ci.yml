@@ -36,6 +36,12 @@ jobs:
         run: pnpm tsx tools/editor-keys-check.ts
       - name: Kinds in the editor (hover gives each letter's kind, headless MathLive)
         run: pnpm tsx tools/kinds-hover-check.ts
+      - name: UI check in the browser (every settings page at 1366x768, 125 %, 150 % and the minimum window; no old settings dialog; large equations in the editor and the docked preview; a pinned block)
+        run: |
+          sudo apt-get install -y fonts-liberation > /dev/null 2>&1 || true
+          (pnpm --filter @mathblocks/app exec vite --port 1420 --strictPort > vite.log 2>&1 &)
+          for i in $(seq 1 90); do curl -sf http://localhost:1420/ > /dev/null && break; sleep 1; done
+          pnpm tsx tools/ui-check.ts ui-check
       - name: MathType comparison harness (synthetic MathType document)
         run: pnpm tsx tools/mt-compare-check.ts
       - name: Blocks in the editor (slots, live repeats, nested blocks, undo)

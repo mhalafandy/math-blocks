@@ -5,7 +5,7 @@ import { DEFAULT_FAVORITES, setNotationRules, syncMyNotation, type Convention, t
 
 export type Theme = "system" | "light" | "dark";
 /** Tabs of the bottom panel under the equation canvas. */
-export type BottomTab = "latex" | "details" | "symbols" | "structure" | "style" | "omml";
+export type BottomTab = "latex" | "preview" | "details" | "symbols" | "structure" | "style" | "omml";
 export type ProfileBase = "tuned" | "word-default";
 export type VectorStyle = "arrow" | "harpoon" | "bold" | "bold-italic";
 
@@ -46,6 +46,8 @@ interface Prefs {
   bottomOpen: boolean;
   bottomHeight: number;
   bottomTab: BottomTab;
+  /** The Word preview docked in the bottom panel (else in its own window, or a floating pane in the browser). */
+  previewDocked: boolean;
   /** Equation canvas zoom factor (1 = 100%). */
   zoom: number;
   profileBase: ProfileBase;
@@ -177,6 +179,7 @@ const DEFAULT_PREFS: Prefs = {
   bottomOpen: true,
   bottomHeight: 210,
   bottomTab: "latex",
+  previewDocked: true,
   zoom: 1,
   profileBase: "tuned",
   mathFont: "Latin Modern Math",

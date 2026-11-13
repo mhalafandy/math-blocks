@@ -35,5 +35,5 @@ export function PreviewApp() {
     else document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
   if (!st) return <div className="preview-view"><p className="muted" style={{ padding: 16 }}>Waiting for the editor…</p></div>;
-  return <PreviewView latex={st.latex} display={st.display} numbered={st.numbered} sizePt={st.sizePt} textWidthPt={st.textWidthPt} />;
+  return <PreviewView latex={st.latex} display={st.display} numbered={st.numbered} sizePt={st.sizePt} textWidthPt={st.textWidthPt} onDock={() => void import("@tauri-apps/api/event").then((m) => m.emitTo("main", "preview:dock", {}))} />;
 }

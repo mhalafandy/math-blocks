@@ -35,8 +35,10 @@ export function searchBlocks(blocks: Block[], query: string): Block[] {
 export function BlockTile({ b, manage, onInsert }: { b: Block; manage: boolean; onInsert?: (b: Block) => void }) {
   const groups = useBlocks((s) => s.groups);
   const latex = useMemo(() => previewLatex(b, blockByName, "#?"), [b]);
+  const pinned = useApp((s) => s.favorites.includes(`block:${b.id}`));
   const menu: MenuItem[] = [
     { label: "Insert", onSelect: () => (onInsert ?? insertBlock)(b) },
+    { label: pinned ? "Unpin from Quick access" : "Pin to Quick access", onSelect: () => void import("./SymbolPalette").then((m) => m.toggleFavorite(`block:${b.id}`)) },
     ...(manage
       ? ([
           { label: "Edit…", onSelect: () => openEditBlock(b) },

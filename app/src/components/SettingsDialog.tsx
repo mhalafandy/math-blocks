@@ -25,7 +25,7 @@ interface PageDef {
   keys: string;
   body: () => ReactNode;
   /** A settings dialog shown as this page: open it when the page shows; its own Close closes the settings. */
-  dialog?: { isOpen: () => boolean; open: () => void; subscribe: (f: () => void) => () => void };
+  dialog?: { isOpen: () => boolean; open: () => void; close: () => void; subscribe: (f: () => void) => () => void };
 }
 
 function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
@@ -164,12 +164,12 @@ const PAGES: PageDef[] = [
     label: "Document style",
     keys: "document style italic upright labels counters roman numerals greek constants differential transpose bold presets classify check",
     body: () => <DocumentStyleDialog />,
-    dialog: { isOpen: () => useDocumentStyle.getState().open, open: () => void openDocumentStyleHere(), subscribe: (f) => useDocumentStyle.subscribe(f) },
+    dialog: { isOpen: () => useDocumentStyle.getState().open, open: () => void openDocumentStyleHere(), close: () => useDocumentStyle.getState().set({ open: false }), subscribe: (f) => useDocumentStyle.subscribe(f) },
   },
-  { id: "kinds", label: "Notation kinds", keys: "kinds vector dyadic frame dcm matrix unit vector my notation new kind style", body: () => <NotationSettings />, dialog: { isOpen: () => useNotationSettings.getState().open, open: () => useNotationSettings.getState().set(true, null), subscribe: (f) => useNotationSettings.subscribe(f) } },
-  { id: "accents", label: "Accents", keys: "accent harpoon arrow hat bar dot size stroke gap barb", body: () => <AccentsDialog />, dialog: { isOpen: () => useAccents.getState().open, open: () => useAccents.getState().set(true), subscribe: (f) => useAccents.subscribe(f) } },
+  { id: "kinds", label: "Notation kinds", keys: "kinds vector dyadic frame dcm matrix unit vector my notation new kind style", body: () => <NotationSettings />, dialog: { isOpen: () => useNotationSettings.getState().open, open: () => useNotationSettings.getState().set(true, useNotationSettings.getState().kind), close: () => useNotationSettings.getState().set(false), subscribe: (f) => useNotationSettings.subscribe(f) } },
+  { id: "accents", label: "Accents", keys: "accent harpoon arrow hat bar dot size stroke gap barb", body: () => <AccentsDialog />, dialog: { isOpen: () => useAccents.getState().open, open: () => useAccents.getState().set(true), close: () => useAccents.getState().set(false), subscribe: (f) => useAccents.subscribe(f) } },
   { id: "numbering", label: "Numbering", keys: "number numbering chapter section brackets parentheses separator restart references markers", body: () => <section className="settings-embedded"><h3>Numbering</h3><NumberingSettings /></section> },
-  { id: "snippets", label: "Snippets and shortcuts", keys: "snippets triggers tab shortcuts keys", body: () => <SnippetsDialog />, dialog: { isOpen: () => useSnippets.getState().open, open: () => useSnippets.getState().set(true), subscribe: (f) => useSnippets.subscribe(f) } },
+  { id: "snippets", label: "Snippets and shortcuts", keys: "snippets triggers tab shortcuts keys", body: () => <SnippetsDialog />, dialog: { isOpen: () => useSnippets.getState().open, open: () => useSnippets.getState().set(true), close: () => useSnippets.getState().set(false), subscribe: (f) => useSnippets.subscribe(f) } },
   { id: "palette", label: "Palette", keys: "palette symbols favourites quick access recent location top right", body: () => <PalettePage /> },
   { id: "editor", label: "Editor behaviour", keys: "editor space slot backspace double space command palette prefix zoom suggestions document forms autocomplete", body: () => <EditorPage /> },
   { id: "connection", label: "Word connection and add-in", keys: "word add-in connection confirm self-test", body: () => <ConnectionPage /> },
@@ -177,14 +177,20 @@ const PAGES: PageDef[] = [
   { id: "symbollist", label: "List of symbols", keys: "symbols nomenclature list define table sort groups columns", body: () => <SymbolListPage /> },
   { id: "benchmark", label: "Benchmark", keys: "benchmark speed timing keystrokes mathtype comparison", body: () => <BenchmarkPage /> },
   { id: "updates", label: "Updates", keys: "update version", body: () => <UpdatesPage /> },
-  { id: "recognition", label: "Screenshot to LaTeX", keys: "screenshot picture recognition api key ocr image", body: () => <RecognitionDialog />, dialog: { isOpen: () => useRecognition.getState().open, open: () => useRecognition.getState().set({ open: true }), subscribe: (f) => useRecognition.subscribe(f) } },
+  { id: "recognition", label: "Screenshot to LaTeX", keys: "screenshot picture recognition api key ocr image", body: () => <RecognitionDialog />, dialog: { isOpen: () => useRecognition.getState().open, open: () => useRecognition.getState().set({ open: true }), close: () => useRecognition.getState().set({ open: false }), subscribe: (f) => useRecognition.subscribe(f) } },
 ];
+
+const SIZE_KEY = "mathblocks.settings.size";
 
 export function SettingsDialog() {
   const { open, page, set } = useSettings();
   const [query, setQuery] = useState("");
   const def = PAGES.find((p) => p.id === page) ?? PAGES[0]!;
-  const close = () => set({ open: false });
+  // Closing the settings closes every page's dialog state too (none is left to show on its own later).
+  const close = () => {
+    for (const p of PAGES) if (p.dialog?.isOpen()) p.dialog.close();
+    set({ open: false });
+  };
   // A dialog page: open it when it shows; when its own Close is pressed, the settings close.
   const shown = useRef(false);
   useEffect(() => {
@@ -193,7 +199,7 @@ export function SettingsDialog() {
     if (!def.dialog.isOpen()) def.dialog.open();
     const off = def.dialog.subscribe(() => {
       if (def.dialog!.isOpen()) shown.current = true;
-      else if (shown.current) set({ open: false });
+      else if (shown.current) close();
     });
     if (def.dialog.isOpen()) shown.current = true;
     return off;
@@ -206,6 +212,33 @@ export function SettingsDialog() {
     return () => window.removeEventListener("keydown", key);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+  // Most of the app window by default; resizable from its corner; the size is remembered.
+  const winRef = useRef<HTMLDivElement>(null);
+  const savedSize = useMemo(() => {
+    try {
+      const v = JSON.parse(localStorage.getItem(SIZE_KEY) ?? "null") as { w: number; h: number } | null;
+      return v && v.w > 300 && v.h > 200 ? { width: v.w, height: v.h } : undefined;
+    } catch {
+      return undefined;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+  useEffect(() => {
+    const el = winRef.current;
+    if (!open || !el || typeof ResizeObserver === "undefined") return;
+    let first = true;
+    const ro = new ResizeObserver(() => {
+      // The first report is the initial size, not the user's.
+      if (first) return void (first = false);
+      try {
+        localStorage.setItem(SIZE_KEY, JSON.stringify({ w: Math.round(el.offsetWidth), h: Math.round(el.offsetHeight) }));
+      } catch {
+        // Not remembered.
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [open]);
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return PAGES;
@@ -213,8 +246,8 @@ export function SettingsDialog() {
   }, [query]);
   if (!open) return null;
   return (
-    <div className="modal-backdrop" onMouseDown={close}>
-      <div className="settings-window" role="dialog" aria-modal="true" aria-label="Settings" onMouseDown={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop settings-backdrop" onMouseDown={close}>
+      <div className="settings-window" ref={winRef} style={savedSize} role="dialog" aria-modal="true" aria-label="Settings" onMouseDown={(e) => e.stopPropagation()}>
         <nav className="settings-side">
           <input className="settings-search" type="search" placeholder="Search settings…" value={query} autoFocus onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && matches[0] && set({ page: matches[0].id })} />
           {matches.map((p) => (

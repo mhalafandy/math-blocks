@@ -17,8 +17,9 @@ export const useSettings = create<{ open: boolean; page: SettingsPage; set: (s: 
 const inPanel = () => typeof document !== "undefined" && document.documentElement.classList.contains("panel-window");
 
 /**
- * Opens the settings at a page. Returns true when the main window was asked to do it (from the floating
- * editor), so the caller opens nothing itself.
+ * Opens the settings at a page — the only way a settings page is shown (the dialogs that became pages never
+ * open on their own). Always returns true: the caller opens nothing itself (from the floating editor, the main
+ * window is asked to open it).
  */
 export function openSettings(page?: SettingsPage): boolean {
   if (inPanel()) {
@@ -27,5 +28,5 @@ export function openSettings(page?: SettingsPage): boolean {
   }
   const s = useSettings.getState();
   s.set({ open: true, page: page ?? s.page });
-  return false;
+  return true;
 }

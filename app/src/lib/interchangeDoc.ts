@@ -243,11 +243,11 @@ An index goes outside the kind: \`\\pvec{r}_1\`, \`\\bvec{f}_2\`. The transpose 
 
 Units are written with \`\\unit{…}\`: \`9.81\\unit{m/s^2}\` (drawn upright, a thin space after the number).
 Ordinary letters are written plainly: the document style gives each its kind (variable, constant, label…).
-Only for an occurrence that must differ from that, write its kind explicitly:
+Only for an occurrence that must differ from that, write its kind explicitly (Convert LaTeX accepts all of these):
 
 | Macro | Meaning |
 |---|---|
-${kinds.filter((k) => k.token && k.id !== "unit").map((k) => `| ${code(`\\${k.macro}{${k.argNames[0]}}`)} | ${k.name} |`).join("\n")}
+${kinds.filter((k) => k.token).map((k) => `| ${code(`\\${k.macro}{${k.argNames[0]}}`)} | ${k.name} |`).join("\n")}
 
 ### Structures
 

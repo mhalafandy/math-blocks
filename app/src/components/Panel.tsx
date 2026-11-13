@@ -1,4 +1,5 @@
 import { ContextMenu } from "./ContextMenu";
+import { GearIcon, PreviewIcon } from "./Icons";
 import { BlocksPanel, saveSelectionAsBlock } from "./BlocksPanel";
 import { initBlocks, useBlocks } from "../lib/blocks/useBlocks";
 import { SlotHints } from "./BlockSlots";
@@ -105,6 +106,11 @@ export function PanelApp() {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.closest?.(".panel-command")) return;
       if (handleEditorKey(e)) return;
+      if ((e.ctrlKey || e.metaKey) && e.key === ",") {
+        e.preventDefault();
+        void import("../lib/settingsStore").then((m) => m.openSettings());
+        return;
+      }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         window.dispatchEvent(new CustomEvent("mb:commands"));
@@ -236,11 +242,11 @@ export function PanelApp() {
           </div>
           {info?.linked && <span className="panel-linked" title="A linked copy: applying updates every copy">⛓ {info.linked}</span>}
           <div className="spacer" data-tauri-drag-region />
-          <button className="panel-icon" title="Settings (opens in the main window)" onClick={() => void import("../lib/settingsStore").then((m) => m.openSettings())}>
-            ⚙
+          <button className="panel-icon" title="Settings (Ctrl+,) — open in the main window" aria-label="Settings" onClick={() => void import("../lib/settingsStore").then((m) => m.openSettings())}>
+            <GearIcon />
           </button>
-          <button className="panel-icon" title="Word preview window: as Word gets it, true size, line width (Ctrl+Alt+P)" onClick={() => void import("../lib/previewWindow").then((m) => m.togglePreview())}>
-            ◫
+          <button className="panel-icon" title="Word preview window: as Word gets it, true size, line width (Ctrl+Alt+P)" aria-label="Word preview" onClick={() => void import("../lib/previewWindow").then((m) => m.togglePreview())}>
+            <PreviewIcon />
           </button>
           <button className="panel-icon" title="Word's own menu (cut, copy, paste…)" onClick={() => void send("panel:wordMenu").then(cancel)}>
             ☰

@@ -25,6 +25,17 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Changed — Word preview docked; large equations; Settings window
+- The Word preview is a tab of the bottom panel under the editor (widens with it); pop it out into its own window
+  and dock it back (remembered). Its white page grows with the equation (no more drawing on the grey); Fit.
+- The editor field grows with a large equation and the area scrolls both ways (scroll bars), the caret kept in
+  view; Fit next to the zoom. The floating editor too.
+- Settings: a gear icon and Ctrl+,; no old settings dialog can open any more (they open their Settings page);
+  the window is larger, centred, resizable and remembers its size; page buttons in a fixed footer.
+- Blocks can be pinned to Quick access (main window and floating editor).
+- LATEX-INTERCHANGE.md lists `\unit` with the explicit kinds; a test shows Convert LaTeX accepts all six.
+- `tools/ui-check.ts` in CI: settings pages at four sizes, old dialogs, large equations, docked preview, a pinned block.
+
 ### Added — list of symbols from definitions (docs/SYMBOL-LIST.md)
 - `\define{symbol}{meaning}[unit]` written after the sentence that introduces a symbol; Convert LaTeX keeps it
   as a hidden field at its place (the same mechanism as the numbering markers: no content control). Inline math

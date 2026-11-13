@@ -18,7 +18,7 @@ const PX_PER_PT = 96 / 72;
 const ZOOMS = [0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4, 6, 8];
 const ZOOM_KEY = "mathblocks.preview.zoom";
 
-export function PreviewView({ latex, display, numbered, sizePt, textWidthPt, onClose }: { latex: string; display: boolean; numbered: boolean; sizePt: number; textWidthPt: number | null; onClose?: () => void }) {
+export function PreviewView({ latex, display, numbered, sizePt, textWidthPt, onClose, onPopOut, onDock }: { latex: string; display: boolean; numbered: boolean; sizePt: number; textWidthPt: number | null; onClose?: () => void; onPopOut?: () => void; onDock?: () => void }) {
   const docStyle = useApp((s) => s.docStyle);
   const accents = useApp((s) => s.accentRules);
   const profile = useApp((s) => s.notationProfile);
@@ -70,7 +70,18 @@ export function PreviewView({ latex, display, numbered, sizePt, textWidthPt, onC
     const el = canvasRef.current?.querySelector(".preview-eq");
     el?.scrollIntoView({ block: "nearest", inline: "center" });
   }, [drawn, zoom]);
-  const step = (dir: 1 | -1) => setZoom((z) => ZOOMS[Math.max(0, Math.min(ZOOMS.length - 1, ZOOMS.findIndex((x) => x >= z - 1e-9) + dir))] ?? z);
+  const step = (dir: 1 | -1) => setZoom((z) => (dir > 0 ? (ZOOMS.find((x) => x > z + 1e-9) ?? z) : ([...ZOOMS].reverse().find((x) => x < z - 1e-9) ?? z)));
+  // The line as drawn: the line width, or the equation when it is wider (it then starts at the line's start).
+  const lineW = display ? avail : text;
+  const fullW = drawn && "w" in drawn ? Math.max(lineW, drawn.w) : lineW;
+  /** Fit: the whole equation (and the line) in view, width and height. */
+  const fit = () => {
+    const c = canvasRef.current;
+    if (!c || !drawn || !("w" in drawn)) return;
+    const wz = (c.clientWidth - 2 * 20 - 2 * 20 - 8) / (fullW * PX_PER_PT);
+    const hz = (c.clientHeight - 2 * 20 - 2 * 20 - 36) / (drawn.h * PX_PER_PT);
+    setZoom(Math.max(0.1, Math.min(8, Math.min(wz, hz))));
+  };
   return (
     <div className="preview-view">
       <div className="preview-bar">
@@ -82,9 +93,22 @@ export function PreviewView({ latex, display, numbered, sizePt, textWidthPt, onC
           {Math.round(zoom * 100)} %
         </button>
         <button className="icon-btn" title="Larger" onClick={() => step(1)}>+</button>
+        <button className="link-button" title="Fit: the whole equation in view" onClick={fit}>
+          Fit
+        </button>
         <label className="check" title="The line width (text width, or the room beside the number) and the baseline">
           <input type="checkbox" checked={guides} onChange={(e) => setGuides(e.target.checked)} /> guides
         </label>
+        {onPopOut && (
+          <button className="icon-btn" title="Pop the preview out into its own window" aria-label="Pop out" onClick={onPopOut}>
+            ⧉
+          </button>
+        )}
+        {onDock && (
+          <button className="link-button" title="Dock the preview under the editor" onClick={onDock}>
+            Dock
+          </button>
+        )}
         {onClose && (
           <button className="icon-btn" title="Close the preview" onClick={onClose}>
             ✕
@@ -98,8 +122,8 @@ export function PreviewView({ latex, display, numbered, sizePt, textWidthPt, onC
         ) : "error" in drawn ? (
           <p className="bad">{drawn.error}</p>
         ) : (
-          <div className="preview-page" style={{ width: Math.max(avail, drawn.w) * k + 40, minHeight: drawn.h * k + 40 }}>
-            <div className="preview-line" style={{ width: (display ? avail : text) * k, height: drawn.h * k }}>
+          <div className="preview-page" style={{ width: fullW * k + 40, minHeight: drawn.h * k + 40 }}>
+            <div className="preview-line" style={{ width: fullW * k, height: drawn.h * k }}>
               {guides && (
                 <>
                   <div className="preview-guide v" style={{ left: 0 }} title="Start of the line" />
@@ -112,7 +136,7 @@ export function PreviewView({ latex, display, numbered, sizePt, textWidthPt, onC
               )}
               <div
                 className="preview-eq"
-                style={{ left: display ? ((avail - drawn.w) / 2) * k : 0, width: drawn.w * k, height: drawn.h * k }}
+                style={{ left: display ? Math.max(0, (avail - drawn.w) / 2) * k : 0, width: drawn.w * k, height: drawn.h * k }}
                 dangerouslySetInnerHTML={{ __html: drawn.svg.replace(/width="[\d.]+pt" height="[\d.]+pt"/, `width="${drawn.w * k}" height="${drawn.h * k}"`) }}
               />
             </div>

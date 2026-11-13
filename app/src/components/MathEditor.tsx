@@ -159,6 +159,29 @@ function selectPlaceholderAt(mf: MathfieldElement, x: number, y: number) {
   }
 }
 
+/**
+ * Keeps the caret in view while typing: a large equation scrolls in the editor area (both ways); after each
+ * move or input the area scrolls just enough to show the caret (or the selection).
+ */
+export function revealCaret(mf: MathfieldElement) {
+  requestAnimationFrame(() => {
+    const c = mf.shadowRoot?.querySelector(".ML__caret, .ML__text-caret, .ML__selection") as HTMLElement | null;
+    c?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  });
+}
+
+/** Fit: the zoom that shows the whole equation in its scroll area (zooming out only; at most 100 %). */
+export function fitZoom(current: number, scroller: HTMLElement | null): number {
+  const mf = activeField;
+  if (!mf || !scroller) return current;
+  const w = mf.scrollWidth;
+  const h = mf.scrollHeight;
+  if (!w || !h) return current;
+  // The area's own padding (28 × 40 px) and the field's border stay around the equation.
+  const r = Math.min((scroller.clientWidth - 100) / w, (scroller.clientHeight - 80) / h);
+  return Math.max(0.05, Math.min(1, Math.floor(current * r * 100) / 100));
+}
+
 /** Where the caret is on screen (for small popups next to it). */
 function caretRect(mf: MathfieldElement): { left: number; top: number; bottom: number } {
   const c = mf.shadowRoot?.querySelector(".ML__caret, .ML__text-caret, .ML__selection") as HTMLElement | null;
@@ -551,6 +574,7 @@ export function MathEditor() {
       showQuickStyle(mf);
       suggestAtCaret(mf);
       updateBlockSession(mf);
+      revealCaret(mf);
     });
     mf.addEventListener("focusout", () => {
       clearTimeout(quickTimer);
@@ -560,6 +584,7 @@ export function MathEditor() {
     });
     mf.addEventListener("input", () => {
       updateBlockSession(mf, true);
+      revealCaret(mf);
       void import("./QuickStyleBar").then(({ useQuickStyle }) => useQuickStyle.getState().set({ at: null }));
       onInputDone(mf);
       // A kind macro that arrived raw (pasted, dropped, inserted as LaTeX: \pvec{r}_2, {\pvec{r}_2})

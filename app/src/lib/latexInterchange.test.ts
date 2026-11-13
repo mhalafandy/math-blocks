@@ -242,3 +242,13 @@ describe("Convert LaTeX: symbol definitions (\\define)", () => {
     expect(p.defines).toHaveLength(2);
   });
 });
+
+describe("Convert LaTeX: units and the explicit kinds of single symbols", () => {
+  it("accepts \\unit, \\const, \\variable, \\operator, \\lbl, \\ctr (no unknown command, no issue)", async () => {
+    const { planInterchange: plan } = await import("./latexInterchange");
+    const text = "Speed $v=3\\unit{m/s}$, $\\const{e}^{x}$, $\\variable{d}=2$, $\\operator{d}t$, $x_{\\lbl{a}}$, $y_{\\ctr{k}}$.";
+    const p = plan({ name: "f", fullName: "f", bookmarks: [], paragraphs: [{ start: 0, end: text.length, text, style: "Normal" }] });
+    expect(p.issues).toEqual([]);
+    expect(p.equations.filter((e) => !e.invalid)).toHaveLength(6);
+  });
+});

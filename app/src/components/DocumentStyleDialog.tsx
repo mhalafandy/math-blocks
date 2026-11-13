@@ -239,7 +239,7 @@ export function DocumentStyleDialog() {
               How this document's equations look. Their LaTeX never changes: saving stores the style in the document and redraws them.
               {s.document && !s.stored ? " This document has no style of its own yet: it is drawn in your default." : ""}
             </p>
-            <div style={{ maxHeight: 520, overflow: "auto", display: "grid", gap: 10 }}>
+            <div className="dialog-scroll" style={{ display: "grid", gap: 10 }}>
               <div>
                 <strong>Style: {styleLabel(d, [...STYLE_PRESETS, ...mine])}</strong>
                 {d.presetDescription ? <span className="hint"> — {d.presetDescription}</span> : null}

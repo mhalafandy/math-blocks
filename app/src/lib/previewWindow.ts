@@ -43,8 +43,54 @@ export function previewState(): PreviewState {
   };
 }
 
-/** Opens the preview (or closes it when it is open). */
+const inPanel = () => typeof document !== "undefined" && document.documentElement.classList.contains("panel-window");
+
+/** Whether the preview shows now (docked tab, browser pane; the desktop window reports itself). */
+export function previewShown(s = useApp.getState(), pane = usePreviewPane.getState().open): boolean {
+  return s.previewDocked ? s.bottomOpen && s.bottomTab === "preview" : pane;
+}
+
+/**
+ * Opens the preview (or closes it when it is open): docked in the bottom panel (the default), or in its own
+ * window when popped out (the floating editor always uses the window: the main window is behind it).
+ */
 export async function togglePreview() {
+  const s = useApp.getState();
+  if (s.previewDocked && !inPanel()) {
+    s.setPrefs(previewShown(s) ? { bottomOpen: false } : { bottomOpen: true, bottomTab: "preview" });
+    return;
+  }
+  return toggleWindow();
+}
+
+/** Pops the docked preview out into its own window (remembered). */
+export async function popOutPreview() {
+  const s = useApp.getState();
+  s.setPrefs({ previewDocked: false, ...(s.bottomTab === "preview" ? { bottomTab: "latex" as const } : {}) });
+  await showWindow();
+}
+
+/** Docks the preview back in the bottom panel (remembered); its window closes. */
+export async function dockPreview() {
+  useApp.getState().setPrefs({ previewDocked: true, bottomOpen: true, bottomTab: "preview" });
+  usePreviewPane.getState().set(false);
+  if (!isDesktop()) return;
+  const { WebviewWindow } = await import("@tauri-apps/api/webviewWindow");
+  const w = await WebviewWindow.getByLabel("preview");
+  await w?.hide();
+}
+
+async function showWindow() {
+  if (!isDesktop()) return usePreviewPane.getState().set(true);
+  const { WebviewWindow } = await import("@tauri-apps/api/webviewWindow");
+  const w = await WebviewWindow.getByLabel("preview");
+  if (!w) return;
+  await w.show();
+  await w.setFocus();
+  sendPreview(true);
+}
+
+async function toggleWindow() {
   if (!isDesktop()) {
     const p = usePreviewPane.getState();
     p.set(!p.open);
@@ -86,4 +132,6 @@ export function initPreviewSync() {
     timer = setTimeout(() => sendPreview(), 90);
   });
   void import("@tauri-apps/api/event").then((m) => m.listen("preview:ready", () => sendPreview(true))).catch(() => undefined);
+  // The preview window's Dock button.
+  if (!inPanel()) void import("@tauri-apps/api/event").then((m) => m.listen("preview:dock", () => void dockPreview())).catch(() => undefined);
 }

@@ -13,8 +13,7 @@ export const useRecognition = create<{ open: boolean; busy: boolean; set: (s: Pa
   set: (s) => set(s),
 }));
 export const openRecognitionSettings = () => {
-  if (openSettings("recognition")) return;
-  useRecognition.getState().set({ open: true });
+  openSettings("recognition");
 };
 
 export function RecognitionDialog() {

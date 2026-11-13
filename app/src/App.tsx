@@ -1,4 +1,5 @@
 import { MathPreview } from "./components/MathPreview";
+import { GearIcon, PreviewIcon } from "./components/Icons";
 import { DefineSymbolDialog, SymbolListDialog } from "./components/SymbolList";
 import { useBlocks } from "./lib/blocks/useBlocks";
 import { SaveBlockDialog } from "./components/SaveBlockDialog";
@@ -7,9 +8,9 @@ import { PreviewView } from "./components/PreviewView";
 import { SettingsDialog } from "./components/SettingsDialog";
 import { SuggestBar } from "./components/SuggestBar";
 import { BenchmarkBar } from "./components/Benchmark";
-import { acceptSuggestion } from "./components/MathEditor";
+import { acceptSuggestion, fitZoom } from "./components/MathEditor";
 import { openSettings, type SettingsPage } from "./lib/settingsStore";
-import { initPreviewSync, togglePreview, usePreviewPane } from "./lib/previewWindow";
+import { dockPreview, initPreviewSync, previewShown, togglePreview, usePreviewPane } from "./lib/previewWindow";
 import { NotationSettings } from "./components/NotationSettings";
 import { QuickStyleBar } from "./components/QuickStyleBar";
 import { WidthBar } from "./components/WidthBar";
@@ -120,6 +121,7 @@ export function App() {
       const k = e.key.toLowerCase();
       let handled = true;
       if (k === "k" || (e.shiftKey && k === "p")) st.setPaletteOpen(!st.paletteOpen);
+      else if (k === ",") openSettings();
       else if (k === "enter") void insertIntoWord();
       else if (k === "s" && e.shiftKey) useLibrary.getState().setDialog({ mode: "new", folderId: currentFolder() });
       else if (k === "s") void useLibrary.getState().saveCurrent();
@@ -146,7 +148,8 @@ export function App() {
     return () => window.removeEventListener("paste", onPasteImage, true);
   }, []);
 
-  const previewOpen = usePreviewPane((p) => p.open);
+  const paneOpen = usePreviewPane((p) => p.open);
+  const previewOpen = useApp((st) => previewShown(st, paneOpen));
   // The floating editor's ⚙ opens the settings here (its window is too small for them).
   useEffect(() => {
     let off: (() => void) | undefined;
@@ -204,11 +207,11 @@ export function App() {
           </button>
         )}
         {s.update.status === "installing" && <span className="update-pill busy">Installing update…</span>}
-        <button className="icon-btn" title="Settings: Word style, document style, kinds, accents, numbering, snippets, palette, editor, Word, backups, updates" onClick={() => openSettings()}>
-          ⚙
+        <button className="icon-btn" title="Settings (Ctrl+,)" aria-label="Settings" onClick={() => openSettings()}>
+          <GearIcon />
         </button>
-        <button className={previewOpen ? "icon-btn on" : "icon-btn"} title="Word preview: the equation as Word gets it, true size, with the line width (Ctrl+Alt+P)" onClick={() => void togglePreview()}>
-          ◫
+        <button className={previewOpen ? "icon-btn on" : "icon-btn"} title="Word preview: the equation as Word gets it, true size, with the line width (Ctrl+Alt+P)" aria-label="Word preview" onClick={() => void togglePreview()}>
+          <PreviewIcon />
         </button>
         <button
           className="icon-btn"
@@ -315,6 +318,9 @@ export function App() {
               <button className="icon-btn" title="Zoom out (Ctrl −)" onClick={() => zoomStep(-1)}>−</button>
               <button className="zoom-label" title="Reset zoom (Ctrl 0)" onClick={() => s.setPrefs({ zoom: 1 })}>{Math.round(s.zoom * 100)}%</button>
               <button className="icon-btn" title="Zoom in (Ctrl +)" onClick={() => zoomStep(1)}>+</button>
+              <button className="zoom-label" title="Fit: zoom out to show the whole equation" onClick={() => s.setPrefs({ zoom: fitZoom(s.zoom, document.querySelector(".canvas-scroll")) })}>
+                Fit
+              </button>
             </div>
           </section>
           {s.bottomOpen ? (
@@ -364,10 +370,10 @@ export function App() {
       <SuggestBar onPick={(f) => acceptSuggestion(f.latex)} />
       <BenchmarkBar />
       <SlotHints />
-      {previewOpen && (
+      {paneOpen && !s.previewDocked && (
         // Browser preview (no desktop window): the Word preview as a resizable pane.
         <div className="preview-pane">
-          <PreviewView latex={s.latex} display={s.display} numbered={s.numbered} sizePt={activeSizePt} textWidthPt={s.textWidthPt} onClose={() => usePreviewPane.getState().set(false)} />
+          <PreviewView latex={s.latex} display={s.display} numbered={s.numbered} sizePt={activeSizePt} textWidthPt={s.textWidthPt} onClose={() => usePreviewPane.getState().set(false)} onDock={() => void dockPreview()} />
         </div>
       )}
       <NomenclatureDialog />

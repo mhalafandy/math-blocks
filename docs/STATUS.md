@@ -19,12 +19,83 @@ recording stays in the add-in and in the self-test, so a recurrence will name it
 
 ## This round
 
-**Approved (13 Nov):** the kinds model (all 8 recommendations), the list of symbols (all 6, with two
-corrections: definition markers are hidden fields like the numbering markers, never content controls; no
-example forces a look with `\mathrm`), and the Blocks amendment. Order: kinds model → Blocks → list of
-symbols → MathType parity. The design documents are updated accordingly.
+**Accepted (your status read of 0.1.137):** the kinds model, Blocks and the list of symbols. This round, in your
+order, then MathType parity. Each item below is checked in the browser by `tools/ui-check.ts` (now in CI: 222
+checks) and with screenshots.
 
-### List of symbols — built (0.1.137)
+### 1. Word preview docked under the editor — done
+
+- The preview is a **Preview** tab of the bottom panel, under the editor; it widens with the editor when the side
+  panels are collapsed (checked: 446 → 1113 px wide at 1366×768 with both side panels hidden).
+- ⧉ pops it out into its own window (a floating pane in the browser); the window's **Dock** button brings it back;
+  the choice is remembered. Ctrl+Alt+P and the toolbar button follow it. The floating editor still opens the
+  preview window (the main window is behind it).
+- The white page grows with the equation: the line is the line width or the equation when wider (which then
+  starts at the line's start, instead of running out onto the grey); the page scrolls both ways; **Fit** shows it
+  all; zoom and the guides stay. Checked with a very wide equation, a 12×6 matrix with cases, and an 8-line
+  derivation: drawn inside the white page each time.
+
+  ![Docked preview, wide equation](images/ui/preview-docked-wide.png)
+  ![Docked preview, wide equation, Fit](images/ui/preview-docked-wide-fit.png)
+  ![Docked preview, side panels collapsed](images/ui/preview-docked-wide-panels-collapsed.png)
+
+### 2. Editor adapts to large equations — done
+
+- The field grows with the equation (wider and taller than the area); the area then scrolls both ways, with scroll
+  bars; nothing is clipped (the start of a wide equation is reachable — it was cut off before, being centred in a
+  field of fixed width). The caret is kept in view after every move and input. **Fit** next to the zoom zooms out
+  to show the whole equation. The floating editor's field behaves the same.
+
+  ![Editor, tall equation](images/ui/editor-tall.png)
+  ![Editor, derivation](images/ui/editor-derivation.png)
+  ![Editor, derivation, Fit](images/ui/editor-derivation-fit.png)
+
+### 3. Settings — done
+
+- A gear icon (SVG, the same 16 px stroke style as the other toolbar icons; the preview button got a matching
+  icon), tooltip "Settings (Ctrl+,)"; **Ctrl+,** opens the settings (main window and floating editor).
+- **No old settings modal can open any more:** a dialog that is a settings page now never draws as a pop-up — it
+  opens Settings at its page instead; every opener goes through `openSettings(page)` (the old fallbacks that also
+  opened the dialog are removed); closing Settings closes every page's state. Guarded by a unit test (static:
+  every such dialog declares its page, nothing opens their state directly) and by the browser check (the links
+  inside pages — Accents…, Each kind's look… — and the Ctrl+K commands open the right page; no old modal element
+  exists in the page, before or after).
+- The window: most of the app window by default, centred, resizable from its corner, size remembered; each page's
+  buttons (Save, Apply, Close…) in a fixed footer, only the page scrolls. Checked on every page at 1366×768, at
+  125 % and 150 % scaling (1093×614 and 911×512) and at the app's minimum window (900×600): the window fits, no
+  button is cut off, the footer buttons are in view.
+  - ![d style](images/ui/settings-1366x768-01-word-style.png)
+  - ![ument style](images/ui/settings-1366x768-02-document-style.png)
+  - ![ation kinds](images/ui/settings-1366x768-03-notation-kinds.png)
+  - ![ents](images/ui/settings-1366x768-04-accents.png)
+  - ![bering](images/ui/settings-1366x768-05-numbering.png)
+  - ![ppets and shortcuts](images/ui/settings-1366x768-06-snippets-and-shortcuts.png)
+  - ![ette](images/ui/settings-1366x768-07-palette.png)
+  - ![tor behaviour](images/ui/settings-1366x768-08-editor-behaviour.png)
+  - ![d connection and add in](images/ui/settings-1366x768-09-word-connection-and-add-in.png)
+  - ![kups](images/ui/settings-1366x768-10-backups.png)
+  - ![t of symbols](images/ui/settings-1366x768-11-list-of-symbols.png)
+  - ![chmark](images/ui/settings-1366x768-12-benchmark.png)
+  - ![ates](images/ui/settings-1366x768-13-updates.png)
+  - ![eenshot to latex](images/ui/settings-1366x768-14-screenshot-to-latex.png)
+  - ![At the minimum window size](images/ui/settings-minimum-900x600-01-word-style.png)
+  - ![At 150 % scaling](images/ui/settings-150pct-01-word-style.png)
+
+### 4. Blocks pinned to Quick access — done
+
+- Right-click a block (Blocks tab or the floating editor's Blocks flyout) → **Pin to Quick access** / Unpin. A
+  pinned block shows in Quick access (main window and floating editor) as its tile; click inserts it with its slots
+  to fill; drag to reorder, right-click to unpin, as any pinned symbol.
+
+  ![A pinned block in Quick access](images/ui/quick-access-pinned-block.png)
+
+### 5. LATEX-INTERCHANGE.md, section 5 — done
+
+- Section 5 lists `\unit`, `\const`, `\variable`, `\operator`, `\lbl`, `\ctr` (the table under "Units and explicit
+  kinds of single symbols", now with `\unit` in it too); Convert LaTeX accepts all six (a test converts an
+  inline equation with each, no issue).
+
+### Earlier: list of symbols — built (0.1.137)
 
 As approved, with your two corrections. Definitions `\define{symbol}{meaning}[unit]` become hidden fields (as
 the numbering markers; no content control) — the self-test types, presses Backspace and Delete, pastes and cuts
@@ -237,6 +308,10 @@ the bar was checked in the browser preview. These are editor and settings featur
 new section this round.
 
 ## What to test (next build)
+
+- **UI round:** Preview tab under the editor (paste a long equation; collapse the side panels; ⧉ and Dock);
+  a large pasted equation in the editor (scroll bars, Fit); Ctrl+, and every Settings link (no old dialog
+  anywhere, footer buttons always visible; resize the window and reopen it); pin a block to Quick access.
 
 - **List of symbols** (new): self-test section *List of symbols*. Then in a copy of a chapter: add a few
   `\define{…}{…}[…]` after the sentences that introduce symbols (or right-click a letter → Define…), Convert
