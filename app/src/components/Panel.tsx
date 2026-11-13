@@ -1,4 +1,8 @@
 import { ContextMenu } from "./ContextMenu";
+import { BlocksPanel, saveSelectionAsBlock } from "./BlocksPanel";
+import { initBlocks, useBlocks } from "../lib/blocks/useBlocks";
+import { SlotHints } from "./BlockSlots";
+import { sessionStatus, useBlockSession } from "../lib/blocks/sessionStore";
 import { SuggestBar } from "./SuggestBar";
 import { acceptSuggestion } from "./MathEditor";
 import { QuickStyleBar } from "./QuickStyleBar";
@@ -196,6 +200,8 @@ export function PanelApp() {
     })().catch(() => setLibrary([]));
   }, [info]);
 
+  const blocksVersion = useBlocks((b) => b.blocks.length + b.docBlocks.length * 1000 + b.blocks.reduce((n, x) => n + x.version, 0));
+  useEffect(() => void initBlocks("panel").catch(() => undefined), []);
   const commands = useMemo(
     () => [
       ...library,
@@ -206,10 +212,11 @@ export function PanelApp() {
       }),
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [library],
+    [library, blocksVersion],
   );
 
   const app = useApp.getState();
+  const blockStatus = sessionStatus(useBlockSession((x) => x.session));
   const hint = toast ? toast.text : eq.errors ? `${eq.errors} error(s)` : display ? "Space next slot · Ctrl+Enter apply · Enter new line · Esc cancel" : "Space next slot · Enter apply · Esc cancel";
   return (
     <div className="panel-shell">
@@ -286,6 +293,14 @@ export function PanelApp() {
                 <div className="panel-flyout-body">
                   {flyout === "commands" && <CommandLine commands={commands} />}
                   {flyout === "favourites" && <QuickRow />}
+                  {flyout === "blocks" && (
+                    <div className="panel-blocks">
+                      <BlocksPanel manage={false} />
+                      <button className="ghost" title="Save the selection (or the whole equation) as a block: the dialog opens in the main window" onMouseDown={(e) => e.preventDefault()} onClick={() => void saveSelectionAsBlock()}>
+                        ＋ Save as block…
+                      </button>
+                    </div>
+                  )}
                   {flyout === "symbols" && <GroupFlyout row="symbols" />}
                   {flyout === "structures" && <GroupFlyout row="templates" />}
                   {flyout === "collections" && <GroupFlyout row="tabs" />}
@@ -308,7 +323,7 @@ export function PanelApp() {
         </div>
 
         <div className="panel-foot2">
-          <span className={eq.errors || toast?.kind === "error" ? "panel-hint bad" : "panel-hint"}>{hint}</span>
+          {blockStatus && !toast ? <span className="panel-hint block-status">{blockStatus}</span> : <span className={eq.errors || toast?.kind === "error" ? "panel-hint bad" : "panel-hint"}>{hint}</span>}
           <div className="spacer" />
           <button onClick={cancel}>Cancel</button>
           <button className="primary panel-apply" onClick={() => void apply()} disabled={eq.errors > 0} title={display ? "Ctrl+Enter" : "Enter"}>
@@ -318,16 +333,18 @@ export function PanelApp() {
       </div>
       <QuickStyleBar />
       <SuggestBar onPick={(f) => acceptSuggestion(f.latex)} />
+      <SlotHints />
       <NotationSettings />
       <ContextMenu />
     </div>
   );
 }
 
-type FlyoutId = "commands" | "favourites" | "symbols" | "structures" | "collections" | "style" | "preview";
+type FlyoutId = "commands" | "favourites" | "blocks" | "symbols" | "structures" | "collections" | "style" | "preview";
 const FLYOUTS: { id: FlyoutId; icon: string; label: string; keys?: string }[] = [
   { id: "commands", icon: "⌕", label: "Commands and LaTeX", keys: "Ctrl+K" },
   { id: "favourites", icon: "★", label: "Favourites" },
+  { id: "blocks", icon: "▦", label: "Blocks (Save as block here too)" },
   { id: "symbols", icon: "≤", label: "Symbols" },
   { id: "structures", icon: "∑", label: "Structures (fractions, scripts, matrices…)" },
   { id: "collections", icon: "⇀", label: "Spacecraft, my notation and collections" },

@@ -1,4 +1,7 @@
 import { insertPaletteItem } from "../components/SymbolPalette";
+import { allBlocks } from "./blocks/useBlocks";
+import { insertBlock } from "../components/MathEditor";
+import { kindSnippetPrefix } from "./snippets";
 import { convertKindToPlain, makeKindFromSelection, toggleBold } from "../components/MathEditor";
 import { KINDS } from "@mathblocks/math-core";
 import { newEquation } from "./actions";
@@ -22,7 +25,17 @@ export interface Command {
 
 export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: () => void; focusLatex: () => void }): Command[] {
   const app = useApp.getState();
+  const prefix = kindSnippetPrefix();
   return [
+    // Every block ("Insert block: Kinetic energy"), then Save as block.
+    ...allBlocks().map((b): Command => ({
+      id: `block.${b.id}`,
+      title: `Insert block: ${b.name}`,
+      group: "Insert",
+      keywords: `block ${b.trigger ? `${prefix}${b.trigger} ${b.trigger}` : ""} ${b.tags.join(" ")} ${b.description}`,
+      run: () => void insertBlock(b),
+    })),
+    { id: "block.save", title: "Save as block… (the selection, or the whole equation)", group: "Insert", keywords: "block reusable template slots", run: () => void import("../components/BlocksPanel").then((m) => m.saveSelectionAsBlock()) },
     // Every palette symbol and template is also a command ("Insert gradient", "Insert 3×3 matrix"…).
     ...ALL_ITEMS.filter((x) => x.group.id !== "tab-matrices").map((x): Command => ({
       id: `insert.${x.key}`,

@@ -760,6 +760,53 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       await smoke("save", { file: "kinds test.docx" });
     });
 
+    section = "Blocks: inserted into equations in Word, stored in the document";
+    await step("blocks", async () => {
+      const bm = await import("./blocks/model");
+      const bs = await import("./blocks/useBlocks");
+      const blk = (name: string, body: string, scope: "global" | "document" = "global"): import("./blocks/model").Block => ({ id: "", name, description: "", body, slots: bm.syncSlots(body), trigger: "", groupId: null, tags: [], display: false, scope, position: 0, createdAt: 0, updatedAt: 0, useCount: 0, version: 0 });
+      const norm = (l: string) => serializeLatex(parseLatex(l).root).replace(/\\s+/g, "");
+      const readBack = async () => {
+        const front = (await smoke("activeName")).name as string;
+        const r = await connector.request("listInstances", { includeContent: true }, SLOW);
+        const d = r.documents.find((x) => x.name === front) ?? r.documents[0];
+        return (d?.instances ?? []).map((i) => (i.flatOpc ? readEquationXml(i.flatOpc) : null)).map((rd) => (rd ? serializeLatex(rd.root) : "?"));
+      };
+      const docB = await smoke("newDocument");
+      await smoke("typeText", { text: "Blocks test." });
+      // Generic blocks: two slots, a repeated slot, a slot that requires a kind, a block inside a block.
+      const ke = blk("Kinetic energy term", "\\frac{1}{2}#m #v^2");
+      const cases: { b: import("./blocks/model").Block; values: Record<string, string>; want: string }[] = [
+        { b: ke, values: { m: "M", v: "u" }, want: "\\frac{1}{2}M u^2" },
+        { b: blk("Square", "#v\\cdot#v"), values: { v: "a+b" }, want: "{a+b}\\cdot{a+b}" },
+        { b: blk("Moment", "\\mat{J}#w:pvec"), values: { w: "u" }, want: "\\mat{J}\\pvec{u}" },
+        { b: blk("Total", "\\block{Kinetic energy term}+#m g z"), values: { m: "M", v: "u" }, want: "\\frac{1}{2}M u^2+M g z" },
+      ];
+      for (const c of cases) {
+        await smoke("newParagraph");
+        await insert(`E=${bm.fillSlots(c.b, c.values, (n) => (n === ke.name ? ke : undefined))}`, true);
+        await smoke("caretTo", { where: "end" });
+      }
+      const got = await readBack();
+      cases.forEach((c, i) => check(`block “${c.b.name}” inserted into an equation in Word: its LaTeX`, norm(got[i] ?? "") === norm(`E=${c.want}`), got[i] ?? "(none)"));
+      check("no slot or block wrapper reaches Word", got.every((l) => !l.includes("mbs-") && !l.includes("mbb-") && !l.includes("placeholder")), got.join(" | "));
+      // A block of this document: stored in the document (Custom XML part), read back, removed.
+      if (addinSupports("setDocumentBlocks")) {
+        await bs.loadDocumentBlocks();
+        const saved = await bs.saveBlock(blk("Document block", "#a+#b", "document"));
+        await bs.loadDocumentBlocks();
+        check("a block saved “in this document” is stored in the document", bs.useBlocks.getState().docBlocks.some((x) => x.id === saved.id && x.body === "#a+#b"), `${bs.useBlocks.getState().docBlocks.length} document block(s)`);
+        await bs.deleteBlock({ ...saved, scope: "document" });
+        await bs.loadDocumentBlocks();
+        check("…and removed from it", !bs.useBlocks.getState().docBlocks.some((x) => x.id === saved.id));
+      } else check("document blocks (the Word add-in is older than this build)", null, "update the add-in");
+      // Export → import gives the same blocks.
+      const file = bm.parseBlockSet(JSON.stringify(bm.exportBlockSet([ke], [])));
+      check("a block set exported and imported again is identical", file.blocks.length === 1 && file.blocks[0]!.body === ke.body && file.blocks[0]!.name === ke.name);
+      await smoke("save", { file: "blocks test.docx" });
+      void docB;
+    });
+
     section = "My styles: create, rename, duplicate, delete, export and import";
     await step("my styles", async () => {
       const ds = await import("./docStyle");

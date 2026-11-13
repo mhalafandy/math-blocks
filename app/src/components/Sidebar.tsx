@@ -10,12 +10,28 @@ import { useApp } from "../lib/store";
 import { openMenu, type MenuItem } from "./ContextMenu";
 import { askConfirm, askText } from "./Dialogs";
 import { MathPreview } from "./MathPreview";
+import { BlocksPanel } from "./BlocksPanel";
 
 const DRAG_EQ = "application/x-mathblocks-equation";
 const DRAG_FOLDER = "application/x-mathblocks-folder";
 
 /** Left panel: the personal equation library. */
 export function Sidebar() {
+  const [tab, setTabState] = useState<"library" | "blocks">(() => {
+    try {
+      return localStorage.getItem("mathblocks.sidebarTab") === "blocks" ? "blocks" : "library";
+    } catch {
+      return "library";
+    }
+  });
+  const setTab = (t: "library" | "blocks") => {
+    setTabState(t);
+    try {
+      localStorage.setItem("mathblocks.sidebarTab", t);
+    } catch {
+      // Not remembered.
+    }
+  };
   const setPrefs = useApp((s) => s.setPrefs);
   const createFolder = useLibrary((s) => s.createFolder);
   const setDialog = useLibrary((s) => s.setDialog);
@@ -23,8 +39,17 @@ export function Sidebar() {
   return (
     <nav className="sidebar" aria-label="Library">
       <div className="panel-head">
-        <span className="panel-title">Library</span>
+        <div className="side-tabs" role="tablist">
+          <button role="tab" aria-selected={tab === "library"} className={tab === "library" ? "side-tab on" : "side-tab"} onClick={() => setTab("library")}>
+            Library
+          </button>
+          <button role="tab" aria-selected={tab === "blocks"} className={tab === "blocks" ? "side-tab on" : "side-tab"} onClick={() => setTab("blocks")}>
+            Blocks
+          </button>
+        </div>
         <div className="spacer" />
+        {tab === "library" && (
+          <>
         <button className="icon-btn" title="Save the current equation to the library (Ctrl+S)" onClick={() => setDialog({ mode: "new" })}>
           ＋
         </button>
@@ -38,11 +63,14 @@ export function Sidebar() {
         >
           <FolderIcon />
         </button>
+          </>
+        )}
         <button className="icon-btn" title="Hide library (Ctrl+B)" onClick={() => setPrefs({ leftOpen: false })}>
           ⇤
         </button>
       </div>
-      <LibraryPanel />
+      {tab === "blocks" ? <BlocksPanel /> : <LibraryPanel />}
+      {tab === "library" && (
       <div className="panel-foot">
         {connected && (
           <button className="ghost" title="Convert the MathType equations of the document open in Word, in place (one Ctrl+Z in Word undoes it)" onClick={() => void convertOpenDocument()}>
@@ -53,6 +81,7 @@ export function Sidebar() {
           ⇄ Convert MathType document file…
         </button>
       </div>
+      )}
     </nav>
   );
 }
@@ -274,6 +303,7 @@ function EquationRow({ q, showFolder = false }: { q: Equation; showFolder?: bool
       },
     },
     { label: "Use with other symbols…", onSelect: () => openTemplate(q.latex, q.display, q.name) },
+    { label: "Save as block…", onSelect: () => void import("./SaveBlockDialog").then((m) => m.openSaveBlock(q.latex)) },
     { separator: true, label: "" },
     { label: q.favorite ? "Remove from favourites" : "Add to favourites", onSelect: () => lib.toggleFavorite(q.id) },
     {

@@ -4,10 +4,12 @@ import { KINDS } from "@mathblocks/math-core";
 import { Modal } from "./Dialogs";
 import { MathTile } from "./MathTile";
 import { STRUCTURE_CELL, SYMBOL_CELL } from "../lib/tiles";
-import { AUTOCORRECT, insertIntoVisual } from "./MathEditor";
+import { AUTOCORRECT, insertBlock, insertIntoVisual } from "./MathEditor";
 import { EDITOR_SHORTCUTS } from "../lib/editorKeys";
 import { CATEGORIES, ENTRIES, STRUCTURES, type PaletteEntry } from "../lib/palette";
 import { kindSnippetPrefix, kindSnippets } from "../lib/snippets";
+import { allBlocks, blockByName, useBlocks } from "../lib/blocks/useBlocks";
+import { previewLatex, type Block } from "../lib/blocks/model";
 import { useApp } from "../lib/store";
 
 /** Keyboard shortcuts (F1) and the LaTeX commands sheet (second tab). */
@@ -19,6 +21,8 @@ interface SheetRow {
   latex: string;
   name: string;
   how?: string;
+  /** A block (inserted with its slots to fill, not as LaTeX). */
+  block?: Block;
 }
 
 /** The commands sheet: palette entries grouped like the palette, then environments and kinds. */
@@ -49,13 +53,19 @@ function sheetSections(): { title: string; rows: SheetRow[] }[] {
     title: "Notation kinds (and my own)",
     rows: KINDS.map((k, i) => ({ latex: snips[i]?.latex ?? `\\${k.macro}{#?}`, name: `${k.name} — \\${k.macro}`, how: `${snips[i]?.trigger ?? prefix + k.snippet} Tab` })),
   });
+  // The user's blocks (and the open document's), with their triggers.
+  out.push({
+    title: "My blocks",
+    rows: allBlocks().map((b) => ({ latex: previewLatex(b, blockByName, "#?"), name: b.name, how: b.trigger ? `${prefix}${b.trigger} Tab` : undefined, block: b })),
+  });
   return out.filter((s) => s.rows.length);
 }
 
 function LatexSheet({ onInsert }: { onInsert: () => void }) {
   const [q, setQ] = useState("");
   const custom = useApp((s) => s.customKinds);
-  const sections = useMemo(() => sheetSections(), [custom]);
+  const blocks = useBlocks((b) => b.blocks.length + b.docBlocks.length * 1000);
+  const sections = useMemo(() => sheetSections(), [custom, blocks]);
   const words = q.toLowerCase().split(/\s+/).filter(Boolean);
   const match = (r: SheetRow) => words.every((w) => `${r.name} ${r.latex} ${r.how ?? ""}`.toLowerCase().includes(w));
   return (
@@ -76,7 +86,7 @@ function LatexSheet({ onInsert }: { onInsert: () => void }) {
                   title={r.name}
                   onClick={() => {
                     onInsert();
-                    requestAnimationFrame(() => insertIntoVisual(r.latex));
+                    requestAnimationFrame(() => (r.block ? insertBlock(r.block) : insertIntoVisual(r.latex)));
                   }}
                 >
                   <MathTile latex={r.latex} cell={r.latex.includes("#") || r.latex.length > 12 ? STRUCTURE_CELL : SYMBOL_CELL} />

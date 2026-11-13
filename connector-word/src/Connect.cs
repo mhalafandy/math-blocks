@@ -185,7 +185,7 @@ namespace MathBlocks.WordConnector
         private static readonly string[] Methods =
         {
             "ping", "insertEquation", "replaceEquation", "readEquation", "documentInfo",
-            "listInstances", "replaceMany", "verifyMany", "scanInterchange", "convertInterchange", "scanNumbering", "convertNumbering", "retag", "selectInstance", "getRegistry", "setRegistry", "getDocumentStyle", "setDocumentStyle", "listDocuments",
+            "listInstances", "replaceMany", "verifyMany", "scanInterchange", "convertInterchange", "scanNumbering", "convertNumbering", "retag", "selectInstance", "getRegistry", "setRegistry", "getDocumentStyle", "setDocumentStyle", "getDocumentBlocks", "setDocumentBlocks", "listDocuments",
             "listMathTypeParagraphs", "replaceParagraphs", "activateObject",
             "numberEquation", "unnumberEquation", "listNumbered", "insertReference", "updateNumbers",
             "showWordMenu", "selectionInfo", "findLatex", "replaceRanges", "equationToText",
@@ -847,6 +847,8 @@ namespace MathBlocks.WordConnector
                     case "getRegistry": result = _ops.GetRegistry(p); break;
                     case "setRegistry": result = _ops.SetRegistry(p); break;
                     case "getDocumentStyle": result = _ops.GetDocumentStyle(p); break;
+                    case "getDocumentBlocks": result = _ops.GetDocumentBlocks(p); break;
+                    case "setDocumentBlocks": result = _ops.SetDocumentBlocks(p); break;
                     case "setDocumentStyle": result = _ops.SetDocumentStyle(p); break;
                     case "listDocuments": result = _ops.ListDocuments(); break;
                     case "readEquation": result = _ops.ReadEquation(p); break;

@@ -72,6 +72,16 @@ export function TemplateDialog({ onSend }: { onSend: () => void }) {
           <button onClick={close}>Cancel</button>
           <button onClick={toEditor}>Open in editor</button>
           <button
+            title="The reusable version: the symbols you pick become slots, filled each time it is inserted"
+            onClick={() => {
+              const latex = source!.latex;
+              close();
+              void import("./SaveBlockDialog").then((m) => m.openSaveBlock(latex));
+            }}
+          >
+            Save as block…
+          </button>
+          <button
             className="primary"
             disabled={!useApp.getState().connector.connected}
             title={useApp.getState().connector.connected ? "Insert at Word's cursor" : "Start Word to enable"}
