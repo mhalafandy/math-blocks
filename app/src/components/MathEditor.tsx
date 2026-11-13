@@ -2,6 +2,10 @@ import { isAllBold, KIND_BY_ID, KINDS, setBold, type BoldScope } from "@mathbloc
 import { explainSymbol, kindDisplayName } from "@mathblocks/math-core";
 import { symbolContextAt } from "../lib/kindHover";
 import { activeStyle as currentDocStyle } from "../lib/docStyle";
+import { editorForm, stripSlotWrappers, type Block } from "../lib/blocks/model";
+import { blockByName, markBlockUsed } from "../lib/blocks/useBlocks";
+import { useBlockSession } from "../lib/blocks/sessionStore";
+import { currentSlot, enterFirstSlot, syncRepeats, type SessionField } from "../lib/blocks/session";
 import { CLASS_PREFIX, fromEditorLatex, kindMacroRe, toEditorLatex } from "../lib/kinds";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { useEffect, useRef } from "react";
@@ -34,7 +38,7 @@ export function focusedMathField(): MathfieldElement | null {
  * editor uses that internally while the rest of the app (and Word) sees standard \mathrm{d}.
  */
 export const toMathLive = (latex: string) => multlineToEditor(toEditorKinds(latex).replace(/\\mathrm\{d\}/g, "\\differentialD "));
-export const fromMathLive = (latex: string) => fromEditorKinds(multlineFromEditor(latex).replace(/\\differentialD\b ?/g, "\\mathrm{d}"));
+export const fromMathLive = (latex: string) => fromEditorKinds(multlineFromEditor(stripSlotWrappers(latex)).replace(/\\differentialD\b ?/g, "\\mathrm{d}"));
 
 /** Template slots survive the kind conversion as marker letters. */
 const SLOT_MARK = { "#?": "\u24C5", "#0": "\u24EA" } as const;
@@ -415,6 +419,59 @@ function suggestAtCaret(mf: MathfieldElement) {
   });
 }
 
+/**
+ * Inserts a block at the caret (or over the selection; a one-slot block takes the selection as its
+ * slot's contents): its first slot selected, Space through the others (blocks/session.ts).
+ * `replace`: offsets of typed text the block replaces (its trigger).
+ */
+export function insertBlock(b: Block, o: { replace?: [number, number] } = {}): boolean {
+  const mf = activeField;
+  if (!mf) return false;
+  mf.focus();
+  const id = Math.random().toString(36).slice(2, 7);
+  let form;
+  try {
+    form = editorForm(b, toMathLive, blockByName, id);
+  } catch (e) {
+    useApp.getState().notify(e instanceof Error ? e.message : String(e), "error");
+    return false;
+  }
+  let latex = form.latex;
+  if (o.replace) mf.selection = { ranges: [o.replace], direction: "forward" };
+  else if (!mf.selectionIsCollapsed && form.order.length === 1) {
+    // Wrap the selection: it becomes the one slot's contents (every occurrence).
+    const sel = mf.getValue(mf.selection, "latex");
+    latex = latex.replace(/(\\class\{mbs-[^}]+\})\{\\placeholder\{\}\}/g, (_, c: string) => `${c}{${sel}}`);
+  }
+  mf.insert(latex, { insertionMode: "replaceSelection", selectionMode: "after", format: "latex" });
+  const order = form.order;
+  useBlockSession.getState().set(order.length ? { id, name: b.name, order, labels: form.labels, current: null } : null);
+  if (order.length) enterFirstSlot(mf as unknown as SessionField, id, order[0]!);
+  updateBlockSession(mf);
+  void markBlockUsed(b);
+  return true;
+}
+
+/** The editor's selection as saved LaTeX (null when nothing is selected or there is no editor). */
+export function editorSelectionLatex(): string | null {
+  const mf = activeField;
+  if (!mf || mf.selectionIsCollapsed) return null;
+  const sel = mf.getValue(mf.selection, "latex");
+  return sel.trim() ? fromMathLive(sel) : null;
+}
+
+/** After an input or a caret move: repeats follow, the status line and hints follow the caret. */
+function updateBlockSession(mf: MathfieldElement, input = false) {
+  const st = useBlockSession.getState();
+  const s = st.session;
+  if (!s) return;
+  if (!mf.value.includes(`mbb-${s.id}`)) return st.set(null);
+  if (input) syncRepeats(mf as unknown as SessionField, s.id);
+  const c = currentSlot(mf as unknown as SessionField, s.id, s.order);
+  const current = c ? { index: c.index, total: c.total, label: s.labels[c.name] ?? c.name } : null;
+  if (JSON.stringify(current) !== JSON.stringify(s.current)) st.set({ ...s, current });
+}
+
 /** Takes a suggested form: the typed letter is replaced by it. */
 export function acceptSuggestion(latex: string) {
   const mf = activeField;
@@ -493,6 +550,7 @@ export function MathEditor() {
     mf.addEventListener("selection-change", () => {
       showQuickStyle(mf);
       suggestAtCaret(mf);
+      updateBlockSession(mf);
     });
     mf.addEventListener("focusout", () => {
       clearTimeout(quickTimer);
@@ -501,6 +559,7 @@ export function MathEditor() {
       }, 200);
     });
     mf.addEventListener("input", () => {
+      updateBlockSession(mf, true);
       void import("./QuickStyleBar").then(({ useQuickStyle }) => useQuickStyle.getState().set({ at: null }));
       onInputDone(mf);
       // A kind macro that arrived raw (pasted, dropped, inserted as LaTeX: \pvec{r}_2, {\pvec{r}_2})

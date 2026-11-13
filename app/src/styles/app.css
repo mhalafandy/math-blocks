@@ -861,3 +861,8 @@ html.preview-window body { background: var(--bg); }
 .bench-actions { display: flex; gap: 6px; }
 .bench-table td, .bench-table th { padding: 4px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; }
 .bench-table td .math-tile { vertical-align: middle; }
+
+/* Blocks: the slot being filled (status line) and each empty slot's label under it. */
+.block-status { color: var(--accent); }
+.slot-hints { position: fixed; inset: 0; pointer-events: none; z-index: 60; }
+.slot-hint { position: fixed; transform: translateX(-50%); font-size: 10px; line-height: 1.2; padding: 0 4px; border-radius: 3px; background: var(--accent-soft); color: var(--accent); border: 1px solid var(--border); white-space: nowrap; }

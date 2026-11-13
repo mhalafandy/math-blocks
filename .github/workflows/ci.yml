@@ -38,6 +38,8 @@ jobs:
         run: pnpm tsx tools/kinds-hover-check.ts
       - name: MathType comparison harness (synthetic MathType document)
         run: pnpm tsx tools/mt-compare-check.ts
+      - name: Blocks in the editor (slots, live repeats, nested blocks, undo)
+        run: pnpm tsx tools/blocks-check.ts
       - name: Add-in Word-free tests (number fields, LaTeX spans, identity, read-back of the Classic insertion .docx)
         run: dotnet run --project connector-word/tests
       - name: Compile the .tex export of every notation kind under every preset (Tectonic)

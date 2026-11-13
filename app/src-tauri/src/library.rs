@@ -61,9 +61,35 @@ const MIGRATIONS: &[&str] = &[
         updated_at  INTEGER NOT NULL
     );
     "#,
+    // v2: blocks (reusable pieces with named slots) and their groups (docs/BLOCKS-DESIGN.md).
+    r#"
+    CREATE TABLE block_groups (
+        id          TEXT PRIMARY KEY,
+        parent_id   TEXT REFERENCES block_groups(id) ON DELETE CASCADE,
+        name        TEXT NOT NULL,
+        position    INTEGER NOT NULL DEFAULT 0,
+        created_at  INTEGER NOT NULL
+    );
+    CREATE TABLE blocks (
+        id          TEXT PRIMARY KEY,
+        group_id    TEXT REFERENCES block_groups(id) ON DELETE SET NULL,
+        name        TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        body        TEXT NOT NULL,
+        slots       TEXT NOT NULL DEFAULT '[]',
+        trigger     TEXT NOT NULL DEFAULT '',
+        tags        TEXT NOT NULL DEFAULT '[]',
+        display     INTEGER NOT NULL DEFAULT 0,
+        position    INTEGER NOT NULL DEFAULT 0,
+        created_at  INTEGER NOT NULL,
+        updated_at  INTEGER NOT NULL,
+        use_count   INTEGER NOT NULL DEFAULT 0,
+        version     INTEGER NOT NULL DEFAULT 1
+    );
+    "#,
 ];
 
-fn now() -> i64 {
+pub(crate) fn now() -> i64 {
     SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0)
 }
 
@@ -166,11 +192,11 @@ pub struct ImportReport {
 // ------------------------------------------------------------------ the store
 
 pub struct Library {
-    conn: Connection,
+    pub(crate) conn: Connection,
 }
 
 pub type Result<T> = std::result::Result<T, String>;
-fn e<E: std::fmt::Display>(err: E) -> String {
+pub(crate) fn e<E: std::fmt::Display>(err: E) -> String {
     err.to_string()
 }
 
@@ -602,7 +628,7 @@ fn prune_backups(dir: &Path, keep: usize) {
     }
 }
 
-fn with<T>(state: &tauri::State<'_, LibraryState>, f: impl FnOnce(&mut Library) -> Result<T>) -> Result<T> {
+pub(crate) fn with<T>(state: &tauri::State<'_, LibraryState>, f: impl FnOnce(&mut Library) -> Result<T>) -> Result<T> {
     let mut guard = state.0.lock().map_err(|_| "Library is busy".to_string())?;
     let lib = guard.as_mut().ok_or("The library could not be opened")?;
     f(lib)

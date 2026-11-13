@@ -1,5 +1,8 @@
 import { openTemplate } from "./TemplateDialog";
-import { convertMathTypeDocument, convertOpenDocument } from "../lib/convertMathType";
+import {
+  convertMathTypeDocument,
+  convertOpenDocument,
+} from "../lib/convertMathType";
 import { useMemo, useState, type DragEvent, type ReactNode } from "react";
 import { REFERENCE_EQUATIONS } from "../../../fixtures/reference-equations";
 import { recentEquations, searchEquations } from "../lib/library/search";
@@ -10,12 +13,30 @@ import { useApp } from "../lib/store";
 import { openMenu, type MenuItem } from "./ContextMenu";
 import { askConfirm, askText } from "./Dialogs";
 import { MathPreview } from "./MathPreview";
+import { BlocksPanel } from "./BlocksPanel";
 
 const DRAG_EQ = "application/x-mathblocks-equation";
 const DRAG_FOLDER = "application/x-mathblocks-folder";
 
 /** Left panel: the personal equation library. */
 export function Sidebar() {
+  const [tab, setTabState] = useState<"library" | "blocks">(() => {
+    try {
+      return localStorage.getItem("mathblocks.sidebarTab") === "blocks"
+        ? "blocks"
+        : "library";
+    } catch {
+      return "library";
+    }
+  });
+  const setTab = (t: "library" | "blocks") => {
+    setTabState(t);
+    try {
+      localStorage.setItem("mathblocks.sidebarTab", t);
+    } catch {
+      // Not remembered.
+    }
+  };
   const setPrefs = useApp((s) => s.setPrefs);
   const createFolder = useLibrary((s) => s.createFolder);
   const setDialog = useLibrary((s) => s.setDialog);
@@ -23,36 +44,80 @@ export function Sidebar() {
   return (
     <nav className="sidebar" aria-label="Library">
       <div className="panel-head">
-        <span className="panel-title">Library</span>
+        <div className="side-tabs" role="tablist">
+          <button
+            role="tab"
+            aria-selected={tab === "library"}
+            className={tab === "library" ? "side-tab on" : "side-tab"}
+            onClick={() => setTab("library")}
+          >
+            Library
+          </button>
+          <button
+            role="tab"
+            aria-selected={tab === "blocks"}
+            className={tab === "blocks" ? "side-tab on" : "side-tab"}
+            onClick={() => setTab("blocks")}
+          >
+            Blocks
+          </button>
+        </div>
         <div className="spacer" />
-        <button className="icon-btn" title="Save the current equation to the library (Ctrl+S)" onClick={() => setDialog({ mode: "new" })}>
-          ＋
-        </button>
+        {tab === "library" && (
+          <>
+            <button
+              className="icon-btn"
+              title="Save the current equation to the library (Ctrl+S)"
+              onClick={() => setDialog({ mode: "new" })}
+            >
+              ＋
+            </button>
+            <button
+              className="icon-btn"
+              title="New folder"
+              onClick={async () => {
+                const name = await askText(
+                  "New folder",
+                  "",
+                  "Folder name",
+                  "Create",
+                );
+                if (name) await createFolder(name, null);
+              }}
+            >
+              <FolderIcon />
+            </button>
+          </>
+        )}
         <button
           className="icon-btn"
-          title="New folder"
-          onClick={async () => {
-            const name = await askText("New folder", "", "Folder name", "Create");
-            if (name) await createFolder(name, null);
-          }}
+          title="Hide library (Ctrl+B)"
+          onClick={() => setPrefs({ leftOpen: false })}
         >
-          <FolderIcon />
-        </button>
-        <button className="icon-btn" title="Hide library (Ctrl+B)" onClick={() => setPrefs({ leftOpen: false })}>
           ⇤
         </button>
       </div>
-      <LibraryPanel />
-      <div className="panel-foot">
-        {connected && (
-          <button className="ghost" title="Convert the MathType equations of the document open in Word, in place (one Ctrl+Z in Word undoes it)" onClick={() => void convertOpenDocument()}>
-            ⇄ Convert MathType in open document
+      {tab === "blocks" ? <BlocksPanel /> : <LibraryPanel />}
+      {tab === "library" && (
+        <div className="panel-foot">
+          {connected && (
+            <button
+              className="ghost"
+              title="Convert the MathType equations of the document open in Word, in place (one Ctrl+Z in Word undoes it)"
+              onClick={() => void convertOpenDocument()}
+            >
+              ⇄ Convert MathType in open document
+            </button>
+          )}
+          <button
+            className="ghost"
+            title="Turn the MathType equations of a Word document into native, editable MathBlocks equations (saved as a new file)"
+            onClick={() => void convertMathTypeDocument()}
+          >
+            ⇄ Convert MathType document file…
           </button>
-        )}
-        <button className="ghost" title="Turn the MathType equations of a Word document into native, editable MathBlocks equations (saved as a new file)" onClick={() => void convertMathTypeDocument()}>
-          ⇄ Convert MathType document file…
-        </button>
-      </div>
+        </div>
+      )}
     </nav>
   );
 }
@@ -60,10 +125,15 @@ export function Sidebar() {
 function LibraryPanel() {
   const [query, setQuery] = useState("");
   const { equations, folders, ready } = useLibrary();
-  const results = useMemo(() => (query.trim() ? searchEquations(equations, query) : []), [equations, query]);
+  const results = useMemo(
+    () => (query.trim() ? searchEquations(equations, query) : []),
+    [equations, query],
+  );
   const favorites = equations.filter((q) => q.favorite);
   const recent = recentEquations(equations, 6);
-  const unfiled = equations.filter((q) => !q.folderId || !folders.some((f) => f.id === q.folderId));
+  const unfiled = equations.filter(
+    (q) => !q.folderId || !folders.some((f) => f.id === q.folderId),
+  );
 
   return (
     <>
@@ -80,7 +150,11 @@ function LibraryPanel() {
         {!ready && <p className="empty">Opening library…</p>}
         {query.trim() ? (
           results.length ? (
-            <ul className="eq-list">{results.map((q) => <EquationRow key={q.id} q={q} showFolder />)}</ul>
+            <ul className="eq-list">
+              {results.map((q) => (
+                <EquationRow key={q.id} q={q} showFolder />
+              ))}
+            </ul>
           ) : (
             <p className="empty">Nothing matches “{query}”.</p>
           )
@@ -89,23 +163,52 @@ function LibraryPanel() {
             {ready && equations.length === 0 && folders.length === 0 && (
               <div className="lib-empty">
                 <p>Your library is empty.</p>
-                <p className="hint">Build an equation, then press <kbd>Ctrl S</kbd> to save it here. Organise with folders and tags; every save keeps a version.</p>
+                <p className="hint">
+                  Build an equation, then press <kbd>Ctrl S</kbd> to save it
+                  here. Organise with folders and tags; every save keeps a
+                  version.
+                </p>
               </div>
             )}
             {favorites.length > 0 && (
-              <Group id="fav" title="Favourites" count={favorites.length} defaultOpen>
-                <ul className="eq-list">{favorites.map((q) => <EquationRow key={q.id} q={q} showFolder />)}</ul>
+              <Group
+                id="fav"
+                title="Favourites"
+                count={favorites.length}
+                defaultOpen
+              >
+                <ul className="eq-list">
+                  {favorites.map((q) => (
+                    <EquationRow key={q.id} q={q} showFolder />
+                  ))}
+                </ul>
               </Group>
             )}
             {recent.length > 0 && (
               <Group id="recent" title="Recent" count={recent.length}>
-                <ul className="eq-list">{recent.map((q) => <EquationRow key={q.id} q={q} showFolder />)}</ul>
+                <ul className="eq-list">
+                  {recent.map((q) => (
+                    <EquationRow key={q.id} q={q} showFolder />
+                  ))}
+                </ul>
               </Group>
             )}
-            {(folders.length > 0 || equations.length > 0) && <FolderTree parent={null} depth={0} />}
+            {(folders.length > 0 || equations.length > 0) && (
+              <FolderTree parent={null} depth={0} />
+            )}
             {unfiled.length > 0 && (
-              <Group id="unfiled" title="Unfiled" count={unfiled.length} defaultOpen dropTarget={null}>
-                <ul className="eq-list">{unfiled.map((q) => <EquationRow key={q.id} q={q} />)}</ul>
+              <Group
+                id="unfiled"
+                title="Unfiled"
+                count={unfiled.length}
+                defaultOpen
+                dropTarget={null}
+              >
+                <ul className="eq-list">
+                  {unfiled.map((q) => (
+                    <EquationRow key={q.id} q={q} />
+                  ))}
+                </ul>
               </Group>
             )}
             <Examples />
@@ -118,7 +221,21 @@ function LibraryPanel() {
 
 /** Collapsible section (open state remembered for the session). */
 const openGroups = new Set(["fav", "unfiled"]);
-function Group({ id, title, count, children, defaultOpen = false, dropTarget }: { id: string; title: string; count?: number; children: ReactNode; defaultOpen?: boolean; dropTarget?: string | null }) {
+function Group({
+  id,
+  title,
+  count,
+  children,
+  defaultOpen = false,
+  dropTarget,
+}: {
+  id: string;
+  title: string;
+  count?: number;
+  children: ReactNode;
+  defaultOpen?: boolean;
+  dropTarget?: string | null;
+}) {
   const [open, setOpen] = useState(openGroups.has(id) || defaultOpen);
   const drop = useDrop(dropTarget);
   return (
@@ -142,7 +259,13 @@ function Group({ id, title, count, children, defaultOpen = false, dropTarget }: 
   );
 }
 
-function FolderTree({ parent, depth }: { parent: string | null; depth: number }) {
+function FolderTree({
+  parent,
+  depth,
+}: {
+  parent: string | null;
+  depth: number;
+}) {
   const folders = useLibrary((s) => s.folders);
   const children = folders.filter((f) => f.parentId === parent);
   if (!children.length) return null;
@@ -162,28 +285,50 @@ function FolderNode({ f, depth }: { f: Folder; depth: number }) {
   const total = countDeep(f.id, lib.folders, lib.equations);
   const drop = useDrop(f.id);
   const menu: MenuItem[] = [
-    { label: "Save current equation here", onSelect: () => lib.setDialog({ mode: "new", folderId: f.id }) },
+    {
+      label: "Save current equation here",
+      onSelect: () => lib.setDialog({ mode: "new", folderId: f.id }),
+    },
     {
       label: "New sub-folder…",
       onSelect: async () => {
-        const name = await askText("New sub-folder", "", "Folder name", "Create");
+        const name = await askText(
+          "New sub-folder",
+          "",
+          "Folder name",
+          "Create",
+        );
         if (name) await lib.createFolder(name, f.id);
       },
     },
     {
       label: "Rename…",
       onSelect: async () => {
-        const name = await askText("Rename folder", f.name, "Folder name", "Rename");
+        const name = await askText(
+          "Rename folder",
+          f.name,
+          "Folder name",
+          "Rename",
+        );
         if (name) await lib.renameFolder(f.id, name);
       },
     },
-    { label: "Move to top level", disabled: !f.parentId, onSelect: () => lib.moveFolder(f.id, null) },
+    {
+      label: "Move to top level",
+      disabled: !f.parentId,
+      onSelect: () => lib.moveFolder(f.id, null),
+    },
     { separator: true, label: "" },
     {
       label: "Delete folder…",
       danger: true,
       onSelect: async () => {
-        const ok = await askConfirm(`Delete “${f.name}”?`, total ? `The folder and its sub-folders are removed. The ${total} equation(s) inside are kept and moved to Unfiled.` : "The folder and its sub-folders are removed.");
+        const ok = await askConfirm(
+          `Delete “${f.name}”?`,
+          total
+            ? `The folder and its sub-folders are removed. The ${total} equation(s) inside are kept and moved to Unfiled.`
+            : "The folder and its sub-folders are removed.",
+        );
         if (ok) await lib.deleteFolder(f.id);
       },
     },
@@ -211,23 +356,46 @@ function FolderNode({ f, depth }: { f: Folder; depth: number }) {
       {open && (
         <>
           <FolderTree parent={f.id} depth={depth + 1} />
-          {inside.length > 0 && <ul className="eq-list" style={{ paddingLeft: depth * 14 + 14 }}>{inside.map((q) => <EquationRow key={q.id} q={q} />)}</ul>}
-          {inside.length === 0 && !lib.folders.some((x) => x.parentId === f.id) && <p className="empty" style={{ paddingLeft: depth * 14 + 28 }}>Empty. Drag equations here.</p>}
+          {inside.length > 0 && (
+            <ul className="eq-list" style={{ paddingLeft: depth * 14 + 14 }}>
+              {inside.map((q) => (
+                <EquationRow key={q.id} q={q} />
+              ))}
+            </ul>
+          )}
+          {inside.length === 0 &&
+            !lib.folders.some((x) => x.parentId === f.id) && (
+              <p className="empty" style={{ paddingLeft: depth * 14 + 28 }}>
+                Empty. Drag equations here.
+              </p>
+            )}
         </>
       )}
     </li>
   );
 }
 
-function countDeep(id: string, folders: Folder[], equations: Equation[]): number {
-  return equations.filter((q) => q.folderId === id).length + folders.filter((f) => f.parentId === id).reduce((n, f) => n + countDeep(f.id, folders, equations), 0);
+function countDeep(
+  id: string,
+  folders: Folder[],
+  equations: Equation[],
+): number {
+  return (
+    equations.filter((q) => q.folderId === id).length +
+    folders
+      .filter((f) => f.parentId === id)
+      .reduce((n, f) => n + countDeep(f.id, folders, equations), 0)
+  );
 }
 
 /** Drop target for equations and folders (null = top level / unfiled). */
 function useDrop(target: string | null | undefined) {
   const [over, setOver] = useState(false);
   const lib = useLibrary();
-  const accepts = (e: DragEvent) => target !== undefined && (e.dataTransfer.types.includes(DRAG_EQ) || e.dataTransfer.types.includes(DRAG_FOLDER));
+  const accepts = (e: DragEvent) =>
+    target !== undefined &&
+    (e.dataTransfer.types.includes(DRAG_EQ) ||
+      e.dataTransfer.types.includes(DRAG_FOLDER));
   return {
     over,
     handlers: {
@@ -245,19 +413,29 @@ function useDrop(target: string | null | undefined) {
         const eq = e.dataTransfer.getData(DRAG_EQ);
         const folder = e.dataTransfer.getData(DRAG_FOLDER);
         if (eq) void lib.moveEquation(eq, target ?? null);
-        else if (folder && folder !== target) void lib.moveFolder(folder, target ?? null);
+        else if (folder && folder !== target)
+          void lib.moveFolder(folder, target ?? null);
       },
     },
   };
 }
 
-function EquationRow({ q, showFolder = false }: { q: Equation; showFolder?: boolean }) {
+function EquationRow({
+  q,
+  showFolder = false,
+}: {
+  q: Equation;
+  showFolder?: boolean;
+}) {
   const lib = useLibrary();
   const latex = useApp((s) => s.latex);
   const display = useApp((s) => s.display);
   const active = lib.open?.id === q.id;
   const dirty = active && isDirty(lib.open, latex, display);
-  const folder = showFolder && q.folderId ? lib.folders.find((f) => f.id === q.folderId)?.name : undefined;
+  const folder =
+    showFolder && q.folderId
+      ? lib.folders.find((f) => f.id === q.folderId)?.name
+      : undefined;
   const menu: MenuItem[] = [
     { label: "Open in editor", onSelect: () => lib.openEquation(q) },
     {
@@ -267,15 +445,29 @@ function EquationRow({ q, showFolder = false }: { q: Equation; showFolder?: bool
         try {
           lib.openEquation(q);
           const found = await insertLinked(q);
-          useApp.getState().notify(found === 1 ? `Inserted a linked copy of “${q.name}”` : `Inserted, but found ${found} copies of its tag`);
+          useApp
+            .getState()
+            .notify(
+              found === 1
+                ? `Inserted a linked copy of “${q.name}”`
+                : `Inserted, but found ${found} copies of its tag`,
+            );
         } catch (e) {
-          useApp.getState().notify(e instanceof Error ? e.message : String(e), "error");
+          useApp
+            .getState()
+            .notify(e instanceof Error ? e.message : String(e), "error");
         }
       },
     },
-    { label: "Use with other symbols…", onSelect: () => openTemplate(q.latex, q.display, q.name) },
+    {
+      label: "Use with other symbols…",
+      onSelect: () => openTemplate(q.latex, q.display, q.name),
+    },
     { separator: true, label: "" },
-    { label: q.favorite ? "Remove from favourites" : "Add to favourites", onSelect: () => lib.toggleFavorite(q.id) },
+    {
+      label: q.favorite ? "Remove from favourites" : "Add to favourites",
+      onSelect: () => lib.toggleFavorite(q.id),
+    },
     {
       label: "Rename…",
       onSelect: async () => {
@@ -284,7 +476,11 @@ function EquationRow({ q, showFolder = false }: { q: Equation; showFolder?: bool
       },
     },
     { label: "Duplicate", onSelect: () => lib.duplicate(q.id) },
-    { label: "Move to Unfiled", disabled: !q.folderId, onSelect: () => lib.moveEquation(q.id, null) },
+    {
+      label: "Move to Unfiled",
+      disabled: !q.folderId,
+      onSelect: () => lib.moveEquation(q.id, null),
+    },
     {
       label: "Version history",
       onSelect: () => {
@@ -297,7 +493,10 @@ function EquationRow({ q, showFolder = false }: { q: Equation; showFolder?: bool
       label: "Delete…",
       danger: true,
       onSelect: async () => {
-        const ok = await askConfirm(`Delete “${q.name}”?`, `The equation and its ${q.currentVersion} version(s) are removed from the library. Equations already in Word documents are not affected.`);
+        const ok = await askConfirm(
+          `Delete “${q.name}”?`,
+          `The equation and its ${q.currentVersion} version(s) are removed from the library. Equations already in Word documents are not affected.`,
+        );
         if (ok) await lib.remove(q.id);
       },
     },
@@ -320,15 +519,25 @@ function EquationRow({ q, showFolder = false }: { q: Equation; showFolder?: bool
         </span>
         <span className="eq-meta">
           <span className="eq-name">
-            {q.favorite && <span className="star" aria-label="favourite">★</span>}
+            {q.favorite && (
+              <span className="star" aria-label="favourite">
+                ★
+              </span>
+            )}
             {q.name}
-            {dirty && <span className="dirty" title="Unsaved changes">●</span>}
+            {dirty && (
+              <span className="dirty" title="Unsaved changes">
+                ●
+              </span>
+            )}
           </span>
           {(folder || q.tags.length > 0) && (
             <span className="eq-sub">
               {folder && <span>{folder}</span>}
               {q.tags.slice(0, 3).map((t) => (
-                <span key={t} className="tag">#{t}</span>
+                <span key={t} className="tag">
+                  #{t}
+                </span>
               ))}
             </span>
           )}
@@ -345,7 +554,8 @@ function Examples() {
   const closeEquation = useLibrary((s) => s.closeEquation);
   const groups = useMemo(() => {
     const map = new Map<string, typeof REFERENCE_EQUATIONS>();
-    for (const eq of REFERENCE_EQUATIONS) map.set(eq.category, [...(map.get(eq.category) ?? []), eq]);
+    for (const eq of REFERENCE_EQUATIONS)
+      map.set(eq.category, [...(map.get(eq.category) ?? []), eq]);
     return [...map.entries()];
   }, []);
   return (
@@ -379,8 +589,18 @@ function Examples() {
 
 function FolderIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" className="folder-icon">
-      <path d="M1.5 4.5a1 1 0 0 1 1-1h3.6l1.4 1.5h6a1 1 0 0 1 1 1v6.5a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" />
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+      className="folder-icon"
+    >
+      <path
+        d="M1.5 4.5a1 1 0 0 1 1-1h3.6l1.4 1.5h6a1 1 0 0 1 1 1v6.5a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z"
+        fill="none"
+        stroke="currentColor"
+      />
     </svg>
   );
 }

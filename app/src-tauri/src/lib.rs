@@ -4,6 +4,7 @@
 //! things a web view cannot do itself: the named pipe to the Word connector, and (from M4)
 //! the SQLite database and file-system access.
 
+mod blocks;
 mod connector_install;
 mod documents;
 mod library;
@@ -47,6 +48,13 @@ pub fn run() {
             library::library_load_draft,
             library::library_export,
             library::library_import,
+            blocks::blocks_list,
+            blocks::blocks_save,
+            blocks::blocks_delete,
+            blocks::blocks_mark_used,
+            blocks::blocks_reorder,
+            blocks::blocks_group_save,
+            blocks::blocks_group_delete,
             documents::document_read,
             documents::document_write,
             documents::document_open,

@@ -40,6 +40,30 @@ namespace MathBlocks.WordConnector
             return new Dictionary<string, object> { ["ok"] = true, ["fullName"] = doc.FullName };
         }
 
+        public const string BlocksNamespace = "urn:mathblocks:blocks:v1";
+
+        /// <summary>The document's own blocks (a Custom XML Part the app owns, like the style).</summary>
+        public Dictionary<string, object> GetDocumentBlocks(Dictionary<string, object> p)
+        {
+            var doc = ResolveDocument(p);
+            dynamic parts = ((dynamic)doc).CustomXMLParts.SelectByNamespace(BlocksNamespace);
+            foreach (dynamic part in parts)
+                return new Dictionary<string, object> { ["xml"] = (string)part.XML, ["fullName"] = doc.FullName, ["name"] = doc.Name };
+            return new Dictionary<string, object> { ["xml"] = null, ["fullName"] = doc.FullName, ["name"] = doc.Name };
+        }
+
+        public Dictionary<string, object> SetDocumentBlocks(Dictionary<string, object> p)
+        {
+            var doc = ResolveDocument(p);
+            var xml = Rpc.GetString(p, "xml");
+            if (string.IsNullOrEmpty(xml) || xml.IndexOf(BlocksNamespace, StringComparison.Ordinal) < 0) throw new RpcException(Rpc.InvalidParams, "Not MathBlocks blocks");
+            var old = new List<dynamic>();
+            foreach (dynamic part in ((dynamic)doc).CustomXMLParts.SelectByNamespace(BlocksNamespace)) old.Add(part);
+            ((dynamic)doc).CustomXMLParts.Add(xml);
+            foreach (var part in old) part.Delete();
+            return new Dictionary<string, object> { ["ok"] = true, ["fullName"] = doc.FullName };
+        }
+
         /// <summary>Whether the document's style has a probe equation (its stored style follows undo of a restyle).</summary>
         internal bool HasStyleProbe(Word.Document doc)
         {

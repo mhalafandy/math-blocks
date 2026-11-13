@@ -1,4 +1,7 @@
 import { MathPreview } from "./components/MathPreview";
+import { useBlocks } from "./lib/blocks/useBlocks";
+import { SaveBlockDialog } from "./components/SaveBlockDialog";
+import { BlockStatus, SlotHints } from "./components/BlockSlots";
 import { PreviewView } from "./components/PreviewView";
 import { SettingsDialog } from "./components/SettingsDialog";
 import { SuggestBar } from "./components/SuggestBar";
@@ -72,6 +75,7 @@ export function App() {
     void import("./lib/panel").then((m) => m.initPanelBridge()).catch(() => undefined);
     void import("./lib/wordShortcuts").then((m) => m.initWordShortcuts()).catch(() => undefined);
     void useLibrary.getState().init();
+    void import("./lib/blocks/useBlocks").then((m) => m.initBlocks("main")).catch(() => undefined);
     void startUpdates();
   }, []);
 
@@ -91,7 +95,8 @@ export function App() {
     requestAnimationFrame(() => focusLatexEditor());
   }, []);
 
-  const commands = useMemo(() => buildCommands({ insertIntoWord, copyLatex, focusLatex }), [insertIntoWord, copyLatex, focusLatex]);
+  const blocksVersion = useBlocks((b) => b.blocks.length + b.docBlocks.length * 1000 + b.blocks.reduce((n, x) => n + x.version, 0));
+  const commands = useMemo(() => buildCommands({ insertIntoWord, copyLatex, focusLatex }), [insertIntoWord, copyLatex, focusLatex, blocksVersion]);
 
   // The floating editor applies its changes through the same action as "Update in Word".
   useEffect(() => {
@@ -336,6 +341,7 @@ export function App() {
         <button className="status-btn" title="Keyboard shortcuts (F1)" onClick={() => openShortcuts()}>
           ⌨ Shortcuts
         </button>
+        <BlockStatus />
         <div className="spacer" />
         {s.update.status === "downloading" && <span className="muted">Downloading update {s.update.newVersion}…</span>}
         {s.update.addin === "pendingWordClosed" && <span className="warn">Word add-in update waiting: close Word to finish</span>}
@@ -356,6 +362,7 @@ export function App() {
       <QuickStyleBar />
       <SuggestBar onPick={(f) => acceptSuggestion(f.latex)} />
       <BenchmarkBar />
+      <SlotHints />
       {previewOpen && (
         // Browser preview (no desktop window): the Word preview as a resizable pane.
         <div className="preview-pane">
@@ -379,6 +386,7 @@ export function App() {
       <ShortcutsDialog />
       <RecognitionDialog />
       <SnippetsDialog />
+      <SaveBlockDialog />
       <ContextMenu />
       {s.toast && <div className={`toast ${s.toast.kind}`} role="status">{s.toast.text}</div>}
     </div>
