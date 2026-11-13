@@ -164,10 +164,13 @@ function selectPlaceholderAt(mf: MathfieldElement, x: number, y: number) {
  * move or input the area scrolls just enough to show the caret (or the selection).
  */
 export function revealCaret(mf: MathfieldElement) {
-  requestAnimationFrame(() => {
+  const reveal = () => {
     const c = mf.shadowRoot?.querySelector(".ML__caret, .ML__text-caret, .ML__selection") as HTMLElement | null;
     c?.scrollIntoView({ block: "nearest", inline: "nearest" });
-  });
+  };
+  // Next frame, and again once a large equation (a big matrix) has finished laying out.
+  requestAnimationFrame(reveal);
+  setTimeout(reveal, 150);
 }
 
 /** Fit: the zoom that shows the whole equation in its scroll area (zooming out only; at most 100 %). */

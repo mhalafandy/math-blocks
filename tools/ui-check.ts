@@ -150,7 +150,7 @@ const BIG = {
       mf.focus();
       mf.executeCommand("moveToMathfieldEnd");
     }, latex);
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(1500);
     // Editor: the whole equation reachable (scroll both ways; the start is not cut off), the caret in view.
     const ed = await page.evaluate(() => {
       const sc = document.querySelector(".canvas-scroll") as HTMLElement;
