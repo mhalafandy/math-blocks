@@ -37,7 +37,7 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
   symbol (v_0), in indices or outside. The LaTeX never changes; the drawing follows. The index-letter
   classification is kept as rules.
 - `\unit{m/s}` (upright, a thin space after a number) and explicit forms of the token kinds (`\const`,
-  `\var`, `\op`, `\lbl`, `\ctr`) for exceptions; Review kinds suggests `\unit` for hand-written units.
+  `\variable`, `\operator`, `\lbl`, `\ctr`) for exceptions; Review kinds suggests `\unit` for hand-written units.
 - Document style page: one table of kinds (Units row new), wrapper kinds with the notation preset, and a
   Symbols section for the document's rules.
 - Editor: hovering a letter tells its kind and why; right-click → Kind of x ▸ (this occurrence, this

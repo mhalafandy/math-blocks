@@ -54,10 +54,10 @@ describe("kinds model: explicit token forms and units", () => {
     expect(drawn("x\\unit{kg}", DEFAULT_STYLE)).toBe("x\\mathrm{kg}");
   });
 
-  it("\\const, \\op, \\lbl follow their token kind's style", () => {
+  it("\\const, \\operator, \\lbl follow their token kind's style", () => {
     expect(drawn("\\const{e}^{x}", iso)).toBe("\\mathrm{e}^x");
     expect(drawn("\\const{e}", DEFAULT_STYLE)).toBe("e");
-    expect(drawn("\\op{d}x", iso)).toBe("\\mathrm{d}x");
+    expect(drawn("\\operator{d}x", iso)).toBe("\\mathrm{d}x");
     expect(drawn("v_{\\lbl{a}}", iso)).toBe("v_{\\mathrm{a}}");
   });
 });

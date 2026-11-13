@@ -310,7 +310,7 @@ export function DocumentStyleDialog() {
               <Row label="Functions (sin, det, \operatorname)" sample={<StylePreview latex="\sin\theta+\det A" style={d} />}>
                 <ShapeChoice value={L!.functions} onChange={(v) => up({ functions: v })} />
               </Row>
-              <Row label="Operators: d in derivatives and integrals (\diff, \op)" sample={<StylePreview latex="\frac{dx}{dt}=\int f\,dt" style={d} />}>
+              <Row label="Operators: d in derivatives and integrals (\diff, \operator)" sample={<StylePreview latex="\frac{dx}{dt}=\int f\,dt" style={d} />}>
                 <ShapeChoice value={L!.differential} onChange={(v) => up({ differential: v })} />
               </Row>
               <Row label="Index labels (descriptive: b, sf, max…; \lbl)" sample={<StylePreview latex="\sigma_{sf}+v_{max}+E_{b}" style={sample!} />}>
