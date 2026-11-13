@@ -75,7 +75,7 @@ for (const size of SIZES) {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       // Any button beyond the window (cut off sideways), and the page's action row in view without scrolling.
-      const buttons = [...body.querySelectorAll("button")].filter((b) => (b as HTMLElement).offsetParent);
+      const buttons = Array.from(body.querySelectorAll("button")).filter((b) => (b as HTMLElement).offsetParent);
       const outside = buttons.filter((b) => {
         const br = b.getBoundingClientRect();
         return br.right > win.right + 1 || br.left < win.left - 1;
