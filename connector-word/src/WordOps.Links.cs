@@ -64,7 +64,7 @@ namespace MathBlocks.WordConnector
                         if (blockFilter != null && tag.Split('|')[1] != blockFilter) continue;
                         var item = light
                             ? new Dictionary<string, object> { ["tag"] = tag, ["page"] = 0, ["context"] = "" }
-                            : new Dictionary<string, object> { ["tag"] = tag, ["page"] = PageOf(eq), ["context"] = ContextOf(eq), ["number"] = NumberInfo(eq)?["number"] };
+                            : NumberedItem(tag, eq);
                         item["start"] = SafeStart(eq);
                         if (includeContent) item["flatOpc"] = PictureXmlForApp(eq);
                         items.Add(item);
@@ -77,6 +77,15 @@ namespace MathBlocks.WordConnector
                 _app.ScreenUpdating = screen;
             }
             return new Dictionary<string, object> { ["documents"] = docs };
+        }
+
+        /// <summary>A listed equation with its page, context, number and the number's bookmark (references link to it).</summary>
+        private static Dictionary<string, object> NumberedItem(string tag, Eq eq)
+        {
+            var n = NumberInfo(eq);
+            var item = new Dictionary<string, object> { ["tag"] = tag, ["page"] = PageOf(eq), ["context"] = ContextOf(eq), ["number"] = n?["number"] };
+            if (n?["bookmark"] is string bm && bm.Length > 0) item["bookmark"] = bm;
+            return item;
         }
 
         private static int PageOf(Eq cc)

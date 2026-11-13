@@ -837,9 +837,9 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
         ["typing right before a definition", async (s0) => (await smoke("caretAt", { pos: s0 }), smoke("typeText", { text: "Y" }))],
         ["Backspace right before a definition", async (s0) => (await smoke("caretAt", { pos: s0 }), smoke("key", { key: "backspace" }))],
         ["Delete right after a definition", async (_s, e) => (await smoke("caretAt", { pos: e }), smoke("key", { key: "delete" }))],
-        ["pasting right before a definition", async (s0) => (await smoke("rangeOp", { op: "copy", start: 4, end: 8 }), await smoke("caretAt", { pos: s0 }), smoke("paste", { mode: "default" }))],
-        ["pasting right after a definition", async (_s, e) => (await smoke("rangeOp", { op: "copy", start: 4, end: 8 }), await smoke("caretAt", { pos: e }), smoke("paste", { mode: "default" }))],
-        ["cutting the text right before a definition", async (s0) => smoke("rangeOp", { op: "cut", start: Math.max(0, s0 - 3), end: s0 })],
+        ["pasting right before a definition", async (s0) => (await smoke("rangeOp", { action: "copy", start: 4, end: 8 }), await smoke("caretAt", { pos: s0 }), smoke("paste", { mode: "default" }))],
+        ["pasting right after a definition", async (_s, e) => (await smoke("rangeOp", { action: "copy", start: 4, end: 8 }), await smoke("caretAt", { pos: e }), smoke("paste", { mode: "default" }))],
+        ["cutting the text right before a definition", async (s0) => smoke("rangeOp", { action: "cut", start: Math.max(0, s0 - 3), end: s0 })],
       ];
       for (const [label, edit] of edits) {
         const d = (await defsNow()).find((x) => x.tag.startsWith("\\define{v}"))!;
@@ -851,7 +851,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       // A pasted paragraph holding a definition: a second marker only where it was pasted, the original intact.
       const dm = (await defsNow()).find((x) => x.tag.startsWith("\\define{m}"))!;
       const pm = await smoke("paragraphOf", { pos: dm.start });
-      await smoke("rangeOp", { op: "copy", start: pm.start, end: pm.end });
+      await smoke("rangeOp", { action: "copy", start: pm.start, end: pm.end });
       await smoke("caretTo", { where: "end" });
       await smoke("paste", { mode: "default" });
       const afterPaste = await defsNow();
@@ -874,6 +874,75 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const total = (await connector.request("listInstances", { light: true }, SLOW)).documents[0]?.instances.length ?? 0;
       check("the symbols in the table are not counted as uses of the symbols", total - listed >= r2.rows - 2 && total > listed, `${total} equation(s) in the document, ${listed} outside the table`);
       await smoke("save", { file: "symbols test.docx" });
+    });
+
+    section = "Reference links: Ctrl+click in Word, a link in the PDF";
+    await step("reference links", async () => {
+      if (!addinSupports("listDefinitions")) return check("reference links (the Word add-in is older than this build)", null, "update the add-in");
+      const { interchangeDocx } = await import("./interchangeFixture");
+      const { toBase64 } = await import("./render");
+      // Generic: two references at the top, filler, then a tall multi-line numbered equation and a short one.
+      const paras: { style: string; text: string }[] = [
+        { style: "Heading 1", text: "Links" },
+        { style: "Normal", text: "\\mbnumbering{1}" },
+        { style: "Normal", text: "\\mbnumbering{1.1}" },
+        { style: "Normal", text: "The derivation \\eqref{eq:1.1.1} gives the value \\ref{eq:1.1.2}." },
+        ...Array.from({ length: 48 }, (_, i) => ({ style: "Normal", text: `Filler paragraph ${i + 1}: text between the references and the equations.` })),
+        { style: "MTDisplayEquation", text: "\t$$\\begin{aligned} y &= a+b \\\\ &= c+d \\\\ &= e+f \\\\ &= g+h \\\\ &= k \\end{aligned}$$\t\\label{eq:1.1.1}" },
+        { style: "MTDisplayEquation", text: "\t$$x = 1$$\t\\label{eq:1.1.2}" },
+        { style: "Normal", text: "Again \\eqref{eq:1.1.2}." },
+      ];
+      const docR = await smoke("openDocx", { file: "reference links test.docx", base64: toBase64(interchangeDocx(paras)) });
+      const { convertLatexDocument } = await import("./latexInterchangeRun");
+      await convertLatexDocument({ yes: true });
+      const codes = async () => ((await smoke("refFields")).fields as { code: string }[]).map((f) => f.code);
+      const isLinked = (c: string) => /^REF _MBEqN?_\S+ \\h\b/.test(c);
+      const c1 = await codes();
+      check("Convert LaTeX: every reference is one REF <bookmark> \\h (no GOTOBUTTON)", c1.length === 3 && c1.every(isLinked), c1.join(" | "));
+      // Following the link (as Ctrl+click): the selection lands in the equation's paragraph, the equation's top on screen.
+      for (const [i, what] of [[0, "the tall 5-line equation"], [1, "the short equation"]] as const) {
+        const f = await smoke("followRef", { index: i });
+        check(`following the reference to ${what} moves the selection into its paragraph`, f.inParagraph === true, `${f.method}; page ${f.page}; selection at ${f.selStart}`);
+        check(`…and the top of ${what} is on screen`, f.topVisible === undefined ? null : f.topVisible === true, f.topVisible === undefined ? "no picture position" : `picture top ${f.pictureTop} px, window ${f.paneTop}–${f.paneBottom} px${f.visibility ? `; ${f.visibility}` : ""}`);
+      }
+      // The PDF (Word's own export): one link per reference, each to the page of its equation, at or above its top.
+      const pdf = await smoke("exportPdf", { file: "reference links.pdf", bookmarks: true });
+      const bytes = Uint8Array.from(atob(((await smoke("readFile", { file: "reference links.pdf" })) as { base64: string }).base64), (c) => c.charCodeAt(0));
+      const pdfjs = await import("pdfjs-dist");
+      pdfjs.GlobalWorkerOptions.workerSrc = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+      const { readPdfLinks, checkLinks } = await import("./pdfLinks");
+      const read = await readPdfLinks(pdfjs, bytes);
+      // Each equation's height above its baseline (its picture: height minus the lowering).
+      const inst = (await connector.request("listInstances", { includeContent: true }, SLOW)).documents[0]?.instances ?? [];
+      const above = (n: string) => {
+        const i = inst.find((x) => (x.number ?? "").replace(/\s/g, "") === n);
+        const h = Number(/height:([\d.]+)pt/.exec(i?.flatOpc ?? "")?.[1] ?? 0);
+        const pos = Number(/<w:position w:val="(-?\d+)"/.exec(i?.flatOpc ?? "")?.[1] ?? 0);
+        return h - Math.max(0, -pos / 2);
+      };
+      const refs = [{ number: "(1.1.1)", aboveBaselinePt: above("(1.1.1)") }, { number: "(1.1.2)", aboveBaselinePt: above("(1.1.2)") }, { number: "(1.1.2)", aboveBaselinePt: above("(1.1.2)") }];
+      const res = checkLinks(read.links, read.texts, refs);
+      check("PDF: one link per reference", read.links.length === refs.length, `${read.links.length} link(s) for ${refs.length} reference(s); ${pdf.pages} page(s)`);
+      res.forEach((r, i) => check(`PDF: reference ${i + 1} → ${r.number} lands on its equation's page`, r.onPage, `link to page ${r.destPage ?? "?"}, equation on page ${r.page ?? "?"}`));
+      check("PDF: the link to the tall equation lands with its top in view", res[0]?.topInView ?? null, res[0] ? `link height ${res[0].destY?.toFixed(1) ?? "?"} pt, equation top ${res[0].equationTop?.toFixed(1) ?? "?"} pt (PDF points from the bottom)` : "no link");
+      check("PDF: pages of the equations and their links (for the report)", null, res.map((r) => `${r.number}: equation p. ${r.page ?? "?"}, link to p. ${r.destPage ?? "?"}`).join("; "));
+      // An older document: references in the earlier form (GOTOBUTTON around REF). Update numbers makes them links, one Ctrl+Z.
+      await smoke("caretTo", { where: "end" });
+      await smoke("newParagraph");
+      await smoke("typeText", { text: "Older references: " });
+      await smoke("insertOldRef", { bookmark: "_MBEq_1_1_1" });
+      await smoke("caretTo", { where: "end" });
+      await smoke("typeText", { text: " and " });
+      await smoke("insertOldRef", { bookmark: "_MBEqN_1_1_2" });
+      const c2 = await codes();
+      check("the older document has references in the earlier form (GOTOBUTTON)", c2.some((c) => c.startsWith("GOTOBUTTON")), c2.join(" | "));
+      await oneCtrlZ("Update numbers (older references become links)", docR.name, () => connector.request("updateNumbers", {}, SLOW));
+      const upd = await connector.request("updateNumbers", {}, SLOW);
+      const c3 = await codes();
+      check("Update numbers: every reference is now one REF \\h, no GOTOBUTTON left", c3.length === 5 && c3.every(isLinked), `${(upd as { linked?: number }).linked ?? 0} converted; ${c3.join(" | ")}`);
+      const shows = [...((await smoke("refResults", { bookmark: "_MBEq_1_1_1" })).results as string[]), ...((await smoke("refResults", { bookmark: "_MBEqN_1_1_2" })).results as string[])];
+      check("…and they still show the numbers (with and without brackets)", shows.includes("(1.1.1)") && shows.includes("1.1.2"), shows.join(" | "));
+      await smoke("save", { file: "reference links test.docx" });
     });
 
     section = "My styles: create, rename, duplicate, delete, export and import";
@@ -1299,6 +1368,8 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       check("keep the existing numbers: (A.1)–(A.3) unchanged, now MathBlocks numbers", !!rk && rk.mismatches.length === 0 && all.join(" ") === "(A.1) (A.2) (A.3)", `${all.join(" ")}${rk?.mismatches.length ? `; ${JSON.stringify(rk.mismatches)}` : ""}`);
       const r1 = (await smoke("refResults", { bookmark: rk?.aliases?.["ZEqnNum100001"] ?? "?" })).results as string[];
       check("keep: references unchanged (now MathBlocks references)", r1.length === 1 && r1[0] === "(A.1)", JSON.stringify(r1));
+      const codesK = ((await smoke("refFields")).fields as { code: string }[]).map((f) => f.code);
+      check("Convert MathType: every reference is one linked REF (\\h), no GOTOBUTTON left", codesK.length > 0 && codesK.every((c) => /^REF _MBEqN?_\S+ \\h\b/.test(c)), codesK.join(" | "));
       await smoke("save", { file: "numbering keep test (converted).docx" });
     });
     await step("mathtype numbering, chapters with empty sections", async () => {

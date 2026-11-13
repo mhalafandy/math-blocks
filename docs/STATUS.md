@@ -5,7 +5,7 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.137 (list of symbols; 0.1.136: Blocks; 0.1.135: the kinds model), CI passed. Earlier: 0.1.133 (commit `4688e93`), CI passed: Blocks design (for approval), the MathType comparison (self-test + CI harness), suggestions from the document, the speed benchmark, print-check fixes. 0.1.131–0.1.132 were superseded.
+- **Published:** 0.1.140 (UI round: docked preview, large equations, Settings, pinned blocks), CI passed (with the new browser UI check). Earlier: 0.1.137 list of symbols; 0.1.136 Blocks; 0.1.135 kinds model. Earlier: 0.1.133 (commit `4688e93`), CI passed: Blocks design (for approval), the MathType comparison (self-test + CI harness), suggestions from the document, the speed benchmark, print-check fixes. 0.1.131–0.1.132 were superseded.
 
 ## Window switching (0.1.115 self-test): cause
 
@@ -22,6 +22,35 @@ recording stays in the add-in and in the self-test, so a recurrence will name it
 **Accepted (your status read of 0.1.137):** the kinds model, Blocks and the list of symbols. This round, in your
 order, then MathType parity. Each item below is checked in the browser by `tools/ui-check.ts` (now in CI: 222
 checks) and with screenshots.
+
+### Reference links — built (this build)
+
+- **Every reference is one field:** `{ REF _MBEq_… \h \* Charformat \! \* MERGEFORMAT }` — the number as before
+  (with brackets for `\eqref`, without for `\ref`: the same two bookmarks) and a link to the equation: Ctrl+click
+  in Word, a click in a PDF made with Word's Save As → PDF / Export. Written by Convert LaTeX, Insert reference
+  (editor and Word), Convert MathType (MathType's GOTOBUTTON + REF become this form) and the list of symbols'
+  "first defined" column (now a linked reference to the equation's number, when it is numbered).
+- **Older documents:** Update numbers first turns references written by earlier versions (GOTOBUTTON around REF,
+  or a REF without `\h`) into links, in the same single Ctrl+Z, under the text guard. Recognising references
+  (broken-reference report, renumbering, verification after Convert MathType, the self-test's refResults)
+  accepts both forms.
+- **Self-test section "Reference links"** (a generic document: two references, 48 filler paragraphs, a 5-line
+  aligned equation and a short one): every reference's code is `REF <bookmark> \h` after Convert LaTeX, Convert
+  MathType and Update numbers on an old-form document; following each link (its hyperlink, else a click on the
+  field, as Ctrl+click) puts the selection in the equation's paragraph, and reports whether the **top of the
+  tall equation is on screen** (the picture's top against Word's document pane); the PDF from
+  ExportAsFixedFormat is parsed: one Link per reference, each to its equation's page, and whether the link's
+  height is at or above the tall equation's top; the pages are in the report; one Ctrl+Z undoes the conversion.
+- **The tall equation (your point 3):** the number sits on the same line as the whole equation (one paragraph:
+  TAB, equation, TAB, number), so Word and the PDF should land on that line with the equation's top in view; the
+  self-test measures both. **If it reports the top out of view**, the fix I propose: a second, empty bookmark at
+  the start of the equation's paragraph (`_MBEqT_…`) as the link target — written as `{ HYPERLINK \l _MBEqT_… }`
+  around the `{ REF _MBEq_… \* Charformat \! }`, so REF keeps showing the number while the link goes to the top.
+- Docs: LATEX-INTERCHANGE.md says links in the PDF need Word's Save As PDF / Export (Microsoft Print to PDF
+  drops them).
+- Also fixed from your 0.1.137 self-test: the list-of-symbols section stopped at "Missing string parameter
+  'tag'" — the test's range copy passed its action as `op`, which the test harness uses for the operation's own
+  name (it became "copy", which needs an equation). Renamed to `action`.
 
 ### 1. Word preview docked under the editor — done
 

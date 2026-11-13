@@ -20,6 +20,8 @@ export interface IndexedEquation {
   tag: string;
   /** Position in the document (when the add-in reports it). */
   start?: number;
+  /** The bookmark of its number, when numbered. */
+  bookmark?: string;
   page: number;
   context: string;
   latex: string;
@@ -102,7 +104,7 @@ export async function buildDocumentIndex(): Promise<DocumentIndex> {
       if (wordHash(i.flatOpc!) === src.hash) latex = src.latex;
       else editedInWord = true;
     }
-    equations.push({ tag: i.tag, ...(i.start !== undefined ? { start: i.start } : {}), page: i.page, context: i.context, latex, display: read.display, blockId: linkOf(i.tag)?.blockId ?? null, kind: read.kind, numbered: read.numbered, number: i.number ?? null, flatOpc: i.flatOpc ?? undefined, editedInWord, ...(read.fallback ? { fallback: read.fallback } : {}), ...(read.styleHash ? { styleHash: read.styleHash } : {}) });
+    equations.push({ tag: i.tag, ...(i.start !== undefined ? { start: i.start } : {}), ...(i.bookmark ? { bookmark: i.bookmark } : {}), page: i.page, context: i.context, latex, display: read.display, blockId: linkOf(i.tag)?.blockId ?? null, kind: read.kind, numbered: read.numbered, number: i.number ?? null, flatOpc: i.flatOpc ?? undefined, editedInWord, ...(read.fallback ? { fallback: read.fallback } : {}), ...(read.styleHash ? { styleHash: read.styleHash } : {}) });
   }
   return { document: doc.fullName, name: doc.name, equations, symbols: indexEquations(equations) };
 }

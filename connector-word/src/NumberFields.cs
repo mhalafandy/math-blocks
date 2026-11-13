@@ -75,11 +75,13 @@ namespace MathBlocks.WordConnector
                 + FldEnd;
         }
 
-        /// <summary>A reference as one field: GOTOBUTTON around REF (same look as the number).</summary>
-        public static string ReferenceRuns(string bookmark) =>
-            FldBegin + Instr(" GOTOBUTTON " + bookmark + "  \\* MERGEFORMAT ")
-            + Field("REF " + bookmark + " \\* Charformat \\! \\* MERGEFORMAT", "(1)")
-            + FldEnd;
+        /// <summary>
+        /// A reference as one field — REF with the hyperlink switch: it shows the bookmark's text (the number,
+        /// with or without its brackets) and is a link to it (Ctrl+click in Word, a link in Word's PDF export).
+        /// </summary>
+        public static string ReferenceCode(string bookmark) => "REF " + bookmark + " \\h \\* Charformat \\! \\* MERGEFORMAT";
+
+        public static string ReferenceRuns(string bookmark) => Field(ReferenceCode(bookmark), "(1)");
 
         public static string Package(string runs) =>
             "<?xml version=\"1.0\" standalone=\"yes\"?><pkg:package xmlns:pkg=\"http://schemas.microsoft.com/office/2006/xmlPackage\">"

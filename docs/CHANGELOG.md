@@ -25,6 +25,13 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Changed — references are links to their equations
+- One field per reference, `REF _MBEq_… \h \* Charformat \! \* MERGEFORMAT` (instead of MathType's GOTOBUTTON
+  around REF): Ctrl+click in Word, a click in Word's PDF export. Convert LaTeX, Insert reference, Convert MathType
+  and the list of symbols write it; Update numbers converts older references (one Ctrl+Z).
+- Self-test section "Reference links" (codes, following links in Word with the tall equation's top in view, the
+  PDF's links and pages, one Ctrl+Z); fixed the list-of-symbols self-test (a parameter clash).
+
 ### Changed — Word preview docked; large equations; Settings window
 - The Word preview is a tab of the bottom panel under the editor (widens with it); pop it out into its own window
   and dock it back (remembered). Its white page grows with the equation (no more drawing on the grey); Fit.

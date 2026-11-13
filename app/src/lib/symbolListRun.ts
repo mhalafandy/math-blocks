@@ -34,7 +34,7 @@ export async function readDocumentSymbols(): Promise<DocumentSymbols> {
   }
   const index = await buildDocumentIndex();
   const inTable = (e: IndexedEquation) => r.listAt >= 0 && e.start !== undefined && e.start >= r.listAt && e.start <= r.listEnd;
-  const eqs = index.equations.map((eq, i) => ({ eq, i })).filter(({ eq }) => !inTable(eq)).map(({ eq, i }) => ({ eq, latex: eq.latex, index: i, number: eq.number ?? null, page: eq.page, context: eq.context, tag: eq.tag }));
+  const eqs = index.equations.map((eq, i) => ({ eq, i })).filter(({ eq }) => !inTable(eq)).map(({ eq, i }) => ({ eq, latex: eq.latex, index: i, number: eq.number ?? null, ...(eq.bookmark ? { bookmark: eq.bookmark } : {}), page: eq.page, context: eq.context, tag: eq.tag }));
   return { defs, eqs, listAt: r.listAt, settings: listSettings(activeStyle().symbolList), unreadable };
 }
 
@@ -84,7 +84,8 @@ export async function updateSymbolList(): Promise<{ rows: number; replaced: bool
         const drawn = !u ? [] : u === "-" ? [{ text: "–" }] : await segments(`$\\unit{${u}}$`);
         cells.push(u && u !== "-" && s.unitFormat === "brackets" ? [{ text: "[" }, ...drawn, { text: "]" }] : drawn.length ? drawn : [{ text: "" }]);
       }
-      else cells.push([{ text: e.first ?? "" }]);
+      // "First defined": a linked reference to the equation's number (Ctrl+click / a link in the PDF), else the text.
+      else cells.push(e.firstBookmark ? [{ ref: e.firstBookmark }] : [{ text: e.first ?? "" }]);
     }
     rows.push({ cells });
   }

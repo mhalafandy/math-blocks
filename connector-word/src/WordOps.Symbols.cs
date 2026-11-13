@@ -276,6 +276,13 @@ namespace MathBlocks.WordConnector
                                     pos += doc.Content.End - length;
                                     equations++;
                                 }
+                                else if (seg.TryGetValue("ref", out var ro) && ro is string bookmark && bookmark.Length > 0 && doc.Bookmarks.Exists(bookmark))
+                                {
+                                    // "First defined": a linked reference to the equation's number.
+                                    int length = doc.Content.End;
+                                    InsertReferenceFields(doc, doc.Range(pos, pos), bookmark);
+                                    pos += doc.Content.End - length;
+                                }
                                 else if (seg.TryGetValue("text", out var to) && to is string text && text.Length > 0)
                                 {
                                     var r = doc.Range(pos, pos);

@@ -406,6 +406,8 @@ export interface EquationIn {
   /** Position in document order (0, 1, 2…). */
   index: number;
   number?: string | null;
+  /** Its number's bookmark (the "first defined" column links to it). */
+  bookmark?: string;
   page?: number;
   context?: string;
   tag?: string;
@@ -416,6 +418,8 @@ export interface ListEntry {
   def: DefinitionIn;
   /** "(2.3)" or "p. 4" when asked. */
   first?: string;
+  /** The bookmark of that equation's number (written as a linked reference). */
+  firstBookmark?: string;
 }
 
 /** The rows of the table: group headings and entries, in order. */
@@ -432,7 +436,8 @@ export function tableEntries(defs: DefinitionIn[], eqs: EquationIn[], style: Mat
       const numbered = uses.find((u) => u.e.index >= d.equationsBefore && u.e.number && u.keys.has(occ.key));
       first = s.first === "number" && numbered ? (numbered.e.number ?? undefined) : d.page ? `p. ${d.page}` : undefined;
     }
-    entries.push({ occ, def: d, ...(first ? { first } : {}) });
+    const firstBookmark = s.first === "number" && first && !first.startsWith("p. ") ? uses.find((u) => u.e.index >= d.equationsBefore && u.e.number && u.keys.has(occ.key))?.e.bookmark : undefined;
+    entries.push({ occ, def: d, ...(first ? { first } : {}), ...(firstBookmark ? { firstBookmark } : {}) });
   }
   entries.sort((a, b) => (sortKey(a.occ, s) < sortKey(b.occ, s) ? -1 : sortKey(a.occ, s) > sortKey(b.occ, s) ? 1 : 0));
   if (s.grouping === "none") return entries;

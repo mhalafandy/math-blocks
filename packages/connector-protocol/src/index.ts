@@ -25,7 +25,7 @@ export interface SymbolDefinitionInfo {
 }
 
 /** A segment of a table cell: text, or an equation (inline). */
-export type SymbolListSegment = { text: string } | { flatOpc: string; tag: string };
+export type SymbolListSegment = { text: string } | { flatOpc: string; tag: string } | { ref: string };
 /** A row of the table of symbols: a group heading, or its cells. */
 export type SymbolListRow = { heading: string } | { cells: SymbolListSegment[][] };
 
@@ -245,6 +245,8 @@ export interface InstanceInfo {
   number?: string | null;
   /** Its position in the document (document order). */
   start?: number;
+  /** The bookmark of its number (references link to it), when numbered (not in light listings). */
+  bookmark?: string;
   /** WordprocessingML of the equation, when requested (includeContent). */
   flatOpc?: string;
 }

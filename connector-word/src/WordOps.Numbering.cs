@@ -425,9 +425,9 @@ namespace MathBlocks.WordConnector
         }
 
         /// <summary>
-        /// A reference as the add-in writes it — { GOTOBUTTON bookmark { REF bookmark \* Charformat \! } }
-        /// (Ctrl+click jumps to the equation) — inserted at a point with Word's field commands; the caret
-        /// ends after it.
+        /// A reference as the add-in writes it — { REF bookmark \h \* Charformat \! \* MERGEFORMAT }: the number
+        /// (as the bookmark shows it) and a link to the equation (Ctrl+click in Word, a link in the PDF) —
+        /// inserted at a point with Word's field commands; the caret ends after it.
         /// </summary>
         internal static void InsertReferenceFields(Word.Document doc, Word.Range at, string target)
         {
@@ -435,15 +435,9 @@ namespace MathBlocks.WordConnector
             Word.Field outer = null;
             try
             {
-                outer = doc.Fields.Add(doc.Range(start, start), Word.WdFieldType.wdFieldEmpty, "GOTOBUTTON " + target + "  \\* MERGEFORMAT ", false);
-                // The REF field goes at the end of GOTOBUTTON's code (the button's display text): a
-                // collapsed copy of the code range, so the new field lands inside the code.
-                var inside = outer.Code.Duplicate;
-                inside.Collapse(Word.WdCollapseDirection.wdCollapseEnd);
-                var inner = doc.Fields.Add(inside, Word.WdFieldType.wdFieldEmpty, "REF " + target + " \\* Charformat \\! \\* MERGEFORMAT", false);
-                try { inner.Update(); } catch (Exception) { }
-                // GOTOBUTTON has no result: the field ends right after its code.
-                int end = Math.Min(outer.Code.End + 1, doc.Content.End - 1);
+                outer = doc.Fields.Add(doc.Range(start, start), Word.WdFieldType.wdFieldEmpty, NumberFields.ReferenceCode(target), false);
+                try { outer.Update(); } catch (Exception) { }
+                int end = Math.Min(outer.Result.End + 1, doc.Content.End - 1);
                 doc.Range(end, end).Select();
                 Log.Info("insert reference: fields inserted for " + target);
             }
@@ -570,28 +564,8 @@ namespace MathBlocks.WordConnector
                     InsertNumber(doc, FindByTag(doc, tag)[0], fmt, name);
                     numbers++;
                 }
-                // Old references: REF _MBEq_… not yet inside a GOTOBUTTON.
-                var old = new List<Word.Field>();
-                foreach (Word.Field f in doc.Fields)
-                {
-                    string code;
-                    try { code = (f.Code.Text ?? "").Trim(); } catch (COMException) { continue; }
-                    if (!code.StartsWith("REF " + BookmarkPrefix, StringComparison.Ordinal)) continue;
-                    var before = doc.Range(Math.Max(0, f.Code.Start - 60), f.Code.Start).Text ?? "";
-                    if (before.Contains("GOTOBUTTON")) continue;
-                    old.Add(f);
-                }
-                foreach (var f in old)
-                {
-                    var code = (f.Code.Text ?? "").Trim();
-                    var bookmark = code.Split(' ')[1];
-                    int start = f.Code.Start - 1;
-                    int end = f.Result.End + 1;
-                    var r = doc.Range(start, end);
-                    r.Text = "";
-                    doc.Range(start, start).InsertXML(NumberFields.Package(NumberFields.ReferenceRuns(bookmark)));
-                    references++;
-                }
+                // Older references (GOTOBUTTON around REF, or a REF without the link switch): one linked REF each.
+                references += LinkReferences(doc);
                 UpdateNumberFields(doc);
             }
             finally
@@ -613,13 +587,72 @@ namespace MathBlocks.WordConnector
                 try
                 {
                     _app.ScreenUpdating = false;
-                    return UpdateNumberFields(doc);
+                    // References written by older versions become links first (one Ctrl+Z with the update).
+                    int linked = LinkReferences(doc);
+                    var r = UpdateNumberFields(doc);
+                    r["linked"] = linked;
+                    return r;
                 }
                 finally
                 {
                     _app.ScreenUpdating = screen;
                 }
             }, null, doc);
+        }
+
+        private static readonly System.Text.RegularExpressions.Regex OldButtonRef = new System.Text.RegularExpressions.Regex(@"^\s*GOTOBUTTON\s+(_MBEqN?_\S+)", System.Text.RegularExpressions.RegexOptions.Compiled);
+        private static readonly System.Text.RegularExpressions.Regex RefCode = new System.Text.RegularExpressions.Regex(@"^\s*REF\s+(_MBEqN?_\S+)(.*)$", System.Text.RegularExpressions.RegexOptions.Compiled | System.Text.RegularExpressions.RegexOptions.Singleline);
+
+        /// <summary>
+        /// References written before references were links — { GOTOBUTTON _MBEq… { REF _MBEq… } } (double-click
+        /// only, not a link in the PDF), or a REF to an _MBEq bookmark without \h — become the linked form
+        /// { REF _MBEq… \h \* Charformat \! \* MERGEFORMAT }, keeping their target (with or without brackets).
+        /// Last first, so positions hold. Returns how many were changed.
+        /// </summary>
+        internal static int LinkReferences(Word.Document doc)
+        {
+            int changed = 0;
+            var buttons = new List<(int start, int end, string target)>();
+            foreach (Word.Field f in doc.Fields)
+            {
+                try
+                {
+                    var m = OldButtonRef.Match(f.Code.Text ?? "");
+                    // GOTOBUTTON has no result: the field ends right after its code.
+                    if (m.Success) buttons.Add((f.Code.Start - 1, f.Code.End + 1, m.Groups[1].Value));
+                }
+                catch (COMException)
+                {
+                }
+            }
+            buttons.Sort((a, b) => b.start.CompareTo(a.start));
+            foreach (var b in buttons)
+            {
+                doc.Range(b.start, b.end).Text = "";
+                InsertInline(doc, doc.Range(b.start, b.start), NumberFields.Package(NumberFields.ReferenceRuns(b.target)));
+                changed++;
+            }
+            // A REF without the link switch (not inside a button any more): the switch added.
+            var plain = new List<Word.Field>();
+            foreach (Word.Field f in doc.Fields)
+            {
+                try
+                {
+                    var m = RefCode.Match(f.Code.Text ?? "");
+                    if (m.Success && !System.Text.RegularExpressions.Regex.IsMatch(m.Groups[2].Value, @"\\h\b")) plain.Add(f);
+                }
+                catch (COMException)
+                {
+                }
+            }
+            foreach (var f in plain)
+            {
+                var m = RefCode.Match(f.Code.Text ?? "");
+                f.Code.Text = " " + NumberFields.ReferenceCode(m.Groups[1].Value) + " ";
+                changed++;
+            }
+            if (changed > 0) Log.Info("linkReferences in " + doc.Name + ": " + changed + " reference(s) made links");
+            return changed;
         }
 
         private static Dictionary<string, object> UpdateNumberFields(Word.Document doc)

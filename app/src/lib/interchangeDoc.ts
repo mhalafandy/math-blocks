@@ -168,8 +168,10 @@ The body rotates with angular velocity $\\pvec{\\omega}$. \\define{\\pvec{\\omeg
    - every \`\\mbnumbering\` as a hidden numbering marker (its paragraph becomes hidden);
    - every \`\\define\` as a hidden definition marker at the same place (the list of symbols is made from them;
      malformed tags and second definitions of a symbol are in the pre-flight);
-   - references as cross-reference fields (Ctrl+click jumps to the equation); unresolved ones stay as
-     text, highlighted, and are listed;
+   - references as links to their equations (one REF field with the hyperlink switch): Ctrl+click in Word
+     jumps to the equation, and in a PDF a click does — make the PDF with Word's **Save As → PDF** or
+     **File → Export** (Microsoft Print to PDF drops links); unresolved ones stay as text, highlighted, and are
+     listed. Update numbers turns references written by earlier versions into links (one Ctrl+Z);
    - then every number and reference is updated.
 3. **Re-running converts only what is left** (converted equations are no longer text; numbers continue
    from the ones already converted; references may point at equations converted earlier).

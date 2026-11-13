@@ -176,7 +176,7 @@ namespace MathBlocks.WordConnector
                     var path = Path.Combine(SmokeFolder ?? Path.GetTempPath(), Rpc.GetString(p, "file"));
                     d.ExportAsFixedFormat(path, Word.WdExportFormat.wdExportFormatPDF, false, Word.WdExportOptimizeFor.wdExportOptimizeForPrint,
                         Word.WdExportRange.wdExportAllDocument, 1, 1, Word.WdExportItem.wdExportDocumentContent, true, true,
-                        Word.WdExportCreateBookmarks.wdExportCreateNoBookmarks, true, true, false);
+                        Rpc.GetBool(p, "bookmarks") ? Word.WdExportCreateBookmarks.wdExportCreateWordBookmarks : Word.WdExportCreateBookmarks.wdExportCreateNoBookmarks, true, true, false);
                     var bytes = File.ReadAllBytes(path);
                     var text = System.Text.Encoding.ASCII.GetString(bytes);
                     // Word writes the structure tags (with /Alt) into compressed object streams: inflate them.
@@ -270,6 +270,35 @@ namespace MathBlocks.WordConnector
                 }
                 case "snapshot":
                     return Snapshot(_app.ActiveDocument);
+                case "refFields":
+                {
+                    // Every reference to an equation: its code (both forms are listed, to check none of the old is left).
+                    var d = _app.ActiveDocument;
+                    var list = new List<object>();
+                    foreach (Word.Field f in d.Fields)
+                    {
+                        string code;
+                        try { code = (f.Code.Text ?? "").Trim(); } catch (COMException) { continue; }
+                        if (OldButtonRef.IsMatch(code) || RefCode.IsMatch(code))
+                            list.Add(new Dictionary<string, object> { ["code"] = code, ["start"] = f.Code.Start - 1 });
+                    }
+                    return new Dictionary<string, object> { ["fields"] = list };
+                }
+                case "insertOldRef":
+                {
+                    // A reference as versions before 0.1.139 wrote it (GOTOBUTTON around REF), at the cursor:
+                    // the self-test's "older document" for Update numbers' conversion to links.
+                    var sel = SelIn(p);
+                    var bm = Rpc.GetString(p, "bookmark");
+                    const string B = "<w:r><w:fldChar w:fldCharType=\"begin\"/></w:r>", S = "<w:r><w:fldChar w:fldCharType=\"separate\"/></w:r>", E = "<w:r><w:fldChar w:fldCharType=\"end\"/></w:r>";
+                    string I(string t) => "<w:r><w:instrText xml:space=\"preserve\">" + System.Security.SecurityElement.Escape(t) + "</w:instrText></w:r>";
+                    var runs = B + I(" GOTOBUTTON " + bm + "  \\* MERGEFORMAT ") + B + I(" REF " + bm + " \\* Charformat \\! \\* MERGEFORMAT ") + S + "<w:r><w:t>(1)</w:t></w:r>" + E + E;
+                    int at = sel.Start;
+                    InsertInline(sel.Document, sel.Document.Range(at, at), NumberFields.Package(runs));
+                    return new Dictionary<string, object> { ["ok"] = true };
+                }
+                case "followRef":
+                    return FollowReference(_app.ActiveDocument, Rpc.GetInt(p, "index"));
                 case "caretAt":
                 {
                     // Plain text positions (the list of symbols' marker tests: typing, pasting, deleting next to a field).
@@ -283,14 +312,15 @@ namespace MathBlocks.WordConnector
                     var sel = SelIn(p);
                     var d = sel.Document;
                     int a0 = Rpc.GetInt(p, "start"), b0 = Rpc.GetInt(p, "end");
-                    var what = Rpc.GetString(p, "op");
+                    // "action", not "op": the request's op is "rangeOp" itself.
+                    var what = Rpc.GetString(p, "action");
                     var r = d.Range(a0, b0);
                     if (what == "text") return new Dictionary<string, object> { ["text"] = r.Text ?? "" };
                     r.Select();
                     if (what == "copy") _app.Selection.Copy();
                     else if (what == "cut") _app.Selection.Cut();
                     else if (what == "select") { }
-                    else throw new RpcException(Rpc.InvalidParams, "rangeOp: copy, cut, select or text");
+                    else throw new RpcException(Rpc.InvalidParams, "rangeOp action: copy, cut, select or text");
                     return new Dictionary<string, object> { ["ok"] = true };
                 }
                 case "key":
@@ -527,6 +557,99 @@ namespace MathBlocks.WordConnector
                     break;
                 default: throw new RpcException(Rpc.InvalidParams, "Unknown paste mode " + mode);
             }
+        }
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool GetWindowRect(IntPtr hWnd, out Rect lpRect);
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool EnumChildWindows(IntPtr parent, EnumProc callback, IntPtr lParam);
+        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        private static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder name, int max);
+        private delegate bool EnumProc(IntPtr hWnd, IntPtr lParam);
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        private struct Rect { public int Left, Top, Right, Bottom; }
+
+        /// <summary>Word's document pane (window class _WwG) of the active window: where the page is drawn on screen.</summary>
+        private Rect? DocumentPane()
+        {
+            try
+            {
+                var hwnd = new IntPtr((int)((dynamic)_app.ActiveWindow).Hwnd);
+                IntPtr found = IntPtr.Zero;
+                EnumChildWindows(hwnd, (h, _) =>
+                {
+                    var sb = new System.Text.StringBuilder(64);
+                    GetClassName(h, sb, sb.Capacity);
+                    if (sb.ToString() == "_WwG") { found = h; return false; }
+                    return true;
+                }, IntPtr.Zero);
+                if (found == IntPtr.Zero) found = hwnd;
+                return GetWindowRect(found, out var r) ? r : (Rect?)null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Follows the n-th reference's link as Ctrl+click does (its hyperlink, else a click on the field), then
+        /// reports where the selection is and whether the top of the equation it points to is on screen.
+        /// </summary>
+        private Dictionary<string, object> FollowReference(Word.Document d, int index)
+        {
+            var refs = new List<Word.Field>();
+            foreach (Word.Field f in d.Fields)
+            {
+                try { if (RefCode.IsMatch(f.Code.Text ?? "")) refs.Add(f); } catch (COMException) { }
+            }
+            if (index < 0 || index >= refs.Count) throw new RpcException(Rpc.InvalidParams, "No reference " + index + " (" + refs.Count + " in the document)");
+            var field = refs[index];
+            var name = RefCode.Match(field.Code.Text ?? "").Groups[1].Value;
+            // Start away from the target (top of the document), so the jump is visible.
+            d.Range(0, 0).Select();
+            _app.ActiveWindow.ScrollIntoView(d.Range(0, 0), true);
+            string method;
+            try
+            {
+                var links = field.Result.Hyperlinks;
+                if (links.Count > 0) { links[1].Follow(); method = "hyperlink"; }
+                else { field.DoClick(); method = "field click"; }
+            }
+            catch (COMException ex)
+            {
+                field.DoClick();
+                method = "field click (" + ex.Message + ")";
+            }
+            System.Windows.Forms.Application.DoEvents();
+            var sel = _app.Selection;
+            var r = new Dictionary<string, object> { ["bookmark"] = name, ["method"] = method, ["selStart"] = sel.Start };
+            if (!d.Bookmarks.Exists(name)) { r["inParagraph"] = false; return r; }
+            var para = d.Bookmarks[name].Range.Paragraphs[1].Range;
+            r["inParagraph"] = sel.Start >= para.Start && sel.Start <= para.End;
+            r["page"] = Convert.ToInt32(para.get_Information(Word.WdInformation.wdActiveEndPageNumber));
+            // The equation's picture in that paragraph: is its top on screen?
+            Word.Range pic = null;
+            foreach (Word.InlineShape s0 in para.InlineShapes) { pic = s0.Range; break; }
+            var pane = DocumentPane();
+            if (pic != null && pane.HasValue)
+            {
+                try
+                {
+                    _app.ActiveWindow.GetPoint(out int left, out int top, out int width, out int height, pic);
+                    r["pictureTop"] = top;
+                    r["pictureHeight"] = height;
+                    r["paneTop"] = pane.Value.Top;
+                    r["paneBottom"] = pane.Value.Bottom;
+                    r["topVisible"] = top >= pane.Value.Top && top < pane.Value.Bottom;
+                }
+                catch (COMException ex)
+                {
+                    r["topVisible"] = false;
+                    r["visibility"] = "not on screen (" + ex.Message + ")";
+                }
+            }
+            return r;
         }
 
         /// <summary>Pastes at the selection in one of Word's paste modes; reports what arrived and what the add-in makes of it.</summary>

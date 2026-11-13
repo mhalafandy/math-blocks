@@ -302,11 +302,13 @@ namespace MathBlocks.WordConnector
             {
                 try
                 {
-                    var m = System.Text.RegularExpressions.Regex.Match(f.Code.Text ?? "", @"^\s*GOTOBUTTON\s+(\S+)");
-                    if (!m.Success || !wanted.Contains(m.Groups[1].Value)) continue;
-                    var name = m.Groups[1].Value;
+                    // Both forms: the linked REF (current) and GOTOBUTTON + REF (older documents).
+                    var m = System.Text.RegularExpressions.Regex.Match(f.Code.Text ?? "", @"^\s*(GOTOBUTTON|REF)\s+(\S+)");
+                    if (!m.Success || !wanted.Contains(m.Groups[2].Value)) continue;
+                    if (m.Groups[1].Value == "REF" && (doc.Range(Math.Max(0, f.Code.Start - 60), f.Code.Start).Text ?? "").Contains("GOTOBUTTON")) continue;
+                    var name = m.Groups[2].Value;
                     var expect = doc.Bookmarks.Exists(name) ? Norm(doc.Bookmarks[name].Range.Text) : "(no bookmark)";
-                    var shows = Norm(ButtonDisplay(f));
+                    var shows = Norm(m.Groups[1].Value == "REF" ? f.Result.Text : ButtonDisplay(f));
                     if (shows != expect) bad.Add(new Dictionary<string, object> { ["bookmark"] = name, ["expected"] = expect, ["shows"] = shows, ["snippet"] = Snippet(f.Code.Paragraphs[1].Range) });
                 }
                 catch (COMException)

@@ -143,11 +143,11 @@ static class Program
             var bare = c.display.Trim('(', ')', '[', ']');
             Check(a.bookmarkTexts.Contains("_MBEqN_abc123def456=" + bare), c.label + ": number-only bookmark covers " + bare);
         }
-        // Reference: GOTOBUTTON around REF \* Charformat \! (MathType's form), one outer field.
+        // Reference: one REF field with the hyperlink switch (Ctrl+click in Word, a link in the PDF), no GOTOBUTTON.
         var r = Analyse(Para(NumberFields.ReferenceRuns("_MBEq_abc123def456")));
-        Check(r.outerFields == 1, "reference: one outer field");
-        Check(r.codes.Any(x => x.depth == 1 && x.code.StartsWith("GOTOBUTTON _MBEq_abc123def456")), "reference: GOTOBUTTON to the bookmark");
-        Check(r.codes.Any(x => x.depth == 2 && x.code == "REF _MBEq_abc123def456 \\* Charformat \\! \\* MERGEFORMAT"), "reference: nested REF with \\! (keeps the referenced number)");
+        Check(r.outerFields == 1, "reference: one field");
+        Check(r.codes.Any(x => x.depth == 1 && x.code == "REF _MBEq_abc123def456 \\h \\* Charformat \\! \\* MERGEFORMAT"), "reference: REF to the bookmark with \\h (a link) and \\! (keeps the referenced number)");
+        Check(!r.codes.Any(x => x.code.Contains("GOTOBUTTON")), "reference: no GOTOBUTTON");
         // The package is well-formed XML.
         try { XDocument.Parse(NumberFields.Package(NumberFields.NumberRuns(F("section"), "_MBEq_x", "_MBEqN_x", false))); Check(true, "package is well-formed"); }
         catch (Exception e) { Check(false, "package is well-formed: " + e.Message); }
