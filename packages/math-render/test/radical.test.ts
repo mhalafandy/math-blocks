@@ -9,14 +9,18 @@ const STIX = new URL("../node_modules/@fontsource/stix-two-math/files/stix-two-m
 const available = existsSync(L + "Regular.ttf") && existsSync(SYM) && existsSync(STIX);
 
 describe.skipIf(!available)("radicals as MathType draws them (Symbol's √ and its extender bar)", () => {
-  const fonts: FontSet = {
-    regular: loadFont(readFileSync(L + "Regular.ttf")),
-    italic: loadFont(readFileSync(L + "Italic.ttf")),
-    bold: loadFont(readFileSync(L + "Bold.ttf")),
-    boldItalic: loadFont(readFileSync(L + "BoldItalic.ttf")),
-    math: loadFont(readFileSync(STIX)),
-    symbol: loadFont(readFileSync(SYM)),
-  };
+  // Loaded when a test runs (the describe body runs even when the fonts are missing and it is skipped).
+  let cached: FontSet | null = null;
+  const load = (): FontSet =>
+    (cached ??= {
+      regular: loadFont(readFileSync(L + "Regular.ttf")),
+      italic: loadFont(readFileSync(L + "Italic.ttf")),
+      bold: loadFont(readFileSync(L + "Bold.ttf")),
+      boldItalic: loadFont(readFileSync(L + "BoldItalic.ttf")),
+      math: loadFont(readFileSync(STIX)),
+      symbol: loadFont(readFileSync(SYM)),
+    });
+  const fonts = new Proxy({} as FontSet, { get: (_, k) => load()[k as keyof FontSet] });
   const box = (latex: string) => layout(parseLatex(latex).root, { fonts, style: CLASSIC, display: false });
   const parts = (b: Box) => {
     const sign = b.items.find((i) => i.k === "g" && i.g.font === fonts.symbol) as Extract<Box["items"][number], { k: "g" }>;
