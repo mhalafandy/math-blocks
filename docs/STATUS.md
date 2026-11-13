@@ -26,7 +26,7 @@ checks) and with screenshots.
 ### 1. Word preview docked under the editor — done
 
 - The preview is a **Preview** tab of the bottom panel, under the editor; it widens with the editor when the side
-  panels are collapsed (checked: 446 → 1113 px wide at 1366×768 with both side panels hidden).
+  panels are collapsed (checked: 722 → 1340 px wide at 1366×768 with both side panels hidden).
 - ⧉ pops it out into its own window (a floating pane in the browser); the window's **Dock** button brings it back;
   the choice is remembered. Ctrl+Alt+P and the toolbar button follow it. The floating editor still opens the
   preview window (the main window is behind it).
