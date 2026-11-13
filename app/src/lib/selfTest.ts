@@ -457,16 +457,19 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       check("the numbering item says what it will do", menu.items.find((i) => i.id === "number")?.label === "Number equation");
       const latex = (await smoke("objectMenuRun", { tag: eq.tag, id: "copyLatex" })) as { result: string; clipboardText: string | null };
       check("Copy LaTeX puts the equation's LaTeX on the clipboard", norm(latex.clipboardText ?? "") === norm("E=mc^2"), `${latex.result}: ${latex.clipboardText}`);
-      const before = (await snap()).tags.length;
+      // A snapshot lists an object under its ID and as obj:ID: count equations, not entries.
+      const eqCount = (tags: string[]) => new Set(tags.map((t) => t.replace(/^obj:/, ""))).size;
+      const before = eqCount((await snap()).tags);
       await smoke("objectMenuRun", { tag: eq.tag, id: "cut" });
       const afterCut = await snap();
-      check("Cut removes the equation (the text around it stays)", afterCut.tags.length === before - 1 && /Menu test:\s*end\./.test(afterCut.plain), `${before} → ${afterCut.tags.length}; “${afterCut.plain.trim()}”`);
+      check("Cut removes the equation (the text around it stays)", eqCount(afterCut.tags) === before - 1 && /Menu test:\s*end\./.test(afterCut.plain), `${before} → ${eqCount(afterCut.tags)} equation(s); “${afterCut.plain.trim()}”`);
       await smoke("caretTo", { where: "end" });
       await smoke("paste", { mode: "ctrlV" });
       const afterPaste = await snap();
-      check("…and Paste brings it back, the same equation", afterPaste.tags.length === before && afterPaste.tags.includes(eq.tag), afterPaste.tags.join(", "));
+      check("…and Paste brings it back, the same equation", eqCount(afterPaste.tags) === before && afterPaste.tags.includes(eq.tag), afterPaste.tags.join(", "));
       await smoke("objectMenuRun", { tag: eq.tag, id: "delete" });
-      check("Delete removes it", (await snap()).tags.length === before - 1);
+      const afterDelete = eqCount((await snap()).tags);
+      check("Delete removes it", afterDelete === before - 1, `${before} → ${afterDelete} equation(s)`);
       await smoke("undo", { times: 1 });
       check("…and Ctrl+Z restores it", (await snap()).tags.includes(eq.tag));
       // Edit here: the floating editor opens on that equation (the app's editing target).
@@ -538,9 +541,9 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       await insert("\\int_0^1 x^2\\,dx=\\frac{1}{3}", false);
       await smoke("newParagraph");
       await insert("\\pvec{r}=\\vectrix{F}^{\\T}\\cmat{r}", true);
-      const pdf = (await smoke("exportPdf", { file: "objects test.pdf" })) as { size: number; pages: number; alt: boolean; images: number; path: string };
+      const pdf = (await smoke("exportPdf", { file: "objects test.pdf" })) as { size: number; pages: number; alt: boolean; alts?: string[]; images: number; path: string };
       check("PDF from Word: written, with the page", pdf.size > 1000 && pdf.pages >= 1, `${pdf.size} bytes, ${pdf.pages} page(s), ${pdf.images} raster image(s)`);
-      check("PDF from Word: the equations carry alternative text (accessibility tags)", pdf.alt, pdf.path);
+      check("PDF from Word: the equations carry alternative text (accessibility tags)", pdf.alt && (pdf.alts?.length ?? 0) >= 2, `${pdf.alts?.length ?? 0} alt text(s): ${(pdf.alts ?? []).join(" | ")}`);
       const printers = (await smoke("pdfPrinters")) as { printers: string[]; acrobat: boolean };
       check("PDF from Acrobat: open the saved “objects test.docx” and use Acrobat's Save as Adobe PDF (manual, in the trial checklist)", null, `${printers.acrobat ? "Acrobat found" : "Acrobat not found"}; PDF printers: ${printers.printers.filter((p) => /pdf/i.test(p)).join(", ") || "none"}`);
       await smoke("save", { file: "objects test.docx" });
@@ -1251,6 +1254,42 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const outside = activationLog.filter((a) => !a.during.startsWith("smoke"));
       check("windows that came forward not by a self-test step", null, describeActivations(outside));
     }
+
+    section = "Palette tiles: drawn by math-render in the document style, on this PC's fonts";
+    await step("palette tiles", async () => {
+      const { ALL_ITEMS, GROUPS } = await import("./palette");
+      const { renderTile, SYMBOL_CELL, STRUCTURE_CELL, LARGE_CELL, ICON_CELL } = await import("./tiles");
+      const { loadFonts, classicStyle } = await import("./render");
+      const { activeStyle } = await import("./docStyle");
+      const fonts = await loadFonts();
+      const t0 = performance.now();
+      const failed: string[] = [];
+      let enlarged = 0;
+      let wrongSize = 0;
+      let colored = 0;
+      for (const x of ALL_ITEMS) {
+        const cell = x.item.glyph ? SYMBOL_CELL : x.group.row === "tabs" ? LARGE_CELL : STRUCTURE_CELL;
+        try {
+          const t = renderTile(x.item.latex, cell, { fonts, style: classicStyle(), mathStyle: activeStyle() });
+          if (t.scale > 1) enlarged++;
+          if (!t.svg.includes(`viewBox="0 0 ${cell.w} ${cell.h}"`)) wrongSize++;
+          if (/fill="#|stroke="#/.test(t.svg)) colored++;
+        } catch (e) {
+          failed.push(`${x.item.name}: ${e instanceof Error ? e.message : String(e)}`);
+        }
+      }
+      for (const g of GROUPS) {
+        try {
+          renderTile(g.iconTex ? g.icon : g.icon.trim().split(/\s+/).join("\\,"), ICON_CELL, { fonts, style: classicStyle(), mathStyle: activeStyle() });
+        } catch (e) {
+          failed.push(`group ${g.label}: ${e instanceof Error ? e.message : String(e)}`);
+        }
+      }
+      const ms = performance.now() - t0;
+      check(`every palette entry draws (${ALL_ITEMS.length} entries, ${GROUPS.length} group buttons)`, failed.length === 0, failed.slice(0, 8).join(" | ") || "all drawn");
+      check("every tile has its cell's size, is never enlarged, and is drawn in currentColor (follows light/dark)", enlarged === 0 && wrongSize === 0 && colored === 0, `${enlarged} enlarged, ${wrongSize} wrong size, ${colored} with a fixed colour`);
+      check("time to draw the whole palette once (then cached until the style changes)", null, `${Math.round(ms)} ms, ${(ms / ALL_ITEMS.length).toFixed(2)} ms per tile; fonts: ${fonts.regular === fonts.math ? "STIX (Times New Roman not found)" : "Times New Roman"}${fonts.symbol ? " + Symbol" : ""}`);
+    });
 
     section = "Saved test documents";
     const a = await step("save A", () => smoke("save", { file: "self-test A.docx" }));

@@ -55,8 +55,12 @@ interface Prefs {
   paletteLocation: "right" | "top";
   /** Pinned palette items (keys from palette.ts). */
   favorites: string[];
-  /** Recently inserted palette items, newest first. */
+  /** Recently inserted palette items, newest first (at most 16, one per LaTeX). */
   recents: string[];
+  /** How often each LaTeX was inserted from a palette (search ranks frequent items first). */
+  paletteUse: Record<string, number>;
+  /** LaTeX of items whose one-time "faster: type …" hint was shown. */
+  paletteHints: string[];
   /** Topic tab shown under the top palette; null = collapsed. */
   paletteTab: string | null;
   numberStyle: NumberStyle;
@@ -178,6 +182,8 @@ const DEFAULT_PREFS: Prefs = {
   paletteLocation: "right",
   favorites: DEFAULT_FAVORITES,
   recents: [],
+  paletteUse: {},
+  paletteHints: [],
   paletteTab: "tab-spacecraft",
   numberStyle: { open: "(", close: ")", chapter: false },
   look: "classic",

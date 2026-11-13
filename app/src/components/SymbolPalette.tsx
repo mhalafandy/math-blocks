@@ -1,22 +1,32 @@
 import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { convertLatexToMarkup } from "mathlive/ssr";
-import { findItem, GROUPS, itemKey, plainLatex, previewLatex, searchPalette, type IndexedItem, type PaletteGroup } from "../lib/palette";
+import { findItem, GROUPS, itemKey, plainLatex, searchPalette, type IndexedItem, type PaletteGroup } from "../lib/palette";
+import { afterUse, nextRecents, recentItems, reorderFavorites } from "../lib/paletteUse";
+import { ICON_CELL, LARGE_CELL, STRUCTURE_CELL, SYMBOL_CELL, type TileCell } from "../lib/tiles";
+import { MathTile } from "./MathTile";
 import { useApp } from "../lib/store";
 import { lastEditor } from "../lib/focus";
 import { insertIntoLatex } from "./LatexEditor";
 import { insertIntoVisual } from "./MathEditor";
 
-const MAX_RECENTS = 18;
-
-/** Inserts a palette item into whichever editor is active and records it as recent. */
+/**
+ * Inserts a palette item into whichever editor is active, records it in Recent and in the use counts,
+ * and, once per item clicked often, says how to type it faster.
+ */
 export function insertPaletteItem(x: IndexedItem) {
   const s = useApp.getState();
   const ok =
     (lastEditor() === "latex" && s.bottomOpen && s.bottomTab === "latex" && insertIntoLatex(plainLatex(x.item.latex))) ||
     insertIntoVisual(x.item.latex);
   if (!ok) return;
-  const recents = [x.key, ...s.recents.filter((k) => k !== x.key)].slice(0, MAX_RECENTS);
-  s.setPrefs({ recents });
+  const used = afterUse(x.item.latex, s.paletteUse ?? {}, s.paletteHints ?? []);
+  s.setPrefs({ recents: nextRecents(s.recents, x), paletteUse: used.use, paletteHints: used.shown });
+  if (used.hint) s.notify(`${used.hint} (for ${x.item.name})`);
+}
+
+/** The search with the user's ranking: favourites and frequently used items first. */
+export function rankedSearch(query: string, limit?: number): IndexedItem[] {
+  const s = useApp.getState();
+  return searchPalette(query, limit, { favorites: s.favorites, use: s.paletteUse });
 }
 
 function toggleFavorite(key: string) {
@@ -26,54 +36,73 @@ function toggleFavorite(key: string) {
   s.notify(has ? "Removed from quick access" : "Pinned to quick access");
 }
 
-// ------------------------------------------------------------------ rendering
+// ------------------------------------------------------------------ tiles
 
-const markupCache = new Map<string, string>();
-function markup(latex: string): string {
-  let html = markupCache.get(latex);
-  if (html === undefined) {
-    try {
-      html = convertLatexToMarkup(previewLatex(latex));
-    } catch {
-      html = "";
-    }
-    markupCache.set(latex, html);
-  }
-  return html;
-}
+/** The cell of each button size: one font size everywhere, wider cells for larger formulas. */
+export const CELL: Record<"glyph" | "small" | "large", TileCell> = { glyph: SYMBOL_CELL, small: STRUCTURE_CELL, large: LARGE_CELL };
 
 /** One palette button. Mouse-down is prevented so the editor keeps its focus and selection. */
-const ItemButton = memo(function ItemButton({ x, size }: { x: IndexedItem; size: "glyph" | "small" | "large" }) {
+const ItemButton = memo(function ItemButton({ x, size, reorder }: { x: IndexedItem; size: "glyph" | "small" | "large"; reorder?: boolean }) {
   const favorite = useApp((s) => s.favorites.includes(x.key));
-  const glyph = x.item.glyph;
   return (
     <button
       type="button"
       className={`pal-item ${size}${favorite ? " fav" : ""}`}
-      title={`${x.item.name}\n${x.item.latex.replace(/#0|#\?/g, "□")}\nRight-click: ${favorite ? "unpin" : "pin to quick access"}`}
-      onMouseDown={(e) => e.preventDefault()}
+      title={`${x.item.name}\n${x.item.latex.replace(/#0|#\?/g, "□")}\nRight-click: ${favorite ? "unpin" : "pin to quick access"}${reorder ? "; drag to reorder" : ""}`}
+      draggable={reorder}
+      onDragStart={reorder ? (e) => e.dataTransfer.setData("text/x-mathblocks-fav", x.key) : undefined}
+      onDragOver={reorder ? (e) => e.dataTransfer.types.includes("text/x-mathblocks-fav") && e.preventDefault() : undefined}
+      onDrop={
+        reorder
+          ? (e) => {
+              const from = e.dataTransfer.getData("text/x-mathblocks-fav");
+              if (!from) return;
+              e.preventDefault();
+              const s = useApp.getState();
+              s.setPrefs({ favorites: reorderFavorites(s.favorites, from, x.key) });
+            }
+          : undefined
+      }
+      onMouseDown={(e) => !reorder && e.preventDefault()}
       onClick={() => insertPaletteItem(x)}
       onContextMenu={(e) => {
         e.preventDefault();
         toggleFavorite(x.key);
       }}
     >
-      {glyph && size !== "large" ? <span className="glyph">{glyph}</span> : <span className="tex" dangerouslySetInnerHTML={{ __html: markup(x.item.latex) }} />}
+      <MathTile latex={x.item.latex} cell={CELL[size]} />
     </button>
   );
 });
 
-export function Grid({ items, size }: { items: IndexedItem[]; size: "glyph" | "small" | "large" }) {
+/** A grid of palette buttons; `reorder`: the items are the favourites, reordered by dragging. */
+export function Grid({ items, size, reorder }: { items: IndexedItem[]; size: "glyph" | "small" | "large"; reorder?: boolean }) {
   // Spacecraft entries change with the notation setting: redraw them when it changes.
   const notation = useApp((s) => `${s.spacecraftConvention}|${s.spacecraftVector}`);
   return (
     <div className={`pal-grid ${size}`}>
       {items.map((x) => (
         // A template in a glyph-sized row (quick access) still needs room for its preview.
-        <ItemButton key={x.item.conventions ? `${x.key}|${notation}` : x.key} x={x} size={size === "glyph" && !x.item.glyph ? "small" : size} />
+        <ItemButton key={x.item.conventions ? `${x.key}|${notation}` : x.key} x={x} size={size === "glyph" && !x.item.glyph ? "small" : size} reorder={reorder} />
       ))}
     </div>
   );
+}
+
+/** Quick access (the favourites), the same everywhere: drag to reorder, right-click to unpin. */
+export function QuickAccess({ empty, max }: { empty?: ReactNode; max?: number }) {
+  const favorites = useApp((s) => s.favorites);
+  const items = useMemo(() => favorites.map(findItem).filter((x): x is IndexedItem => !!x).slice(0, max), [favorites, max]);
+  if (!items.length) return <>{empty ?? null}</>;
+  return <Grid items={items} size="glyph" reorder />;
+}
+
+/** Recent: newest first, one per LaTeX, at most 16. */
+export function RecentGrid({ size = "small", empty }: { size?: "glyph" | "small"; empty?: ReactNode }) {
+  const recents = useApp((s) => s.recents);
+  const items = useMemo(() => recentItems(recents), [recents]);
+  if (!items.length) return <>{empty ?? null}</>;
+  return <Grid items={items} size={size} />;
 }
 
 export const groupItems = (g: PaletteGroup): IndexedItem[] => g.items.map((item) => ({ key: itemKey(g, item), group: g, item }));
@@ -108,7 +137,7 @@ function SearchBox({ query, setQuery, autoFocus }: { query: string; setQuery: (q
       onChange={(e) => setQuery(e.target.value)}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
-          const first = searchPalette(query, 1)[0];
+          const first = rankedSearch(query, 1)[0];
           if (first) insertPaletteItem(first);
         }
       }}
@@ -117,7 +146,8 @@ function SearchBox({ query, setQuery, autoFocus }: { query: string; setQuery: (q
 }
 
 export function SearchResults({ query }: { query: string }) {
-  const results = useMemo(() => searchPalette(query), [query]);
+  const favorites = useApp((s) => s.favorites);
+  const results = useMemo(() => rankedSearch(query), [query, favorites]);
   if (results.length === 0) return <p className="empty">No symbols match “{query}”.</p>;
   const symbols = results.filter((r) => r.item.glyph);
   const templates = results.filter((r) => !r.item.glyph);
@@ -131,7 +161,8 @@ export function SearchResults({ query }: { query: string }) {
 
 /** Search results as a list with names (used in the narrow right panel). */
 function ResultList({ query }: { query: string }) {
-  const results = useMemo(() => searchPalette(query, 80), [query]);
+  const favorites = useApp((s) => s.favorites);
+  const results = useMemo(() => rankedSearch(query, 80), [query, favorites]);
   if (results.length === 0) return <p className="empty">No symbols match “{query}”.</p>;
   return (
     <ul className="result-list">
@@ -148,7 +179,7 @@ function ResultList({ query }: { query: string }) {
             }}
           >
             <span className="preview">
-              {x.item.glyph ? <span className="glyph">{x.item.glyph}</span> : <span className="tex" dangerouslySetInnerHTML={{ __html: markup(x.item.latex) }} />}
+              <MathTile latex={x.item.latex} cell={x.item.glyph ? SYMBOL_CELL : STRUCTURE_CELL} />
             </span>
             <span className="name">{x.item.name}</span>
             <span className="where">{x.group.label}</span>
@@ -176,6 +207,9 @@ function LocationToggle() {
 
 // ------------------------------------------------------------------ top layout (MathType style)
 
+/** A group button's plain-glyph preview ("≤ ≠ ≈") as LaTeX: the glyphs a little apart. */
+const iconLatex = (icon: string) => icon.trim().split(/\s+/).join("\\,");
+
 function DropdownButton({ group, open, onToggle }: { group: PaletteGroup; open: boolean; onToggle: () => void }) {
   return (
     <button
@@ -186,7 +220,7 @@ function DropdownButton({ group, open, onToggle }: { group: PaletteGroup; open: 
       onMouseDown={(e) => e.preventDefault()}
       onClick={onToggle}
     >
-      {group.iconTex ? <span className="tex" dangerouslySetInnerHTML={{ __html: markup(group.icon) }} /> : group.icon}
+      <MathTile latex={group.iconTex ? group.icon : iconLatex(group.icon)} cell={ICON_CELL} />
       <span className="caret">▾</span>
     </button>
   );
@@ -195,7 +229,6 @@ function DropdownButton({ group, open, onToggle }: { group: PaletteGroup; open: 
 export function PaletteTop() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const favorites = useApp((s) => s.favorites);
   const recents = useApp((s) => s.recents);
   const tab = useApp((s) => s.paletteTab);
   const setPrefs = useApp((s) => s.setPrefs);
@@ -207,10 +240,9 @@ export function PaletteTop() {
 
   const rows: ("symbols" | "templates")[] = ["symbols", "templates"];
   const openGroup = GROUPS.find((g) => g.id === openId && g.row !== "tabs");
-  const favItems = favorites.map(findItem).filter((x): x is IndexedItem => !!x);
   const tabs = GROUPS.filter((g) => g.row === "tabs" && g.items.length);
   const tabGroup = tabs.find((g) => g.id === tab);
-  const tabItems: IndexedItem[] = tab === "recent" ? recents.map(findItem).filter((x): x is IndexedItem => !!x) : tabGroup ? groupItems(tabGroup) : [];
+  const tabItems: IndexedItem[] = tab === "recent" ? recentItems(recents) : tabGroup ? groupItems(tabGroup) : [];
 
   let popover: ReactNode = null;
   if (query) popover = <SearchResults query={query} />;
@@ -226,7 +258,7 @@ export function PaletteTop() {
         </div>
       ))}
       <div className="pal-row quick">
-        <Grid items={favItems} size="glyph" />
+        <QuickAccess />
         <div className="spacer" />
         <SearchBox query={query} setQuery={(q) => { setQuery(q); setOpenId(null); }} />
       </div>
@@ -282,8 +314,8 @@ export function SymbolPanel() {
   const recents = useApp((s) => s.recents);
   const tab = useApp((s) => s.paletteTab);
   const setPrefs = useApp((s) => s.setPrefs);
-  const favItems = favorites.map(findItem).filter((x): x is IndexedItem => !!x);
-  const recentItems = recents.map(findItem).filter((x): x is IndexedItem => !!x);
+  const favCount = favorites.filter((k) => !!findItem(k)).length;
+  const hasRecent = recents.some((k) => !!findItem(k));
   const collections = GROUPS.filter((g) => g.row === "tabs" && g.items.length);
   const collection = collections.find((g) => g.id === tab) ?? collections[0]!;
   return (
@@ -304,12 +336,12 @@ export function SymbolPanel() {
           <ResultList query={query} />
         ) : (
           <>
-            <Section title="Quick access" defaultOpen count={favItems.length}>
-              {favItems.length === 0 ? <p className="empty">Right-click any symbol to pin it here.</p> : <Grid items={favItems} size="glyph" />}
+            <Section title="Quick access" defaultOpen count={favCount}>
+              <QuickAccess empty={<p className="empty">Right-click any symbol to pin it here.</p>} />
             </Section>
-            {recentItems.length > 0 && (
+            {hasRecent && (
               <Section title="Recent" defaultOpen>
-                <Grid items={recentItems} size="small" />
+                <RecentGrid />
               </Section>
             )}
             <details className="pal-section" open>

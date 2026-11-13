@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { MathEditor, focusVisualEditor, insertIntoVisual, restoreEditorFocus } from "./MathEditor";
 import { insertPaletteItem } from "./SymbolPalette";
 import { ALL_ITEMS, GROUPS, type IndexedItem } from "../lib/palette";
-import { Grid, groupItems, SearchResults, sizeOf } from "./SymbolPalette";
+import { Grid, groupItems, QuickAccess, SearchResults, sizeOf } from "./SymbolPalette";
 import { LatexEditor } from "./LatexEditor";
 import { ClassicPreview } from "./ClassicPreview";
 import { MathPreview } from "./MathPreview";
@@ -387,18 +387,11 @@ function GroupFlyout({ row }: { row: "symbols" | "templates" | "tabs" }) {
 
 const CARD_MARGIN = 14;
 
-/** One-click favourites (the main window's Quick access, right-click there to change them). */
+/** One-click favourites: the same Quick access as the main window (drag to reorder, right-click to unpin). */
 function QuickRow() {
-  const favorites = useApp((s) => s.favorites);
-  const items = useMemo(() => favorites.map((k) => ALL_ITEMS.find((x) => x.key === k)).filter((x): x is IndexedItem => !!x).slice(0, 18), [favorites]);
-  if (!items.length) return null;
   return (
     <div className="panel-quick" role="toolbar" aria-label="Favourite symbols">
-      {items.map((x) => (
-        <button key={x.key} title={x.item.name} onMouseDown={(e) => e.preventDefault()} onClick={() => insertPaletteItem(x)}>
-          {x.item.glyph ? <span className="glyph">{x.item.glyph}</span> : <MathPreview latex={x.item.latex.replace(/#[0?@]/g, "\\square")} />}
-        </button>
-      ))}
+      <QuickAccess max={18} />
     </div>
   );
 }

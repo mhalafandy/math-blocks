@@ -2,10 +2,11 @@ import { useMemo, useState } from "react";
 import { create } from "zustand";
 import { KINDS } from "@mathblocks/math-core";
 import { Modal } from "./Dialogs";
-import { MathPreview } from "./MathPreview";
+import { MathTile } from "./MathTile";
+import { STRUCTURE_CELL, SYMBOL_CELL } from "../lib/tiles";
 import { AUTOCORRECT, insertIntoVisual } from "./MathEditor";
 import { EDITOR_SHORTCUTS } from "../lib/editorKeys";
-import { CATEGORIES, ENTRIES, previewLatex, STRUCTURES, type PaletteEntry } from "../lib/palette";
+import { CATEGORIES, ENTRIES, STRUCTURES, type PaletteEntry } from "../lib/palette";
 import { kindSnippetPrefix, kindSnippets } from "../lib/snippets";
 import { useApp } from "../lib/store";
 
@@ -78,7 +79,7 @@ function LatexSheet({ onInsert }: { onInsert: () => void }) {
                     requestAnimationFrame(() => insertIntoVisual(r.latex));
                   }}
                 >
-                  <MathPreview latex={previewLatex(r.latex)} />
+                  <MathTile latex={r.latex} cell={r.latex.includes("#") || r.latex.length > 12 ? STRUCTURE_CELL : SYMBOL_CELL} />
                   <code>{r.latex.replace(/#0|#\?/g, "□")}</code>
                   {r.how && <kbd>{r.how}</kbd>}
                 </button>
@@ -167,7 +168,7 @@ export function ShortcutsDialog() {
           <div className="autocorrect">
             {Object.entries(AUTOCORRECT).map(([k, v]) => (
               <span key={k}>
-                <kbd>{k}</kbd> <MathPreview latex={v} />
+                <kbd>{k}</kbd> <MathTile latex={v} cell={SYMBOL_CELL} />
               </span>
             ))}
             <span className="muted">and: alpha, beta… → α, β…; sqrt, sum, int, lim; ^ and _ for scripts; / for a fraction</span>

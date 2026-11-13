@@ -19,6 +19,45 @@ recording stays in the add-in and in the self-test, so a recurrence will name it
 
 ## This round
 
+**1c, finished (correction).** Earlier rounds said 1c was "already in place". That was wrong: the palette
+tiles were still drawn by MathLive (and plain text for symbols), and lib/tiles.ts was used only by the review
+tool. Now:
+
+- **Every tile in the app is drawn by math-render in the current document style** through lib/tiles.ts
+  (components/MathTile.tsx): right panel, top palette and its group buttons, floating editor, Quick access,
+  Recent, search results, My notation, the LaTeX cheat sheet and the quick-style bar. One font size (20 px),
+  centred on the renderer's math axis (the minus sign's centre: the old fixed 0.25 em was 1.6 px off), one
+  placeholder look, currentColor, cached per style and redrawn when the document style, accents or notation
+  change. MathLive now draws only the editor field and equation previews in dialogs, never a tile; a test
+  fails if a palette component draws tiles another way.
+- **One palette component**: Quick access, Recent and the grids are the same parts everywhere (the floating
+  editor's favourites row was a separate MathLive list; it is now the shared Quick access).
+- **Favourites** reorder by drag (right panel, top palette, floating editor). **Recent** keeps 16, one per LaTeX.
+  **Search** ranks exact LaTeX or name, then alias, then meaning, then category; within each, favourites and the
+  most used first. **Hint:** after the third click on an item with a shortcut or snippet, once: "Faster: type
+  ddt Tab" (or "press Ctrl+F").
+- Self-test section "Palette tiles": every entry drawn on your PC's Times New Roman + Symbol, at its cell's
+  size, never enlarged, in currentColor, with the time to draw the whole palette.
+
+Contact sheets of the real app (screenshots of the running app UI in Chromium by tools/app-screenshots.ts;
+Liberation Serif stands in for Times New Roman and STIX for Symbol, which this Linux machine lacks):
+
+| | Light | Dark |
+|---|---|---|
+| Right panel | ![](images/palette-right-light.png) | ![](images/palette-right-dark.png) |
+| Search "arrow" | ![](images/palette-search-light.png) | ![](images/palette-search-dark.png) |
+| Top palette, a group open | ![](images/palette-top-light.png) | ![](images/palette-top-dark.png) |
+| Floating editor, favourites | ![](images/palette-floating-favourites-light.png) | ![](images/palette-floating-favourites-dark.png) |
+| Floating editor, structures | ![](images/palette-floating-structures-light.png) | ![](images/palette-floating-structures-dark.png) |
+
+**Self-test of 0.1.125 (13 Nov, 01:38):** 388 passed, 3 failed — all three were faults in the test, not in
+the add-in: a snapshot lists an object under its ID and as `obj:ID`, so Cut and Delete counted 2 → 0 instead
+of 1 → 0 (the text around the equation stayed, Paste brought it back); and the PDF does carry alt text on both
+equations, but Word writes it into a compressed object stream, which the check did not inflate. Fixed: the
+checks count equations, and the PDF check inflates the streams and lists the alt texts. (The alt text still
+holds the equation's ID and LaTeX: readable alt text without the ID is MathType parity item 2.)
+Intermediate frames: all 13 checks passed.
+
 **Notation decisions for intermediate frames (your message):**
 
 1. **Frame subscripts:** now a per-document option, off by default (Document style → Roman numerals row →
@@ -33,7 +72,7 @@ recording stays in the add-in and in the self-test, so a recurrence will name it
 Self-test section "Intermediate frames" checks all three on a generic F, F_I, F_II example.
 
 
-**Milestone: trial checklist, Priority 2, 1c, Accents page.**
+**Milestone: trial checklist, Priority 2, Accents page.**
 
 - **One-day trial checklist:** [TRIAL-CHECKLIST.md](TRIAL-CHECKLIST.md) — preparation, converting the chapter,
   a day of writing, end of day (PDF from Word and Acrobat, print, reopen, another PC).
@@ -43,8 +82,7 @@ Self-test section "Intermediate frames" checks all three on a generic F, F_I, F_
     pause and the harpoon button turns `x+r` into `x+\overrightharpoon{r}`);
   - frame-label shape per kind (follow the document style, italic, upright);
   - own kinds, bold Greek: done in earlier rounds.
-- **1c:** already in place (one set of palette parts: search, Quick access, Recent, collections; the floating
-  editor uses the same grid and search) — nothing new needed.
+- **1c:** wrongly reported as already in place — see the correction above.
 - **Accents page:** sliders for size, stroke, gap, barb angle, smallest gap, fixed/adaptive length; live preview
   at 12 and 10 pt on this PC's fonts; MathBlocks default / MathType-like; Save and redraw the document.
 - Objects steps 5–6 and this milestone are both in 0.1.125.
@@ -55,6 +93,9 @@ new section this round.
 
 ## What to test (next build)
 
+0. **Palette (1c):** the tiles should now look like what Word gets, in every palette; switch the document
+   style (e.g. ISO) and watch d/dt and similar tiles change; drag a favourite; search "arrow", "gradient",
+   `\alpha`; click the fraction three times for the hint. Self-test section "Palette tiles".
 0. **Intermediate frames:** self-test section "Intermediate frames"; then Document style → Apply style on
    your converted chapter, and check `\vectrix{S}_{I}`-type frames show an upright numeral.
 1. **Self-test** (sections added in 0.1.125: the right-click menu; objects end to end).
@@ -108,6 +149,7 @@ The one-day trial checklist is in [TRIAL-CHECKLIST.md](TRIAL-CHECKLIST.md).
 
 ## History
 
+- **0.1.126** — 1c finished: every palette tile drawn by math-render in the document style; drag to reorder favourites; Recent 16; ranked search; one-time hint. Self-test fixes (object Cut/Delete count, PDF alt text in compressed streams).
 - **0.1.125** — Intermediate frames: frame-subscript check per document, Roman numerals upright, DCMs between indexed frames. Also carries the two entries below (their own runs were superseded).
 - **0.1.124** (not published) — Trial checklist; quick-style bar; frame-label shape per kind; Accents page.
 - **0.1.123** (not published) — Embedded objects steps 5–6: MathBlocks right-click menu; per-user class registration; self-test of undo/redo, Track Changes, PDF.

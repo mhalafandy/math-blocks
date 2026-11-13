@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { KIND_BY_ID, KINDS } from "@mathblocks/math-core";
 import { QUICK_ACCENTS, toggledAccent, toggledUpright } from "../lib/quickStyle";
-import { MathPreview } from "./MathPreview";
+import { MathTile } from "./MathTile";
+import { ICON_CELL } from "../lib/tiles";
 
 /**
  * The quick-style bar: whenever there is a selection in the editor, or the caret sits after a symbol
@@ -58,7 +59,7 @@ export function QuickStyleBar() {
           </button>
           {QUICK_ACCENTS.map((a) => (
             <button key={a.id} title={a.title} onMouseDown={keep} onClick={() => run((m) => m.applyToSelection((src) => toggledAccent(src, a.id)))}>
-              <MathPreview latex={`\\${a.id}{x}`} />
+              <MathTile latex={`\\${a.id}{x}`} cell={ICON_CELL} />
             </button>
           ))}
           <select

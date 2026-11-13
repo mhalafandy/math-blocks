@@ -25,6 +25,18 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed — 1c finished: every palette tile drawn by math-render in the document style
+- Palette tiles (right panel, top palette and group buttons, floating editor, Quick access, Recent, search
+  results, My notation, cheat sheet, quick-style bar) are drawn by math-render through lib/tiles.ts in the
+  current document style (MathTile): one font size, centred on the renderer's math axis, one placeholder look,
+  currentColor, cached and redrawn when the style changes. MathLive no longer draws any tile.
+- One palette: the floating editor's favourites are the shared Quick access.
+- Favourites reorder by drag; Recent keeps 16, one per LaTeX; search ranked (exact > alias > meaning > category,
+  favourites and frequent first); one-time "Faster: …" hint for items with a shortcut or snippet.
+- Self-test "Palette tiles"; contact sheets of the real app (tools/app-screenshots.ts) in STATUS.md.
+- Self-test: Cut/Delete on objects count equations (an object is listed twice in a snapshot); the PDF check
+  inflates compressed streams to find the alt text.
+
 ### Added — intermediate frames (notation decisions)
 - Frame subscripts are a per-document notation option, off by default: `\vectrix{F}_{I}`, `\vectrix{F}_{II}`
   and unit vectors `\bvec{f}_1^{I}` are not reported. Document style → "warn when a frame has a subscript"

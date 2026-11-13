@@ -14,10 +14,25 @@ import { styleHash } from "@mathblocks/math-core";
 let fontsPromise: Promise<FontSet> | null = null;
 
 async function systemFont(name: string): Promise<ArrayBuffer | null> {
-  if (!isDesktop()) return null;
+  if (!isDesktop()) return previewFont(name);
   try {
     const { invoke } = await import("@tauri-apps/api/core");
     return await invoke<ArrayBuffer>("system_font", { name });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Browser preview only (no Windows fonts): when the screenshot tool sets mathblocks.previewFonts, the
+ * Times files are fetched from /__preview-fonts/, which the tool serves (Liberation Serif, metric-compatible
+ * with Times New Roman). Otherwise the preview falls back to STIX. Never used in the desktop app.
+ */
+async function previewFont(name: string): Promise<ArrayBuffer | null> {
+  try {
+    if (localStorage.getItem("mathblocks.previewFonts") !== "1") return null;
+    const r = await fetch(`/__preview-fonts/${name}`);
+    return r.ok ? await r.arrayBuffer() : null;
   } catch {
     return null;
   }

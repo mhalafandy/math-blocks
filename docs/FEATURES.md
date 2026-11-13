@@ -78,7 +78,14 @@ by meaning, numbering/references, MathType migration, precision mode, dependency
    ([TRIAL-CHECKLIST.md](TRIAL-CHECKLIST.md)).
 2. ✅ **Priority 2:** own notation kinds, quick-style bar, bold Greek, frame-label shape (per kind, and the
    document style's index labels).
-3. ✅ 1c (one palette: search, Quick access, Recent, collections; compact in the floating editor).
+3. ✅ 1c, finished in 0.1.126 (it was wrongly marked done in 0.1.124–0.1.125: the tiles were still drawn by
+   MathLive). Every tile in the app — right panel, top palette, floating editor, Quick access, Recent, search
+   results, My notation, the LaTeX cheat sheet, the quick-style bar — is drawn by math-render in the current
+   document style (lib/tiles.ts through components/MathTile.tsx): one font size, centred on the math axis,
+   one placeholder look, currentColor, cached and redrawn when the style changes. Favourites reorder by drag;
+   Recent keeps 16, one per LaTeX; search ranks exact LaTeX/name > alias > meaning > category, favourites and
+   frequent items first; a one-time "Faster: type … Tab" hint after an item with a shortcut or snippet is
+   clicked three times. A test fails if a palette component draws tiles any other way.
 4. ✅ The Accents page.
 5. **MathType parity and beyond** (below) — in progress.
 

@@ -719,31 +719,56 @@ export function syncMyNotation(kinds: { name: string; macro: string; snippet: st
   }
 }
 
-/** Search by name, meaning, LaTeX command or category; every word must match. Deduplicates by LaTeX. */
-export function searchPalette(query: string, limit = 60): IndexedItem[] {
-  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return [];
-  const seen = new Set<string>();
-  const scored: { x: IndexedItem; s: number }[] = [];
-  for (const x of ALL_ITEMS) {
-    const name = x.item.name.toLowerCase();
-    const hay = `${name} ${x.item.keys ?? ""} ${x.item.latex} ${x.item.glyph ?? ""} ${x.group.label}`.toLowerCase();
-    let s = 0;
-    let ok = true;
-    for (const w of words) {
-      const i = hay.indexOf(w);
-      if (i < 0) {
-        ok = false;
-        break;
-      }
-      s += name.startsWith(w) ? 5 : i === 0 || hay[i - 1] === " " || hay[i - 1] === "\\" ? 3 : 1;
-    }
-    if (ok && !seen.has(x.item.latex)) {
-      seen.add(x.item.latex);
-      scored.push({ x, s });
-    }
-  }
-  return scored.sort((a, b) => b.s - a.s).slice(0, limit).map((r) => r.x);
+/** What the search ranks on besides the words: the user's favourites and how often each LaTeX was inserted. */
+export interface SearchRank {
+  favorites?: string[];
+  use?: Record<string, number>;
+}
+
+/** How well an item matches: 0 exact LaTeX or name, 1 alias, 2 meaning, 3 category only; null: no match. */
+export function matchTier(x: IndexedItem, query: string): number | null {
+  const q = query.trim().toLowerCase();
+  const words = q.split(/\s+/).filter(Boolean);
+  if (!words.length) return null;
+  const name = x.item.name.toLowerCase();
+  const latex = x.item.latex.replace(/\s+/g, "").toLowerCase();
+  const bare = latex.replace(/\{?#0\}?|\{?#\?\}?/g, "");
+  const qn = q.replace(/\s+/g, "");
+  // Exact: the LaTeX (with or without the backslash, slots left out), the name, or the character itself.
+  if (qn === latex || qn === bare || "\\" + qn === bare || q === name || (x.item.glyph && q === x.item.glyph.toLowerCase())) return 0;
+  const aliases = (x.item.keys ?? "").toLowerCase().split(/\s+/).filter(Boolean);
+  const nameWords = name.split(/[\s,()/-]+/).filter(Boolean);
+  const commands = (latex.match(/\\[a-z]+/g) ?? []).map((c) => c.slice(1));
+  // Alias: every word is a whole alias, a whole word of the name or a LaTeX command of the item.
+  if (words.every((w) => aliases.includes(w) || nameWords.includes(w) || commands.includes(w.replace(/^\\/, "")))) return 1;
+  // Meaning: every word starts a word of the name or of the search words, or is inside the LaTeX.
+  const starts = (w: string) => [...nameWords, ...aliases].some((t) => t.startsWith(w)) || latex.includes(w);
+  if (words.every(starts)) return 2;
+  // Category: the remaining words are found in the group's name.
+  const hay = `${name} ${aliases.join(" ")} ${latex} ${x.item.glyph ?? ""} ${x.group.label.toLowerCase()}`;
+  if (words.every((w) => hay.includes(w))) return 3;
+  return null;
+}
+
+/**
+ * Search: exact LaTeX or name first, then aliases, then meanings, then categories; within each,
+ * favourites first, then the most used. One result per LaTeX.
+ */
+export function searchPalette(query: string, limit = 60, rank: SearchRank = {}): IndexedItem[] {
+  if (!query.trim()) return [];
+  const fav = new Set((rank.favorites ?? []).map((k) => findItem(k)?.item.latex).filter((l): l is string => !!l));
+  const use = rank.use ?? {};
+  const best = new Map<string, { x: IndexedItem; tier: number; i: number }>();
+  ALL_ITEMS.forEach((x, i) => {
+    const tier = matchTier(x, query);
+    if (tier === null) return;
+    const had = best.get(x.item.latex);
+    if (!had || tier < had.tier) best.set(x.item.latex, { x, tier, i: had ? Math.min(had.i, i) : i });
+  });
+  return [...best.values()]
+    .sort((a, b) => a.tier - b.tier || Number(fav.has(b.x.item.latex)) - Number(fav.has(a.x.item.latex)) || (use[b.x.item.latex] ?? 0) - (use[a.x.item.latex] ?? 0) || a.i - b.i)
+    .slice(0, limit)
+    .map((r) => r.x);
 }
 
 /**

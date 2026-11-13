@@ -179,12 +179,15 @@ namespace MathBlocks.WordConnector
                         Word.WdExportCreateBookmarks.wdExportCreateNoBookmarks, true, true, false);
                     var bytes = File.ReadAllBytes(path);
                     var text = System.Text.Encoding.ASCII.GetString(bytes);
+                    // Word writes the structure tags (with /Alt) into compressed object streams: inflate them.
+                    var alts = PdfAltTexts(bytes);
                     return new Dictionary<string, object>
                     {
                         ["path"] = path,
                         ["size"] = bytes.Length,
                         ["pages"] = System.Text.RegularExpressions.Regex.Matches(text, @"/Type\s*/Page\b").Count,
-                        ["alt"] = text.Contains("/Alt"),
+                        ["alt"] = alts.Count > 0,
+                        ["alts"] = alts,
                         ["images"] = System.Text.RegularExpressions.Regex.Matches(text, @"/Subtype\s*/Image").Count,
                     };
                 }
@@ -557,5 +560,48 @@ namespace MathBlocks.WordConnector
             }
             return r;
         }
-    }
+    
+        /// <summary>The /Alt texts of a PDF, also those inside compressed (FlateDecode) streams.</summary>
+        internal static List<object> PdfAltTexts(byte[] bytes)
+        {
+            var found = new List<object>();
+            var latin = System.Text.Encoding.GetEncoding(28591);
+            void Scan(string t)
+            {
+                foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(t, @"/Alt\s*\(((?:\\.|[^\\)])*)\)"))
+                    found.Add(System.Text.RegularExpressions.Regex.Replace(m.Groups[1].Value, @"\\(.)", "$1"));
+            }
+            var all = latin.GetString(bytes);
+            Scan(all);
+            int at = 0;
+            while ((at = all.IndexOf("stream", at, StringComparison.Ordinal)) >= 0)
+            {
+                int start = at + 6;
+                if (start < all.Length && all[start] == '\r') start++;
+                if (start < all.Length && all[start] == '\n') start++;
+                else { at = start; continue; }
+                int end = all.IndexOf("endstream", start, StringComparison.Ordinal);
+                if (end < 0) break;
+                at = end + 9;
+                if (end - start < 3) continue;
+                try
+                {
+                    // Skip the 2-byte zlib header; DeflateStream reads raw deflate.
+                    using (var src = new MemoryStream(bytes, start + 2, end - start - 2))
+                    using (var z = new System.IO.Compression.DeflateStream(src, System.IO.Compression.CompressionMode.Decompress))
+                    using (var dst = new MemoryStream())
+                    {
+                        z.CopyTo(dst);
+                        var t = latin.GetString(dst.ToArray());
+                        if (t.Contains("/Alt")) Scan(t);
+                    }
+                }
+                catch (Exception)
+                {
+                    // Not a deflate stream (an image, a font): nothing to read.
+                }
+            }
+            return found;
+        }
+}
 }

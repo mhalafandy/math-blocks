@@ -120,10 +120,15 @@ const script = (c: Ctx): Ctx => ({
   s: c.level === 0 ? c.st.scriptScale : c.st.scriptScriptScale,
 });
 
-/** Height of the math axis (centre of the minus sign) at the current size. */
+/** Height of the math axis (centre of the minus sign), in em at full size. */
+export function mathAxis(fonts: FontSet): number {
+  const g = charGlyph(fonts.regular, "−") ?? charGlyph(fonts.math, "−");
+  return g ? (g.h - g.d) / 2 : 0.25;
+}
+
+/** Height of the math axis at the current size. */
 function axis(c: Ctx): number {
-  const g = charGlyph(c.fonts.regular, "−") ?? charGlyph(c.fonts.math, "−");
-  return g ? ((g.h - g.d) / 2) * c.s : 0.25 * c.s;
+  return mathAxis(c.fonts) * c.s;
 }
 
 // ------------------------------------------------------------------ characters

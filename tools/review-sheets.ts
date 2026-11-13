@@ -112,7 +112,7 @@ function variantsSheet(dark: boolean): string {
       const cells = cols
         .map((c) =>
           c.fonts
-            ? `<td>${renderTile(`a${entry.item.glyph && [...entry.item.glyph].length === 1 ? ch : ch}b`, { w: 74, h: 40, fontPx: 22, pad: 3 }, { fonts: c.fonts, style: c.style }).svg}</td>`
+            ? `<td>${renderTile(`a${entry.item.glyph && [...entry.item.glyph].length === 1 ? ch : ch}b`, { id: "fallback", w: 74, h: 40, fontPx: 22, pad: 3 }, { fonts: c.fonts, style: c.style }).svg}</td>`
             : `<td class="na">not installed</td>`,
         )
         .join("");
@@ -120,7 +120,7 @@ function variantsSheet(dark: boolean): string {
       return `<tr><th>${esc(ch)} <small>U+${ch.codePointAt(0)!.toString(16).toUpperCase().padStart(4, "0")}</small></th>${cells}<td class="name">${esc(entry.name)}</td></tr>`;
     })
     .join("");
-  const timesRef = renderTile("a+b-c=d<e\\pm f\\times g\\leq h", { w: 300, h: 40, fontPx: 22, pad: 3 }, { fonts, style: STYLE }).svg;
+  const timesRef = renderTile("a+b-c=d<e\\pm f\\times g\\leq h", { id: "reference", w: 300, h: 40, fontPx: 22, pad: 3 }, { fonts, style: STYLE }).svg;
   return `<!doctype html><html><head><meta charset="utf-8"><style>
 body{margin:24px;background:${bg};color:${fg};font:13px system-ui,sans-serif}
 h1{font-size:18px;margin:0 0 4px} p{margin:0 0 12px;opacity:.7;max-width:900px}
