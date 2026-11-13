@@ -25,6 +25,21 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added — Blocks (docs/BLOCKS-DESIGN.md)
+- Your own reusable pieces of expression with named slots (`#m`, `#v`), a slot used twice filled once (the
+  other place follows as you type), slots that require a kind (`#v:pvec`), blocks inside blocks
+  (`\block{Name}`), optional trigger (`;ke` Tab), groups, tags.
+- Insert from the Blocks tab of the left panel, the floating editor's Blocks flyout, the palette search,
+  Ctrl+K ("Insert block: …"), the cheat sheet ("My blocks") or the trigger; the first slot is selected,
+  Space walks the slots, each empty slot shows its label under it, the status line says "slot 2 of 3: frame".
+- Save as block from the editor (selection or whole equation; right-click), the floating editor (the dialog
+  opens in the main window), a library equation, the template dialog, or from scratch: pick the symbols that
+  become slots, labels, order, defaults, name, trigger (checked against snippets, kinds and other blocks),
+  group, tags, scope. Font commands that only repeat what the document's kinds draw are removed.
+- Blocks for all documents (library database) or for one document (stored in it); export/import a block set
+  (clashes: replace, keep both, skip).
+- Checks: unit tests, headless editor check in CI, Word self-test section "Blocks".
+
 ### Added — everything is a kind (docs/KINDS-MODEL.md)
 - One model for every symbol: token kinds (variable with Latin/Greek, lower/upper variants, constant,
   function, operator, label, counter, Roman numeral, number, unit, text, transpose) and the wrapper kinds

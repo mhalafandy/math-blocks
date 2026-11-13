@@ -188,12 +188,15 @@ Word self-test: insert a block into an equation in Word, check the equation's La
 
 ## 11. Build status
 
-Built before the kinds model was proposed (kept on the branch `wip/blocks`, not in a release): storage
-(database tables, document part, commands), the block model with unit tests, insertion and Space through
-slots, live repeats, slot hints and status line, triggers, the Save as block dialog, the sidebar and
-floating-editor panels, palette search and Ctrl+K, export/import; a headless editor check passes. After
-the kinds model, this work is rebased onto it: slot kinds (§6b), stripping redundant font commands in
-Save as block, then the cheat sheet section, per-document loading, the Word self-test and the docs.
+**Built** (on the kinds model): storage (SQLite tables, document part, Tauri and add-in commands), the model
+with unit tests, insertion with Space through slots, live repeats, slot hints and the status line,
+triggers, slot kinds (`#v:pvec`), Save as block (from the editor's selection or the whole equation, the
+floating editor, a library equation, the template dialog, or from scratch; redundant font commands removed),
+the Blocks section of the left panel and the floating editor's Blocks flyout, blocks in the palette search,
+Ctrl+K and the cheat sheet, per-document blocks, export/import. Checks: unit tests, the headless editor check
+(tools/blocks-check.ts, in CI) and the Word self-test section "Blocks".
+
+Not built: pinning a block to Quick access (blocks are one click away in the Blocks panel and in search).
 
 Original build order (now as in §11): storage and the block model with unit tests →
 insertion and slot filling in the editor (headless checks) → Save as block dialog → sidebar section,

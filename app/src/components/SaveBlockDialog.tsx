@@ -8,6 +8,17 @@ import { allBlocks, blockByName, newBlockId, saveBlock, useBlocks } from "../lib
 import { kindSnippetPrefix, kindSnippets, loadSnippets } from "../lib/snippets";
 import { listSymbols } from "../lib/symbols";
 import { useApp } from "../lib/store";
+import { activeStyle } from "../lib/docStyle";
+import { stripRedundantFonts } from "../lib/blocks/fonts";
+import { KIND_BY_MACRO } from "@mathblocks/math-core";
+
+/** A slot name for a picked part; a kind symbol (\pvec{\omega}) gives a slot of that kind (omega:pvec). */
+function slotNameWithKind(latex: string, taken: string[]): string {
+  const m = /^\\([A-Za-z]+)\{(.+)\}$/.exec(latex.trim());
+  const def = m ? KIND_BY_MACRO.get(m[1]!) : undefined;
+  if (m && def && def.args === 1) return `${slotNameFor(m[2]!, taken)}:${def.id}`;
+  return slotNameFor(latex, taken);
+}
 
 /**
  * Save as block (from the editor's selection or whole equation, from the floating editor, or from
@@ -58,13 +69,17 @@ export function SaveBlockDialog() {
   const [scope, setScope] = useState<Block["scope"]>("global");
   const [display, setDisplay] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [keptFonts, setKeptFonts] = useState<string[]>([]);
 
   useEffect(() => {
     if (!req) return;
     const b = req.block;
-    setSource(b ? "" : (req.source ?? ""));
+    // Meaning, not a look: font commands the document's kinds draw anyway are removed (others kept and listed).
+    const stripped = b || !req.source ? { latex: req.source ?? "", kept: [] } : stripRedundantFonts(req.source, activeStyle());
+    setSource(b ? "" : stripped.latex);
+    setKeptFonts(stripped.kept);
     setPicked([]);
-    setBody(b ? b.body : (req.source ?? ""));
+    setBody(b ? b.body : stripped.latex);
     setBodyEdited(!!b);
     setSlots(b ? b.slots : []);
     setName(b?.name ?? "");
@@ -99,7 +114,7 @@ export function SaveBlockDialog() {
     setPicked((cur) =>
       cur.some((p) => p.latex === latex)
         ? cur.filter((p) => p.latex !== latex)
-        : [...cur, { latex, name: slotNameFor(latex, cur.map((p) => p.name)) }],
+        : [...cur, { latex, name: slotNameWithKind(latex, cur.map((p) => p.name.replace(/:.*/, ""))) }],
     );
   const updateSlot = (i: number, patch: Partial<BlockSlot>) => setSlots(slots.map((s, j) => (j === i ? { ...s, ...patch } : s)));
   const move = (i: number, d: -1 | 1) => {
@@ -166,6 +181,7 @@ export function SaveBlockDialog() {
   return (
     <Modal title={req.block ? `Edit block “${req.block.name}”` : "Save as block"} onClose={close} width={760}>
       <div className="form save-block">
+        {keptFonts.length > 0 && <p className="hint">Kept as written (the document style would draw them differently): {keptFonts.join(", ")}.</p>}
         {source && symbols.length > 0 && (
           <fieldset>
             <legend>Slots: the parts you fill in each time</legend>
@@ -184,7 +200,9 @@ export function SaveBlockDialog() {
           </fieldset>
         )}
         <label>
-          Body (LaTeX; <code>#name</code> is a slot, <code>\block&#123;Name&#125;</code> another block)
+          <span>
+            Body (LaTeX; <code>#name</code> is a slot, <code>#v:pvec</code> a slot of a kind, <code>\block&#123;Name&#125;</code> another block)
+          </span>
           <textarea
             value={body}
             rows={2}
@@ -263,13 +281,13 @@ export function SaveBlockDialog() {
           </label>
         </div>
         <div className="radio-row">
-          <label>
+          <label className="check">
             <input type="radio" checked={scope === "global"} onChange={() => setScope("global")} /> All my documents
           </label>
-          <label title={connected ? "" : "Connect Word to store blocks in a document"}>
+          <label className="check" title={connected ? "" : "Connect Word to store blocks in a document"}>
             <input type="radio" checked={scope === "document"} onChange={() => setScope("document")} disabled={!connected} /> This document only{docName ? ` (${docName})` : ""}
           </label>
-          <label>
+          <label className="check">
             <input type="checkbox" checked={display} onChange={(e) => setDisplay(e.target.checked)} /> Display equation
           </label>
         </div>

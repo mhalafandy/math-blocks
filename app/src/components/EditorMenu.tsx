@@ -59,6 +59,8 @@ export function openEditorMenu(mf: MathfieldElement, e: MouseEvent) {
       onSelect: () => openMenu(at, makeable().map((x) => ({ label: `Make → ${x.name}`, onSelect: () => void makeKindFromSelection(x.id) }))),
     },
     { label: "Notation settings…", onSelect: () => void import("./NotationSettings").then((m) => m.openNotationSettings(def?.id ?? null)) },
+    { separator: true, label: "" },
+    { label: mf.selectionIsCollapsed ? "Save the equation as a block…" : "Save the selection as a block…", onSelect: () => void import("./BlocksPanel").then((m) => m.saveSelectionAsBlock()) },
   );
   openMenu(at, items);
 }

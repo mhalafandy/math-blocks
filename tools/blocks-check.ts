@@ -153,6 +153,15 @@ async function keys(seq: string[]) {
   check(got === norm("(\\frac{1}{2},c)"), `fraction in a slot walked, then the next slot: ${got}`);
 }
 
+// 6. A slot that requires a kind: what is typed there becomes that kind.
+{
+  const b = block("Moment", "\\mat{J}#w:pvec+#c");
+  await insert(b, "h=", "s6");
+  await keys(["u", "␣", "k"]);
+  const got = await saved();
+  check(got === norm("h=\\mat{J}\\pvec{u}+k"), `slot kind: typed u in #w:pvec gives \\pvec{u}: ${got}`);
+}
+
 // 5. One Ctrl+Z removes an insertion (the live repeat updates add no undo steps).
 {
   await page.evaluate(() => {
@@ -173,4 +182,4 @@ if (failures.length) {
   console.log(`${failures.length} failure(s):\n  ${failures.join("\n  ")}`);
   process.exit(1);
 }
-console.log("Blocks in the editor: create with two slots, insert, Space through the slots, live repeats, nested block, a structure in a slot, one Ctrl+Z — all passed.");
+console.log("Blocks in the editor: create with two slots, insert, Space through the slots, live repeats, nested block, a structure in a slot, slot kinds, one Ctrl+Z — all passed.");

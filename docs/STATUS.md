@@ -24,7 +24,17 @@ corrections: definition markers are hidden fields like the numbering markers, ne
 example forces a look with `\mathrm`), and the Blocks amendment. Order: kinds model → Blocks → list of
 symbols → MathType parity. The design documents are updated accordingly.
 
-### Kinds model — built (this build)
+### Blocks — built (this build)
+
+Built on the kinds model, as approved with your four additions: the Blocks tab (tiles in the document style,
+search, groups, "This document"), the floating editor's Blocks flyout and Save as block button, blocks in
+the palette search, Ctrl+K and the cheat sheet; Space through slots with the label of each empty slot under
+it and "slot 2 of 3: frame" in the status line; repeated slots updated as you type; slot kinds `#v:pvec`;
+Save as block from the editor, the floating editor, a library equation or the template dialog; blocks for
+all documents or stored in one document; export/import. Checked in the browser (screenshots) and by the
+headless editor check; Word self-test section *Blocks*. Not built: pinning a block to Quick access.
+
+### Kinds model — built (0.1.13x, previous build)
 
 - **Model** (math-core): token kinds + wrapper kinds; document style v2 (`kinds`, `notation`, `symbols`,
   `global`); `explainSymbol` (kind and reason for any letter); explicit forms `\unit`, `\const`, `\variable`,
@@ -217,6 +227,11 @@ new section this round.
 
 ## What to test (next build)
 
+- **Blocks** (new): self-test section *Blocks*. Then: select part of an equation → right-click → Save the
+  selection as a block → pick the slots, give it a trigger; insert it from the Blocks tab, from the palette
+  search and with `;trigger` Tab; fill with Space; a slot used twice; right-click an equation in Word →
+  floating editor → Blocks flyout and Save as block.
+
 - **Kinds model** (new): self-test section *Kinds model*. Then on a copy of a converted chapter: Document
   style → check that nothing changed (the look and Check style's "older drawing" count should be as before);
   hover letters in the editor; add a rule (right-click a bold vector letter → Kind ▸ → physical vector → In
@@ -288,7 +303,7 @@ left is the empty one listed by the pre-flight.
 
 ## Next
 
-1. Blocks (rebased from `wip/blocks` onto the kinds model), then the list of symbols.
+1. The list of symbols (docs/SYMBOL-LIST.md), then MathType parity.
 2. MathType parity and beyond (FEATURES.md), in order: handwriting pad, accessible alt text, rich clipboard,
    context-aware quick-style bar, entry points in Word, higher-fidelity MathType conversion, export one
    equation as PDF.

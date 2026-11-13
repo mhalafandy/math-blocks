@@ -866,3 +866,39 @@ html.preview-window body { background: var(--bg); }
 .block-status { color: var(--accent); }
 .slot-hints { position: fixed; inset: 0; pointer-events: none; z-index: 60; }
 .slot-hint { position: fixed; transform: translateX(-50%); font-size: 10px; line-height: 1.2; padding: 0 4px; border-radius: 3px; background: var(--accent-soft); color: var(--accent); border: 1px solid var(--border); white-space: nowrap; }
+
+/* Left panel: Library / Blocks tabs. */
+.side-tabs { display: flex; gap: 2px; }
+.side-tab { background: none; border: 0; padding: 3px 8px; border-radius: 6px; color: var(--text-2); font-weight: 600; cursor: pointer; }
+.side-tab.on { background: var(--accent-soft); color: var(--accent); }
+
+/* Blocks: tiles (math-render, document style) with the name under them. */
+.block-grid { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 6px 8px; }
+.block-tile { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); cursor: pointer; max-width: 140px; }
+.block-tile:hover { border-color: var(--accent); }
+.block-name { font-size: 11px; color: var(--text-2); max-width: 128px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.block-subgroup { padding-left: 12px; }
+.block-foot { display: flex; flex-wrap: wrap; gap: 4px; }
+.panel-blocks { display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+.search-blocks { border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+
+/* Save as block. */
+.save-block textarea { width: 100%; font-family: var(--mono, monospace); }
+.block-symbols { display: flex; flex-wrap: wrap; gap: 4px; }
+.block-symbols .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); cursor: pointer; }
+.block-symbols .chip.on { background: var(--accent-soft); border-color: var(--accent); }
+.block-preview { min-height: 40px; display: flex; align-items: center; justify-content: center; border: 1px dashed var(--border); border-radius: 6px; padding: 6px; }
+.block-slots { width: 100%; border-collapse: collapse; }
+.block-slots th, .block-slots td { text-align: left; padding: 2px 4px; border-bottom: 1px solid var(--border); }
+.block-slots input { width: 100%; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.radio-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+
+/* Document style: section headings and the symbol rules. */
+.style-section { margin: 8px 0 2px; font-size: 13px; color: var(--text-2); }
+.symbol-rules { display: grid; gap: 4px; }
+.symbol-rule { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding: 2px 0; }
+.symbol-rule-add { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.symbol-rule-add input { width: 200px; }
+.panel-foot.block-foot { flex-direction: row; flex-wrap: wrap; gap: 2px 6px; }
+.panel-foot.block-foot button { width: auto; padding: 2px 6px; }

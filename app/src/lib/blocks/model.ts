@@ -3,6 +3,8 @@
  * of a body, nested blocks, the editor form with its slot wrappers, Save as block, the export format.
  */
 
+import { KIND_BY_ID } from "@mathblocks/math-core";
+
 export interface Block {
   id: string;
   name: string;
@@ -60,6 +62,25 @@ export function syncSlots(body: string, previous: BlockSlot[] = []): BlockSlot[]
 
 export class BlockCycleError extends Error {}
 
+/** A slot that requires a kind: #v:pvec, #J:mat, #u:unit (docs/BLOCKS-DESIGN.md §6b). */
+const SLOT_KIND_RE = /(\\*)#([A-Za-z][A-Za-z0-9]*):([A-Za-z]+)/g;
+
+/** The kind each slot requires (name → kind id), from the body. */
+export function slotKinds(body: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const m of body.matchAll(SLOT_KIND_RE)) if (m[1]!.length % 2 === 0 && KIND_BY_ID.get(m[3]!)?.args === 1) out[m[2]!] = m[3]!;
+  return out;
+}
+
+/** Slot kinds written out: #v:pvec → \pvec{#v}, so what is typed in the slot is that kind. An unknown kind is dropped. */
+export function resolveSlotKinds(body: string): string {
+  return body.replace(SLOT_KIND_RE, (whole, bs: string, name: string, kind: string) => {
+    if (bs.length % 2 === 1) return whole;
+    const def = KIND_BY_ID.get(kind);
+    return def && def.args === 1 ? `${bs}\\${def.macro}{#${name}}` : `${bs}#${name}`;
+  });
+}
+
 /** Index of the brace matching the one at `open`. */
 function matchBrace(s: string, open: number): number {
   let depth = 0;
@@ -80,6 +101,7 @@ function matchBrace(s: string, open: number): number {
  * arguments given; slots without an argument stay slots of the outer block. A cycle throws.
  */
 export function expandNested(body: string, lookup: (name: string) => Block | undefined, stack: string[] = []): string {
+  body = resolveSlotKinds(body);
   let out = "";
   let i = 0;
   for (;;) {
@@ -165,7 +187,14 @@ export function editorForm(block: Pick<Block, "body" | "slots" | "name">, conver
     latex = latex.split(o.sentinel).join(`\\class{${o.cls}}{${def ? def : "\\placeholder{}"}}`);
   }
   // The whole block wrapped too: after its last slot the caret leaves it.
-  return { latex: `\\class{mbb-${session}}{${latex}}`, order: slots.map((s) => s.name), labels: Object.fromEntries(slots.map((s) => [s.name, s.label || s.name])), occurrences: occurrences.map(({ cls, name }) => ({ cls, name })) };
+  // A slot that requires a kind says so in its hint: "v — physical vector".
+  const kinds = { ...slotKinds(block.body) };
+  const labelOf = (sl: BlockSlot) => {
+    const k = kinds[sl.name];
+    const base = sl.label || sl.name;
+    return k ? `${base} — ${(KIND_BY_ID.get(k)?.name ?? k).toLowerCase()}` : base;
+  };
+  return { latex: `\\class{mbb-${session}}{${latex}}`, order: slots.map((s) => s.name), labels: Object.fromEntries(slots.map((s) => [s.name, labelOf(s)])), occurrences: occurrences.map(({ cls, name }) => ({ cls, name })) };
 }
 
 /** The block and slot wrappers removed: \class{mbs-…}{X}, \class{mbb-…}{X} → X (an unfilled slot stays an ordinary empty slot). */
@@ -303,4 +332,11 @@ export function previewLatex(block: Pick<Block, "body" | "slots">, lookup: (name
       const d = block.slots.find((s) => s.name === name)?.default;
       return `${bs}${d ? `{${d}}` : slot}`;
     });
+}
+
+/** A block with its slots filled (name → LaTeX): the equation it gives once every slot is typed. */
+export function fillSlots(block: Pick<Block, "body" | "slots" | "name">, values: Record<string, string>, lookup: (name: string) => Block | undefined = () => undefined): string {
+  let body = expandNested(block.body, lookup, [block.name]);
+  for (const name of slotNames(body)) if (values[name] !== undefined) body = replaceSlot(body, name, `{${values[name]}}`);
+  return body;
 }

@@ -94,3 +94,27 @@ describe("blocks: export / import", () => {
     expect(() => parseBlockSet("{}")).toThrow(/Not a MathBlocks block set/);
   });
 });
+
+describe("slot kinds (#v:pvec)", () => {
+  it("are written out as the kind around the slot; the slot name stays v", async () => {
+    const { resolveSlotKinds, slotKinds, slotNames: names, editorForm: form } = await import("./model");
+    expect(resolveSlotKinds("\\frac{d}{dt}#v:pvec+#J:mat#w:pvec")).toBe("\\frac{d}{dt}\\pvec{#v}+\\mat{#J}\\pvec{#w}");
+    expect(slotKinds("#v:pvec+#u:unit+#x")).toEqual({ v: "pvec", u: "unit" });
+    expect(names("#v:pvec\\times#v:pvec")).toEqual(["v"]);
+    // An unknown kind is dropped (the slot stays plain).
+    expect(resolveSlotKinds("#v:nosuchkind")).toBe("#v");
+    const f = form({ name: "B", body: "#v:pvec", slots: [{ name: "v", label: "velocity" }] }, (l) => l, () => undefined, "s");
+    expect(f.latex).toBe("\\class{mbb-s}{\\pvec{\\class{mbs-s-0-v}{\\placeholder{}}}}");
+    expect(f.labels.v).toBe("velocity — physical vector");
+  });
+});
+
+describe("fillSlots", () => {
+  it("fills every occurrence, nested blocks and slot kinds included", async () => {
+    const { fillSlots: fill } = await import("./model");
+    const inner = { id: "i", name: "Inner", body: "\\frac{1}{2}#m #v^2", slots: [], description: "", trigger: "", groupId: null, tags: [], display: false, scope: "global" as const, position: 0, createdAt: 0, updatedAt: 0, useCount: 0, version: 1 };
+    expect(fill({ name: "S", body: "#v\\cdot#v", slots: [] }, { v: "a" })).toBe("{a}\\cdot{a}");
+    expect(fill({ name: "K", body: "\\mat{J}#w:pvec", slots: [] }, { w: "u" })).toBe("\\mat{J}\\pvec{{u}}");
+    expect(fill({ name: "T", body: "\\block{Inner}+#m g", slots: [] }, { m: "M", v: "u" }, (n) => (n === "Inner" ? inner : undefined))).toBe("\\frac{1}{2}{M} {u}^2+{M} g");
+  });
+});
