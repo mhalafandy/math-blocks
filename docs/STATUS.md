@@ -5,7 +5,7 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.140 (UI round: docked preview, large equations, Settings, pinned blocks), CI passed (with the new browser UI check). Earlier: 0.1.137 list of symbols; 0.1.136 Blocks; 0.1.135 kinds model. Earlier: 0.1.133 (commit `4688e93`), CI passed: Blocks design (for approval), the MathType comparison (self-test + CI harness), suggestions from the document, the speed benchmark, print-check fixes. 0.1.131–0.1.132 were superseded.
+- **Published:** 0.1.141 (reference links; 0.1.140: UI round — docked preview, large equations, Settings, pinned blocks), CI passed (with the browser UI check). Earlier: 0.1.137 list of symbols; 0.1.136 Blocks; 0.1.135 kinds model. Earlier: 0.1.133 (commit `4688e93`), CI passed: Blocks design (for approval), the MathType comparison (self-test + CI harness), suggestions from the document, the speed benchmark, print-check fixes. 0.1.131–0.1.132 were superseded.
 
 ## Window switching (0.1.115 self-test): cause
 
@@ -23,7 +23,7 @@ recording stays in the add-in and in the self-test, so a recurrence will name it
 order, then MathType parity. Each item below is checked in the browser by `tools/ui-check.ts` (now in CI: 222
 checks) and with screenshots.
 
-### Reference links — built (this build)
+### Reference links — built (0.1.141)
 
 - **Every reference is one field:** `{ REF _MBEq_… \h \* Charformat \! \* MERGEFORMAT }` — the number as before
   (with brackets for `\eqref`, without for `\ref`: the same two bookmarks) and a link to the equation: Ctrl+click
