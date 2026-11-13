@@ -5,7 +5,7 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.136 (Blocks; 0.1.135: the kinds model), CI passed. Earlier: 0.1.133 (commit `4688e93`), CI passed: Blocks design (for approval), the MathType comparison (self-test + CI harness), suggestions from the document, the speed benchmark, print-check fixes. 0.1.131–0.1.132 were superseded.
+- **Published:** 0.1.137 (list of symbols; 0.1.136: Blocks; 0.1.135: the kinds model), CI passed. Earlier: 0.1.133 (commit `4688e93`), CI passed: Blocks design (for approval), the MathType comparison (self-test + CI harness), suggestions from the document, the speed benchmark, print-check fixes. 0.1.131–0.1.132 were superseded.
 
 ## Window switching (0.1.115 self-test): cause
 
@@ -24,7 +24,7 @@ corrections: definition markers are hidden fields like the numbering markers, ne
 example forces a look with `\mathrm`), and the Blocks amendment. Order: kinds model → Blocks → list of
 symbols → MathType parity. The design documents are updated accordingly.
 
-### List of symbols — built (this build)
+### List of symbols — built (0.1.137)
 
 As approved, with your two corrections. Definitions `\define{symbol}{meaning}[unit]` become hidden fields (as
 the numbering markers; no content control) — the self-test types, presses Backspace and Delete, pastes and cuts
