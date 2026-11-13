@@ -5,8 +5,9 @@ a matrix pattern, a term with places to fill. You insert it while building a lar
 slots with Space, and it becomes ordinary math. Blocks are for any user and any field; every example here
 and in the tests is generic.
 
-Status: **design only, awaiting approval.** The decisions marked **[decide]** are listed at the end with
-my recommendation.
+Status: **approved** (all seven recommendations in §9, plus the four additions in §10), then **amended
+for the kinds model** (docs/KINDS-MODEL.md): §6b and the changes marked *(kinds)* — the amendment awaits
+approval together with the kinds model. Blocks are built after the kinds model.
 
 ---
 
@@ -115,6 +116,24 @@ insertion, so improving an inner block improves every outer block that uses it (
 written equations stay copies). A reference cycle (A uses B uses A) is refused when saving. Saving an
 equation that *contains* an inserted block simply saves its math (it is a copy).
 
+## 6b. Kinds in blocks *(kinds)*
+
+Blocks are made of **kinds and blocks** (docs/KINDS-MODEL.md):
+
+- **The body stores meaning, never a look.** Plain letters stay plain: their kinds (variable, constant,
+  label…) resolve in the document the block is inserted into, by that document's rules — the same block
+  draws `e` upright in an ISO document and italic in another. Wrapper kinds stay macros (`\pvec{#v}`).
+  Font commands are not stored: Save as block removes a font command that only repeats what the source
+  document's kinds already draw, and keeps (and shows) any other.
+- **A slot may require a kind** *(kinds)*: `#name:kind` (`#v:pvec`, `#J:mat`). What you type in that slot
+  becomes that kind (typing `\omega` in `#v:pvec` gives `\pvec{\omega}`); the tile and the slot hint show
+  the kind ("v — vector"). Save as block proposes the kind for a slot made from a symbol that has one
+  (a `\pvec{\omega}` turned into a slot becomes `#omega:pvec`).
+- **Symbol rules travel with the document, not with the block**: a block inserted into another document
+  follows that document's rules (a bold-ω-is-a-vector rule there applies to the inserted ω too).
+- **Defining symbols** (docs/SYMBOL-LIST.md): a block can carry definitions for its fixed symbols; after
+  insertion, "Define symbols of this block…" offers the ones the document has not defined yet.
+
 ## 7. Interaction with what exists
 
 - **Snippets**: a block's trigger is a snippet of kind "block"; the snippet prefix (Settings → Editor) is
@@ -157,6 +176,26 @@ Word self-test: insert a block into an equation in Word, check the equation's La
 | 6 | Trigger prefix | The same prefix as kind snippets (one prefix for everything) |
 | 7 | Linked blocks | Not now (copies only); revisit later if needed |
 
-Once you approve (or change) these, the build order is: storage and the block model with unit tests →
+## 10. Approved additions
+
+1. **Floating editor**: a Blocks flyout in its side rail (the same tiles, search and groups as the
+   sidebar), and blocks in its palette search.
+2. **Save as block from Word**: right-click an equation → floating editor → "Save as block" (the whole
+   equation, or the selection in the editor); the dialog opens in the main window.
+3. **Slot hints**: while filling, each empty slot shows its label (e.g. "frame") under it as a hint, and
+   the status line shows "slot 2 of 3: frame".
+4. **Live repeats**: a slot used more than once updates its other occurrences as you type in the first,
+   not only when you leave it (this replaces decision 2's "when you leave it").
+
+## 11. Build status
+
+Built before the kinds model was proposed (kept on the branch `wip/blocks`, not in a release): storage
+(database tables, document part, commands), the block model with unit tests, insertion and Space through
+slots, live repeats, slot hints and status line, triggers, the Save as block dialog, the sidebar and
+floating-editor panels, palette search and Ctrl+K, export/import; a headless editor check passes. After
+the kinds model, this work is rebased onto it: slot kinds (§6b), stripping redundant font commands in
+Save as block, then the cheat sheet section, per-document loading, the Word self-test and the docs.
+
+Original build order (now as in §11): storage and the block model with unit tests →
 insertion and slot filling in the editor (headless checks) → Save as block dialog → sidebar section,
 palette search, Ctrl+K, cheat sheet, triggers → per-document blocks and export/import → Word self-test.

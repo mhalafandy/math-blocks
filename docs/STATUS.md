@@ -19,35 +19,43 @@ recording stays in the add-in and in the self-test, so a recurrence will name it
 
 ## This round
 
-**Plan change (yours):** before MathType parity, in order: 1. Blocks (design first), 2. measured visual
-comparison with MathType, 3. writing-speed features (suggestions from the document, speed benchmark).
+**Plan change (yours, 13 Nov):** two architecture designs before Blocks, for approval; Blocks depend on the
+first. Order after approval: kinds model → Blocks → symbol list → MathType parity.
 
-### 1. Blocks — design ready for your approval
+### Designs ready for your approval
 
-Full design: [BLOCKS-DESIGN.md](BLOCKS-DESIGN.md). In short:
+1. **Everything is a kind** — [KINDS-MODEL.md](KINDS-MODEL.md). One registry of kinds: *token* kinds
+   (variable with its Latin/Greek, lower/upper variants, constant, function, operator, label, counter,
+   roman, number, unit, text, transpose) and the existing *wrapper* kinds (`\pvec`, `\dcm`, your own).
+   Every symbol's look comes from its kind's style (one table on the Document style page). Plain letters
+   get their kind implicitly (rules and the document's classification); macros only where needed.
+   Per-document **symbol rules** ("e is a constant", "J is a matrix", "ω is a vector when bold"). The
+   document style's categories and the notation kinds merge into this model (style v2, with a migration
+   proven by identical drawings in CI); Check style and Apply style work on it. Eight decisions, each with
+   my recommendation (§11).
+2. **List of symbols from tags** — [SYMBOL-LIST.md](SYMBOL-LIST.md). `\define{symbol}{meaning}[unit]`
+   in the text after the introducing sentence; Convert LaTeX keeps it as a hidden marker at that place;
+   "Define symbol…" from the editors. One click writes or updates the table (symbol, meaning, unit,
+   optionally where first defined), one Ctrl+Z; sort, groups, columns and table style on a style page saved
+   in the document style; checks (used/not defined, defined/not used, two meanings, two symbols, defined
+   after use). Six decisions (§9). The interchange text for `\define` is drafted in §7 and goes into
+   LATEX-INTERCHANGE.md after approval.
+3. **Blocks design amended** — [BLOCKS-DESIGN.md](BLOCKS-DESIGN.md): the approved decisions and your four
+   additions recorded (§10); new §6b *Kinds in blocks* (bodies store meaning; plain letters take the target
+   document's kinds; optional slot kinds `#v:pvec`; symbol rules stay with the document).
 
-- **A block** = name, optional description, LaTeX body with named slots (`#m`, `#frame`), optional
-  trigger (`;kin` Tab, the snippet prefix), optional group, tags. It may contain notation kinds and other
-  blocks.
-- **Create** with "Save as block" from the selection or the whole equation (click symbols or
-  sub-expressions to make them slots, name them), or from scratch; edit, duplicate, rename, delete,
-  reorder by drag, groups.
-- **Insert** from a Blocks section in the left sidebar (math-render tiles, like the palette), the palette's
-  search, Ctrl+K, the cheat sheet, or the trigger; the caret lands in the first slot; Space walks the slots
-  (through any structure you typed in a slot), then leaves the block; one Ctrl+Z undoes the insertion.
-- **Storage**: global blocks in the library (SQLite, new tables); optional per-document blocks stored in
-  the Word document; export/import a block set as one file (clashes: keep both / replace / skip).
-- **Copy, not link**: an inserted block is ordinary math. A "linked block" option is possible later
-  (about two rounds; the hard part is instances edited by hand); I recommend not now.
-- **Decisions for you** (my recommendation first): slot syntax `#name`; a slot used twice is filled once
-  and copied; blocks inside blocks by reference, expanded at insertion; per-document blocks stored in the
-  document; blocks have their own groups; one trigger prefix for kinds, snippets and blocks; no linked
-  blocks for now.
+**Blocks work already done** (before this plan change) is kept on the branch `wip/blocks`, outside any
+release: storage (SQLite tables, document part, Tauri and add-in commands), the model with unit tests,
+insertion with Space through slots, live repeats, slot hints and the "slot 2 of 3: frame" status line,
+triggers, the Save as block dialog, the sidebar and floating-editor Blocks panels, palette search and
+Ctrl+K, export/import, and a headless editor check (all passing). It is rebased onto the kinds model when
+Blocks resume.
 
-I am **not building Blocks until you approve**; meanwhile I continue with 2 (MathType comparison) and 3
-(writing speed), which do not depend on it.
+I am **stopping here for your approval** of the two designs and the Blocks amendment.
 
-### 2. Measured visual comparison with MathType
+### Earlier this plan
+
+#### Measured visual comparison with MathType
 
 - **Self-test section** "Visual comparison with MathType": you choose a Word document with MathType
   equations (a file picker; Cancel skips); it never leaves your PC. For each equation: its LaTeX from the
@@ -67,7 +75,7 @@ I am **not building Blocks until you approve**; meanwhile I continue with 2 (Mat
 - I could not try it on a real MathType picture here (the only MathType object left in your converted
   chapter is the empty one); equations whose picture cannot be read are listed as skipped in the report.
 
-### 3. Writing speed
+#### Writing speed
 
 - **Suggestions from the document**: after a letter that starts a token, a small bar under the caret
   offers the forms of that symbol the open document already uses — kinds with frames and scripts, letters
@@ -266,6 +274,7 @@ left is the empty one listed by the pre-flight.
 
 ## Waiting for the owner
 
+- Approval of KINDS-MODEL.md, SYMBOL-LIST.md and the Blocks amendment.
 - Self-test of the next build; thesis-copy results for Convert numbering and Review notation kinds.
 
 ## Known problems
@@ -279,10 +288,11 @@ left is the empty one listed by the pre-flight.
 
 ## Next
 
-1. MathType parity and beyond (FEATURES.md), in order: handwriting pad, accessible alt text, rich clipboard,
+1. After approval: the kinds model, then Blocks (rebased from `wip/blocks`), then the list of symbols.
+2. MathType parity and beyond (FEATURES.md), in order: handwriting pad, accessible alt text, rich clipboard,
    context-aware quick-style bar, entry points in Word, higher-fidelity MathType conversion, export one
    equation as PDF.
-2. The look of individual symbols (owner's request, after functionality).
+3. The look of individual symbols (owner's request, after functionality).
 
 The one-day trial checklist is in [TRIAL-CHECKLIST.md](TRIAL-CHECKLIST.md).
 
