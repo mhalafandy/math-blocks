@@ -844,3 +844,20 @@ html.preview-window body { background: var(--bg); }
 .settings-embedded > h3 { margin: 0 0 12px; font-size: 16px; }
 .settings-field { display: grid; grid-template-columns: 240px 1fr; gap: 6px 14px; align-items: center; margin: 0 0 14px; }
 .settings-field > small { grid-column: 2; }
+
+/* Suggestions from the document (under the caret) */
+.suggest-bar { position: fixed; z-index: 60; display: flex; align-items: center; gap: 2px; padding: 3px 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 9px; box-shadow: 0 6px 18px rgb(0 0 0 / 0.18); color: var(--text); }
+.suggest-bar button { display: flex; align-items: center; gap: 2px; padding: 1px 4px; border-radius: 7px; border: 1px solid transparent; }
+.suggest-bar button.on { border-color: var(--accent); background: var(--accent-soft); }
+.suggest-bar button:hover { background: var(--surface-2); }
+.suggest-bar small { color: var(--text-3); font-size: 10px; }
+.suggest-bar .hint { font-size: 10.5px; color: var(--text-3); margin-left: 4px; }
+
+/* Speed benchmark */
+.bench-bar { position: fixed; top: 52px; left: 50%; transform: translateX(-50%); z-index: 55; display: flex; align-items: center; gap: 14px; padding: 8px 14px; background: var(--surface); color: var(--text); border: 1px solid var(--accent); border-radius: 12px; box-shadow: 0 10px 30px rgb(0 0 0 / 0.2); }
+.bench-info { display: flex; flex-direction: column; gap: 2px; font-size: 12.5px; }
+.bench-info span { color: var(--text-3); }
+.bench-target { background: #fff; color: #000; border-radius: 8px; padding: 2px 6px; }
+.bench-actions { display: flex; gap: 6px; }
+.bench-table td, .bench-table th { padding: 4px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; }
+.bench-table td .math-tile { vertical-align: middle; }

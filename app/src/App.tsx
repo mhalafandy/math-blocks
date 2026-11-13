@@ -1,6 +1,9 @@
 import { MathPreview } from "./components/MathPreview";
 import { PreviewView } from "./components/PreviewView";
 import { SettingsDialog } from "./components/SettingsDialog";
+import { SuggestBar } from "./components/SuggestBar";
+import { BenchmarkBar } from "./components/Benchmark";
+import { acceptSuggestion } from "./components/MathEditor";
 import { openSettings, type SettingsPage } from "./lib/settingsStore";
 import { initPreviewSync, togglePreview, usePreviewPane } from "./lib/previewWindow";
 import { NotationSettings } from "./components/NotationSettings";
@@ -351,6 +354,8 @@ export function App() {
       <NotationDialog />
       <NotationSettings />
       <QuickStyleBar />
+      <SuggestBar onPick={(f) => acceptSuggestion(f.latex)} />
+      <BenchmarkBar />
       {previewOpen && (
         // Browser preview (no desktop window): the Word preview as a resizable pane.
         <div className="preview-pane">

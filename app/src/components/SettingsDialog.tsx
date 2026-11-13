@@ -4,6 +4,7 @@ import { useSettings, type SettingsPage } from "../lib/settingsStore";
 import { DEFAULT_FAVORITES } from "../lib/palette";
 import { kindSnippetPrefix, PREFIX_CHARS, setKindSnippetPrefix } from "../lib/snippets";
 import { ModalInline } from "./Dialogs";
+import { BenchmarkPage } from "./Benchmark";
 import { NumberingSettings, StylePanel } from "./BottomPanel";
 import { AccentsDialog, useAccents } from "./AccentsDialog";
 import { NotationSettings, useNotationSettings } from "./NotationSettings";
@@ -71,6 +72,11 @@ function EditorPage() {
         </label>{" "}
         within{" "}
         <input type="number" min={150} max={800} step={25} value={s.doubleSpaceMs} disabled={!s.doubleSpace} onChange={(e) => s.setPrefs({ doubleSpaceMs: Math.max(150, Math.min(800, Number(e.target.value) || 300)) })} /> ms
+      </Field>
+      <Field label="Suggestions from the document" hint="After a letter, the forms of that symbol the open document already uses (w → the ω forms), most used first; Tab takes the first.">
+        <label className="check">
+          <input type="checkbox" checked={s.docSuggestions} onChange={(e) => s.setPrefs({ docSuggestions: e.target.checked })} /> on
+        </label>
       </Field>
       <Field label="Prefix of notation-kind snippets" hint="Type the prefix and the kind's short name, then Tab (;pv Tab → physical vector).">
         <select
@@ -164,9 +170,10 @@ const PAGES: PageDef[] = [
   { id: "numbering", label: "Numbering", keys: "number numbering chapter section brackets parentheses separator restart references markers", body: () => <section className="settings-embedded"><h3>Numbering</h3><NumberingSettings /></section> },
   { id: "snippets", label: "Snippets and shortcuts", keys: "snippets triggers tab shortcuts keys", body: () => <SnippetsDialog />, dialog: { isOpen: () => useSnippets.getState().open, open: () => useSnippets.getState().set(true), subscribe: (f) => useSnippets.subscribe(f) } },
   { id: "palette", label: "Palette", keys: "palette symbols favourites quick access recent location top right", body: () => <PalettePage /> },
-  { id: "editor", label: "Editor behaviour", keys: "editor space slot backspace double space command palette prefix zoom", body: () => <EditorPage /> },
+  { id: "editor", label: "Editor behaviour", keys: "editor space slot backspace double space command palette prefix zoom suggestions document forms autocomplete", body: () => <EditorPage /> },
   { id: "connection", label: "Word connection and add-in", keys: "word add-in connection confirm self-test", body: () => <ConnectionPage /> },
   { id: "backups", label: "Backups", keys: "backup copy restore folder", body: () => <BackupsPage /> },
+  { id: "benchmark", label: "Benchmark", keys: "benchmark speed timing keystrokes mathtype comparison", body: () => <BenchmarkPage /> },
   { id: "updates", label: "Updates", keys: "update version", body: () => <UpdatesPage /> },
   { id: "recognition", label: "Screenshot to LaTeX", keys: "screenshot picture recognition api key ocr image", body: () => <RecognitionDialog />, dialog: { isOpen: () => useRecognition.getState().open, open: () => useRecognition.getState().set({ open: true }), subscribe: (f) => useRecognition.subscribe(f) } },
 ];

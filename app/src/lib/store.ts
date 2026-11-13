@@ -61,6 +61,8 @@ interface Prefs {
   paletteUse: Record<string, number>;
   /** LaTeX of items whose one-time "faster: type …" hint was shown. */
   paletteHints: string[];
+  /** While typing, offer the forms of the symbol already used in the document. */
+  docSuggestions: boolean;
   /** Topic tab shown under the top palette; null = collapsed. */
   paletteTab: string | null;
   numberStyle: NumberStyle;
@@ -184,6 +186,7 @@ const DEFAULT_PREFS: Prefs = {
   recents: [],
   paletteUse: {},
   paletteHints: [],
+  docSuggestions: true,
   paletteTab: "tab-spacecraft",
   numberStyle: { open: "(", close: ")", chapter: false },
   look: "classic",

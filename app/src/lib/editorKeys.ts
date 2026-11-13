@@ -1,4 +1,5 @@
-import { focusedMathField, fromMathLive, insertIntoVisual, toggleBold, toMathLive } from "../components/MathEditor";
+import { acceptSuggestion, focusedMathField, fromMathLive, insertIntoVisual, toggleBold, toMathLive } from "../components/MathEditor";
+import { firstSuggestion, hideSuggestions } from "../components/SuggestBar";
 import { breakLineAt, CARET, setAlignmentAt, type LineResult } from "./multiline";
 import { findTrigger, kindSnippets } from "./snippets";
 import { KIND_BY_MACRO } from "@mathblocks/math-core";
@@ -198,6 +199,13 @@ export function handleEditorKey(e: KeyboardEvent): boolean {
     }
     return false;
   }
+  // Esc closes the suggestions first.
+  if (e.key === "Escape" && firstSuggestion()) {
+    e.preventDefault();
+    e.stopPropagation();
+    hideSuggestions();
+    return true;
+  }
   // Enter in a display equation: a new line at the cursor (aligned at the relation, gathered…).
   if (e.key === "Enter" && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
     if (!useApp.getState().display || mode !== "math") return false;
@@ -267,6 +275,14 @@ export function handleEditorKey(e: KeyboardEvent): boolean {
       e.stopPropagation();
       // The whole trigger, prefix included (";pv" leaves no ";").
       applySnippet(mf as unknown as SnippetField, found.positions, toMathLive(applyTranspose(snippet.latex, useApp.getState().transposeForm)));
+      return true;
+    }
+    // A form suggested from the document (after a letter): Tab takes it.
+    const sug = firstSuggestion();
+    if (sug) {
+      e.preventDefault();
+      e.stopPropagation();
+      acceptSuggestion(sug.latex);
       return true;
     }
     // Tab at the end of a kind (no empty slot left in it) leaves the kind.

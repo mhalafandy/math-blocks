@@ -1,4 +1,6 @@
 import { ContextMenu } from "./ContextMenu";
+import { SuggestBar } from "./SuggestBar";
+import { acceptSuggestion } from "./MathEditor";
 import { QuickStyleBar } from "./QuickStyleBar";
 import { NotationSettings } from "./NotationSettings";
 import { useWidthMeasure, WidthBar } from "./WidthBar";
@@ -315,6 +317,7 @@ export function PanelApp() {
         </div>
       </div>
       <QuickStyleBar />
+      <SuggestBar onPick={(f) => acceptSuggestion(f.latex)} />
       <NotationSettings />
       <ContextMenu />
     </div>

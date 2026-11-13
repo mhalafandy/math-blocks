@@ -6,7 +6,7 @@ import { create } from "zustand";
  * from anywhere opens this window at its page. The floating editor asks the main window to open it.
  */
 
-export type SettingsPage = "word" | "docstyle" | "kinds" | "accents" | "numbering" | "snippets" | "palette" | "editor" | "connection" | "backups" | "updates" | "recognition";
+export type SettingsPage = "word" | "docstyle" | "kinds" | "accents" | "numbering" | "snippets" | "palette" | "editor" | "connection" | "backups" | "updates" | "recognition" | "benchmark";
 
 export const useSettings = create<{ open: boolean; page: SettingsPage; set: (s: Partial<{ open: boolean; page: SettingsPage }>) => void }>((set) => ({
   open: false,

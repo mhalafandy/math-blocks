@@ -373,6 +373,29 @@ function onInputDone(mf: MathfieldElement) {
  * (\mathbf{#0}) would turn into a plain one. With nothing selected, such a slot therefore gets a
  * sample letter in that style, selected: the first keystroke replaces it and keeps the style.
  */
+/** The letter just typed, when it starts a token (w, not the n of "sin"): the document's forms of it are offered. */
+function suggestAtCaret(mf: MathfieldElement) {
+  void import("./SuggestBar").then(({ updateSuggestions }) => {
+    const pos = mf.position;
+    const mode = (mf as unknown as { mode?: string }).mode;
+    if (!mf.selectionIsCollapsed || pos < 1 || mode !== "math" || document.activeElement !== mf) return updateSuggestions(null, null);
+    const v = mf.getValue(pos - 1, pos, "latex");
+    const prev = pos >= 2 ? mf.getValue(pos - 2, pos - 1, "latex") : "";
+    const letter = /^[A-Za-z]$/.test(v) && !/^[A-Za-z]$/.test(prev) ? v : null;
+    updateSuggestions(letter, letter ? caretRect(mf) : null);
+  });
+}
+
+/** Takes a suggested form: the typed letter is replaced by it. */
+export function acceptSuggestion(latex: string) {
+  const mf = activeField;
+  if (!mf) return;
+  mf.focus();
+  mf.executeCommand("deleteBackward");
+  insertIntoVisual(latex);
+  void import("./SuggestBar").then((m) => m.hideSuggestions());
+}
+
 export function insertIntoVisual(template: string) {
   const mf = activeField;
   if (!mf) return false;
@@ -438,7 +461,10 @@ export function MathEditor() {
     mf.setAttribute("aria-label", "Equation editor");
     mf.value = toMathLive(useApp.getState().latex);
     // The quick-style bar follows the selection; typing hides it until a pause.
-    mf.addEventListener("selection-change", () => showQuickStyle(mf));
+    mf.addEventListener("selection-change", () => {
+      showQuickStyle(mf);
+      suggestAtCaret(mf);
+    });
     mf.addEventListener("focusout", () => {
       clearTimeout(quickTimer);
       quickTimer = setTimeout(() => {

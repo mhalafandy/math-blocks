@@ -47,6 +47,40 @@ Full design: [BLOCKS-DESIGN.md](BLOCKS-DESIGN.md). In short:
 I am **not building Blocks until you approve**; meanwhile I continue with 2 (MathType comparison) and 3
 (writing speed), which do not depend on it.
 
+### 2. Measured visual comparison with MathType
+
+- **Self-test section** "Visual comparison with MathType": you choose a Word document with MathType
+  equations (a file picker; Cancel skips); it never leaves your PC. For each equation: its LaTeX from the
+  MTEF, MathType's own preview picture (the WMF in the document) drawn with the real fonts' outlines, and
+  MathBlocks' drawing of the same equation at MathType's own size (read from the picture's fonts) in the
+  current document style; both on the baseline (MathType's lowering from the document), left ink edges
+  aligned, overlaid; a difference score (0 = the same ink, 100 = nothing in common, 1 px tolerance at
+  4 px/pt).
+- **Report**: mathtype-compare/report.html in the self-test folder: categories (radicals, fractions,
+  scripts, accents/harpoons, delimiters, matrices, large operators, spacing) with mean and worst scores,
+  each sorted worst first, MathType / MathBlocks / overlay images (red = only MathType, blue = only
+  MathBlocks). **report.txt gets only the category scores** — send me those and a generic description of
+  what looks off; I fix the worst categories round by round.
+- **CI**: tools/mt-compare-check.ts builds a synthetic MathType document (generic equations; previews written
+  as WMF from MathBlocks' drawing, one as WMF text, one lowered by 2 pt) and runs the same code: the faithful
+  ones score 0–2.4, the lowered one 56 (its 2 pt baseline shift measured).
+- I could not try it on a real MathType picture here (the only MathType object left in your converted
+  chapter is the empty one); equations whose picture cannot be read are listed as skipped in the report.
+
+### 3. Writing speed
+
+- **Suggestions from the document**: after a letter that starts a token, a small bar under the caret
+  offers the forms of that symbol the open document already uses — kinds with frames and scripts, letters
+  with their usual subscripts — most used first, as tiles with their counts; Tab or a click takes one (the
+  letter is replaced), Esc or typing on leaves them. Greek by the Symbol keyboard: w → ω, q → θ. Without
+  Word, the library's equations. Settings → Editor behaviour → "Suggestions from the document" (on).
+  Checked in the browser: `a+w` offered the three ω forms, Tab gave `\pvec{\omega}`.
+- **Speed benchmark** (Settings → Benchmark): ten generic equations (fraction, integral with limits, sum,
+  matrix product, vectors with frames, DCM, root, multi-line derivation, limit, cross products), one at a
+  time; the clock starts at your first key and stops when the equation is right (or Done); keys counted;
+  results saved on this PC with the best times; a column for your MathType times. The set is in
+  [BENCHMARK.md](BENCHMARK.md); I record your results there when you send them.
+
 ### Print check: your first run (0.1.130, 13 Nov 13:34)
 
 Convert LaTeX wrote all 450 entries inline and as display equations (900 equations, 164 s) and the 44
@@ -178,6 +212,13 @@ the bar was checked in the browser preview. These are editor and settings featur
 new section this round.
 
 ## What to test (next build)
+
+- **Blocks**: read [BLOCKS-DESIGN.md](BLOCKS-DESIGN.md) and answer the seven decisions (or "as recommended").
+- **Self-test**: the print check writes print/contact-sheet.html now; the new section "Visual comparison with
+  MathType" asks for a document — choose one with many MathType equations and send me the category scores
+  from report.txt.
+- **Suggestions**: open a document, type a letter you use as a vector or with an index; Tab.
+- **Benchmark**: Settings → Benchmark → Start; time the same ten in MathType and type the seconds in.
 
 0. **Editor round:**
    - right-click a Classic equation → the floating editor (no Word menu); ☰ there → cut / copy / paste / delete;

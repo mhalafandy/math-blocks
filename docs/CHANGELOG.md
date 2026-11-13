@@ -25,6 +25,17 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Blocks design; measured comparison with MathType; writing speed
+- docs/BLOCKS-DESIGN.md (for approval).
+- MathType comparison: WMF reader and MathType sample extraction (packages/mathtype), MathType's picture drawn
+  with the real fonts and compared with MathBlocks' at MathType's size, aligned on the baseline, scored, HTML
+  report by category; self-test section with a file picker; CI harness on a synthetic MathType document.
+- Suggestions from the document while typing (forms of the symbol in use, ranked by frequency; Tab takes);
+  setting in Settings → Editor behaviour.
+- Speed benchmark (Settings → Benchmark): ten generic equations timed with keys counted; MathType times by hand.
+- Print check: contact sheet written (the add-in's file writer accepts text); markers read on whole lines;
+  display bands stop at the next line's ink; spaces not flagged; size of the pictures used.
+
 ### Editor and floating editor (your priorities 1–8)
 - Right-click on an equation object opens the floating editor (Word's menu suppressed); the floating editor's
   Word-menu button shows the MathBlocks equation menu (cut, copy, paste, delete, number, copy LaTeX). Word's
