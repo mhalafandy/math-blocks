@@ -72,8 +72,8 @@ export const KINDS: KindDef[] = [
   // Explicit forms of token kinds: for an occurrence that must differ from the rules, and for units.
   { id: "unit", name: "Unit", macro: "unit", args: 1, argNames: ["unit"], snippet: "un", token: "unit" },
   { id: "const", name: "Constant", macro: "const", args: 1, argNames: ["symbol"], snippet: "cs", token: "constant" },
-  { id: "var", name: "Variable", macro: "var", args: 1, argNames: ["symbol"], snippet: "vr", token: "variable" },
-  { id: "op", name: "Operator", macro: "op", args: 1, argNames: ["symbol"], snippet: "op", token: "operator" },
+  { id: "var", name: "Variable", macro: "variable", args: 1, argNames: ["symbol"], snippet: "vr", token: "variable" },
+  { id: "op", name: "Operator", macro: "operator", args: 1, argNames: ["symbol"], snippet: "op", token: "operator" },
   { id: "lbl", name: "Label", macro: "lbl", args: 1, argNames: ["label"], snippet: "la", token: "label" },
   { id: "ctr", name: "Counter", macro: "ctr", args: 1, argNames: ["symbol"], snippet: "ct", token: "counter" },
 ];
@@ -555,7 +555,7 @@ export function peelKind(kind: string, body: Row, st: KindStyle): MathNode | nul
 
 /** Macros of common packages that MathBlocks' kind macros must not silently replace or be replaced by. */
 export const PACKAGE_MACROS: Record<string, string[]> = {
-  physics: ["cross", "dyad", "dd", "dv", "pdv", "vb", "va", "vu", "tr", "Tr", "abs", "norm", "grad", "curl", "qty", "mqty"],
+  physics: ["cross", "dyad", "dd", "dv", "pdv", "vb", "va", "vu", "tr", "Tr", "abs", "norm", "grad", "curl", "qty", "mqty", "var", "op"],
   diffcoeff: ["diff", "diffp"],
   commath: ["dif", "od", "pd", "abs", "norm", "set"],
   mathtools: ["coloneqq", "mathclap", "prescript"],

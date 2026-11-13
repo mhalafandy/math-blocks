@@ -27,8 +27,8 @@ symbols → MathType parity. The design documents are updated accordingly.
 ### Kinds model — built (this build)
 
 - **Model** (math-core): token kinds + wrapper kinds; document style v2 (`kinds`, `notation`, `symbols`,
-  `global`); `explainSymbol` (kind and reason for any letter); explicit forms `\unit`, `\const`, `\var`,
-  `\op`, `\lbl`, `\ctr` (triggers `;un`, `;cs`, `;vr`, `;op`, `;la`, `;ct`).
+  `global`); `explainSymbol` (kind and reason for any letter); explicit forms `\unit`, `\const`, `\variable`,
+  `\operator`, `\lbl`, `\ctr` (triggers `;un`, `;cs`, `;vr`, `;op`, `;la`, `;ct`).
 - **Migration:** every v1 style reads as v2 and draws exactly as before — checked against a golden file
   written by the previous code (57 styles: every preset × classifications × notation presets, and special
   cases; 17 generic equations; drawn LaTeX, Word output, SVG and style hash all identical). Pictures drawn

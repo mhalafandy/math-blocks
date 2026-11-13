@@ -218,8 +218,8 @@ Only for an occurrence that must differ from that, write its kind explicitly:
 | Macro | Meaning |
 |---|---|
 | `\const{symbol}` | Constant |
-| `\var{symbol}` | Variable |
-| `\op{symbol}` | Operator |
+| `\variable{symbol}` | Variable |
+| `\operator{symbol}` | Operator |
 | `\lbl{label}` | Label |
 | `\ctr{symbol}` | Counter |
 

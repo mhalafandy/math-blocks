@@ -95,7 +95,7 @@ set many rows at once, as today.
   rules (§4) at render time. You never wrap ordinary variables in macros; the LaTeX stays `v = \omega r`.
 - **Explicit**: a macro in the source fixes the kind: always for wrapper kinds (`\pvec{\omega}`), and
   optionally for token kinds when one occurrence must differ from the rules (`\const{e}` — new, optional
-  macros for every token kind: `\var`, `\const`, `\fn`, `\op`, `\lbl`, `\ctr`, `\unit`) **[decide 6]**.
+  macros for every token kind: `\variable`, `\const`, `\fn`, `\operator`, `\lbl`, `\ctr`, `\unit`) **[decide 6]**.
 - A **font command** in the source (`\mathrm{x}`, `\mathbf{x}`) is still honoured as written; Check style
   lists it as a *forced look* (as today), with the fix "use the kind instead".
 
