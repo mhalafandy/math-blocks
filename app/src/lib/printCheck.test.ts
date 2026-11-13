@@ -38,6 +38,8 @@ describe("print check: the flags", () => {
     expect(flagsOf({ ...good, pdf: ink(0, 10, -3.5, 6.5) }, { scale: 1, inline: true })).toEqual(["off the baseline"]);
     expect(flagsOf({ ...good, pdf: ink(0, 12, -2.4, 9.6) }, { scale: 1, inline: false })).toEqual(["different size"]);
     expect(flagsOf({ ...good, notConverted: "parse error" }, { scale: 1, inline: true })).toEqual(["not converted"]);
+    // A space has no ink to print: no flag.
+    expect(flagsOf({ pdf: null, expected: null }, { scale: 1, inline: true })).toEqual([]);
   });
   it("sizes are judged against the neighbours (the median ratio)", () => {
     const list: Measured[] = [1.33, 1.34, 1.33, 1.6, 1.33].map((r) => ({ pdf: ink(0, 10 * r, -2 * r, 8 * r), expected: ink(0, 10, -2, 8) }));

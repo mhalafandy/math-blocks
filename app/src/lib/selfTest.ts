@@ -1278,7 +1278,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const bytes = Uint8Array.from(atob(((await smoke("readFile", { file: "print check.pdf" })) as { base64: string }).base64), (c) => c.charCodeAt(0));
       const fonts = await loadFonts();
       const save = async (file: string, dataUrl: string) => void (await smoke("writeFile", { file, base64: dataUrl.slice(dataUrl.indexOf(",") + 1) }));
-      const { rows, pages } = await analysePrint(bytes, entries, { fonts, style: classicStyle(), mathStyle: activeStyle(), sizePt: useApp.getState().equationSizePt, save });
+      const { rows, pages } = await analysePrint(bytes, entries, { fonts, style: classicStyle(), mathStyle: activeStyle(), sizePt: activeStyle().sizePt, save });
       for (const row of rows) {
         const cell = /\\begin|\\frac|\\sqrt|\\sum|\\int|\\prod|\\lim|\\left|\\over|\\under|[_^]/.test(row.entry.latex) ? STRUCTURE_CELL : SYMBOL_CELL;
         try {

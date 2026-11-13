@@ -81,7 +81,8 @@ export function flagsOf(m: Measured, o: { scale: number; inline: boolean }): Fla
   if (m.notConverted) return ["not converted"];
   const flags: Flag[] = [];
   if (m.missingGlyph) flags.push("missing glyph");
-  if (!m.pdf) return [...flags, "empty"];
+  // Nothing drawn (a space: \quad, \,) and nothing printed: right.
+  if (!m.pdf) return m.expected ? [...flags, "empty"] : flags;
   if (!m.expected) return flags;
   const pw = m.pdf.x1 - m.pdf.x0;
   const ph = m.pdf.top - m.pdf.bottom;

@@ -357,9 +357,9 @@ namespace MathBlocks.WordConnector
                     // A file of the self-test (page images, the contact sheet) in its folder or a subfolder of it.
                     var path = SmokePath(Rpc.GetString(p, "file"));
                     Directory.CreateDirectory(Path.GetDirectoryName(path));
-                    var b64 = Rpc.GetString(p, "base64");
+                    var b64 = Rpc.GetOptString(p, "base64");
                     if (!string.IsNullOrEmpty(b64)) File.WriteAllBytes(path, Convert.FromBase64String(b64));
-                    else File.WriteAllText(path, Rpc.GetString(p, "text") ?? "", System.Text.Encoding.UTF8);
+                    else File.WriteAllText(path, Rpc.GetOptString(p, "text") ?? "", System.Text.Encoding.UTF8);
                     return new Dictionary<string, object> { ["path"] = path };
                 }
                 case "writeReport":

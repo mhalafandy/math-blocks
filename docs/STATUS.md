@@ -19,6 +19,54 @@ recording stays in the add-in and in the self-test, so a recurrence will name it
 
 ## This round
 
+**Plan change (yours):** before MathType parity, in order: 1. Blocks (design first), 2. measured visual
+comparison with MathType, 3. writing-speed features (suggestions from the document, speed benchmark).
+
+### 1. Blocks — design ready for your approval
+
+Full design: [BLOCKS-DESIGN.md](BLOCKS-DESIGN.md). In short:
+
+- **A block** = name, optional description, LaTeX body with named slots (`#m`, `#frame`), optional
+  trigger (`;kin` Tab, the snippet prefix), optional group, tags. It may contain notation kinds and other
+  blocks.
+- **Create** with "Save as block" from the selection or the whole equation (click symbols or
+  sub-expressions to make them slots, name them), or from scratch; edit, duplicate, rename, delete,
+  reorder by drag, groups.
+- **Insert** from a Blocks section in the left sidebar (math-render tiles, like the palette), the palette's
+  search, Ctrl+K, the cheat sheet, or the trigger; the caret lands in the first slot; Space walks the slots
+  (through any structure you typed in a slot), then leaves the block; one Ctrl+Z undoes the insertion.
+- **Storage**: global blocks in the library (SQLite, new tables); optional per-document blocks stored in
+  the Word document; export/import a block set as one file (clashes: keep both / replace / skip).
+- **Copy, not link**: an inserted block is ordinary math. A "linked block" option is possible later
+  (about two rounds; the hard part is instances edited by hand); I recommend not now.
+- **Decisions for you** (my recommendation first): slot syntax `#name`; a slot used twice is filled once
+  and copied; blocks inside blocks by reference, expanded at insertion; per-document blocks stored in the
+  document; blocks have their own groups; one trigger prefix for kinds, snippets and blocks; no linked
+  blocks for now.
+
+I am **not building Blocks until you approve**; meanwhile I continue with 2 (MathType comparison) and 3
+(writing speed), which do not depend on it.
+
+### Print check: your first run (0.1.130, 13 Nov 13:34)
+
+Convert LaTeX wrote all 450 entries inline and as display equations (900 equations, 164 s) and the 44
+page images were saved; the contact sheet was not, because the add-in's file writer required binary data
+even for the text file (fixed). Your PDF holds only the generic palette, so I ran the analysis on it here
+(tools/print-check-analyse.ts) and fixed what it showed about the check itself:
+
+- Word splits marker text across PDF text pieces ("D2" + "80"): markers are now read on whole lines (three
+  display equations were reported empty because of this);
+- a tall inline equation (a matrix, cases) rises above its line into the band searched for the display
+  equation above it: the band now stops at the next line's real ink (the matrices' display crops were wrong);
+- spaces (\quad, \,) print nothing, correctly: no longer flagged "empty";
+- the check now uses the size the pictures are drawn at (the document style's), not the setting.
+
+With these, structures (fractions, roots, operators, matrices, fences, accents, kinds) print at the same
+widths as drawn; the remaining flags here come from this machine's substitute fonts (Liberation, Standard
+Symbols) and need the run on your PC with Times New Roman and Symbol. Please run the self-test again:
+print/contact-sheet.html will be written this time.
+
+
 **Editor and floating editor (your eight priorities).** Self-test of 0.1.126 (13 Nov, 11:36): 0 failures.
 
 1. **Right-click → floating editor** for equation objects (Word honours Cancel there); the ☰ button in the

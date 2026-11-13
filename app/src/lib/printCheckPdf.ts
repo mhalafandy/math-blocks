@@ -95,20 +95,32 @@ export async function analysePrint(
       const [x, y] = vp.convertToViewportPoint(it.transform[4]!, it.transform[5]!);
       return { str: it.str, x, y, w: it.width * S };
     });
+    // Word splits a line's text into pieces ("D2" + "80"): the markers are read on whole lines (pieces on one
+    // baseline, left to right), the equation sits between the piece ending in "ab" and the one starting "cd".
+    const lines: (typeof items)[] = [];
+    for (const it of [...items].sort((a, b) => a.y - b.y || a.x - b.x)) {
+      const line = lines.find((l) => Math.abs(l[0]!.y - it.y) < 1.5 * S);
+      if (line) line.push(it);
+      else lines.push([it]);
+    }
     const pageMarkers: { i: number; kind: "E" | "D"; y: number }[] = [];
-    for (const it of items) {
-      const e = /E(\d+):/.exec(it.str);
+    for (const line of lines) {
+      line.sort((a, b) => a.x - b.x);
+      const text = line.map((x) => x.str).join("");
+      const y = line[0]!.y;
+      const e = /E(\d+):/.exec(text);
       if (e) {
         const i = Number(e[1]);
-        // The text after the equation: "cd" on the same baseline, to the right.
-        const right = items.filter((r) => Math.abs(r.y - it.y) < 2 * S && r.x > it.x + it.w - 1 && /^\s*cd/.test(r.str)).sort((a, b) => a.x - b.x)[0];
-        inlineAt.set(i, { page: p, y: it.y, xEnd: it.x + it.w, xRight: right?.x });
-        pageMarkers.push({ i, kind: "E", y: it.y });
+        const left = line.find((x) => /ab\s*$/.test(x.str));
+        const right = line.find((x) => /^\s*cd/.test(x.str));
+        inlineAt.set(i, { page: p, y, xEnd: left ? left.x + left.w : line[0]!.x + line[0]!.w, xRight: right?.x });
+        pageMarkers.push({ i, kind: "E", y });
+        continue;
       }
-      const d = /^\s*D(\d+)\s*$/.exec(it.str);
+      const d = /^\s*D(\d+)\s*$/.exec(text);
       if (d) {
-        displayAt.set(Number(d[1]), { page: p, y: it.y, xEnd: it.x + it.w });
-        pageMarkers.push({ i: Number(d[1]), kind: "D", y: it.y });
+        displayAt.set(Number(d[1]), { page: p, y, xEnd: line[line.length - 1]!.x + line[line.length - 1]!.w });
+        pageMarkers.push({ i: Number(d[1]), kind: "D", y });
       }
     }
     pageMarkers.sort((a, b) => a.y - b.y);
@@ -120,7 +132,12 @@ export async function analysePrint(
       c.getContext("2d")!.drawImage(canvas, x0, y0, x1 - x0, y1 - y0, 0, 0, c.width, c.height);
       return toPng(c);
     };
+    // Inline lines first: where each one's ink really starts (a tall inline equation rises above its text),
+    // so that a display band above it stops there.
+    const lineTop = new Map<number, number>();
+    for (const pass of ["E", "D"] as const)
     for (const m of pageMarkers) {
+      if (m.kind !== pass) continue;
       const e = byIndex.get(m.i);
       if (!e) continue;
       const exp = expected.get(m.i)!;
@@ -138,13 +155,14 @@ export async function analysePrint(
           row.inline.pdf = { x0: (box.x0 - xL) / S, x1: (box.x1 - xL) / S, top: (at.y - box.y0) / S, bottom: (at.y - box.y1) / S };
           row.inline.touchesSides = box.x0 <= xL + 1 || box.x1 >= xR - 1;
         }
+        // The line's top: its equation's ink, or the text's (about 9 pt above the baseline at 11 pt).
+        lineTop.set(m.i, Math.min(box ? box.y0 : at.y, at.y - 9 * S));
       } else {
-        // The display equation: between the D marker and the next marker below it (or the page's bottom margin).
-        // A tall equation on the next inline line rises above that line's text: stop above its ink.
+        // The display equation: between the D marker and the next line below it (or the page's bottom margin),
+        // stopping above that line's real ink.
         const next = pageMarkers.find((x) => x.y > m.y + 1);
-        const nextTop = next && next.kind === "E" ? Math.max(11, (expected.get(next.i)?.inline.ink?.top ?? 0) + 3) : 11;
         const y0 = m.y + 3 * S;
-        const y1 = next ? next.y - nextTop * S : canvas.height - 60 * S;
+        const y1 = next ? (next.kind === "E" ? (lineTop.get(next.i) ?? next.y - 11 * S) : next.y - 11 * S) - 2 * S : canvas.height - 60 * S;
         const box = inkBox(data, canvas.width, 50 * S, y0, canvas.width - 50 * S, y1);
         if (box) {
           row.display.pdf = { x0: box.x0 / S, x1: box.x1 / S, top: -box.y0 / S, bottom: -box.y1 / S };

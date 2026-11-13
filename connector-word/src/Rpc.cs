@@ -42,6 +42,10 @@ namespace MathBlocks.WordConnector
             throw new RpcException(InvalidParams, "Missing string parameter '" + key + "'");
         }
 
+        /// <summary>A string parameter that may be absent (null then).</summary>
+        public static string GetOptString(Dictionary<string, object> p, string key) =>
+            p != null && p.TryGetValue(key, out var v) && v is string s ? s : null;
+
         public static int GetInt(Dictionary<string, object> p, string key, int fallback = 0)
         {
             if (p == null || !p.TryGetValue(key, out var v) || v == null) return fallback;
