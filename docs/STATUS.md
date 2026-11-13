@@ -5,7 +5,7 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.125 (commit `c15de21`), CI passed. It holds objects steps 5–6, the trial checklist, Priority 2, the Accents page and intermediate frames (the 0.1.123 and 0.1.124 runs were superseded by later pushes and never published).
+- **Published:** 0.1.126 (commit `1c42301`), CI passed: 1c finished (every palette tile drawn by math-render in the document style) and the self-test fixes. 0.1.125 held objects steps 5–6, the trial checklist, Priority 2, the Accents page and intermediate frames.
 
 ## Window switching (0.1.115 self-test): cause
 
