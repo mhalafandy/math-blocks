@@ -25,6 +25,26 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added — list of symbols from definitions (docs/SYMBOL-LIST.md)
+- `\define{symbol}{meaning}[unit]` written after the sentence that introduces a symbol; Convert LaTeX keeps it
+  as a hidden field at its place (the same mechanism as the numbering markers: no content control). Inline math
+  in a meaning stays part of the tag. In LATEX-INTERCHANGE.md.
+- Define symbol… from the editor (right-click a letter, or a selection), the floating editor (the dialog opens in
+  the main window), Ctrl+K and the list's checks; an existing definition of the same symbol is offered for editing.
+- Symbols identified by their kind (a bold ω under "ω is a vector when bold" and `\pvec{\omega}` are one symbol);
+  index words are labels (σ_max: σ and the subscript max); a definition of the whole σ_max is one symbol.
+- One click (ribbon "List of symbols", Ctrl+K): the table inserted at the cursor or updated in place (after its
+  hidden marker), one Ctrl+Z; columns symbol, meaning, unit, optionally first defined (equation number or page);
+  symbols and units drawn in the document style.
+- Settings → List of symbols (saved in the document style): sort, case order, groups (Latin / Greek / subscripts /
+  superscripts / abbreviations, or by kind), headings, columns and titles, unit format, Word table style, repeated
+  heading row; live preview.
+- Checks: used but not defined, defined but not used, one symbol with two meanings, defined more than once, one
+  meaning with two symbols, defined after its first use; Define…, Go to, Ignore.
+- The earlier list made from the equations stays available as "Older list…".
+- Self-test section "List of symbols", including typing, Backspace, Delete, pasting and cutting right before and
+  after a definition and pasting a paragraph holding one.
+
 ### Added — Blocks (docs/BLOCKS-DESIGN.md)
 - Your own reusable pieces of expression with named slots (`#m`, `#v`), a slot used twice filled once (the
   other place follows as you type), slots that require a kind (`#v:pvec`), blocks inside blocks

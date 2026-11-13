@@ -5,7 +5,7 @@ the owner's thesis or documents (no equations, text, file names or statistics fr
 
 ## Current build
 
-- **Published:** 0.1.133 (commit `4688e93`), CI passed: Blocks design (for approval), the MathType comparison (self-test + CI harness), suggestions from the document, the speed benchmark, print-check fixes. 0.1.131–0.1.132 were superseded.
+- **Published:** 0.1.136 (Blocks; 0.1.135: the kinds model), CI passed. Earlier: 0.1.133 (commit `4688e93`), CI passed: Blocks design (for approval), the MathType comparison (self-test + CI harness), suggestions from the document, the speed benchmark, print-check fixes. 0.1.131–0.1.132 were superseded.
 
 ## Window switching (0.1.115 self-test): cause
 
@@ -24,7 +24,18 @@ corrections: definition markers are hidden fields like the numbering markers, ne
 example forces a look with `\mathrm`), and the Blocks amendment. Order: kinds model → Blocks → list of
 symbols → MathType parity. The design documents are updated accordingly.
 
-### Blocks — built (this build)
+### List of symbols — built (this build)
+
+As approved, with your two corrections. Definitions `\define{symbol}{meaning}[unit]` become hidden fields (as
+the numbering markers; no content control) — the self-test types, presses Backspace and Delete, pastes and cuts
+right before and after one, and pastes a paragraph holding one, checking that no text goes inside, nothing is
+duplicated except the pasted copy (reported by the checks as defined twice) and nothing is lost. Define symbol…
+in both editors; the table inserted or updated in one Ctrl+Z from the ribbon's "List of symbols" (now this list)
+or Ctrl+K; Settings → List of symbols with a preview; checks with Define… / Go to / Ignore. `\define` is in
+LATEX-INTERCHANGE.md. The earlier equation-made list stays as "Older list…" (its typed descriptions are not
+turned into definitions automatically).
+
+### Blocks — built (0.1.136)
 
 Built on the kinds model, as approved with your four additions: the Blocks tab (tiles in the document style,
 search, groups, "This document"), the floating editor's Blocks flyout and Save as block button, blocks in
@@ -34,7 +45,7 @@ Save as block from the editor, the floating editor, a library equation or the te
 all documents or stored in one document; export/import. Checked in the browser (screenshots) and by the
 headless editor check; Word self-test section *Blocks*. Not built: pinning a block to Quick access.
 
-### Kinds model — built (0.1.13x, previous build)
+### Kinds model — built (0.1.135)
 
 - **Model** (math-core): token kinds + wrapper kinds; document style v2 (`kinds`, `notation`, `symbols`,
   `global`); `explainSymbol` (kind and reason for any letter); explicit forms `\unit`, `\const`, `\variable`,
@@ -227,6 +238,11 @@ new section this round.
 
 ## What to test (next build)
 
+- **List of symbols** (new): self-test section *List of symbols*. Then in a copy of a chapter: add a few
+  `\define{…}{…}[…]` after the sentences that introduce symbols (or right-click a letter → Define…), Convert
+  LaTeX, ribbon → List of symbols → Insert the list; Settings → List of symbols (groups, columns); add a
+  definition and Update the list; look at the checks.
+
 - **Blocks** (new): self-test section *Blocks*. Then: select part of an equation → right-click → Save the
   selection as a block → pick the slots, give it a trigger; insert it from the Blocks tab, from the palette
   search and with `;trigger` Tab; fill with Space; a slot used twice; right-click an equation in Word →
@@ -303,7 +319,7 @@ left is the empty one listed by the pre-flight.
 
 ## Next
 
-1. The list of symbols (docs/SYMBOL-LIST.md), then MathType parity.
+1. MathType parity (FEATURES.md), as planned.
 2. MathType parity and beyond (FEATURES.md), in order: handwriting pad, accessible alt text, rich clipboard,
    context-aware quick-style bar, entry points in Word, higher-fidelity MathType conversion, export one
    equation as PDF.

@@ -1,4 +1,5 @@
 import { MathPreview } from "./components/MathPreview";
+import { DefineSymbolDialog, SymbolListDialog } from "./components/SymbolList";
 import { useBlocks } from "./lib/blocks/useBlocks";
 import { SaveBlockDialog } from "./components/SaveBlockDialog";
 import { BlockStatus, SlotHints } from "./components/BlockSlots";
@@ -387,6 +388,8 @@ export function App() {
       <RecognitionDialog />
       <SnippetsDialog />
       <SaveBlockDialog />
+      <SymbolListDialog />
+      <DefineSymbolDialog />
       <ContextMenu />
       {s.toast && <div className={`toast ${s.toast.kind}`} role="status">{s.toast.text}</div>}
     </div>

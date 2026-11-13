@@ -812,3 +812,12 @@ export function kindDisplayName(id: string): string {
   const tokens: Record<string, string> = { variable: "variable", constant: "constant", function: "function", operator: "operator", label: "label", counter: "counter", roman: "Roman numeral", number: "number", unit: "unit", text: "text", transpose: "transpose" };
   return tokens[id] ?? KIND_BY_ID.get(id)?.name.toLowerCase() ?? id;
 }
+
+/**
+ * The tree with the document's symbol rules applied and nothing else (a rule naming a wrapper kind makes the
+ * symbol that kind's object): what a symbol *is* in this document, for the list of symbols (SYMBOL-LIST.md §3).
+ */
+export function withSymbolRules(root: Row, ms: MathStyle): Row {
+  const style: Drawn = { ...looksOf(ms), letters: letterRoles(ms), notation: ms.notation };
+  return applySymbolRules(clone(root), otherRules(ms), style);
+}

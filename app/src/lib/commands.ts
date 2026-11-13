@@ -130,9 +130,30 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
     },
     {
       id: "word.nomenclature",
-      title: "Insert / update the list of symbols (nomenclature)…",
+      title: "Insert / update the list of symbols",
       group: "Word",
-      keywords: "nomenclature symbols list notation glossary table thesis front matter",
+      keywords: "nomenclature symbols list notation glossary table thesis front matter define",
+      run: () => import("../lib/symbolListRun").then((m) => m.updateSymbolListCommand()),
+    },
+    {
+      id: "word.symbolList",
+      title: "List of symbols: definitions and checks…",
+      group: "Word",
+      keywords: "nomenclature symbols list define definitions checks undefined unused meaning",
+      run: () => import("../components/SymbolList").then((m) => m.openSymbolList()),
+    },
+    {
+      id: "word.defineSymbol",
+      title: "Define symbol… (meaning and unit, for the list of symbols)",
+      group: "Word",
+      keywords: "define symbol meaning unit nomenclature list",
+      run: () => import("../components/SymbolList").then((m) => m.openDefineSymbol({ symbol: "" })),
+    },
+    {
+      id: "word.olderNomenclature",
+      title: "Older list of symbols made from the equations (descriptions typed in the table)…",
+      group: "Word",
+      keywords: "nomenclature older generated list",
       run: () => import("../components/NomenclatureDialog").then((m) => m.openNomenclature()),
     },
     {

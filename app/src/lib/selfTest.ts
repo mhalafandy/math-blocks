@@ -807,6 +807,75 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       void docB;
     });
 
+    section = "List of symbols: \\define markers, edits around them, the table, the checks";
+    await step("list of symbols", async () => {
+      if (!addinSupports("listDefinitions")) {
+        check("list of symbols (the Word add-in is older than this build)", null, "update the add-in");
+        return;
+      }
+      const sl = await import("./symbolList");
+      const run = await import("./symbolListRun");
+      const defsNow = async () => (await connector.request("listDefinitions", {}, SLOW)).definitions;
+      const tagsNow = async () => (await defsNow()).map((d) => d.tag).sort().join(" | ");
+      const docL = await smoke("newDocument");
+      // Generic text: two definitions after their sentences, inline and display math.
+      await smoke("typeText", { text: "The body has mass $m$. \\define{m}{mass of the body}[kg] It moves with speed $v$. \\define{v}{speed}[m/s]" });
+      await smoke("newParagraph");
+      await smoke("typeText", { text: "Its energy is $E=\\frac{1}{2}m v^2$. \\define{E}{kinetic energy}[J] Unused: \\define{q}{electric charge}[C]" });
+      await smoke("newParagraph");
+      const { convertAllLatex } = await import("./wordShortcuts");
+      await convertAllLatex(undefined, { yes: true });
+      const defs = await defsNow();
+      const want = ["\\define{E}{kinetic energy}[J]", "\\define{m}{mass of the body}[kg]", "\\define{q}{electric charge}[C]", "\\define{v}{speed}[m/s]"].join(" | ");
+      check("Convert LaTeX: each \\define became a hidden marker holding the same tag", (await tagsNow()) === want, await tagsNow());
+      const para0 = await smoke("paragraphOf", { pos: defs[0]!.start });
+      check("…and the tag is no longer visible text", !String(para0.text).replace(/MACROBUTTON[^\u0015]*/g, "").includes("\\define{m}"), String(para0.text).slice(0, 120));
+      // Edits right before and right after a marker never put text inside it, never duplicate or lose it.
+      const before = await tagsNow();
+      const edits: [string, (s: number, e: number) => Promise<unknown>][] = [
+        ["typing right after a definition", async (_s, e) => (await smoke("caretAt", { pos: e }), smoke("typeText", { text: "X" }))],
+        ["typing right before a definition", async (s0) => (await smoke("caretAt", { pos: s0 }), smoke("typeText", { text: "Y" }))],
+        ["Backspace right before a definition", async (s0) => (await smoke("caretAt", { pos: s0 }), smoke("key", { key: "backspace" }))],
+        ["Delete right after a definition", async (_s, e) => (await smoke("caretAt", { pos: e }), smoke("key", { key: "delete" }))],
+        ["pasting right before a definition", async (s0) => (await smoke("rangeOp", { op: "copy", start: 4, end: 8 }), await smoke("caretAt", { pos: s0 }), smoke("paste", { mode: "default" }))],
+        ["pasting right after a definition", async (_s, e) => (await smoke("rangeOp", { op: "copy", start: 4, end: 8 }), await smoke("caretAt", { pos: e }), smoke("paste", { mode: "default" }))],
+        ["cutting the text right before a definition", async (s0) => smoke("rangeOp", { op: "cut", start: Math.max(0, s0 - 3), end: s0 })],
+      ];
+      for (const [label, edit] of edits) {
+        const d = (await defsNow()).find((x) => x.tag.startsWith("\\define{v}"))!;
+        await edit(d.start, d.end ?? d.start);
+        const now = await defsNow();
+        const v = now.filter((x) => x.tag.startsWith("\\define{v}"));
+        check(`${label}: the definition is unchanged (no text inside it, not duplicated, not lost)`, (await tagsNow()) === before && v.length === 1, now.map((x) => x.tag).join(" | "));
+      }
+      // A pasted paragraph holding a definition: a second marker only where it was pasted, the original intact.
+      const dm = (await defsNow()).find((x) => x.tag.startsWith("\\define{m}"))!;
+      const pm = await smoke("paragraphOf", { pos: dm.start });
+      await smoke("rangeOp", { op: "copy", start: pm.start, end: pm.end });
+      await smoke("caretTo", { where: "end" });
+      await smoke("paste", { mode: "default" });
+      const afterPaste = await defsNow();
+      check("pasting a paragraph with a definition: one more marker (the copy), the original intact", afterPaste.filter((x) => x.tag === "\\define{m}{mass of the body}[kg]").length === 2 && afterPaste.length === defs.length + 1, afterPaste.map((x) => x.tag).join(" | "));
+      const checks = (await run.checkDocumentSymbols()).checks;
+      check("…and the checks report it as defined twice", checks.some((c) => c.kind === "twice" && c.key === "m"), checks.map((c) => `${c.kind}:${c.key}`).join(", "));
+      check("the checks: q is defined but not used", checks.some((c) => c.kind === "unused" && c.key === "q"));
+      check("the checks: nothing used is undefined (m, v, E are defined)", !checks.some((c) => c.kind === "undefined"), checks.filter((c) => c.kind === "undefined").map((c) => c.key).join(", "));
+      // The table: inserted at the cursor, then updated in place with a new definition; one Ctrl+Z.
+      await smoke("caretTo", { where: "start" });
+      const r1 = await run.updateSymbolList();
+      const listAt = (await connector.request("listDefinitions", {}, SLOW)).listAt;
+      check("the list of symbols is inserted (a hidden marker marks its place)", listAt >= 0 && !r1.replaced, `${r1.rows} row(s), marker at ${listAt}`);
+      await smoke("caretTo", { where: "end" });
+      await connector.request("insertDefinition", { tag: sl.defineTag({ symbol: "a", meaning: "acceleration", unit: "m/s^2" }) });
+      await oneCtrlZ("Update the list of symbols", docL.name, () => run.updateSymbolList());
+      const r2 = await run.updateSymbolList();
+      check("updating the list replaces it in place, with the new definition", r2.replaced && r2.rows === r1.rows + 1, `${r1.rows} → ${r2.rows} row(s)`);
+      const listed = (await run.readDocumentSymbols()).eqs.length;
+      const total = (await connector.request("listInstances", { light: true }, SLOW)).documents[0]?.instances.length ?? 0;
+      check("the symbols in the table are not counted as uses of the symbols", total - listed >= r2.rows - 2 && total > listed, `${total} equation(s) in the document, ${listed} outside the table`);
+      await smoke("save", { file: "symbols test.docx" });
+    });
+
     section = "My styles: create, rename, duplicate, delete, export and import";
     await step("my styles", async () => {
       const ds = await import("./docStyle");

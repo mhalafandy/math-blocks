@@ -50,7 +50,7 @@ export async function convertLatexDocument(o: { document?: string; fromWord?: bo
   const scan = (await connector.request("scanInterchange", o.document ? { document: o.document } : {}, 300_000)) as InterchangeScan;
   const { activeStyle } = await import("./docStyle");
   const plan = planInterchange(scan, { frameSubscriptWarning: activeStyle().global.frameSubscriptWarning });
-  const work = plan.equations.filter((e) => !e.invalid).length + plan.markers.length + plan.references.length;
+  const work = plan.equations.filter((e) => !e.invalid).length + plan.markers.length + plan.defines.length + plan.references.length;
   if (!work && !plan.issues.length) {
     await tellUser(`No LaTeX found in “${scan.name}” to convert.`, "info");
     return { plan, written: 0, planned: 0, failed: [], equations: 0, buildMs: 0, writeMs: 0, tags: [] };
@@ -88,6 +88,10 @@ export async function convertLatexDocument(o: { document?: string; fromWord?: bo
   for (const m of plan.markers) {
     items.push({ id: ++id, kind: "marker", start: m.start, end: m.end, expect: m.expect, chapter: m.chapter, section: m.section, appendix: m.appendix });
     what.set(id, `\\mbnumbering{${m.value}}`);
+  }
+  for (const d of plan.defines) {
+    items.push({ id: ++id, kind: "define", start: d.start, end: d.end, expect: d.expect, tag: d.tag });
+    what.set(id, `\\define{${d.symbol}}`);
   }
   for (const r of plan.references) {
     items.push(r.resolved ? { id: ++id, kind: "ref", start: r.start, end: r.end, expect: r.expect, bookmark: r.bookmark, form: r.form } : { id: ++id, kind: "highlight", start: r.start, end: r.end, expect: r.expect });
@@ -130,7 +134,7 @@ export async function convertLatexDocument(o: { document?: string; fromWord?: bo
 export function describeResult(r: InterchangeResult): string {
   const per = r.equations ? Math.round((r.buildMs + r.writeMs) / r.equations) : 0;
   return [
-    `${r.equations} equation(s), ${r.plan.counts.references} reference(s) and ${r.plan.counts.markers} numbering marker(s) written (${r.written}/${r.planned} items)`,
+    `${r.equations} equation(s), ${r.plan.counts.references} reference(s), ${r.plan.counts.markers} numbering marker(s) and ${r.plan.counts.defines} symbol definition(s) written (${r.written}/${r.planned} items)`,
     `in ${((r.buildMs + r.writeMs) / 1000).toFixed(1)} s (${per} ms per equation: building ${Math.round(r.buildMs)} ms, writing in Word ${Math.round(r.writeMs)} ms)`,
     r.failed.length ? `${r.failed.length} item(s) left as they were` : "",
     r.backup ? `backup: ${r.backup.split(/[\\/]/).pop()}` : "",

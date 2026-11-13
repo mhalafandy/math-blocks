@@ -50,6 +50,7 @@ export function openEditorMenu(mf: MathfieldElement, e: MouseEvent) {
             ...[...TOKEN_KIND_CHOICES, ...wrapperKindChoices()].map((c) => ({ label: `→ ${c.name}`, onSelect: () => openMenu(at, scopeItems(mf, hit!.offset, sym, c.id)) })),
           ]),
       },
+      { label: `Define ${sym.label}… (meaning and unit, for the list of symbols)`, onSelect: () => void import("./SymbolList").then((m) => m.openDefineSymbol({ symbol: sym.sub ? `${latexOfLetter(sym.text)}_{${sym.sub}}` : sym.bold ? `\\boldsymbol{${latexOfLetter(sym.text)}}` : latexOfLetter(sym.text) })) },
       { separator: true, label: "" },
     );
   }
@@ -60,6 +61,9 @@ export function openEditorMenu(mf: MathfieldElement, e: MouseEvent) {
     },
     { label: "Notation settings…", onSelect: () => void import("./NotationSettings").then((m) => m.openNotationSettings(def?.id ?? null)) },
     { separator: true, label: "" },
+    ...(mf.selectionIsCollapsed
+      ? []
+      : [{ label: "Define the selection as a symbol… (list of symbols)", onSelect: () => void import("./MathEditor").then((m) => import("./SymbolList").then((sl) => sl.openDefineSymbol({ symbol: m.editorSelectionLatex() ?? "" }))) }]),
     { label: mf.selectionIsCollapsed ? "Save the equation as a block…" : "Save the selection as a block…", onSelect: () => void import("./BlocksPanel").then((m) => m.saveSelectionAsBlock()) },
   );
   openMenu(at, items);

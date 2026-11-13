@@ -123,6 +123,16 @@ export async function initPanelBridge() {
     const { openSaveBlock } = await import("../components/SaveBlockDialog");
     openSaveBlock(e.payload.source);
   });
+  await listen<import("../components/SymbolList").DefineReqPayload>("panel:defineSymbol", async (e) => {
+    const { getCurrentWindow } = await import("@tauri-apps/api/window");
+    const main = getCurrentWindow();
+    await main.unminimize();
+    await main.show();
+    await main.setFocus();
+    const { useDefineSymbol } = await import("../components/SymbolList");
+    // The equation the floating editor is editing: the definition goes after its paragraph.
+    useDefineSymbol.getState().set({ ...e.payload, equationTag: e.payload.equationTag ?? panelTarget ?? undefined });
+  });
   await listen("panel:wordMenu", () => {
     // For an equation object: the MathBlocks equation menu (cut, copy, paste, delete, number, copy LaTeX).
     const tag = panelTarget ?? useApp.getState().editing?.tag ?? "";

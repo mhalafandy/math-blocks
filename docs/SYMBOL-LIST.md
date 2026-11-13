@@ -6,9 +6,10 @@ defined, defined but not used, and where one symbol has two meanings. Built on t
 (docs/KINDS-MODEL.md) and the symbol index (M11). Generic, for any document and field; every example here
 and in the tests is generic.
 
-Status: **approved** with all six recommendations in §9, and two corrections: the markers are hidden
-fields, not content controls (§2), and no example forces a look with `\mathrm`/`\mathit` (labels are drawn
-by the document style).
+Status: **approved** with all six recommendations in §9 and two corrections (markers are hidden fields, not
+content controls, §2; no example forces a look with `\mathrm`/`\mathit`), and **built**: the tag in Convert
+LaTeX, the hidden markers, Define symbol…, the table (inserted or updated in one Ctrl+Z), the style page, the
+checks, the self-test of edits around a marker. `\define` is in LATEX-INTERCHANGE.md.
 
 ---
 

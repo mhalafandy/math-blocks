@@ -65,6 +65,7 @@ namespace MathBlocks.WordConnector
                         var item = light
                             ? new Dictionary<string, object> { ["tag"] = tag, ["page"] = 0, ["context"] = "" }
                             : new Dictionary<string, object> { ["tag"] = tag, ["page"] = PageOf(eq), ["context"] = ContextOf(eq), ["number"] = NumberInfo(eq)?["number"] };
+                        item["start"] = SafeStart(eq);
                         if (includeContent) item["flatOpc"] = PictureXmlForApp(eq);
                         items.Add(item);
                     }

@@ -270,6 +270,43 @@ namespace MathBlocks.WordConnector
                 }
                 case "snapshot":
                     return Snapshot(_app.ActiveDocument);
+                case "caretAt":
+                {
+                    // Plain text positions (the list of symbols' marker tests: typing, pasting, deleting next to a field).
+                    var sel = SelIn(p);
+                    int pos = Rpc.GetInt(p, "pos");
+                    sel.SetRange(pos, pos);
+                    return new Dictionary<string, object> { ["caret"] = sel.Start };
+                }
+                case "rangeOp":
+                {
+                    var sel = SelIn(p);
+                    var d = sel.Document;
+                    int a0 = Rpc.GetInt(p, "start"), b0 = Rpc.GetInt(p, "end");
+                    var what = Rpc.GetString(p, "op");
+                    var r = d.Range(a0, b0);
+                    if (what == "text") return new Dictionary<string, object> { ["text"] = r.Text ?? "" };
+                    r.Select();
+                    if (what == "copy") _app.Selection.Copy();
+                    else if (what == "cut") _app.Selection.Cut();
+                    else if (what == "select") { }
+                    else throw new RpcException(Rpc.InvalidParams, "rangeOp: copy, cut, select or text");
+                    return new Dictionary<string, object> { ["ok"] = true };
+                }
+                case "key":
+                {
+                    // Backspace or Delete at the caret, as the user presses them.
+                    var sel = SelIn(p);
+                    if (Rpc.GetString(p, "key") == "backspace") sel.TypeBackspace();
+                    else sel.Delete();
+                    return new Dictionary<string, object> { ["caret"] = sel.Start };
+                }
+                case "paragraphOf":
+                {
+                    var d = SelIn(p).Document;
+                    var para = d.Range(Rpc.GetInt(p, "pos"), Rpc.GetInt(p, "pos")).Paragraphs[1].Range;
+                    return new Dictionary<string, object> { ["start"] = para.Start, ["end"] = para.End, ["text"] = para.Text ?? "" };
+                }
                 case "copy":
                     RangeOf(SelIn(p).Document, Rpc.GetString(p, "tag")).Copy();
                     return new Dictionary<string, object> { ["ok"] = true };

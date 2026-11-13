@@ -13,6 +13,22 @@ export const PROTOCOL_VERSION = 1;
 
 export const pipeName = (user: string) => `mathblocks-v1-${user}`;
 
+/** A symbol definition in a document: its tag (\define{…}{…}[…]), place, and how many equations come before it. */
+export interface SymbolDefinitionInfo {
+  tag: string;
+  start: number;
+  /** End of the hidden field. */
+  end?: number;
+  equationsBefore: number;
+  page?: number;
+  context?: string;
+}
+
+/** A segment of a table cell: text, or an equation (inline). */
+export type SymbolListSegment = { text: string } | { flatOpc: string; tag: string };
+/** A row of the table of symbols: a group heading, or its cells. */
+export type SymbolListRow = { heading: string } | { cells: SymbolListSegment[][] };
+
 export interface RpcRequest<M extends string = string, P = unknown> {
   jsonrpc: "2.0";
   id: number;
@@ -227,6 +243,8 @@ export interface InstanceInfo {
   context: string;
   /** Its equation number, e.g. "(2.3)", when it is numbered (not in light listings). */
   number?: string | null;
+  /** Its position in the document (document order). */
+  start?: number;
   /** WordprocessingML of the equation, when requested (includeContent). */
   flatOpc?: string;
 }
@@ -352,6 +370,12 @@ export interface AppToConnector {
   /** The document's own blocks (Custom XML Part urn:mathblocks:blocks:v1), or null when it has none. */
   getDocumentBlocks: { params: DocTarget; result: { xml: string | null; fullName: string; name: string } };
   setDocumentBlocks: { params: DocTarget & { xml: string }; result: { ok: true; fullName: string } };
+  /** The list of symbols (docs/SYMBOL-LIST.md): definitions are hidden MACROBUTTON MBDefine fields. */
+  listDefinitions: { params: DocTarget & { light?: boolean }; result: { definitions: SymbolDefinitionInfo[]; listAt: number; listEnd: number; name: string; fullName: string } };
+  insertDefinition: { params: DocTarget & { tag: string; where?: "cursor" | "afterEquation" | "at"; equation?: string; at?: number }; result: { ok: true; at: number } };
+  /** Replaces (tag) or deletes (no tag) the definition starting at `start`. */
+  updateDefinition: { params: DocTarget & { start: number; tag?: string }; result: { ok: true } };
+  writeSymbolList: { params: DocTarget & { header: string[]; rows: SymbolListRow[]; tableStyle?: string; repeatHeader?: boolean }; result: { ok: true; replaced: boolean; rows: number; equations: number } };
   /** Open documents (copy style from another document). */
   listDocuments: { params: Record<string, never>; result: { documents: { name: string; fullName: string; active: boolean; hasStyle: boolean }[] } };
   ping: { params: Record<string, never>; result: { pong: true } };

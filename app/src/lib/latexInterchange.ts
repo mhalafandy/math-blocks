@@ -13,6 +13,7 @@
 import { parseLatex } from "@mathblocks/math-latex";
 import { lookalikeWarnings } from "@mathblocks/mathtype";
 import { KIND_RULES } from "./kindRules";
+import { defineTag, findDefines } from "./symbolList";
 
 /** One paragraph as the add-in scanned it (only paragraphs that matter are sent). */
 export interface ScanParagraph {
@@ -114,12 +115,23 @@ export interface PlannedMarker {
   value: string;
 }
 
+/** A symbol definition \define{symbol}{meaning}[unit]: becomes a hidden marker at its place (SYMBOL-LIST.md). */
+export interface PlannedDefine {
+  start: number;
+  end: number;
+  expect: string;
+  /** The tag the marker holds (as written, normalised). */
+  tag: string;
+  symbol: string;
+}
+
 export interface InterchangePlan {
   equations: PlannedEquation[];
+  defines: PlannedDefine[];
   references: PlannedReference[];
   markers: PlannedMarker[];
   issues: Issue[];
-  counts: { inline: number; display: number; numbered: number; references: number; markers: number; legacyNumbers: number; mapped: number };
+  counts: { inline: number; display: number; numbered: number; references: number; markers: number; legacyNumbers: number; mapped: number; defines: number };
   /** Markers are used (new or existing): numbers come from the markers. */
   usesMarkers: boolean;
   /** Section markers are used: numbers are (chapter.section.n), the counter restarts per section. */
@@ -297,6 +309,8 @@ export function planInterchange(scan: InterchangeScan, options: InterchangeOptio
   const equations: PlannedEquation[] = [];
   const references: PlannedReference[] = [];
   const markers: PlannedMarker[] = [];
+  const defines: PlannedDefine[] = [];
+  const definedAt = new Map<string, number>();
   const issue = (severity: IssueSeverity, what: string, p: ScanParagraph, from: number, to: number) =>
     issues.push({ severity, what, snippet: snippetOf(p.text, from, to), at: p.start + from });
 
@@ -371,11 +385,31 @@ export function planInterchange(scan: InterchangeScan, options: InterchangeOptio
       continue;
     }
 
+    // Symbol definitions: hidden markers; their meaning's inline math stays part of the tag (not an equation).
+    const defineSpans: [number, number][] = [];
+    if (text.includes("\\define")) {
+      const found = findDefines(text);
+      for (const e of found.errors) issue("error", e.what, p, e.start, e.end);
+      for (const d of found.defines) {
+        defineSpans.push([d.start, d.end]);
+        const tag = defineTag({ symbol: normalizeWordText(d.symbol), meaning: normalizeWordText(d.meaning), ...(d.unit ? { unit: normalizeWordText(d.unit) } : {}) });
+        for (const problem of parseProblems(normalizeWordText(d.symbol))) issue("error", `\\define: the symbol: ${problem}`, p, d.start, d.end);
+        const key = normalizeWordText(d.symbol).replace(/\s+/g, "");
+        if (definedAt.has(key)) issue("warning", `\\define{${d.symbol}}: defined a second time (the list of symbols checks whether the meanings agree)`, p, d.start, d.end);
+        else definedAt.set(key, p.start + d.start);
+        defines.push({ start: p.start + d.start, end: p.start + d.end, expect: d.text, tag, symbol: d.symbol });
+      }
+    }
     // Inline equations and references in running text.
     let i = 0;
     const math: [number, number][] = [];
     while (i < text.length) {
       const c = text[i]!;
+      const inDefine = defineSpans.find(([a, b]) => i >= a && i < b);
+      if (inDefine) {
+        i = inDefine[1];
+        continue;
+      }
       if (c === "\\" && text[i + 1] === "$") {
         i += 2;
         continue;
@@ -561,6 +595,7 @@ export function planInterchange(scan: InterchangeScan, options: InterchangeOptio
   const valid = equations.filter((e) => !e.invalid);
   return {
     equations,
+    defines,
     references,
     markers,
     issues,
@@ -575,6 +610,7 @@ export function planInterchange(scan: InterchangeScan, options: InterchangeOptio
       markers: markers.length,
       legacyNumbers: valid.filter((e) => e.typedNumber).length,
       mapped: valid.filter((e) => e.mapped.length).length,
+      defines: defines.length,
     },
   };
 }

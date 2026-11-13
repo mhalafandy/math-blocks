@@ -72,6 +72,7 @@ thesis template).
 | Reference, number only | in the sentence | \`\\ref{eq:3.2.5}\` → 3.2.5 |
 | Chapter / appendix marker | its own paragraph, right after the chapter or appendix heading | \`\\mbnumbering{3}\` or \`\\mbnumbering{A}\` |
 | Section marker | its own paragraph, right after each section heading | \`\\mbnumbering{3.2}\` or \`\\mbnumbering{A.1}\` |
+| Symbol definition | in the sentence, right after the sentence that introduces the symbol | \`\\define{\\pvec{\\omega}}{angular velocity of the body}[rad/s]\` |
 
 ### Equation numbers: chapter.section.equation
 
@@ -139,6 +140,19 @@ Equation \\ref{eq:3.1.2} expands \\eqref{eq:3.1.1} in the unit vectors of $\\vec
 
 This gives (3.1.1) and (3.1.2); the references read "(3.1.1)" and "3.1.2".
 
+### Symbol definitions (the list of symbols)
+
+Right after the sentence that introduces a symbol, write \`\\define{symbol}{meaning}[unit]\` in the same
+paragraph (the unit is optional). The symbol is written as in equations (\`\\pvec{\\omega}\`, \`v_0\`); the
+meaning is plain text and may contain \`$…$\`; the unit is LaTeX (\`[m/s]\`, \`[-]\` for dimensionless). Define
+each symbol once. Index labels on an empty base (\`\\define{{}_{max}}{maximum}\`) and abbreviations
+(\`\\define{\\text{RMS}}{root mean square}\`) are defined the same way. Write labels plainly, with no
+\`\\mathrm\`: the document style draws them.
+
+\`\`\`text
+The body rotates with angular velocity $\\pvec{\\omega}$. \\define{\\pvec{\\omega}}{angular velocity of the body}[rad/s]
+\`\`\`
+
 ## 2. What Convert LaTeX does
 
 1. **Pre-flight report, before anything is written:** the counts (inline, display, numbered,
@@ -152,6 +166,8 @@ This gives (3.1.1) and (3.1.2); the references read "(3.1.1)" and "3.1.2".
    - numbered ones with a number field at the right tab and a bookmark named from the label
      (\`eq:3.2.5\` → \`_MBEq_3_2_5\`; dots and hyphens become underscores, at most 40 characters);
    - every \`\\mbnumbering\` as a hidden numbering marker (its paragraph becomes hidden);
+   - every \`\\define\` as a hidden definition marker at the same place (the list of symbols is made from them;
+     malformed tags and second definitions of a symbol are in the pre-flight);
    - references as cross-reference fields (Ctrl+click jumps to the equation); unresolved ones stay as
      text, highlighted, and are listed;
    - then every number and reference is updated.

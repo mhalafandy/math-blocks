@@ -222,3 +222,23 @@ describe("a document with numbers converted from MathType", () => {
     expect(plan.markers).toEqual([]);
   });
 });
+
+describe("Convert LaTeX: symbol definitions (\\define)", () => {
+  it("each \\define becomes a hidden marker item at its place; its inline math is not an equation", async () => {
+    const { planInterchange: plan } = await import("./latexInterchange");
+    const text = "The body turns with angular velocity $\\omega$. \\define{\\pvec{\\omega}}{angular velocity of $\\frm{B}$}[rad/s] And $x=1$.";
+    const p = plan({ name: "f", fullName: "f", bookmarks: [], paragraphs: [{ start: 100, end: 100 + text.length, text, style: "Normal" }] });
+    expect(p.defines.map((d) => [d.tag, text.slice(d.start - 100, d.end - 100)])).toEqual([["\\define{\\pvec{\\omega}}{angular velocity of $\\frm{B}$}[rad/s]", "\\define{\\pvec{\\omega}}{angular velocity of $\\frm{B}$}[rad/s]"]]);
+    expect(p.equations.map((e) => e.typed)).toEqual(["\\omega", "x=1"]);
+    expect(p.counts.defines).toBe(1);
+    expect(p.issues).toEqual([]);
+  });
+  it("a malformed tag and a second definition are reported in the pre-flight", async () => {
+    const { planInterchange: plan } = await import("./latexInterchange");
+    const text = "\\define{m}{mass}[kg] then \\define{m}{another mass} and \\define{x}";
+    const p = plan({ name: "f", fullName: "f", bookmarks: [], paragraphs: [{ start: 0, end: text.length, text, style: "Normal" }] });
+    const what = p.issues.map((i) => `${i.severity}: ${i.what}`);
+    expect(what).toEqual(expect.arrayContaining([expect.stringMatching(/^warning: .*defined a second time/), expect.stringMatching(/^error: .*meaning is missing/)]));
+    expect(p.defines).toHaveLength(2);
+  });
+});

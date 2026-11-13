@@ -185,7 +185,7 @@ namespace MathBlocks.WordConnector
         private static readonly string[] Methods =
         {
             "ping", "insertEquation", "replaceEquation", "readEquation", "documentInfo",
-            "listInstances", "replaceMany", "verifyMany", "scanInterchange", "convertInterchange", "scanNumbering", "convertNumbering", "retag", "selectInstance", "getRegistry", "setRegistry", "getDocumentStyle", "setDocumentStyle", "getDocumentBlocks", "setDocumentBlocks", "listDocuments",
+            "listInstances", "replaceMany", "verifyMany", "scanInterchange", "convertInterchange", "scanNumbering", "convertNumbering", "retag", "selectInstance", "getRegistry", "setRegistry", "getDocumentStyle", "setDocumentStyle", "getDocumentBlocks", "setDocumentBlocks", "listDefinitions", "insertDefinition", "updateDefinition", "writeSymbolList", "listDocuments",
             "listMathTypeParagraphs", "replaceParagraphs", "activateObject",
             "numberEquation", "unnumberEquation", "listNumbered", "insertReference", "updateNumbers",
             "showWordMenu", "selectionInfo", "findLatex", "replaceRanges", "equationToText",
@@ -848,6 +848,10 @@ namespace MathBlocks.WordConnector
                     case "setRegistry": result = _ops.SetRegistry(p); break;
                     case "getDocumentStyle": result = _ops.GetDocumentStyle(p); break;
                     case "getDocumentBlocks": result = _ops.GetDocumentBlocks(p); break;
+                    case "listDefinitions": result = _ops.ListDefinitions(p); break;
+                    case "insertDefinition": result = _ops.InsertDefinition(p); break;
+                    case "updateDefinition": result = _ops.UpdateDefinition(p); break;
+                    case "writeSymbolList": result = _ops.WriteSymbolList(p); break;
                     case "setDocumentBlocks": result = _ops.SetDocumentBlocks(p); break;
                     case "setDocumentStyle": result = _ops.SetDocumentStyle(p); break;
                     case "listDocuments": result = _ops.ListDocuments(); break;

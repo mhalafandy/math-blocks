@@ -267,6 +267,13 @@ namespace MathBlocks.WordConnector
                     doc.Range(start, start).Paragraphs[1].Range.Font.Hidden = 1;
                     return null;
                 }
+                case "define":
+                {
+                    // \define{…}{…}[…]: a hidden field at the same place (its position is the place of definition).
+                    r.Text = "";
+                    InsertInline(doc, doc.Range(start, start), NumberFields.Package(HiddenMacroRuns(DefineMacro, Rpc.GetString(item, "tag"))));
+                    return null;
+                }
                 case "ref":
                 {
                     var bookmark = Rpc.GetString(item, "bookmark");

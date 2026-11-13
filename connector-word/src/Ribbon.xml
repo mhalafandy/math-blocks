@@ -24,7 +24,7 @@
           <button id="mbSectionMarker" keytip="S" label="Section marker" imageMso="SectionInsert"
                   screentip="Insert a numbering marker at the cursor for a new section (or chapter, appendix): equation numbers after it restart" onAction="OnSectionMarker" />
           <button id="mbSymbols" keytip="Y" label="List of symbols" imageMso="TableInsert"
-                  screentip="Insert or update a list of symbols (nomenclature) made from this document's equations; descriptions you type in it are kept"
+                  screentip="Insert or update the list of symbols made from the symbol definitions (\define, or Define symbol in the editor), with the checks"
                   onAction="OnListOfSymbols" />
         </group>
         <group id="MathBlocksStyle" label="Style">
