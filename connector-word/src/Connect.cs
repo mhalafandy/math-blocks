@@ -43,6 +43,7 @@ namespace MathBlocks.WordConnector
                 _ops = new WordOps(_app);
                 _ops.IdleChecks = IdleChecks;
                 _ops.ObjectMenuHook = ObjectMenuForTest;
+                _ops.RightClickHook = RightClickForTest;
                 ObjectClass.EnsureRegistered();
                 _ui = new Control();
                 _idle = new Timer { Interval = 400 };
@@ -364,23 +365,50 @@ namespace MathBlocks.WordConnector
             try
             {
                 if (_pipe == null || !_pipe.IsConnected) return;
-                if (FloatingMathBlocksSelected(sel)) return; // Word's menu (with our items); it goes in line when idle
                 var doc = _app.ActiveDocument;
-                var cc = _ops.EquationAt(doc, sel.Range);
-                // A Classic equation is an embedded object: Word honours Cancel for objects (round 7),
-                // so the floating editor opens instead of Word's menu. An older Classic picture keeps
-                // Word's picture menu (Word ignores Cancel there) with our items.
-                if (cc == null || (cc.IsPicture && !cc.IsObject)) return;
+                var cc = RightClickTarget(doc, sel, out var action);
+                if (action != "panel") return;
+                // Word honours Cancel for embedded objects and for the native equation's wrapper: its menu
+                // does not show, the floating editor opens. Cut, copy and paste are in the floating editor's
+                // Word-menu button (the MathBlocks equation menu for that equation).
                 cancel = true;
-                // An embedded object: the MathBlocks menu (Edit here first, then numbering, LaTeX, Cut/Copy/Paste/Delete);
-                // a native equation's wrapper: the floating editor as before.
-                if (cc.IsObject) ShowObjectMenu(doc, cc);
-                else OpenPanel(doc, cc);
+                OpenPanel(doc, cc);
             }
             catch (Exception ex)
             {
                 Log.Error("right-click handler failed", ex);
             }
+        }
+
+        /// <summary>
+        /// What a right-click on this selection does: "panel" (the floating editor, Word's menu suppressed) for a
+        /// Classic equation (an embedded object) or a native equation; "word" (Word's own menu, which then holds
+        /// our Edit / Number items as a fallback) for an older Classic picture, where Word ignores Cancel, and for
+        /// a floating picture; "none" elsewhere.
+        /// </summary>
+        private Eq RightClickTarget(Word.Document doc, Word.Selection sel, out string action)
+        {
+            action = "none";
+            if (FloatingMathBlocksSelected(sel))
+            {
+                action = "word";
+                return null;
+            }
+            var cc = _ops.EquationAt(doc, sel.Range);
+            if (cc == null) return null;
+            action = cc.IsPicture && !cc.IsObject ? "word" : "panel";
+            return cc;
+        }
+
+        /// <summary>Self-test: what a right-click on the equation with this ID would do (the same decision as the handler).</summary>
+        private Dictionary<string, object> RightClickForTest(string tag)
+        {
+            var doc = _app.ActiveDocument;
+            var found = WordOps.FindByTag(doc, tag);
+            if (found.Count == 0) throw new RpcException(Rpc.NotFound, "no equation " + tag);
+            found[0].Range.Select();
+            var cc = RightClickTarget(doc, _app.Selection, out var action);
+            return new Dictionary<string, object> { ["action"] = action, ["tag"] = cc?.Tag, ["isObject"] = cc?.IsObject ?? false };
         }
 
         private void OpenPanel(Word.Document doc, Eq cc)
@@ -837,10 +865,26 @@ namespace MathBlocks.WordConnector
                     case "equationToText": result = _ops.EquationToText(p); break;
                     case "smoke": result = _ops.Smoke(p); break;
                     case "showWordMenu":
-                        // Word's own context menu at the mouse (late-bound: CommandBars lives in office.dll).
-                        ((dynamic)_app).CommandBars["Text"].ShowPopup();
-                        result = new Dictionary<string, object> { ["ok"] = true };
+                    {
+                        // The floating editor's Word-menu button: for an equation object, the MathBlocks equation
+                        // menu (cut, copy, paste, delete, number, copy LaTeX); otherwise Word's own text menu at the
+                        // mouse (late-bound: CommandBars lives in office.dll).
+                        var tag = Rpc.GetString(p, "tag");
+                        var doc = _app.ActiveDocument;
+                        var found = string.IsNullOrEmpty(tag) ? new List<Eq>() : WordOps.FindByTag(doc, tag);
+                        if (found.Count > 0 && found[0].IsObject)
+                        {
+                            found[0].Range.Select();
+                            ShowObjectMenu(doc, found[0]);
+                            result = new Dictionary<string, object> { ["ok"] = true, ["menu"] = "mathblocks" };
+                        }
+                        else
+                        {
+                            ((dynamic)_app).CommandBars["Text"].ShowPopup();
+                            result = new Dictionary<string, object> { ["ok"] = true, ["menu"] = "word" };
+                        }
                         break;
+                    }
                     default: throw new RpcException(Rpc.MethodNotFound, "Unknown method " + method);
                 }
                 reply = Rpc.Result(id, result);

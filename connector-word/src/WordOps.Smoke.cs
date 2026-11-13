@@ -199,6 +199,9 @@ namespace MathBlocks.WordConnector
                     try { using (var k = Microsoft.Win32.Registry.ClassesRoot.OpenSubKey("AcroExch.Document")) acrobat = k != null; } catch (Exception) { }
                     return new Dictionary<string, object> { ["printers"] = list, ["acrobat"] = acrobat };
                 }
+                case "rightClick":
+                    if (RightClickHook == null) throw new RpcException(Rpc.InvalidParams, "right-click check not available");
+                    return RightClickHook(Rpc.GetString(p, "tag"));
                 case "objectMenu":
                 case "objectMenuRun":
                     // The right-click menu of an equation object (built and run by the add-in's Connect).

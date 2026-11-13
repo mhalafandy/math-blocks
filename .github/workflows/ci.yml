@@ -32,6 +32,8 @@ jobs:
         run: (pnpm exec playwright install --with-deps chromium || pnpm exec playwright install chromium) && pnpm tsx tools/kinds-roundtrip.ts
       - name: Snippets in the real editor (every kind under every prefix; whole trigger replaced)
         run: pnpm tsx tools/snippet-check.ts
+      - name: Visual editor keys (Space through slots, Backspace at every caret position)
+        run: pnpm tsx tools/editor-keys-check.ts
       - name: Add-in Word-free tests (number fields, LaTeX spans, identity, read-back of the Classic insertion .docx)
         run: dotnet run --project connector-word/tests
       - name: Compile the .tex export of every notation kind under every preset (Tectonic)

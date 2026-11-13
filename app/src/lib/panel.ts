@@ -58,22 +58,23 @@ export async function openPanel(rect: ScreenRect) {
     number: null,
     theme: st.theme,
   };
-  const { PhysicalPosition } = await import("@tauri-apps/api/dpi");
-  const size = await w.outerSize();
+  const { PhysicalPosition, PhysicalSize } = await import("@tauri-apps/api/dpi");
+  const { loadGeometry, placePanel, PANEL_DEFAULT, PANEL_MIN, screenKey } = await import("./panelPlacement");
   const win = await import("@tauri-apps/api/window");
   const monitor = (await win.monitorFromPoint(rect.left, rect.top).catch(() => null)) ?? (await win.primaryMonitor().catch(() => null));
-  // The card sits 14 px (logical) inside the transparent window.
-  const inset = 14 * (await w.scaleFactor());
-  const gap = 6;
-  let x = rect.left - inset;
-  let y = rect.top + rect.height + gap - inset;
-  if (monitor) {
-    const right = monitor.position.x + monitor.size.width;
-    const bottom = monitor.position.y + monitor.size.height;
-    x = Math.max(monitor.position.x, Math.min(x, right - size.width));
-    if (y + size.height > bottom) y = Math.max(monitor.position.y, rect.top - size.height - gap + inset);
-  }
-  await w.setPosition(new PhysicalPosition(Math.round(x), Math.round(y)));
+  const scale = monitor?.scaleFactor ?? (await w.scaleFactor());
+  // Size and position remembered on this screen (the user resized or moved it there); else the default size.
+  const saved = monitor ? loadGeometry(screenKey(monitor)) : null;
+  const screen = monitor ? { x: monitor.position.x, y: monitor.position.y, w: monitor.size.width, h: monitor.size.height } : { x: 0, y: 0, w: 1e5, h: 1e5 };
+  const size = {
+    w: Math.min(screen.w, Math.max(PANEL_MIN.w * scale, saved?.w ?? PANEL_DEFAULT.w * scale)),
+    h: Math.min(screen.h, Math.max(PANEL_MIN.h * scale, saved?.h ?? PANEL_DEFAULT.h * scale)),
+  };
+  await w.setSize(new PhysicalSize(Math.round(size.w), Math.round(size.h)));
+  // Never over the equation when there is room elsewhere; the card sits 14 px (logical) inside the window.
+  const eq = { x: rect.left, y: rect.top, w: rect.width, h: rect.height };
+  const at = placePanel(eq, size, screen, { saved: saved ? { x: saved.x, y: saved.y } : undefined, inset: 14 * scale });
+  await w.setPosition(new PhysicalPosition(at.x, at.y));
   const { emitTo } = await import("@tauri-apps/api/event");
   await emitTo("panel", "panel:open", state);
   await w.show();
@@ -113,6 +114,8 @@ export async function initPanelBridge() {
     await main.setFocus();
   });
   await listen("panel:wordMenu", () => {
-    void connector.request("showWordMenu", {}).catch(() => undefined);
+    // For an equation object: the MathBlocks equation menu (cut, copy, paste, delete, number, copy LaTeX).
+    const tag = panelTarget ?? useApp.getState().editing?.tag ?? "";
+    void connector.request("showWordMenu", { tag }).catch(() => undefined);
   });
 }

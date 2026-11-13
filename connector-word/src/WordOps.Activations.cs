@@ -14,6 +14,8 @@ namespace MathBlocks.WordConnector
     {
         /// <summary>The object menu (Connect): items for a tag, or the result of running one (self-test).</summary>
         internal Func<string, string, Dictionary<string, object>> ObjectMenuHook;
+        /// <summary>Self-test: what a right-click on an equation would do (set by Connect).</summary>
+        internal Func<string, Dictionary<string, object>> RightClickHook;
 
         /// <summary>The request being handled now (set by the dispatcher), or null between requests.</summary>
         internal string CurrentRequest;

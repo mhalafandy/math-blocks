@@ -557,8 +557,27 @@ kbd {
 
 /* ================================================================ floating editor (panel window) */
 /* The window is transparent: only the card is visible, with a margin for its shadow. */
-html.panel-window, html.panel-window body, html.panel-window #root { height: auto; background: transparent !important; overflow: hidden; }
-.panel-shell { padding: 14px; }
+html.panel-window, html.panel-window body, html.panel-window #root { height: 100%; background: transparent !important; overflow: hidden; }
+/* The card fills the window (the user sizes the window); the editor and the tools share its height. */
+.panel-shell { position: relative; height: 100%; box-sizing: border-box; padding: 14px; }
+.panel-shell > .panel-card { height: 100%; box-sizing: border-box; }
+.panel-shell .panel-body2 { flex: 1 1 auto; min-height: 0; }
+.panel-shell .panel-main { overflow: auto; }
+.panel-shell .panel-flyout { flex: 1 1 auto; min-height: 120px; display: flex; flex-direction: column; }
+.panel-shell .panel-flyout-body { flex: 1 1 auto; min-height: 0; overflow: auto; }
+/* Resize grips: a band over the card's edges and corners (the window is frameless). */
+.panel-grip { position: absolute; z-index: 20; }
+.panel-grip.n, .panel-grip.s { left: 24px; right: 24px; height: 12px; cursor: ns-resize; }
+.panel-grip.n { top: 8px; }
+.panel-grip.s { bottom: 8px; }
+.panel-grip.e, .panel-grip.w { top: 24px; bottom: 24px; width: 12px; cursor: ew-resize; }
+.panel-grip.e { right: 8px; }
+.panel-grip.w { left: 8px; }
+.panel-grip.ne, .panel-grip.nw, .panel-grip.se, .panel-grip.sw { width: 22px; height: 22px; }
+.panel-grip.ne { top: 6px; right: 6px; cursor: nesw-resize; }
+.panel-grip.sw { bottom: 6px; left: 6px; cursor: nesw-resize; }
+.panel-grip.nw { top: 6px; left: 6px; cursor: nwse-resize; }
+.panel-grip.se { bottom: 6px; right: 6px; cursor: nwse-resize; }
 /* Opaque: the window is transparent and WebView2 cannot blur what lies behind it, so a
    see-through card let Word's ribbon show through the top row. */
 .panel-card {

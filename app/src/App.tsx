@@ -244,7 +244,7 @@ export function App() {
                 <div className="canvas-hint" aria-hidden>
                   Type an equation: <kbd>x^2</kbd> <kbd>alpha</kbd> <kbd>-&gt;</kbd> <kbd>/</kbd> for a fraction
                   <br />
-                  <kbd>Ctrl F</kbd> fraction · <kbd>Ctrl R</kbd> root · <kbd>Ctrl H</kbd>/<kbd>Ctrl L</kbd> super/subscript · <kbd>Ctrl Shift V</kbd> vector · <kbd>Space Space</kbd> commands · <kbd>F1</kbd> shortcuts and LaTeX commands
+                  <kbd>Ctrl F</kbd> fraction · <kbd>Ctrl R</kbd> root · <kbd>Ctrl H</kbd>/<kbd>Ctrl L</kbd> super/subscript · <kbd>Ctrl Shift V</kbd> vector · <kbd>Space</kbd> next slot · <kbd>Ctrl K</kbd> commands · <kbd>F1</kbd> shortcuts and LaTeX commands
                 </div>
               )}
             </div>

@@ -433,7 +433,7 @@ export function MathEditor() {
     mf.mathVirtualKeyboardPolicy = "manual";
     mf.placeholderSymbol = "□"; // lighter than the default ▢ (styled further in app.css)
     // Shown while the equation is empty, so it is clear where to type.
-    mf.placeholder = "\\text{Type here, or press Space Space for commands}";
+    mf.placeholder = "\\text{Type here · Space: next slot · Ctrl+K: commands}";
     mf.className = "mathfield";
     mf.setAttribute("aria-label", "Equation editor");
     mf.value = toMathLive(useApp.getState().latex);

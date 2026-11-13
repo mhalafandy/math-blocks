@@ -116,23 +116,29 @@ export function PanelApp() {
     return () => window.removeEventListener("keydown", onKey, true);
   });
 
-  // The window takes the card's height (the card is sized by its content, never by the window).
+  // The card fills the window; the user sizes the window (any edge or corner). Its size and position
+  // are remembered per screen when the user resizes or moves it.
   useEffect(() => {
-    const el = root.current;
-    if (!el) return;
-    let last = 0;
-    const ro = new ResizeObserver(() => {
-      const h = Math.ceil(el.getBoundingClientRect().height) + 2 * CARD_MARGIN;
-      if (Math.abs(h - last) < 2) return;
-      last = h;
-      void (async () => {
-        const { getCurrentWindow } = await import("@tauri-apps/api/window");
-        const { LogicalSize } = await import("@tauri-apps/api/dpi");
-        await getCurrentWindow().setSize(new LogicalSize(loadLayout().width, Math.min(760, h)));
-      })().catch(() => undefined);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const offs: (() => void)[] = [];
+    void (async () => {
+      const { getCurrentWindow, currentMonitor } = await import("@tauri-apps/api/window");
+      const { saveGeometry, screenKey } = await import("../lib/panelPlacement");
+      const w = getCurrentWindow();
+      const remember = () => {
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+          if (!(await w.isVisible())) return;
+          const [pos, size, m] = await Promise.all([w.outerPosition(), w.outerSize(), currentMonitor()]);
+          if (m) saveGeometry(screenKey(m), { x: pos.x, y: pos.y, w: size.width, h: size.height });
+        }, 400);
+      };
+      offs.push(await w.onResized(remember), await w.onMoved(remember));
+    })().catch(() => undefined);
+    return () => {
+      clearTimeout(timer);
+      offs.forEach((f) => f());
+    };
   }, []);
 
   // Ctrl+K or Space Space: the Commands flyout, its search focused.
@@ -152,16 +158,6 @@ export function PanelApp() {
     focusCommands.current = false;
     document.querySelector<HTMLInputElement>(".panel-command input")?.focus();
   }, [flyout]);
-
-  // The width the user dragged the window to is kept for next time.
-  useEffect(() => {
-    const onResize = () => {
-      const w = Math.round(window.innerWidth);
-      if (w >= 480 && Math.abs(w - loadLayout().width) > 4) setLayout({ width: w });
-    };
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  });
 
   // Behaves like a popover: clicking back into Word (or anywhere else) closes it.
   useEffect(() => {
@@ -212,9 +208,10 @@ export function PanelApp() {
   );
 
   const app = useApp.getState();
-  const hint = toast ? toast.text : eq.errors ? `${eq.errors} error(s)` : display ? "Ctrl+Enter apply · Enter new line · Esc cancel" : "Enter apply · Esc cancel";
+  const hint = toast ? toast.text : eq.errors ? `${eq.errors} error(s)` : display ? "Space next slot · Ctrl+Enter apply · Enter new line · Esc cancel" : "Space next slot · Enter apply · Esc cancel";
   return (
     <div className="panel-shell">
+      <ResizeGrips />
       <div className="panel-card" ref={root}>
         <div className="panel-top" data-tauri-drag-region>
           <div className="panel-modes" role="group" aria-label="Equation type">
@@ -331,7 +328,7 @@ export function PanelApp() {
 
 type FlyoutId = "commands" | "favourites" | "symbols" | "structures" | "collections" | "style" | "preview";
 const FLYOUTS: { id: FlyoutId; icon: string; label: string; keys?: string }[] = [
-  { id: "commands", icon: "⌕", label: "Commands and LaTeX", keys: "Ctrl+K, Space Space" },
+  { id: "commands", icon: "⌕", label: "Commands and LaTeX", keys: "Ctrl+K" },
   { id: "favourites", icon: "★", label: "Favourites" },
   { id: "symbols", icon: "≤", label: "Symbols" },
   { id: "structures", icon: "∑", label: "Structures (fractions, scripts, matrices…)" },
@@ -385,7 +382,29 @@ function GroupFlyout({ row }: { row: "symbols" | "templates" | "tabs" }) {
   );
 }
 
-const CARD_MARGIN = 14;
+/** Resize from any edge or corner of the card (the window has no frame of its own). */
+const GRIPS = [
+  ["n", "North"], ["s", "South"], ["e", "East"], ["w", "West"],
+  ["ne", "NorthEast"], ["nw", "NorthWest"], ["se", "SouthEast"], ["sw", "SouthWest"],
+] as const;
+function ResizeGrips() {
+  return (
+    <>
+      {GRIPS.map(([id, dir]) => (
+        <div
+          key={id}
+          className={`panel-grip ${id}`}
+          aria-hidden
+          onMouseDown={(e) => {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            void import("@tauri-apps/api/window").then(({ getCurrentWindow }) => getCurrentWindow().startResizeDragging(dir)).catch(() => undefined);
+          }}
+        />
+      ))}
+    </>
+  );
+}
 
 /** One-click favourites: the same Quick access as the main window (drag to reorder, right-click to unpin). */
 function QuickRow() {

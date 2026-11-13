@@ -94,7 +94,9 @@ function LatexSheet({ onInsert }: { onInsert: () => void }) {
 
 const APP: [string, string][] = [
   ["Ctrl+Enter", "Send to Word / Update in Word"],
-  ["Ctrl+K, or Space Space in the editor", "Search commands and symbols"],
+  ["Ctrl+K (or Space Space outside every structure)", "Search commands and symbols"],
+  ["Space / Shift+Space (in the editor)", "Next / previous slot: numerator → denominator → out; lower limit → upper limit → body; index → radicand; cell by cell. In \\text{} Space types a space"],
+  ["Backspace", "One character; a structure or kind is selected first, the second Backspace deletes it (Ctrl+Z restores)"],
   ["Ctrl+N", "New equation"],
   ["Ctrl+S", "Save to library (new version)"],
   ["Ctrl+Shift+S", "Save as new library equation"],
@@ -105,7 +107,7 @@ const APP: [string, string][] = [
 ];
 
 const WORD: [string, string][] = [
-  ["Right-click an equation", "Floating editor next to it"],
+  ["Right-click an equation", "Floating editor next to it (Word's menu: the ☰ button in the floating editor)"],
   ["Double-click an equation", "Edit in the MathBlocks window"],
   ["Ctrl+Alt+M", "Edit the equation at the cursor (or start a new one there)"],
   ["Ctrl+Alt+L", "Equation ↔ LaTeX text at the cursor"],

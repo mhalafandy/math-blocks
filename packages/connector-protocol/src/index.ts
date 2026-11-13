@@ -397,8 +397,8 @@ export interface AppToConnector {
   };
   /** Turns a MathBlocks equation into plain text (its LaTeX), selected. */
   equationToText: { params: DocTarget & { tag: string; text: string }; result: { ok: true } };
-  /** Word's own context menu at the mouse position. */
-  showWordMenu: { params: Record<string, never>; result: { ok: true } };
+  /** The floating editor's Word-menu button: the MathBlocks equation menu for an equation object (by ID), else Word's text menu. */
+  showWordMenu: { params: { tag?: string }; result: { ok: true; menu?: "mathblocks" | "word" } };
   documentInfo: { params: Record<string, never>; result: DocumentInfoResult };
 }
 

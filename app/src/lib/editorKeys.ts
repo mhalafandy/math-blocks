@@ -3,7 +3,8 @@ import { breakLineAt, CARET, setAlignmentAt, type LineResult } from "./multiline
 import { findTrigger, kindSnippets } from "./snippets";
 import { KIND_BY_MACRO } from "@mathblocks/math-core";
 import { applySnippet, type SnippetField } from "./snippetApply";
-import { exitKind, type KindField } from "./kindExit";
+import { exitKind, kindAt, type KindField } from "./kindExit";
+import { deleteStep, moveSlot, type SlotField } from "./editorSlots";
 import { SHORTCUT_TABLE } from "./editorShortcuts";
 import { addDerivationLine } from "./derivation";
 import { useApp } from "./store";
@@ -99,34 +100,6 @@ function comboOf(e: KeyboardEvent): string {
     code === "BracketLeft" ? "[" : code === "BracketRight" ? "]" : code === "Slash" ? "/" : code === "Backslash" ? "\\" : code === "Space" ? "Space" : code.startsWith("Digit") ? code.slice(5) : code.startsWith("Key") ? code.slice(3) : e.key;
   parts.push(key);
   return parts.join("+");
-}
-
-/** The offsets of a whole kind object (\class{nk-…}{…}) ending (dir −1) or starting (dir +1) at `pos`. */
-function kindRangeAt(mf: { getValue: (a: number, b: number, f: "latex") => string; lastOffset: number }, pos: number, dir: -1 | 1): [number, number] | null {
-  for (let n = 1; n <= 80; n++) {
-    const [a, b] = dir < 0 ? [pos - n, pos] : [pos, pos + n];
-    if (a < 0 || b > mf.lastOffset) return null;
-    const v = mf.getValue(a, b, "latex");
-    if (v.startsWith("\\class{nk-") && completeGroup(v)) return [a, b];
-  }
-  return null;
-}
-
-/** "\class{name}{body}" exactly, nothing before or after. */
-function completeGroup(v: string): boolean {
-  const nameEnd = v.indexOf("}");
-  if (nameEnd < 0 || v[nameEnd + 1] !== "{") return false;
-  let depth = 0;
-  for (let i = nameEnd + 1; i < v.length; i++) {
-    const c = v[i];
-    if (c === "\\") {
-      i++;
-      continue;
-    }
-    if (c === "{") depth++;
-    else if (c === "}" && --depth === 0) return i === v.length - 1;
-  }
-  return false;
 }
 
 let lastSpace = 0;
@@ -233,18 +206,44 @@ export function handleEditorKey(e: KeyboardEvent): boolean {
     rewriteAtCaret(mf, breakLineAt);
     return true;
   }
-  // A notation kind is deleted as a whole: Backspace right after it, Delete right before it.
-  if ((e.key === "Backspace" || e.key === "Delete") && !e.ctrlKey && !e.metaKey && !e.altKey && mf.selectionIsCollapsed) {
-    const range = kindRangeAt(mf, mf.position, e.key === "Backspace" ? -1 : 1);
-    if (range) {
+  // Backspace / Delete: one character; a structure or a kind is selected first, deleted by the second press
+  // (editorSlots.deleteStep). An ordinary character is left to the editor (one character).
+  if ((e.key === "Backspace" || e.key === "Delete") && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && mode === "math") {
+    const done = deleteStep(mf as unknown as SlotField, e.key === "Backspace" ? -1 : 1);
+    if (done) {
       e.preventDefault();
       e.stopPropagation();
-      mf.selection = { ranges: [range], direction: "forward" };
-      mf.executeCommand("deleteBackward");
+      return true;
+    }
+    return false;
+  }
+  // Space / Shift+Space: the next / previous slot of the structure around the caret (like Tab in MathType);
+  // after the last slot the caret leaves the structure. In a kind: its empty slots, then out of the kind.
+  if (e.key === " " && mode === "math" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    const moved = moveSlot(mf as unknown as SlotField, e.shiftKey ? -1 : 1);
+    if (moved) {
+      lastSpace = 0;
+      e.preventDefault();
+      e.stopPropagation();
+      return true;
+    }
+    if (!e.shiftKey && mf.selectionIsCollapsed) {
+      const k = kindAt(mf as unknown as KindField);
+      const inside = !!k && k.a < mf.position && mf.position < k.b;
+      if (exitKind(mf as unknown as KindField, "Tab") || (inside && mf.executeCommand("moveToNextPlaceholder"))) {
+        lastSpace = 0;
+        e.preventDefault();
+        e.stopPropagation();
+        return true;
+      }
+    }
+    if (e.shiftKey) {
+      e.preventDefault();
+      e.stopPropagation();
       return true;
     }
   }
-  // Space Space (quickly) opens the command palette; a single Space keeps its role (leaving a kind).
+  // Space Space (quickly), outside every structure, opens the command palette (Ctrl+K anywhere).
   if (e.key === " " && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
     const app = useApp.getState();
     const mode = (mf as unknown as { mode?: string }).mode;
@@ -258,12 +257,6 @@ export function handleEditorKey(e: KeyboardEvent): boolean {
     }
     lastSpace = mode === "math" ? now : 0;
   } else lastSpace = 0;
-  // Space inside a notation kind leaves it (caret right after the kind, the kind unchanged).
-  if (e.key === " " && mode === "math" && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && mf.selectionIsCollapsed && exitKind(mf as unknown as KindField, "Space")) {
-    e.preventDefault();
-    e.stopPropagation();
-    return true;
-  }
   // Tab after a snippet trigger ("ddt", "mat3"…) expands it; otherwise Tab moves between slots.
   if (e.key === "Tab" && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && mf.selectionIsCollapsed) {
     const pos = mf.position;

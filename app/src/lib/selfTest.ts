@@ -445,12 +445,16 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       await smoke("save", { file: "mathtype private use test (converted).docx" });
     });
 
-    section = "Equation objects: the right-click menu";
+    section = "Equation objects: right-click opens the floating editor; the equation menu is in its Word-menu button";
     await step("object menu", async () => {
       const docO = await smoke("newDocument");
       await smoke("typeText", { text: "Menu test: " });
       const eq = await insert("E=mc^2", false);
       await smoke("typeText", { text: " end." });
+      if (addinSupports("smoke")) {
+        const rc = (await smoke("rightClick", { tag: eq.tag }).catch((e: Error) => ({ action: `error: ${e.message}` }))) as { action: string; tag?: string };
+        check("a right-click on an equation object opens the floating editor (Word's menu suppressed)", rc.action === "panel" && rc.tag === eq.tag, `action ${rc.action}`);
+      }
       const menu = (await smoke("objectMenu", { tag: eq.tag })) as { items: { id: string; label: string; enabled: boolean }[]; isObject: boolean };
       const ids = menu.items.map((i) => i.id).join(" ");
       check("an equation object gets the MathBlocks menu: Edit here first, then the window, numbering, LaTeX, Cut/Copy/Paste/Delete", menu.isObject && ids === "edit editWindow number copyLatex toLatex cut copy paste delete", menu.items.map((i) => `${i.label}${i.enabled ? "" : " (off)"}`).join(" · "));
