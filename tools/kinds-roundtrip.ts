@@ -58,7 +58,8 @@ for (const { name, profile } of profiles) {
     else
       for (const b of BASES) {
         sources.push({ src: `\\${k.macro}{${b}}`, base: b });
-        sources.push({ src: `\\${k.macro}[P/O]{${b}}`, base: b });
+        // Explicit token forms (\\unit, \\const…) take no frame label.
+        if (!k.token) sources.push({ src: `\\${k.macro}[P/O]{${b}}`, base: b });
       }
     for (const { src, base } of sources) {
       const ed = toEditorLatex(src, profile);
@@ -77,7 +78,7 @@ let nestedCases = 0;
 {
   const profile: NotationProfile = { preset: "hughes", overrides: {} };
   for (const k of KINDS) {
-    const src = k.id === "T" ? "\\cmat{c}^{\\T}" : k.id === "dcm" ? "\\dcm{b}{a}" : k.id === "frm" ? "\\frm{a}" : k.id === "diff" ? "\\diff{m}" : `\\${k.macro}[P/O]{r}`;
+    const src = k.id === "T" ? "\\cmat{c}^{\\T}" : k.id === "dcm" ? "\\dcm{b}{a}" : k.id === "frm" ? "\\frm{a}" : k.id === "diff" ? "\\diff{m}" : k.token ? `\\${k.macro}{r}` : `\\${k.macro}[P/O]{r}`;
     for (const form of [`{${src}_{2}}`, `{{${src}}}`, `\\frac{${src}}{2}`, `\\left(${src}\\right)`, `a+{b+{${src}}}`]) {
       cases.push({ id: `nested ${form}`, profile, editor: toEditorLatex(form, profile), expected: form });
       nestedCases++;
@@ -97,7 +98,7 @@ let multiLineCases = 0;
 for (const preset of Object.keys(PRESETS) as PresetId[]) {
   const profile: NotationProfile = { preset, overrides: {} };
   for (const k of KINDS) {
-    const src = k.id === "T" ? "\\cmat{c}^{\\T}" : k.id === "dcm" ? "\\dcm{b}{a}" : k.id === "frm" ? "\\frm{a}" : k.id === "diff" ? "\\diff{m}" : `\\${k.macro}[P/O]{r}`;
+    const src = k.id === "T" ? "\\cmat{c}^{\\T}" : k.id === "dcm" ? "\\dcm{b}{a}" : k.id === "frm" ? "\\frm{a}" : k.id === "diff" ? "\\diff{m}" : k.token ? `\\${k.macro}{r}` : `\\${k.macro}[P/O]{r}`;
     for (const env of ENVS) {
       const amp = env === "aligned" ? "&" : "";
       const latex = `\\begin{${env}}x${amp}=${src}+y\\\\ ${amp}\\quad+\\pvec{\\omega}\\times${src}\\\\ ${amp}=0\\end{${env}}`;

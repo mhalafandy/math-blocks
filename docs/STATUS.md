@@ -19,39 +19,35 @@ recording stays in the add-in and in the self-test, so a recurrence will name it
 
 ## This round
 
-**Plan change (yours, 13 Nov):** two architecture designs before Blocks, for approval; Blocks depend on the
-first. Order after approval: kinds model → Blocks → symbol list → MathType parity.
+**Approved (13 Nov):** the kinds model (all 8 recommendations), the list of symbols (all 6, with two
+corrections: definition markers are hidden fields like the numbering markers, never content controls; no
+example forces a look with `\mathrm`), and the Blocks amendment. Order: kinds model → Blocks → list of
+symbols → MathType parity. The design documents are updated accordingly.
 
-### Designs ready for your approval
+### Kinds model — built (this build)
 
-1. **Everything is a kind** — [KINDS-MODEL.md](KINDS-MODEL.md). One registry of kinds: *token* kinds
-   (variable with its Latin/Greek, lower/upper variants, constant, function, operator, label, counter,
-   roman, number, unit, text, transpose) and the existing *wrapper* kinds (`\pvec`, `\dcm`, your own).
-   Every symbol's look comes from its kind's style (one table on the Document style page). Plain letters
-   get their kind implicitly (rules and the document's classification); macros only where needed.
-   Per-document **symbol rules** ("e is a constant", "J is a matrix", "ω is a vector when bold"). The
-   document style's categories and the notation kinds merge into this model (style v2, with a migration
-   proven by identical drawings in CI); Check style and Apply style work on it. Eight decisions, each with
-   my recommendation (§11).
-2. **List of symbols from tags** — [SYMBOL-LIST.md](SYMBOL-LIST.md). `\define{symbol}{meaning}[unit]`
-   in the text after the introducing sentence; Convert LaTeX keeps it as a hidden marker at that place;
-   "Define symbol…" from the editors. One click writes or updates the table (symbol, meaning, unit,
-   optionally where first defined), one Ctrl+Z; sort, groups, columns and table style on a style page saved
-   in the document style; checks (used/not defined, defined/not used, two meanings, two symbols, defined
-   after use). Six decisions (§9). The interchange text for `\define` is drafted in §7 and goes into
-   LATEX-INTERCHANGE.md after approval.
-3. **Blocks design amended** — [BLOCKS-DESIGN.md](BLOCKS-DESIGN.md): the approved decisions and your four
-   additions recorded (§10); new §6b *Kinds in blocks* (bodies store meaning; plain letters take the target
-   document's kinds; optional slot kinds `#v:pvec`; symbol rules stay with the document).
+- **Model** (math-core): token kinds + wrapper kinds; document style v2 (`kinds`, `notation`, `symbols`,
+  `global`); `explainSymbol` (kind and reason for any letter); explicit forms `\unit`, `\const`, `\var`,
+  `\op`, `\lbl`, `\ctr` (triggers `;un`, `;cs`, `;vr`, `;op`, `;la`, `;ct`).
+- **Migration:** every v1 style reads as v2 and draws exactly as before — checked against a golden file
+  written by the previous code (57 styles: every preset × classifications × notation presets, and special
+  cases; 17 generic equations; drawn LaTeX, Word output, SVG and style hash all identical). Pictures drawn
+  before keep their fingerprint, so nothing shows as outdated.
+- **Rules:** token-kind rules give the shape; wrapper-kind rules draw the symbol as that kind; conditions on
+  bold and place; subscripted symbols.
+- **Document style page:** one table of kinds (new Units row), the wrapper kinds' notation preset, a
+  Symbols section (add / remove rules).
+- **Editor:** hover tells each letter's kind and why; right-click → *Kind of x ▸* → this occurrence (writes
+  the macro), this document (rule, redraw, one Ctrl+Z), every new document (your default).
+- **Check style:** proposed rules (always-bold letter → vector/matrix when bold; e only as a power base →
+  constant), *Accept rule* / *Reject*. Review kinds suggests `\unit` for hand-written units.
+- **Checks:** unit tests (rules, explain, units, proposals, migration golden), CI headless check of the
+  hover in the real editor, kinds round trip (4175 cases), snippet check; Word self-test section
+  *Kinds model* (v1 migration, proposals, a rule redraws with the LaTeX unchanged and one Ctrl+Z, the rule
+  stored in the document, hover, `\unit` in Word).
 
-**Blocks work already done** (before this plan change) is kept on the branch `wip/blocks`, outside any
-release: storage (SQLite tables, document part, Tauri and add-in commands), the model with unit tests,
-insertion with Space through slots, live repeats, slot hints and the "slot 2 of 3: frame" status line,
-triggers, the Save as block dialog, the sidebar and floating-editor Blocks panels, palette search and
-Ctrl+K, export/import, and a headless editor check (all passing). It is rebased onto the kinds model when
-Blocks resume.
-
-I am **stopping here for your approval** of the two designs and the Blocks amendment.
+Next: Blocks, rebased from `wip/blocks` onto this model (slot kinds `#v:pvec`, font commands stripped in
+Save as block), then the list of symbols.
 
 ### Earlier this plan
 
@@ -221,6 +217,11 @@ new section this round.
 
 ## What to test (next build)
 
+- **Kinds model** (new): self-test section *Kinds model*. Then on a copy of a converted chapter: Document
+  style → check that nothing changed (the look and Check style's "older drawing" count should be as before);
+  hover letters in the editor; add a rule (right-click a bold vector letter → Kind ▸ → physical vector → In
+  this document) and watch the document redraw; Check style → the proposed rules.
+
 - **Blocks**: read [BLOCKS-DESIGN.md](BLOCKS-DESIGN.md) and answer the seven decisions (or "as recommended").
 - **Self-test**: the print check writes print/contact-sheet.html now; the new section "Visual comparison with
   MathType" asks for a document — choose one with many MathType equations and send me the category scores
@@ -274,7 +275,6 @@ left is the empty one listed by the pre-flight.
 
 ## Waiting for the owner
 
-- Approval of KINDS-MODEL.md, SYMBOL-LIST.md and the Blocks amendment.
 - Self-test of the next build; thesis-copy results for Convert numbering and Review notation kinds.
 
 ## Known problems
@@ -288,7 +288,7 @@ left is the empty one listed by the pre-flight.
 
 ## Next
 
-1. After approval: the kinds model, then Blocks (rebased from `wip/blocks`), then the list of symbols.
+1. Blocks (rebased from `wip/blocks` onto the kinds model), then the list of symbols.
 2. MathType parity and beyond (FEATURES.md), in order: handwriting pad, accessible alt text, rich clipboard,
    context-aware quick-style bar, entry points in Word, higher-fidelity MathType conversion, export one
    equation as PDF.

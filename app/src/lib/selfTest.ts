@@ -1,4 +1,5 @@
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
+import * as core from "@mathblocks/math-core";
 import { addinSupports, connector } from "./connector";
 import { buildInsertion, buildPictureInsertion, currentProfile } from "./equation";
 import { numberFormat } from "./numbering";
@@ -617,7 +618,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const { loadFonts, classicStyle } = await import("./render");
       const { applyPreset, presetFrom } = await import("@mathblocks/math-core");
       const fonts = await loadFonts();
-      const drawing = (latex: string, st: import("@mathblocks/math-core").MathStyle) => renderSvg(parseLatex(latex).root, { fonts, style: classicStyle(), display: true, sizePt: st.sizePt, mathStyle: st }).svg;
+      const drawing = (latex: string, st: import("@mathblocks/math-core").MathStyle) => renderSvg(parseLatex(latex).root, { fonts, style: classicStyle(), display: true, sizePt: st.global.sizePt, mathStyle: st }).svg;
       /** Each equation of the document in front: its LaTeX, the style it was drawn in, its size in Word. */
       const pictures = async () => {
         const front = (await smoke("activeName")).name as string;
@@ -641,12 +642,12 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       }
       const loaded = await ds.loadDocumentStyle();
       check("a new document has no style of its own (drawn in the user's default)", loaded ? !loaded.stored : null, loaded ? `stored: ${loaded.stored}` : "the add-in cannot read document styles");
-      await ds.saveDocumentStyle({ ...ds.activeStyle(), labels: "italic", letters: {}, exceptions: [] });
+      await ds.saveDocumentStyle({ ...core.withLetterRoles(core.withLooks(ds.activeStyle(), { labels: "italic" }), {}), exceptions: [] });
       check("the style is stored in the document", (await ds.readDocumentStyle((await ds.loadDocumentStyle())!.document)) !== null);
       let prev = ds.activeStyle();
       for (const labels of ["upright", "italic"] as const) {
         const before = await pictures();
-        const next = { ...ds.activeStyle(), labels };
+        const next = core.withLooks(ds.activeStyle(), { labels });
         await oneCtrlZ(`Restyle (index labels ${labels})`, docS.name, () => run.restyleDocument(next));
         const after = await pictures();
         const sameLatex = before.every((b) => after.find((a) => a.tag === b.tag)?.latex === b.latex);
@@ -680,7 +681,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
         check("Conform to style: the forced looks are gone, nothing else changed", !/\\mathrm/.test(conformed) && /v_\{?max\}?=x\+v_\{?max\}?/.test(conformed.replace(/\s/g, "")), conformed);
       }
       // A preset exported from this document and imported into a second one gives identical drawings.
-      await run.restyleDocument({ ...ds.activeStyle(), labels: "upright", differential: "upright", constants: "upright", letters: {}, exceptions: ds.activeStyle().exceptions });
+      await run.restyleDocument(core.withLetterRoles(core.withLooks(ds.activeStyle(), { labels: "upright", differential: "upright", constants: "upright" }), {}));
       const json = ds.presetToJson(presetFrom(ds.activeStyle(), "self-test", "Self-test preset"));
       const picsA = await pictures();
       const docB = await smoke("newDocument");
@@ -691,7 +692,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       }
       await ds.loadDocumentStyle();
       const imported = ds.presetFromJson(json);
-      await run.restyleDocument({ ...applyPreset(ds.activeStyle(), imported), letters: {}, exceptions: [] });
+      await run.restyleDocument({ ...core.withLetterRoles(applyPreset(ds.activeStyle(), imported), {}), exceptions: [] });
       const picsB = await pictures();
       const pairs = picsB.map((b) => [b, picsA.find((a) => a.latex === b.latex)] as const);
       check(
@@ -703,6 +704,60 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       await smoke("activate", { name: docS.name });
       await smoke("save", { file: "style test.docx" });
       void docB;
+    });
+
+    section = "Kinds model: every symbol's look comes from its kind (rules, migration, Check style)";
+    await step("kinds model", async () => {
+      const ds = await import("./docStyle");
+      const run = await import("./styleRun");
+      const { checkStyle } = await import("./styleCheck");
+      /** Each equation of the document in front: its LaTeX, the style it was drawn in, its picture. */
+      const pictures = async () => {
+        const front = (await smoke("activeName")).name as string;
+        const r = await connector.request("listInstances", { includeContent: true }, SLOW);
+        const d = r.documents.find((x) => x.name === front) ?? r.documents[0];
+        return (d?.instances ?? []).map((i) => {
+          const rd = i.flatOpc ? readEquationXml(i.flatOpc) : null;
+          return { tag: i.tag, latex: rd ? serializeLatex(rd.root) : "?", styleHash: rd?.styleHash ?? "", picture: i.flatOpc ?? "" };
+        });
+      };
+      // Generic equations: a bold ω (a vector by rule), a plain ω, J always bold, e only as a power base.
+      const EQS = ["\\boldsymbol{\\omega}=\\mathbf{J}^{-1}\\mathbf{h}", "\\mathbf{J}\\boldsymbol{\\omega}+\\omega t", "x=e^{-t}"];
+      const docK = await smoke("newDocument");
+      await smoke("typeText", { text: "Kinds model test." });
+      for (const l of EQS) {
+        await smoke("newParagraph");
+        await insert(l, true);
+        await smoke("caretTo", { where: "end" });
+      }
+      await ds.loadDocumentStyle();
+      // A v1 style (as older builds stored it) reads as the same style: same fingerprint, so no picture is "outdated".
+      const v1 = { version: 1, preset: "iso", labels: "upright", differential: "upright", constants: "upright", letters: { i: "counter" }, sizePt: 12 };
+      const migrated = core.normalizeStyle(v1);
+      check("a v1 style is read as v2 (kinds, rules, global settings)", migrated.version === 2 && migrated.kinds.operator === "upright" && core.letterRoles(migrated).i === "counter" && migrated.global.sizePt === 12, JSON.stringify(migrated.kinds));
+      check("…and stored as v2 then read back, it is the same style", JSON.stringify(core.normalizeStyle(JSON.parse(JSON.stringify(migrated)))) === JSON.stringify(migrated));
+      // Check style proposes the rules the document suggests.
+      const before = await pictures();
+      const issues = checkStyle(before.map((p) => ({ latex: p.latex, id: p.tag })), ds.activeStyle());
+      const proposed = issues.filter((i) => i.kind === "rule").map((i) => i.rule!);
+      check("Check style proposes “J is a matrix when bold” (J is always bold)", proposed.some((r) => r.text === "J" && r.kind === "mat" && r.when?.bold === true), proposed.map((r) => `${r.symbol}→${r.kind}`).join(", ") || "none");
+      check("…and “e is a constant” (e only as the base of a power)", proposed.some((r) => r.text === "e" && r.kind === "constant"));
+      check("…but no rule for ω (written both bold and plain: two forms)", !proposed.some((r) => r.text === "ω"));
+      // A rule naming a wrapper kind redraws the document, the LaTeX unchanged; one Ctrl+Z.
+      const ruled: import("@mathblocks/math-core").MathStyle = { ...ds.activeStyle(), symbols: [...ds.activeStyle().symbols, { symbol: "\\boldsymbol{\\omega}", text: "ω", when: { bold: true }, kind: "pvec" }] };
+      await oneCtrlZ("Restyle with a symbol rule (ω is a vector when bold)", docK.name, () => run.restyleDocument(ruled));
+      await run.restyleDocument(ruled);
+      const after = await pictures();
+      check("with the rule: every equation's LaTeX is unchanged", after.length === EQS.length && after.every((a) => before.find((b) => b.tag === a.tag)?.latex === a.latex), after.map((a) => a.latex).join(" | "));
+      check("with the rule: the equations with a bold ω are drawn again (new fingerprint)", after[0]!.styleHash === ds.activeStyleHash() && after[0]!.picture !== before[0]!.picture);
+      check("the rule is stored in the document", ((await ds.readDocumentStyle((await ds.loadDocumentStyle())!.document))?.symbols ?? []).some((r) => r.text === "ω" && r.kind === "pvec"));
+      // Hover: the editor explains the kind of each letter.
+      const ex = core.explainSymbol({ text: "ω", bold: true, forced: false, where: "base" }, ds.activeStyle());
+      check("hover: a bold ω is a physical vector, by the document's rule", ex.kind === "pvec" && /rule in this document/.test(ex.reason), ex.reason);
+      // \unit: upright with a thin space after a number, in Word too.
+      const { flatOpc } = await buildInsertion("v=3\\unit{m/s}", false, profile, undefined, "native");
+      check("\\unit in Word: upright m/s after a thin space", /m:sty m:val="p"/.test(flatOpc) && flatOpc.includes("\u2009"), "native OMML of v=3\\unit{m/s}");
+      await smoke("save", { file: "kinds test.docx" });
     });
 
     section = "My styles: create, rename, duplicate, delete, export and import";
@@ -728,7 +783,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
         sp.deleteStyle(c.id);
         check("Delete: the copy is gone, the original stays", !sp.myStyles().some((p) => p.id === c.id) && sp.myStyles().some((p) => p.id === r.id));
         // Make it distinctive, then use it in one document, export it, import it into a second one.
-        const edited = sp.updateStyle(r.id, { ...ds.activeStyle(), ...r.values, labels: "upright", differential: "upright" });
+        const edited = sp.updateStyle(r.id, core.withLooks(ds.activeStyle(), { ...r.values, labels: "upright", differential: "upright" }));
         const SAMPLE = ["\\sigma_{sf}+\\frac{dx}{dt}", "v_{max}=x_i"];
         const pics = async () => {
           const front = (await smoke("activeName")).name as string;
@@ -747,10 +802,10 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
           await smoke("newParagraph");
         }
         await ds.loadDocumentStyle();
-        await run.restyleDocument({ ...core.applyPreset(ds.activeStyle(), edited), letters: {}, exceptions: [] });
+        await run.restyleDocument({ ...core.withLetterRoles(core.applyPreset(ds.activeStyle(), edited), {}), exceptions: [] });
         const picsX = await pics();
         check("the document says which style it uses", core.styleLabel(ds.activeStyle(), sp.allStyles()) === edited.name, core.styleLabel(ds.activeStyle(), sp.allStyles()));
-        check("…and “modified” once its look differs", core.styleLabel({ ...ds.activeStyle(), labels: "italic" }, sp.allStyles()) === `${edited.name}, modified`);
+        check("…and “modified” once its look differs", core.styleLabel(core.withLooks(ds.activeStyle(), { labels: "italic" }), sp.allStyles()) === `${edited.name}, modified`);
         const json = ds.presetToJson(edited);
         sp.deleteStyle(edited.id);
         const imported = sp.addImportedStyle(ds.presetFromJson(json));
@@ -764,7 +819,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
           await smoke("newParagraph");
         }
         await ds.loadDocumentStyle();
-        await run.restyleDocument({ ...core.applyPreset(ds.activeStyle(), imported), letters: {}, exceptions: [] });
+        await run.restyleDocument({ ...core.withLetterRoles(core.applyPreset(ds.activeStyle(), imported), {}), exceptions: [] });
         const picsY = await pics();
         const pairs = picsY.map((y) => [y, picsX.find((x) => x.latex === y.latex)] as const);
         check("Imported into a second document: identical drawings", pairs.length === SAMPLE.length && pairs.every(([y, x]) => !!x && x.styleHash === y.styleHash && x.size === y.size), pairs.map(([y, x]) => `${y.latex}: ${x?.size ?? "?"} / ${y.size}`).join("; "));
@@ -805,7 +860,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
         ["Convert LaTeX (progress window)", () => convertAllLatex(undefined, { yes: true })],
         ["Repair", () => repairDocument(undefined, { quiet: true })],
         ["Apply style to document (progress window)", () => run.applyStyleCommand()],
-        ["Restyle", () => run.restyleDocument({ ...ds.activeStyle(), labels: "upright" })],
+        ["Restyle", () => run.restyleDocument(core.withLooks(ds.activeStyle(), { labels: "upright" }))],
         ["Check style", () => run.checkDocumentStyle()],
         ["Status-bar message", () => connector.request("showMessage", { text: "MathBlocks self-test: status message", kind: "info" })],
         ["Ctrl+Z", () => smoke("undo", { times: 1 })],
@@ -823,18 +878,18 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       // Restyle undo: Word's Ctrl+Z restores the drawings; the stored style follows them.
       await ds.loadDocumentStyle();
       const before = ds.activeStyle();
-      const newer = { ...before, labels: before.labels === "upright" ? ("italic" as const) : ("upright" as const) };
+      const newer = core.withLooks(before, { labels: core.looksOf(before).labels === "upright" ? "italic" : "upright" });
       await run.restyleDocument(newer);
       const { styleHash } = await import("@mathblocks/math-core");
       await smoke("undo", { times: 1 });
       // What Word's idle notification after Ctrl+Z makes the app do (the self-test turns those checks off).
       await ds.loadDocumentStyle();
-      check("Ctrl+Z of a restyle: the stored style is the previous one again", styleHash(ds.activeStyle()) === styleHash(before), `labels ${ds.activeStyle().labels} (before: ${before.labels}, new: ${newer.labels})`);
+      check("Ctrl+Z of a restyle: the stored style is the previous one again", styleHash(ds.activeStyle()) === styleHash(before), `labels ${core.looksOf(ds.activeStyle()).labels} (before: ${core.looksOf(before).labels}, new: ${core.looksOf(newer).labels})`);
       const cs = await run.checkDocumentStyle();
       check("…and Check style lists nothing", cs.issues.length === 0, cs.issues.map((i) => i.message).join(" | ") || "nothing");
       await smoke("redo", { times: 1 });
       await ds.loadDocumentStyle();
-      check("Ctrl+Y of a restyle: the new style again", styleHash(ds.activeStyle()) === styleHash(newer), `labels ${ds.activeStyle().labels}`);
+      check("Ctrl+Y of a restyle: the new style again", styleHash(ds.activeStyle()) === styleHash(newer), `labels ${core.looksOf(ds.activeStyle()).labels}`);
       const cs2 = await run.checkDocumentStyle();
       check("…and Check style lists nothing", cs2.issues.length === 0, cs2.issues.map((i) => i.message).join(" | ") || "nothing");
       await smoke("save", { file: "two documents B.docx" });
@@ -874,7 +929,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
         const p = drawn(`\\pvec{${l}}`)[0];
         const c = drawn(`\\cmat{${l}}`)[0];
         const plain = drawn(l)[0];
-        check(`three meanings of ${l.replace("\\", "")}: \\pvec bold upright, \\cmat bold upright, plain ${style.greekLower === "italic" || l === "r" ? "italic" : "as the document style says"}`, !!p?.bold && !p.slant && !!c?.bold && !c.slant && !!plain && !plain.bold, `pvec ${JSON.stringify(p)}, cmat ${JSON.stringify(c)}, plain ${JSON.stringify(plain)}`);
+        check(`three meanings of ${l.replace("\\", "")}: \\pvec bold upright, \\cmat bold upright, plain ${core.looksOf(style).greekLower === "italic" || l === "r" ? "italic" : "as the document style says"}`, !!p?.bold && !p.slant && !!c?.bold && !c.slant && !!plain && !plain.bold, `pvec ${JSON.stringify(p)}, cmat ${JSON.stringify(c)}, plain ${JSON.stringify(plain)}`);
       }
       // The sheet in Word (Classic pictures), to compare with MathType's bold Greek.
       await smoke("newDocument");
@@ -1019,18 +1074,18 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const docF = await smoke("openDocx", { file: "intermediate frames test.docx", base64: toBase64(interchangeDocx(paragraphs)) });
       const scan = (await connector.request("scanInterchange", {}, SLOW)) as InterchangeScan;
       const style = activeStyle();
-      const plan = planInterchange(scan, { frameSubscriptWarning: style.frameSubscriptWarning });
-      check("pre-flight: no warning for frames with a Roman-numeral index (the document's notation allows them)", style.frameSubscriptWarning ? null : plan.issues.length === 0, style.frameSubscriptWarning ? "this document asks for the warning (Document style)" : plan.issues.map((i) => i.what).join(" | ") || "none");
+      const plan = planInterchange(scan, { frameSubscriptWarning: style.global.frameSubscriptWarning });
+      check("pre-flight: no warning for frames with a Roman-numeral index (the document's notation allows them)", style.global.frameSubscriptWarning ? null : plan.issues.length === 0, style.global.frameSubscriptWarning ? "this document asks for the warning (Document style)" : plan.issues.map((i) => i.what).join(" | ") || "none");
       const strict = planInterchange(scan, { frameSubscriptWarning: true });
       check("with “warn when a frame has a subscript” on: each frame subscript is listed", strict.issues.length === 3, `${strict.issues.length} warning(s)`);
       // How the style draws them: numerals in indices, superscripts and DCM frames in the Roman-numeral shape.
       const { styleAst } = await import("@mathblocks/math-core");
-      const want = style.romans === "upright";
+      const want = style.kinds.roman === "upright";
       for (const e of EQS) {
         const drawn = serializeLatex(styleAst(parseLatex(e.latex).root, style));
         const plainNumeral = /[_^]\{?(?:I{1,3}|IV|V)(?![A-Za-z])/.test(drawn);
         const upright = (drawn.match(/\\mathrm\{(?:I{1,3}|IV|V)\}/g) ?? []).length;
-        check(`${e.latex}: Roman numerals drawn ${style.romans}`, want ? !plainNumeral && upright >= 2 : upright === 0, drawn);
+        check(`${e.latex}: Roman numerals drawn ${style.kinds.roman}`, want ? !plainNumeral && upright >= 2 : upright === 0, drawn);
       }
       const { convertLatexDocument } = await import("./latexInterchangeRun");
       let res: Awaited<ReturnType<typeof convertLatexDocument>> = null;
@@ -1278,7 +1333,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const bytes = Uint8Array.from(atob(((await smoke("readFile", { file: "print check.pdf" })) as { base64: string }).base64), (c) => c.charCodeAt(0));
       const fonts = await loadFonts();
       const save = async (file: string, dataUrl: string) => void (await smoke("writeFile", { file, base64: dataUrl.slice(dataUrl.indexOf(",") + 1) }));
-      const { rows, pages } = await analysePrint(bytes, entries, { fonts, style: classicStyle(), mathStyle: activeStyle(), sizePt: activeStyle().sizePt, save });
+      const { rows, pages } = await analysePrint(bytes, entries, { fonts, style: classicStyle(), mathStyle: activeStyle(), sizePt: activeStyle().global.sizePt, save });
       for (const row of rows) {
         const cell = /\\begin|\\frac|\\sqrt|\\sum|\\int|\\prod|\\lim|\\left|\\over|\\under|[_^]/.test(row.entry.latex) ? STRUCTURE_CELL : SYMBOL_CELL;
         try {
@@ -1370,7 +1425,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
         }
         try {
           const wmf = readWmf(sm.picture);
-          const sizePt = mathTypeSizePt(wmf, sm.heightPt) ?? activeStyle().sizePt;
+          const sizePt = mathTypeSizePt(wmf, sm.heightPt) ?? activeStyle().global.sizePt;
           const mt = { svg: wmfToSvg(wmf, fonts, sm.widthPt, sm.heightPt), widthPt: sm.widthPt, heightPt: sm.heightPt, depthPt: sm.depthPt };
           const ours = ourDrawing(sm.latex, sm.display, { fonts, style: classicStyle(), mathStyle: activeStyle(), sizePt });
           rows.push({ sample: sm, category: categoryOf(sm.latex), sizePt, result: await compareDrawings(mt, ours) });

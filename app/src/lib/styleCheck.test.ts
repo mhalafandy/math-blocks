@@ -85,3 +85,23 @@ describe("Check style", () => {
     expect(issues[0]!.redraw).toBe(true);
   });
 });
+
+describe("Check style on the kinds model: proposed rules", () => {
+  const eqs = (...l: string[]) => l.map((latex, i) => ({ latex, id: `e${i}` }));
+  it("a letter always written bold: a vector (a capital: a matrix) when bold", () => {
+    const issues = checkStyle(eqs("\\boldsymbol{\\omega}=\\mathbf{J}\\boldsymbol{\\omega}", "\\mathbf{J}^{-1}+\\boldsymbol{\\omega}", "x+y"), DEFAULT_STYLE);
+    const rules = issues.filter((i) => i.kind === "rule").map((i) => i.rule!);
+    expect(rules).toEqual(expect.arrayContaining([expect.objectContaining({ text: "ω", kind: "pvec", when: { bold: true } }), expect.objectContaining({ text: "J", kind: "mat", when: { bold: true } })]));
+  });
+  it("no proposal when the letter is also plain, already ruled, or rejected", () => {
+    expect(checkStyle(eqs("\\mathbf{v}+\\mathbf{v}_1", "v=2"), DEFAULT_STYLE).some((i) => i.kind === "rule")).toBe(false);
+    const ruled = { ...DEFAULT_STYLE, symbols: [{ symbol: "\\mathbf{v}", text: "v", when: { bold: true }, kind: "pvec" }] };
+    expect(checkStyle(eqs("\\mathbf{v}+\\mathbf{v}_1", "\\mathbf{v}"), ruled).some((i) => i.kind === "rule")).toBe(false);
+    const rejected = { ...DEFAULT_STYLE, exceptions: ["rule:v:bold:pvec"] };
+    expect(checkStyle(eqs("\\mathbf{v}+\\mathbf{v}_1", "\\mathbf{v}"), rejected).some((i) => i.kind === "rule")).toBe(false);
+  });
+  it("e only as the base of a power: a constant", () => {
+    expect(checkStyle(eqs("e^{x}+e^{-t}"), DEFAULT_STYLE).find((i) => i.kind === "rule")?.rule).toEqual({ symbol: "e", text: "e", kind: "constant" });
+    expect(checkStyle(eqs("e^{x}+e"), DEFAULT_STYLE).some((i) => i.kind === "rule")).toBe(false);
+  });
+});

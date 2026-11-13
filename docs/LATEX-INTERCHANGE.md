@@ -209,6 +209,20 @@ Anything not listed here is reported in the pre-flight as an unknown command and
 
 An index goes outside the kind: `\pvec{r}_1`, `\bvec{f}_2`. The transpose is `^{\T}`.
 
+### Units and explicit kinds of single symbols
+
+Units are written with `\unit{…}`: `9.81\unit{m/s^2}` (drawn upright, a thin space after the number).
+Ordinary letters are written plainly: the document style gives each its kind (variable, constant, label…).
+Only for an occurrence that must differ from that, write its kind explicitly:
+
+| Macro | Meaning |
+|---|---|
+| `\const{symbol}` | Constant |
+| `\var{symbol}` | Variable |
+| `\op{symbol}` | Operator |
+| `\lbl{label}` | Label |
+| `\ctr{symbol}` | Counter |
+
 ### Structures
 
 | Write | For |

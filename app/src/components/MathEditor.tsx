@@ -1,4 +1,7 @@
 import { isAllBold, KIND_BY_ID, KINDS, setBold, type BoldScope } from "@mathblocks/math-core";
+import { explainSymbol, kindDisplayName } from "@mathblocks/math-core";
+import { symbolContextAt } from "../lib/kindHover";
+import { activeStyle as currentDocStyle } from "../lib/docStyle";
 import { CLASS_PREFIX, fromEditorLatex, kindMacroRe, toEditorLatex } from "../lib/kinds";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { useEffect, useRef } from "react";
@@ -71,14 +74,40 @@ function kindHintCss(): string {
 }
 
 /** The kind under the mouse: its name in a small label above it (outside the field's clipping). */
+/** The atom under the pointer: the caret offset it ends at and its bounds (null when none is there). */
+export function letterAt(mf: MathfieldElement, x: number, y: number): { offset: number; bounds: DOMRect } | null {
+  let o: number;
+  try {
+    o = mf.getOffsetFromPoint(x, y);
+  } catch {
+    return null;
+  }
+  for (const i of [o, o + 1]) {
+    if (i < 1 || i > mf.lastOffset) continue;
+    const b = mf.getElementInfo(i)?.bounds;
+    if (b && x >= b.left - 1 && x <= b.right + 1 && y >= b.top - 1 && y <= b.bottom + 1) return { offset: i, bounds: b };
+  }
+  return null;
+}
+
 function kindTooltip(mf: MathfieldElement) {
   let tip: HTMLDivElement | null = null;
   const hide = () => tip && (tip.style.display = "none");
   mf.addEventListener("mousemove", (e) => {
-    const el = (e.composedPath() as Element[]).find((n) => n instanceof Element && [...n.classList].some((c) => c.startsWith(CLASS_PREFIX)));
-    const id = el && [...el.classList].find((c) => c.startsWith(CLASS_PREFIX))!.slice(CLASS_PREFIX.length);
+    const path = e.composedPath() as Element[];
+    // A letter: its kind and why (docs/KINDS-MODEL.md §7) — "ω — physical vector: rule in this document…".
+    const hit = letterAt(mf, e.clientX, e.clientY);
+    const sym = hit ? symbolContextAt(mf, hit.offset) : null;
+    const kindEl = sym ? undefined : path.find((n) => n instanceof Element && [...n.classList].some((c) => c.startsWith(CLASS_PREFIX)));
+    const id = kindEl && [...kindEl.classList].find((c) => c.startsWith(CLASS_PREFIX))!.slice(CLASS_PREFIX.length);
+    const el: { getBoundingClientRect: () => DOMRect } | undefined = sym ? { getBoundingClientRect: () => hit!.bounds } : kindEl;
     const kind = id ? KIND_BY_ID.get(id) : undefined;
-    if (!el || !kind) return hide();
+    if (!el || (!kind && !sym)) return hide();
+    let text = kind?.name ?? "";
+    if (sym) {
+      const x = explainSymbol(sym, currentDocStyle());
+      text = `${sym.label} — ${kindDisplayName(x.kind)}: ${x.reason}`;
+    }
     if (!tip) {
       tip = document.createElement("div");
       tip.className = "kind-tooltip";
@@ -86,7 +115,7 @@ function kindTooltip(mf: MathfieldElement) {
       document.body.appendChild(tip);
     }
     const r = el.getBoundingClientRect();
-    tip.textContent = kind.name;
+    tip.textContent = text;
     tip.style.display = "block";
     tip.style.left = `${Math.round(r.left)}px`;
     tip.style.top = `${Math.round(r.top - 6)}px`;

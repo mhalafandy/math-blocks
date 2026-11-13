@@ -94,7 +94,7 @@ export async function buildPictureInsertion(
   const { renderPicture, toBase64, altText } = await import("./render");
   const tag = existingTag ?? formatTag({ blockId: null, instanceId: newInstanceId() });
   const mode = display ? "display" : typesetDisplay ? "numbered" : "inline";
-  const pic = await renderPicture(latex, typesetDisplay, activeStyle().sizePt, mode, false, { block: parseTag(tag)?.blockId, tag });
+  const pic = await renderPicture(latex, typesetDisplay, activeStyle().global.sizePt, mode, false, { block: parseTag(tag)?.blockId, tag });
   const n = ++pictureCounter;
   const run = vmlPictureRun({
     rId: "rIdMbE1",
@@ -151,7 +151,7 @@ export async function buildObjectInsertion(
   const { renderPicture, toBase64, altText } = await import("./render");
   const tag = existingTag ?? formatTag({ blockId: null, instanceId: newInstanceId() });
   const mode = o.mode ?? (display ? "display" : typesetDisplay ? "numbered" : "inline");
-  const sizePt = activeStyle().sizePt;
+  const sizePt = activeStyle().global.sizePt;
   const pic = await renderPicture(latex, typesetDisplay, sizePt, mode, false, { block: parseTag(tag)?.blockId, tag });
   const { CLASSIC } = await import("@mathblocks/math-render");
   const data: ObjectData = { version: 1, latex, mode, tag, depthPt: pic.depthPt, widthPt: pic.widthPt, heightPt: pic.heightPt, sizePt, style: CLASSIC.id, styleHash: activeStyleHash(), block: parseTag(tag)?.blockId ?? null };

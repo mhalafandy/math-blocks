@@ -31,14 +31,14 @@ export async function openCheckStyle(message?: string) {
   try {
     const { checkDocumentStyle } = await import("../lib/styleRun");
     const r = await checkDocumentStyle();
-    ui.set({ busy: false, index: r.index, issues: r.issues, ticked: new Set(r.issues.filter((i) => i.fix || i.redraw).map((i) => i.key)) });
+    ui.set({ busy: false, index: r.index, issues: r.issues, ticked: new Set(r.issues.filter((i) => i.fix || i.redraw || i.rule).map((i) => i.key)) });
   } catch (e) {
     ui.set({ open: false, busy: false });
     app.notify(e instanceof Error ? e.message : String(e), "error");
   }
 }
 
-const KIND_LABEL: Record<StyleIssue["kind"], string> = { forced: "Forced look", mixed: "Written two ways", forms: "Several forms", outdated: "Older drawing" };
+const KIND_LABEL: Record<StyleIssue["kind"], string> = { forced: "Forced look", mixed: "Written two ways", forms: "Several forms", outdated: "Older drawing", rule: "Proposed rule" };
 
 export function CheckStyleDialog() {
   const s = useCheckStyle();
@@ -96,13 +96,13 @@ export function CheckStyleDialog() {
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 6, alignItems: "start" }}>
-                    {(i.fix || i.redraw) && (
+                    {(i.fix || i.redraw || i.rule) && (
                       <button onClick={() => void conform([i])} disabled={s.busy}>
-                        Conform
+                        {i.rule ? "Accept rule" : "Conform"}
                       </button>
                     )}
                     <button onClick={() => void keep([i])} disabled={s.busy}>
-                      Keep as exception
+                      {i.rule ? "Reject" : "Keep as exception"}
                     </button>
                   </div>
                 </div>
@@ -118,8 +118,8 @@ export function CheckStyleDialog() {
           <button onClick={close} disabled={s.busy}>
             Close
           </button>
-          <button className="primary" onClick={() => void conform(ticked.filter((i) => i.fix || i.redraw))} disabled={s.busy || !ticked.some((i) => i.fix || i.redraw)}>
-            {s.busy && s.index ? "Working…" : `Conform ticked (${ticked.filter((i) => i.fix || i.redraw).length})`}
+          <button className="primary" onClick={() => void conform(ticked.filter((i) => i.fix || i.redraw || i.rule))} disabled={s.busy || !ticked.some((i) => i.fix || i.redraw || i.rule)}>
+            {s.busy && s.index ? "Working…" : `Conform ticked (${ticked.filter((i) => i.fix || i.redraw || i.rule).length})`}
           </button>
         </div>
       </div>

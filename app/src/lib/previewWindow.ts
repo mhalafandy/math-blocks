@@ -33,7 +33,7 @@ export function previewState(): PreviewState {
     latex: s.latex,
     display: s.display,
     numbered: s.numbered,
-    sizePt: activeStyle().sizePt,
+    sizePt: activeStyle().global.sizePt,
     textWidthPt: s.textWidthPt,
     docStyle: s.docStyle,
     accentRules: s.accentRules,

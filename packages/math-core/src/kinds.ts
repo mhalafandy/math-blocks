@@ -43,7 +43,15 @@ export interface KindDef {
   argNames: string[];
   /** Snippet trigger (type it, then Tab). */
   snippet: string;
+  /**
+   * "token": the explicit form of a token kind (docs/KINDS-MODEL.md §2.3) — \unit{m/s}, \const{e}: drawn in
+   * that token kind's style from the document style. Absent: a wrapper kind (vector, matrix…).
+   */
+  token?: TokenKindId;
 }
+
+/** The token kinds of the kinds model (docs/KINDS-MODEL.md §2.1): every plain symbol has one. */
+export type TokenKindId = "variable" | "constant" | "function" | "operator" | "label" | "counter" | "roman" | "number" | "unit" | "text" | "transpose";
 
 export const KINDS: KindDef[] = [
   { id: "pvec", name: "Physical vector", macro: "pvec", args: 1, argNames: ["symbol"], snippet: "pv" },
@@ -61,7 +69,16 @@ export const KINDS: KindDef[] = [
   { id: "body", name: "Body / region", macro: "body", args: 1, argNames: ["symbol"], snippet: "bd" },
   { id: "T", name: "Transpose mark", macro: "T", args: 0, argNames: [], snippet: "tp" },
   { id: "diff", name: "Differential", macro: "diff", args: 1, argNames: ["variable"], snippet: "df" },
+  // Explicit forms of token kinds: for an occurrence that must differ from the rules, and for units.
+  { id: "unit", name: "Unit", macro: "unit", args: 1, argNames: ["unit"], snippet: "un", token: "unit" },
+  { id: "const", name: "Constant", macro: "const", args: 1, argNames: ["symbol"], snippet: "cs", token: "constant" },
+  { id: "var", name: "Variable", macro: "var", args: 1, argNames: ["symbol"], snippet: "vr", token: "variable" },
+  { id: "op", name: "Operator", macro: "op", args: 1, argNames: ["symbol"], snippet: "op", token: "operator" },
+  { id: "lbl", name: "Label", macro: "lbl", args: 1, argNames: ["label"], snippet: "la", token: "label" },
+  { id: "ctr", name: "Counter", macro: "ctr", args: 1, argNames: ["symbol"], snippet: "ct", token: "counter" },
 ];
+/** The explicit macro of each token kind that has one. */
+export const TOKEN_MACRO: Partial<Record<TokenKindId, string>> = Object.fromEntries(KINDS.filter((k) => k.token).map((k) => [k.token, k.macro]));
 export const KIND_BY_ID = new Map(KINDS.map((k) => [k.id, k]));
 export const KIND_BY_MACRO = new Map(KINDS.map((k) => [k.macro, k]));
 /** The built-in kinds (KINDS also holds the user's own, after registerCustomKinds). */
@@ -143,7 +160,7 @@ export const NEW_KIND_STYLE: KindStyle = {
 
 /** Default style of a kind in a preset (without the user's changes). */
 export function presetStyle(preset: PresetId, kind: string): KindStyle {
-  return PRESETS[preset].kinds[kind] ?? CUSTOM_STYLES.get(kind) ?? BASE;
+  return PRESETS[preset].kinds[kind] ?? CUSTOM_STYLES.get(kind) ?? TOKEN_STYLES[kind] ?? BASE;
 }
 
 const BASE: KindStyle = {
@@ -152,6 +169,9 @@ const BASE: KindStyle = {
 };
 const S = (over: Partial<KindStyle>): KindStyle => ({ ...BASE, ...over, frames: { ...BASE.frames, ...(over.frames ?? {}) } });
 const BOLD: Partial<KindStyle> = { weight: "bold", shape: "upright" };
+/** Explicit token forms without a document style (the document style sets their shape, styleNotation). */
+const TOKEN_STYLES: Record<string, KindStyle> = { unit: S({ shape: "upright", frames: { position: "none", separator: "" } }) };
+for (const id of ["const", "var", "op", "lbl", "ctr"]) TOKEN_STYLES[id] = S({ frames: { position: "none", separator: "" } });
 /** Bold upright for Greek too (\pvec{\omega}, \cmat{\omega} as \pvec{r}, \cmat{r}): the Hughes convention. */
 const BOLD_UP: Partial<KindStyle> = { ...BOLD, greek: "as-latin" };
 
@@ -231,7 +251,7 @@ export interface NotationProfile {
 export const DEFAULT_PROFILE: NotationProfile = { preset: "hughes", overrides: {} };
 
 export function styleOf(profile: NotationProfile, kind: string): KindStyle {
-  const base = PRESETS[profile.preset].kinds[kind] ?? CUSTOM_STYLES.get(kind) ?? BASE;
+  const base = PRESETS[profile.preset].kinds[kind] ?? CUSTOM_STYLES.get(kind) ?? TOKEN_STYLES[kind] ?? BASE;
   const over = profile.overrides[kind];
   return over ? { ...base, ...over, frames: { ...base.frames, ...(over.frames ?? {}) } } : base;
 }
@@ -350,9 +370,14 @@ export function expandKind(n: Notation, st: KindStyle): MathNode[] {
 export function expandNotation(root: Row, profile: NotationProfile = DEFAULT_PROFILE): Row {
   const out = clone(root);
   const fix = (r: Row) => {
-    r.children = r.children.flatMap((n) => {
+    r.children = r.children.flatMap((n, i) => {
       walkRows(n, fix);
-      return n.kind === "notation" ? expandKind(n, styleOf(profile, n.name)).map((x) => (walkRows(x, fix), x)) : [n];
+      if (n.kind !== "notation") return [n];
+      const nodes = expandKind(n, styleOf(profile, n.name)).map((x) => (walkRows(x, fix), x));
+      // A unit after a number (or a number with a power): a thin space between them, as in 3\,\mathrm{m}.
+      const prev = r.children[i - 1];
+      const afterNumber = prev && (prev.kind === "number" || (prev.kind === "scripts" && prev.base.children.at(-1)?.kind === "number"));
+      return n.name === "unit" && afterNumber ? [{ kind: "space", width: "thin" } as MathNode, ...nodes] : nodes;
     });
   };
   fix(out);
@@ -536,6 +561,7 @@ export const PACKAGE_MACROS: Record<string, string[]> = {
   mathtools: ["coloneqq", "mathclap", "prescript"],
   amsmath: ["text", "tag", "dfrac"],
   bm: ["bm", "hm"],
+  siunitx: ["unit", "qty", "SI", "si", "num"],
   latex: ["skew"],
 };
 

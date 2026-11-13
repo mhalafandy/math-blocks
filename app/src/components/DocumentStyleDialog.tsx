@@ -1,12 +1,13 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { openSettings } from "../lib/settingsStore";
 import { create } from "zustand";
 import { convertLatexToMarkup } from "mathlive/ssr";
-import { applyPreset, expandNotation, PRESETS, presetFrom, STYLE_PRESETS, styleAst, styleLabel, styleNotation, type LetterRole, type MathStyle, type PresetId, type Shape, type StylePreset } from "@mathblocks/math-core";
+import { applyPreset, expandNotation, letterRoles, looksOf, PRESETS, presetFrom, STYLE_PRESETS, styleAst, styleLabel, styleNotation, withLetterRoles, withLooks, type LetterRole, type Looks, type MathStyle, type MathStyleGlobal, type PresetId, type Shape, type StylePreset, type SymbolRule } from "@mathblocks/math-core";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { Modal, askConfirm, askText } from "./Dialogs";
 import type { LetterProposal } from "../lib/styleCheck";
 import { useApp } from "../lib/store";
+import { describeRule, ruleFromLatex, TOKEN_KIND_CHOICES, wrapperKindChoices } from "../lib/symbolRules";
 
 /**
  * Document style… — how this document's equations look, one setting per category with a live
@@ -59,7 +60,8 @@ export async function openDocumentStyleHere() {
     }
     const draft = activeStyle();
     const roles: Record<string, LetterRole | null> = {};
-    for (const p of proposals) roles[p.letter] = draft.letters[p.letter] ?? p.proposed;
+    const current = letterRoles(draft);
+    for (const p of proposals) roles[p.letter] = current[p.letter] ?? p.proposed;
     ui.set({ busy: false, document, stored, draft, proposals, roles, others });
   } catch (e) {
     ui.set({ open: false, busy: false });
@@ -97,18 +99,22 @@ export function DocumentStyleDialog() {
   if (!s.open) return null;
   const close = () => s.set({ open: false, draft: null });
   const d = s.draft;
-  const up = (change: Partial<MathStyle>) => d && s.set({ draft: { ...d, ...change } });
+  // The kinds model (docs/KINDS-MODEL.md): token kinds' looks, global settings, wrapper kinds, symbol rules.
+  const L: Looks | null = d ? looksOf(d) : null;
+  const up = (change: Partial<Looks>) => d && s.set({ draft: withLooks(d, change) });
+  const upG = (change: Partial<MathStyleGlobal>) => d && s.set({ draft: { ...d, global: { ...d.global, ...change } } });
+  const upRules = (symbols: SymbolRule[]) => d && s.set({ draft: { ...d, symbols } });
   const withRoles = (): MathStyle | null => {
     if (!d) return null;
-    const letters = { ...d.letters };
+    const letters = { ...letterRoles(d) };
     for (const [l, r] of Object.entries(s.roles)) {
       if (r) letters[l] = r;
       else delete letters[l];
     }
-    return { ...d, letters };
+    return withLetterRoles(d, letters);
   };
   // Samples shown with sample classifications so every setting is visible.
-  const sample = d ? { ...d, letters: { ...d.letters, i: "counter" as const, j: "counter" as const } } : null;
+  const sample = d ? withLetterRoles(d, { ...letterRoles(d), i: "counter", j: "counter" }) : null;
   const run = async (what: () => Promise<string | void>) => {
     s.set({ busy: true, message: undefined });
     try {
@@ -135,7 +141,7 @@ export function DocumentStyleDialog() {
     run(async () => {
       const style = withRoles();
       if (!style) return;
-      useApp.getState().setPrefs({ defaultStyle: { ...style, letters: {}, exceptions: [] } });
+      useApp.getState().setPrefs({ defaultStyle: { ...withLetterRoles(style, {}), exceptions: [] } });
       return "Saved as your default for documents without a style of their own.";
     });
   /** Save style: into one of my styles; a built-in one is read-only, so it asks for a new name. */
@@ -218,8 +224,8 @@ export function DocumentStyleDialog() {
       const { readDocumentStyle } = await import("../lib/docStyle");
       const other = await readDocumentStyle(fullName);
       if (!other) return "That document has no style of its own.";
-      // Its look and notation; this document keeps its own classification and exceptions.
-      s.set({ draft: { ...other, letters: d.letters, exceptions: d.exceptions } });
+      // Its look and notation; this document keeps its own symbol rules, classification and exceptions.
+      s.set({ draft: { ...withLetterRoles({ ...other, symbols: d.symbols }, letterRoles(d)), exceptions: d.exceptions } });
       return "Style copied (Save to keep it in this document).";
     });
   return (
@@ -291,54 +297,52 @@ export function DocumentStyleDialog() {
                   </div>
                 ))}
               </div>
-              <Row label="Index labels (descriptive: b, sf, max…)" sample={<StylePreview latex="\sigma_{sf}+v_{max}+E_{b}" style={sample!} />}>
-                <ShapeChoice value={d.labels} onChange={(v) => up({ labels: v })} />
+              <h4 className="style-section">Kinds — every symbol's look comes from its kind</h4>
+              <Row label="Variables: Latin (lowercase, capitals)" sample={<StylePreview latex="x+y=A+B" style={d} />}>
+                <ShapeChoice value={L!.latinLower} onChange={(v) => up({ latinLower: v })} /> <ShapeChoice value={L!.latinUpper} onChange={(v) => up({ latinUpper: v })} />
               </Row>
-              <Row label="Index variables (i, j, k, n…) and numbers" sample={<StylePreview latex="x_i+A_{ij}+a_{2}+3.5" style={sample!} />}>
-                <ShapeChoice value={d.counters} onChange={(v) => up({ counters: v })} /> numbers <ShapeChoice value={d.numbers} onChange={(v) => up({ numbers: v })} />
+              <Row label="Variables: Greek (lowercase, capitals)" sample={<StylePreview latex="\alpha+\omega=\Gamma+\Omega" style={d} />}>
+                <ShapeChoice value={L!.greekLower} onChange={(v) => up({ greekLower: v })} /> <ShapeChoice value={L!.greekUpper} onChange={(v) => up({ greekUpper: v })} />
               </Row>
-              <Row label="Roman numerals in indices (I, II, III, IV…)" sample={<StylePreview latex="\\vectrix{F}_{I}+\\vectrix{F}_{II}+\\bvec{f}_1^{IV}" style={d} />}>
-                <ShapeChoice value={d.romans} onChange={(v) => up({ romans: v })} />{" "}
+              <Row label="Constants (e, π, i when classified; \const)" sample={<StylePreview latex="e^{i\pi}+1=0" style={withLetterRoles(d, { ...letterRoles(d), i: "constant" })} />}>
+                <ShapeChoice value={L!.constants} onChange={(v) => up({ constants: v })} />
+              </Row>
+              <Row label="Functions (sin, det, \operatorname)" sample={<StylePreview latex="\sin\theta+\det A" style={d} />}>
+                <ShapeChoice value={L!.functions} onChange={(v) => up({ functions: v })} />
+              </Row>
+              <Row label="Operators: d in derivatives and integrals (\diff, \op)" sample={<StylePreview latex="\frac{dx}{dt}=\int f\,dt" style={d} />}>
+                <ShapeChoice value={L!.differential} onChange={(v) => up({ differential: v })} />
+              </Row>
+              <Row label="Index labels (descriptive: b, sf, max…; \lbl)" sample={<StylePreview latex="\sigma_{sf}+v_{max}+E_{b}" style={sample!} />}>
+                <ShapeChoice value={L!.labels} onChange={(v) => up({ labels: v })} />
+              </Row>
+              <Row label="Counters: index variables (i, j, k, n…; \ctr)" sample={<StylePreview latex="x_i+A_{ij}" style={sample!} />}>
+                <ShapeChoice value={L!.counters} onChange={(v) => up({ counters: v })} />
+              </Row>
+              <Row label="Roman numerals in indices (I, II, III, IV…)" sample={<StylePreview latex="\vectrix{F}_{I}+\vectrix{F}_{II}+\bvec{f}_1^{IV}" style={d} />}>
+                <ShapeChoice value={L!.romans} onChange={(v) => up({ romans: v })} />{" "}
                 <label className="check">
-                  <input type="checkbox" checked={d.frameSubscriptWarning} onChange={(e) => up({ frameSubscriptWarning: e.target.checked })} /> warn when a frame has a subscript (Convert LaTeX)
+                  <input type="checkbox" checked={d.global.frameSubscriptWarning} onChange={(e) => upG({ frameSubscriptWarning: e.target.checked })} /> warn when a frame has a subscript (Convert LaTeX)
                 </label>
               </Row>
-              <Row label="Latin variables (lowercase, capitals)" sample={<StylePreview latex="x+y=A+B" style={d} />}>
-                <ShapeChoice value={d.latinLower} onChange={(v) => up({ latinLower: v })} /> <ShapeChoice value={d.latinUpper} onChange={(v) => up({ latinUpper: v })} />
+              <Row label="Numbers" sample={<StylePreview latex="a_{2}+3.5" style={d} />}>
+                <ShapeChoice value={L!.numbers} onChange={(v) => up({ numbers: v })} />
               </Row>
-              <Row label="Greek variables (lowercase, capitals)" sample={<StylePreview latex="\alpha+\omega=\Gamma+\Omega" style={d} />}>
-                <ShapeChoice value={d.greekLower} onChange={(v) => up({ greekLower: v })} /> <ShapeChoice value={d.greekUpper} onChange={(v) => up({ greekUpper: v })} />
+              <Row label="Units (\unit{m/s})" sample={<StylePreview latex="9.81\unit{m/s^2}" style={d} />}>
+                <ShapeChoice value={L!.units} onChange={(v) => up({ units: v })} />
               </Row>
-              <Row label="d in derivatives and integrals" sample={<StylePreview latex="\frac{dx}{dt}=\int f\,dt" style={d} />}>
-                <ShapeChoice value={d.differential} onChange={(v) => up({ differential: v })} />
+              <Row label="Text (\text{…})" sample={<StylePreview latex="x\ \text{if }x>0" style={d} />}>
+                <ShapeChoice value={L!.text} onChange={(v) => up({ text: v })} />
               </Row>
-              <Row label="Constants e, i, π (i when classified as a constant)" sample={<StylePreview latex="e^{i\pi}+1=0" style={{ ...d, letters: { ...d.letters, i: "constant" } }} />}>
-                <ShapeChoice value={d.constants} onChange={(v) => up({ constants: v })} />
-              </Row>
-              <Row label="Function names, text and units" sample={<StylePreview latex="\sin\theta+\det A\ \text{if }x>0" style={d} />}>
-                <ShapeChoice value={d.functions} onChange={(v) => up({ functions: v })} /> text <ShapeChoice value={d.text} onChange={(v) => up({ text: v })} />
-              </Row>
-              <Row label="Transpose mark" sample={<StylePreview latex="\mathbf{A}^{T}\mathbf{x}" style={d} />}>
-                <select value={d.transpose} onChange={(e) => up({ transpose: e.target.value as MathStyle["transpose"] })}>
+              <Row label="Transpose mark (\T)" sample={<StylePreview latex="\mathbf{A}^{T}\mathbf{x}" style={d} />}>
+                <select value={L!.transpose} onChange={(e) => up({ transpose: e.target.value as Looks["transpose"] })}>
                   <option value="upright">upright</option>
                   <option value="italic">italic</option>
                   <option value="bold">bold</option>
                 </select>
               </Row>
-              <Row label="Bold base: index letters" sample={<StylePreview latex="\mathbf{r}_{sf}+\mathbf{A}_{n}" style={d} />}>
-                <select value={d.boldScope} onChange={(e) => up({ boldScope: e.target.value as MathStyle["boldScope"] })}>
-                  <option value="base">regular (bold on the base only)</option>
-                  <option value="scripts">bold too</option>
-                </select>{" "}
-                <label className="check">
-                  <input type="checkbox" checked={d.accentsFollowBold} onChange={(e) => up({ accentsFollowBold: e.target.checked })} /> accents over bold letters in bold
-                </label>{" "}
-                <button className="link-button" onClick={() => void import("./AccentsDialog").then((m) => m.openAccents())}>
-                  Accents…
-                </button>
-              </Row>
-              <Row label="Notation kinds" sample={<StylePreview latex="\pvec[B/N]{r}=\dcm{B}{N}\cmat{v}" style={d} />}>
-                <select value={d.notation.preset} onChange={(e) => up({ notation: { ...d.notation, preset: e.target.value as PresetId } })}>
+              <Row label="Wrapper kinds: vectors, matrices, frames… (notation preset)" sample={<StylePreview latex="\pvec[B/N]{r}=\dcm{B}{N}\cmat{v}" style={d} />}>
+                <select value={d.notation.preset} onChange={(e) => s.set({ draft: { ...d, notation: { ...d.notation, preset: e.target.value as PresetId } } })}>
                   {(Object.keys(PRESETS) as PresetId[]).map((id) => (
                     <option key={id} value={id}>
                       {PRESETS[id].name}
@@ -349,8 +353,20 @@ export function DocumentStyleDialog() {
                   Each kind's look…
                 </button>
               </Row>
+              <Row label="Bold base: index letters" sample={<StylePreview latex="\mathbf{r}_{sf}+\mathbf{A}_{n}" style={d} />}>
+                <select value={L!.boldScope} onChange={(e) => up({ boldScope: e.target.value as Looks["boldScope"] })}>
+                  <option value="base">regular (bold on the base only)</option>
+                  <option value="scripts">bold too</option>
+                </select>{" "}
+                <label className="check">
+                  <input type="checkbox" checked={L!.accentsFollowBold} onChange={(e) => up({ accentsFollowBold: e.target.checked })} /> accents over bold letters in bold
+                </label>{" "}
+                <button className="link-button" onClick={() => void import("./AccentsDialog").then((m) => m.openAccents())}>
+                  Accents…
+                </button>
+              </Row>
               <Row label="Font and size" sample={<span className="hint">Times New Roman with Symbol (Classic); STIX Two for symbols they lack</span>}>
-                <select value={d.sizePt} onChange={(e) => up({ sizePt: Number(e.target.value) })}>
+                <select value={d.global.sizePt} onChange={(e) => upG({ sizePt: Number(e.target.value) })}>
                   {[9, 10, 10.5, 11, 12, 14, 16, 18, 20, 24].map((n) => (
                     <option key={n} value={n}>
                       {n} pt
@@ -358,6 +374,8 @@ export function DocumentStyleDialog() {
                   ))}
                 </select>
               </Row>
+              <h4 className="style-section">Symbols in this document</h4>
+              <SymbolRules style={d} onChange={upRules} />
               <div>
                 <strong>Single-letter indices in this document</strong>
                 <p className="hint">Proposed from the equations themselves; nothing ambiguous is guessed. Undecided letters are drawn as variables.</p>
@@ -464,5 +482,88 @@ function PresetSelect({ value, onPick }: { value: string; onPick: (p: StylePrese
       </select>
       {current?.description && <span className="hint"> {current.description}</span>}
     </>
+  );
+}
+
+/**
+ * The document's symbol rules (docs/KINDS-MODEL.md §3): each symbol's kind when the rules of the style are not
+ * enough — "e is a constant", "J is a matrix", "ω is a vector when bold". The single-letter index
+ * classification below is kept as rules too (listed there, not here).
+ */
+function SymbolRules({ style, onChange }: { style: MathStyle; onChange: (r: SymbolRule[]) => void }) {
+  const [symbol, setSymbol] = useState("");
+  const [kind, setKind] = useState("constant");
+  const [bold, setBold] = useState<"any" | "bold" | "plain">("any");
+  const [where, setWhere] = useState<"anywhere" | "index" | "base">("anywhere");
+  const [error, setError] = useState("");
+  const classification = letterRoles(style);
+  const rules = style.symbols.filter((r) => !(classification[r.text] === r.kind && !r.sub && r.when?.bold === undefined));
+  const add = () => {
+    const r = ruleFromLatex(symbol, kind, { ...(bold !== "any" ? { bold: bold === "bold" } : {}), where });
+    if (!r) return setError("Type one symbol: a letter, optionally bold or with a subscript (e, \\omega, \\mathbf{J}, v_0).");
+    setError("");
+    setSymbol("");
+    onChange([...style.symbols.filter((x) => !(x.text === r.text && (x.sub ?? "") === (r.sub ?? "") && JSON.stringify(x.when ?? {}) === JSON.stringify(r.when ?? {}))), r]);
+  };
+  return (
+    <div className="symbol-rules">
+      <p className="hint">
+        A plain letter gets its kind from the rules above; here you say what a symbol is in this document, without changing any equation's LaTeX: “e is a constant”, “J is a matrix”, “ω is a vector when bold”.
+      </p>
+      {rules.length === 0 && <p className="hint">No symbol rules yet.</p>}
+      {rules.map((r, i) => (
+        <div key={`${r.text}-${r.sub ?? ""}-${i}`} className="symbol-rule">
+          <StylePreview latex={r.symbol} style={style} />
+          <span>→</span>
+          <span style={{ flex: 1 }}>
+            {describeRule(r)}
+          </span>
+          <StylePreview latex={r.symbol} style={{ ...style, symbols: [r] }} />
+          <button className="link-button" onClick={() => onChange(style.symbols.filter((x) => x !== r))}>
+            Remove
+          </button>
+        </div>
+      ))}
+      <div className="symbol-rule-add">
+        <input value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder="symbol: e, \omega, \mathbf{J}, v_0" spellCheck={false} onKeyDown={(e) => e.key === "Enter" && add()} />
+        <span>is a</span>
+        <KindSelect value={kind} onChange={setKind} />
+        <select value={bold} onChange={(e) => setBold(e.target.value as typeof bold)}>
+          <option value="any">bold or not</option>
+          <option value="bold">when bold</option>
+          <option value="plain">when not bold</option>
+        </select>
+        <select value={where} onChange={(e) => setWhere(e.target.value as typeof where)}>
+          <option value="anywhere">anywhere</option>
+          <option value="base">outside indices</option>
+          <option value="index">in indices</option>
+        </select>
+        <button onClick={() => add()} disabled={!symbol.trim()}>
+          Add rule
+        </button>
+      </div>
+      {error && <p className="conv-msg">{error}</p>}
+    </div>
+  );
+}
+
+function KindSelect({ value, onChange }: { value: string; onChange: (k: string) => void }) {
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)}>
+      <optgroup label="Symbols">
+        {TOKEN_KIND_CHOICES.map((k) => (
+          <option key={k.id} value={k.id}>
+            {k.name}
+          </option>
+        ))}
+      </optgroup>
+      <optgroup label="Notation kinds">
+        {wrapperKindChoices().map((k) => (
+          <option key={k.id} value={k.id}>
+            {k.name}
+          </option>
+        ))}
+      </optgroup>
+    </select>
   );
 }

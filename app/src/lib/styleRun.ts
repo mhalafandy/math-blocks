@@ -1,4 +1,4 @@
-import type { LetterRole, MathStyle } from "@mathblocks/math-core";
+import { letterRoles, type LetterRole, type MathStyle } from "@mathblocks/math-core";
 import { activeStyle, activeStyleHash, loadDocumentStyle, saveDocumentStyle } from "./docStyle";
 import { checkStyle, classifyIndices, type LetterProposal, type StyleIssue } from "./styleCheck";
 import { buildDocumentIndex, rewriteDocument, type DocumentIndex } from "./symbolIndex";
@@ -48,6 +48,17 @@ export async function checkDocumentStyle(): Promise<{ index: DocumentIndex; issu
 
 /** Conforms findings to the style: their fixes per equation, and a redraw where one is needed (one Ctrl+Z). */
 export async function conformIssues(index: DocumentIndex, issues: StyleIssue[]): Promise<StyleRunResult> {
+  // Accepted rule proposals: into the style; the whole document is redrawn in it (one Ctrl+Z).
+  const rules = issues.flatMap((i) => (i.rule ? [i.rule] : []));
+  if (rules.length) {
+    await loadDocumentStyle();
+    const s = activeStyle();
+    const r = await restyleDocument({ ...s, symbols: [...s.symbols, ...rules] });
+    const rest = issues.filter((i) => !i.rule);
+    if (!rest.length) return r;
+    const more = await conformIssues(await buildDocumentIndex(), (await checkDocumentStyle()).issues.filter((i) => rest.some((x) => x.key === i.key)));
+    return { equations: r.equations + more.equations, note: r.note + more.note };
+  }
   const fixes = new Map<number, ((l: string) => string)[]>();
   const redraw = new Set<number>();
   for (const i of issues) {
@@ -87,7 +98,7 @@ export async function proposeClassification(index?: DocumentIndex): Promise<{ in
 export async function saveClassification(letters: Record<string, LetterRole | null>): Promise<MathStyle> {
   await loadDocumentStyle();
   const s = activeStyle();
-  const next: Record<string, LetterRole> = { ...s.letters };
+  const next: Record<string, LetterRole> = { ...letterRoles(s) };
   for (const [l, role] of Object.entries(letters)) {
     if (role) next[l] = role;
     else delete next[l];

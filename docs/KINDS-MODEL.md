@@ -6,8 +6,7 @@ One model for every symbol in an equation. Scalar variables, constants (e, i, π
 and its look comes **only from that kind's style**, set in one place. Generic, for any document and
 field; every example here and in the tests is generic.
 
-Status: **design only, awaiting approval.** Decisions marked **[decide n]** are collected in §11 with my
-recommendation. Blocks (docs/BLOCKS-DESIGN.md) and the symbol list (docs/SYMBOL-LIST.md) are built on
+Status: **approved** with all eight recommendations in §11; being built. Blocks (docs/BLOCKS-DESIGN.md) and the symbol list (docs/SYMBOL-LIST.md) are built on
 this model.
 
 ---

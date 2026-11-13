@@ -1,4 +1,4 @@
-import { isRomanNumeral, isStyleLetter, isTransposeMark, type LetterRole, type MathNode, type MathStyle, type Row } from "@mathblocks/math-core";
+import { isRomanNumeral, isStyleLetter, isTransposeMark, letterRoles, type LetterRole, type MathNode, type MathStyle, type Row, type SymbolRule } from "@mathblocks/math-core";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { peel } from "./notation";
 
@@ -169,7 +169,7 @@ export function classifyIndices(latexes: string[]): LetterProposal[] {
 
 // ------------------------------------------------------------------ Check style
 
-export type StyleIssueKind = "forced" | "mixed" | "forms" | "outdated";
+export type StyleIssueKind = "forced" | "mixed" | "forms" | "outdated" | "rule";
 
 export interface StyleIssue {
   /** Stable key (kept as an exception in the style). */
@@ -184,6 +184,8 @@ export interface StyleIssue {
   fix?: (latex: string) => string;
   /** Conforming means drawing again in the current style (no LaTeX change). */
   redraw?: boolean;
+  /** A proposed symbol rule (docs/KINDS-MODEL.md §6): accepting it adds the rule to the style and redraws. */
+  rule?: SymbolRule;
 }
 
 export interface CheckedEquation {
@@ -329,6 +331,7 @@ export function checkStyle(eqs: CheckedEquation[], style: MathStyle, currentHash
       fix: (l) => stripForced(l, token, true),
     });
   }
+  issues.push(...proposeRules(eqs, style, except));
   for (const [letter, m] of forms) {
     if (m.size < 2) continue;
     const key = `forms:${letter}`;
@@ -338,4 +341,56 @@ export function checkStyle(eqs: CheckedEquation[], style: MathStyle, currentHash
     issues.push({ key, kind: "forms", message: `“${letter}” is written in ${m.size} forms: ${list}. Review notation kinds turns older forms into kinds.`, equations: all, snippet: eqs[all[0]!]!.latex });
   }
   return issues;
+}
+
+const GREEK_LATEX: Record<string, string> = { α: "alpha", β: "beta", γ: "gamma", δ: "delta", ε: "epsilon", θ: "theta", κ: "kappa", λ: "lambda", μ: "mu", ν: "nu", ξ: "xi", ρ: "rho", σ: "sigma", τ: "tau", φ: "phi", χ: "chi", ψ: "psi", ω: "omega", Γ: "Gamma", Δ: "Delta", Θ: "Theta", Λ: "Lambda", Ξ: "Xi", Π: "Pi", Σ: "Sigma", Φ: "Phi", Ψ: "Psi", Ω: "Omega" };
+const letterLatex = (t: string) => (GREEK_LATEX[t] ? `\\${GREEK_LATEX[t]}` : t);
+
+/**
+ * Proposed symbol rules from the whole document (docs/KINDS-MODEL.md §6): a letter always written bold → "a vector
+ * (or, for a capital, a matrix) when bold"; e only as the base of a power → "e is a constant". Only what no rule
+ * or classification says yet; a rejected proposal (kept as an exception) is not proposed again.
+ */
+function proposeRules(eqs: CheckedEquation[], style: MathStyle, except: Set<string>): StyleIssue[] {
+  const out: StyleIssue[] = [];
+  const bold = new Map<string, Set<number>>();
+  const plain = new Map<string, Set<number>>();
+  const ePower = new Set<number>();
+  const eOther = new Set<number>();
+  eqs.forEach((eq, k) => {
+    let root;
+    try {
+      root = parseLatex(eq.latex).root;
+    } catch {
+      return;
+    }
+    const powerBases = new WeakSet<MathNode>();
+    walk(root, (n, _r, _i, ctx) => {
+      if (ctx.index) return;
+      if (n.kind === "scripts" && n.sup && !isTransposeMark(n.sup) && n.base.children.length === 1 && n.base.children[0]!.kind === "ident" && n.base.children[0]!.text === "e") powerBases.add(n.base.children[0]!);
+      if (!isLetter(n)) return;
+      const add = (m: Map<string, Set<number>>) => m.set(n.text, (m.get(n.text) ?? new Set<number>()).add(k));
+      if (n.variant === "bold" || n.variant === "bold-italic") add(bold);
+      else if (!n.variant) {
+        add(plain);
+        if (n.text === "e") (powerBases.has(n) ? ePower : eOther).add(k);
+      }
+    });
+  });
+  const ruled = (text: string) => style.symbols.some((r) => r.text === text && !r.sub);
+  for (const [text, s] of bold) {
+    if (s.size < 2 || plain.has(text) || ruled(text)) continue;
+    const capital = text !== text.toLowerCase();
+    const kind = capital ? "mat" : "pvec";
+    const key = `rule:${text}:bold:${kind}`;
+    if (except.has(key)) continue;
+    const symbol = `\\boldsymbol{${letterLatex(text)}}`;
+    const all = [...s].sort((a, b) => a - b);
+    out.push({ key, kind: "rule", message: `“${text}” is always written bold (${s.size} equations): make it a ${capital ? "matrix" : "physical vector"} when bold? It is then drawn in that kind's style and listed as one symbol.`, equations: all, snippet: eqs[all[0]!]!.latex, rule: { symbol, text, when: { bold: true }, kind } });
+  }
+  if (ePower.size && !eOther.size && !ruled("e") && letterRoles(style).e === undefined && !except.has("rule:e:constant")) {
+    const all = [...ePower].sort((a, b) => a - b);
+    out.push({ key: "rule:e:constant", kind: "rule", message: `e is only used as the base of a power (${ePower.size} equations): make it a constant in this document?`, equations: all, snippet: eqs[all[0]!]!.latex, rule: { symbol: "e", text: "e", kind: "constant" } });
+  }
+  return out;
 }

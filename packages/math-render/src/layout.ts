@@ -3,7 +3,7 @@
  * width/height/depth in em, glyphs from the text fonts (Times) or the math font (STIX Two Math).
  */
 import type { MathNode, MathVariant, Row } from "@mathblocks/math-core";
-import { expandNotation, styleAst, styleNotation, type MathStyle, type NotationProfile } from "@mathblocks/math-core";
+import { expandNotation, styleAst, styleNotation, looksOf, type Looks, type MathStyle, type NotationProfile } from "@mathblocks/math-core";
 import { charGlyph, glyphName, namedGlyph, symbolGlyph, type FontSet, type GlyphInfo } from "./fonts";
 import type { RenderStyle } from "./style";
 import { boldGreek } from "./embolden";
@@ -110,7 +110,7 @@ interface Ctx {
   /** Fonts the drawing used (recorded with the picture). */
   used?: Set<GlyphSource>;
   /** Document style settings the layout itself applies (function names, text, accents over bold). */
-  look?: Pick<MathStyle, "functions" | "text" | "accentsFollowBold">;
+  look?: Pick<Looks, "functions" | "text" | "accentsFollowBold">;
 }
 
 const script = (c: Ctx): Ctx => ({
@@ -1127,7 +1127,7 @@ export interface LayoutOptions {
 export function layout(root: Row, o: LayoutOptions): Box {
   const ms = o.mathStyle;
   root = ms ? expandNotation(styleAst(root, ms), styleNotation(ms)) : expandNotation(root, o.notation);
-  return layoutRow(root, { fonts: o.fonts, st: o.style, s: 1, display: o.display, level: 0, used: o.used, look: ms ? { functions: ms.functions, text: ms.text, accentsFollowBold: ms.accentsFollowBold } : undefined });
+  return layoutRow(root, { fonts: o.fonts, st: o.style, s: 1, display: o.display, level: 0, used: o.used, look: ms ? looksOf(ms) : undefined });
 }
 
 // Re-exported for tests.

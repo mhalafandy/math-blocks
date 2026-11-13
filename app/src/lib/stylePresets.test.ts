@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { applyPreset, BLANK_STYLE_VALUES, DEFAULT_STYLE, STYLE_PRESETS, styleHash, styleLabel } from "@mathblocks/math-core";
+import { applyPreset, BLANK_STYLE_VALUES, DEFAULT_STYLE, STYLE_PRESETS, styleHash, styleLabel, looksOf, withLooks } from "@mathblocks/math-core";
 import { useApp } from "./store";
 import { addImportedStyle, allStyles, createStyle, deleteStyle, duplicateStyle, myStyles, nameProblem, renameStyle, setDefaultStyle, updateStyle } from "./stylePresets";
 import { parseStyleExtras, parseStyleXml, presetFromJson, presetToJson, styleXml } from "./docStyle";
@@ -36,18 +36,18 @@ describe("My styles", () => {
 
   it("edits a style of mine and sets it as my default", () => {
     const a = createStyle("Lab notes", "", "blank");
-    updateStyle(a.id, { ...DEFAULT_STYLE, labels: "upright" });
+    updateStyle(a.id, withLooks(DEFAULT_STYLE, { labels: "upright" }));
     expect(allStyles().find((p) => p.id === a.id)!.values.labels).toBe("upright");
     const def = setDefaultStyle(a.id);
     expect(useApp.getState().defaultStyle?.presetName).toBe("Lab notes");
-    expect(def.labels).toBe("upright");
+    expect(looksOf(def).labels).toBe("upright");
   });
 
   it("a document says which style it uses, and when it was changed after applying", () => {
     const a = createStyle("Thesis style", "chapters", "iso");
     const doc = applyPreset(DEFAULT_STYLE, a);
     expect(styleLabel(doc, allStyles())).toBe("Thesis style");
-    expect(styleLabel({ ...doc, labels: "italic" }, allStyles())).toBe("Thesis style, modified");
+    expect(styleLabel(withLooks(doc, { labels: "italic" }), allStyles())).toBe("Thesis style, modified");
     // Stored in the document with its name and description.
     const back = parseStyleXml(styleXml(doc));
     expect(back?.presetName).toBe("Thesis style");
@@ -68,8 +68,8 @@ describe("My styles", () => {
 
   it("the stored part keeps the recent history and the probe", () => {
     const h = [{ hash: styleHash(DEFAULT_STYLE), style: DEFAULT_STYLE }];
-    const xml = styleXml({ ...DEFAULT_STYLE, labels: "upright" }, { history: h, probe: "mb1|-|abc" });
-    expect(parseStyleXml(xml)?.labels).toBe("upright");
+    const xml = styleXml(withLooks(DEFAULT_STYLE, { labels: "upright" }), { history: h, probe: "mb1|-|abc" });
+    expect(looksOf(parseStyleXml(xml)!).labels).toBe("upright");
     const extras = parseStyleExtras(xml);
     expect(extras.probe).toBe("mb1|-|abc");
     expect(extras.history.map((x) => x.hash)).toEqual([styleHash(DEFAULT_STYLE)]);

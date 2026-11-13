@@ -1,0 +1,6640 @@
+{
+ "corpus": [
+  "\\sigma_{sf}=E\\varepsilon_{ij}+B_{max}",
+  "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+  "e^{i\\pi}+1=0",
+  "\\Omega_{n}+\\sin\\theta+\\cos(\\alpha t)",
+  "\\alpha+\\Omega+x+X+\\Gamma_{k}",
+  "\\mathbf{A}^T\\mathbf{r}_{sf}+\\mathbf{A}^{\\T}",
+  "\\pvec[B/N]{r}+\\pvec{\\omega}+\\uvec{e}_1",
+  "\\bvec{f}_1^{I}+\\vectrix{F}_{II}+\\cmat{c}^{\\T}",
+  "\\dcm{b}{a}\\mat{J}+\\crossmat{\\omega}+\\dyadic{I}",
+  "\\tens{T}+\\quat{q}+\\frm{N}+\\body{B}",
+  "\\diff{t}+\\dcm{F_{I}}{F}",
+  "d=2r+x_i+v_f+y_t+A_{ij}",
+  "\\text{if }x>0,\\ \\mathrm{d}t+v_{\\mathit{max}}",
+  "\\sum_{k=1}^{n}a_k b_k+\\prod_{j}c_j",
+  "\\mathbf{x}_{i}+\\boldsymbol{\\omega}_{b}+\\hat{\\mathbf{n}}",
+  "F_{I}+F_{II}+A_{IIV}+A_{ii}+I+V",
+  "3.5+\\tfrac{1}{2}m v^2+\\det(\\mathbf{M})"
+ ],
+ "svg": true,
+ "styles": [
+  {
+   "name": "mathblocks/none/hughes",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "mathblocks",
+    "letters": {},
+    "notation": {
+     "preset": "hughes",
+     "overrides": {}
+    }
+   },
+   "hash": "1d9utna",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{sf}=E\\varepsilon_{ij}+B_{max}",
+     "omml": "1nf7sf2",
+     "svg": "s6uyw3"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{sf}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "t5a30q",
+     "svg": "1yiapv9"
+    },
+    {
+     "drawn": "\\overrightharpoon{\\mathbf{r}}_{B/N}+\\overrightharpoon{\\mathbf{\\omega}}+\\hat{e}_1",
+     "omml": "1uljmgg",
+     "svg": "1mcu42r"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\vec{\\mathbf{F}}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "crc5m3",
+     "svg": "f9j63y"
+    },
+    {
+     "drawn": "\\mathbf{C}_{ba}\\mathbf{J}+\\mathbf{\\omega}^{\\times}+\\vec{\\mathbf{I}}",
+     "omml": "1kjst9w",
+     "svg": "1ke7cfo"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\vec{\\mathcal{F}}_N+\\mathbf{B}",
+     "omml": "1j9fix0",
+     "svg": "sngemz"
+    },
+    {
+     "drawn": "dt+\\mathbf{C}_{F_{\\mathrm{I}}\\,F}",
+     "omml": "7mm042",
+     "svg": "pcpq82"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1u0py7u",
+     "svg": "seb8m8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "mathblocks/none/schaub",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "mathblocks",
+    "letters": {},
+    "notation": {
+     "preset": "schaub",
+     "overrides": {}
+    }
+   },
+   "hash": "hxxqdg",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{sf}=E\\varepsilon_{ij}+B_{max}",
+     "omml": "1nf7sf2",
+     "svg": "s6uyw3"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{sf}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "t5a30q",
+     "svg": "1yiapv9"
+    },
+    {
+     "drawn": "{}^{B/N}\\mathbf{r}+\\boldsymbol{\\omega}+\\hat{e}_1",
+     "omml": "1uo9zk7",
+     "svg": "18e3zj5"
+    },
+    {
+     "drawn": "\\hat{f}_1^{\\mathrm{I}}+\\left\\{ \\hat{F} \\right\\}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "1nf16ag",
+     "svg": "179tg3p"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{ba} \\right]\\left[ \\mathrm{J} \\right]+\\left[ \\tilde{\\omega} \\right]+\\mathcal{I}",
+     "omml": "18ksd5q",
+     "svg": "1as5sx1"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{T} \\right]+\\mathbf{q}+\\mathcal{N}+\\mathbf{B}",
+     "omml": "lzz41r",
+     "svg": "1kjel47"
+    },
+    {
+     "drawn": "dt+\\left[ \\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F} \\right]",
+     "omml": "jb6uq4",
+     "svg": "182dwxf"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1u0py7u",
+     "svg": "seb8m8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "mathblocks/none/markley",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "mathblocks",
+    "letters": {},
+    "notation": {
+     "preset": "markley",
+     "overrides": {}
+    }
+   },
+   "hash": "37c8wb",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{sf}=E\\varepsilon_{ij}+B_{max}",
+     "omml": "1nf7sf2",
+     "svg": "s6uyw3"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{sf}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "t5a30q",
+     "svg": "1yiapv9"
+    },
+    {
+     "drawn": "\\mathbf{r}_{B/N}+\\boldsymbol{\\omega}+\\hat{\\mathbf{e}}_1",
+     "omml": "mfh8gb",
+     "svg": "fc8psr"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\mathcal{F}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "j5k0rv",
+     "svg": "1oodc4a"
+    },
+    {
+     "drawn": "\\mathbf{A}_{ba}J+\\left[ \\boldsymbol{\\omega}\\times \\right]+\\bar{\\bar{\\mathbf{I}}}",
+     "omml": "89fa29",
+     "svg": "yf52jb"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\mathcal{F}_N+\\mathbf{B}",
+     "omml": "1gy9coy",
+     "svg": "1h1qv9a"
+    },
+    {
+     "drawn": "dt+\\mathbf{A}_{F_{\\mathrm{I}}\\,F}",
+     "omml": "91myf8",
+     "svg": "1tcfay4"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1u0py7u",
+     "svg": "seb8m8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "mathblocks/cls/hughes",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "mathblocks",
+    "letters": {
+     "i": "counter",
+     "j": "counter",
+     "f": "label",
+     "e": "constant",
+     "d": "variable"
+    },
+    "notation": {
+     "preset": "hughes",
+     "overrides": {}
+    }
+   },
+   "hash": "13ulxlw",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{sf}=E\\varepsilon_{ij}+B_{max}",
+     "omml": "1nf7sf2",
+     "svg": "s6uyw3"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{sf}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "t5a30q",
+     "svg": "1yiapv9"
+    },
+    {
+     "drawn": "\\overrightharpoon{\\mathbf{r}}_{B/N}+\\overrightharpoon{\\mathbf{\\omega}}+\\hat{e}_1",
+     "omml": "1uljmgg",
+     "svg": "1mcu42r"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\vec{\\mathbf{F}}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "crc5m3",
+     "svg": "f9j63y"
+    },
+    {
+     "drawn": "\\mathbf{C}_{ba}\\mathbf{J}+\\mathbf{\\omega}^{\\times}+\\vec{\\mathbf{I}}",
+     "omml": "1kjst9w",
+     "svg": "1ke7cfo"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\vec{\\mathcal{F}}_N+\\mathbf{B}",
+     "omml": "1j9fix0",
+     "svg": "sngemz"
+    },
+    {
+     "drawn": "dt+\\mathbf{C}_{F_{\\mathrm{I}}\\,F}",
+     "omml": "7mm042",
+     "svg": "pcpq82"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1u0py7u",
+     "svg": "seb8m8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "mathblocks/cls/schaub",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "mathblocks",
+    "letters": {
+     "i": "counter",
+     "j": "counter",
+     "f": "label",
+     "e": "constant",
+     "d": "variable"
+    },
+    "notation": {
+     "preset": "schaub",
+     "overrides": {}
+    }
+   },
+   "hash": "z95com",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{sf}=E\\varepsilon_{ij}+B_{max}",
+     "omml": "1nf7sf2",
+     "svg": "s6uyw3"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{sf}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "t5a30q",
+     "svg": "1yiapv9"
+    },
+    {
+     "drawn": "{}^{B/N}\\mathbf{r}+\\boldsymbol{\\omega}+\\hat{e}_1",
+     "omml": "1uo9zk7",
+     "svg": "18e3zj5"
+    },
+    {
+     "drawn": "\\hat{f}_1^{\\mathrm{I}}+\\left\\{ \\hat{F} \\right\\}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "1nf16ag",
+     "svg": "179tg3p"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{ba} \\right]\\left[ \\mathrm{J} \\right]+\\left[ \\tilde{\\omega} \\right]+\\mathcal{I}",
+     "omml": "18ksd5q",
+     "svg": "1as5sx1"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{T} \\right]+\\mathbf{q}+\\mathcal{N}+\\mathbf{B}",
+     "omml": "lzz41r",
+     "svg": "1kjel47"
+    },
+    {
+     "drawn": "dt+\\left[ \\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F} \\right]",
+     "omml": "jb6uq4",
+     "svg": "182dwxf"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1u0py7u",
+     "svg": "seb8m8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "mathblocks/cls/markley",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "mathblocks",
+    "letters": {
+     "i": "counter",
+     "j": "counter",
+     "f": "label",
+     "e": "constant",
+     "d": "variable"
+    },
+    "notation": {
+     "preset": "markley",
+     "overrides": {}
+    }
+   },
+   "hash": "1nu4uoz",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{sf}=E\\varepsilon_{ij}+B_{max}",
+     "omml": "1nf7sf2",
+     "svg": "s6uyw3"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{sf}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "t5a30q",
+     "svg": "1yiapv9"
+    },
+    {
+     "drawn": "\\mathbf{r}_{B/N}+\\boldsymbol{\\omega}+\\hat{\\mathbf{e}}_1",
+     "omml": "mfh8gb",
+     "svg": "fc8psr"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\mathcal{F}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "j5k0rv",
+     "svg": "1oodc4a"
+    },
+    {
+     "drawn": "\\mathbf{A}_{ba}J+\\left[ \\boldsymbol{\\omega}\\times \\right]+\\bar{\\bar{\\mathbf{I}}}",
+     "omml": "89fa29",
+     "svg": "yf52jb"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\mathcal{F}_N+\\mathbf{B}",
+     "omml": "1gy9coy",
+     "svg": "1h1qv9a"
+    },
+    {
+     "drawn": "dt+\\mathbf{A}_{F_{\\mathrm{I}}\\,F}",
+     "omml": "91myf8",
+     "svg": "1tcfay4"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1u0py7u",
+     "svg": "seb8m8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "mathblocks/roman/hughes",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "mathblocks",
+    "letters": {
+     "I": "variable",
+     "k": "label"
+    },
+    "notation": {
+     "preset": "hughes",
+     "overrides": {}
+    }
+   },
+   "hash": "dpedoa",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{sf}=E\\varepsilon_{ij}+B_{max}",
+     "omml": "1nf7sf2",
+     "svg": "s6uyw3"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{sf}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "t5a30q",
+     "svg": "1yiapv9"
+    },
+    {
+     "drawn": "\\overrightharpoon{\\mathbf{r}}_{B/N}+\\overrightharpoon{\\mathbf{\\omega}}+\\hat{e}_1",
+     "omml": "1uljmgg",
+     "svg": "1mcu42r"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^I+\\vec{\\mathbf{F}}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "5f6hv",
+     "svg": "13tnd9h"
+    },
+    {
+     "drawn": "\\mathbf{C}_{ba}\\mathbf{J}+\\mathbf{\\omega}^{\\times}+\\vec{\\mathbf{I}}",
+     "omml": "1kjst9w",
+     "svg": "1ke7cfo"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\vec{\\mathcal{F}}_N+\\mathbf{B}",
+     "omml": "1j9fix0",
+     "svg": "sngemz"
+    },
+    {
+     "drawn": "dt+\\mathbf{C}_{F_I \\,F}",
+     "omml": "8xxe4g",
+     "svg": "1j7u5q2"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_I+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1ctseyi",
+     "svg": "cli4lz"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "mathblocks/roman/schaub",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "mathblocks",
+    "letters": {
+     "I": "variable",
+     "k": "label"
+    },
+    "notation": {
+     "preset": "schaub",
+     "overrides": {}
+    }
+   },
+   "hash": "ds2sq4",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{sf}=E\\varepsilon_{ij}+B_{max}",
+     "omml": "1nf7sf2",
+     "svg": "s6uyw3"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{sf}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "t5a30q",
+     "svg": "1yiapv9"
+    },
+    {
+     "drawn": "{}^{B/N}\\mathbf{r}+\\boldsymbol{\\omega}+\\hat{e}_1",
+     "omml": "1uo9zk7",
+     "svg": "18e3zj5"
+    },
+    {
+     "drawn": "\\hat{f}_1^I+\\left\\{ \\hat{F} \\right\\}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "xqy5ns",
+     "svg": "1nl5ux8"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{ba} \\right]\\left[ \\mathrm{J} \\right]+\\left[ \\tilde{\\omega} \\right]+\\mathcal{I}",
+     "omml": "18ksd5q",
+     "svg": "1as5sx1"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{T} \\right]+\\mathbf{q}+\\mathcal{N}+\\mathbf{B}",
+     "omml": "lzz41r",
+     "svg": "1kjel47"
+    },
+    {
+     "drawn": "dt+\\left[ \\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F} \\right]",
+     "omml": "jb6uq4",
+     "svg": "182dwxf"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_I+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1ctseyi",
+     "svg": "cli4lz"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "mathblocks/roman/markley",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "mathblocks",
+    "letters": {
+     "I": "variable",
+     "k": "label"
+    },
+    "notation": {
+     "preset": "markley",
+     "overrides": {}
+    }
+   },
+   "hash": "1nnoeev",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{sf}=E\\varepsilon_{ij}+B_{max}",
+     "omml": "1nf7sf2",
+     "svg": "s6uyw3"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{sf}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "t5a30q",
+     "svg": "1yiapv9"
+    },
+    {
+     "drawn": "\\mathbf{r}_{B/N}+\\boldsymbol{\\omega}+\\hat{\\mathbf{e}}_1",
+     "omml": "mfh8gb",
+     "svg": "fc8psr"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^I+\\mathcal{F}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "xecij7",
+     "svg": "c3ii7n"
+    },
+    {
+     "drawn": "\\mathbf{A}_{ba}J+\\left[ \\boldsymbol{\\omega}\\times \\right]+\\bar{\\bar{\\mathbf{I}}}",
+     "omml": "89fa29",
+     "svg": "yf52jb"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\mathcal{F}_N+\\mathbf{B}",
+     "omml": "1gy9coy",
+     "svg": "1h1qv9a"
+    },
+    {
+     "drawn": "dt+\\mathbf{A}_{F_I \\,F}",
+     "omml": "1tanv96",
+     "svg": "1b17qrk"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_I+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1ctseyi",
+     "svg": "cli4lz"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "mathtype/none/hughes",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "upright",
+    "greekUpper": "upright",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "italic",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "mathtype",
+    "letters": {},
+    "notation": {
+     "preset": "hughes",
+     "overrides": {}
+    }
+   },
+   "hash": "qdnl6i",
+   "drawings": [
+    {
+     "drawn": "\\mathrm{\\sigma}_{sf}=E\\mathrm{\\varepsilon}_{ij}+B_{max}",
+     "omml": "1pp57yc",
+     "svg": "1outr4p"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\mathrm{\\theta}+\\cos (\\mathrm{\\alpha}t)",
+     "omml": "pds1bl",
+     "svg": "j3xcbd"
+    },
+    {
+     "drawn": "\\mathrm{\\alpha}+\\Omega+x+X+\\Gamma_k",
+     "omml": "452pvu",
+     "svg": "1rk5y17"
+    },
+    {
+     "drawn": "\\mathbf{A}^T \\mathbf{r}_{sf}+\\mathbf{A}^T",
+     "omml": "14uar30",
+     "svg": "1yr1mvx"
+    },
+    {
+     "drawn": "\\overrightharpoon{\\mathbf{r}}_{B/N}+\\overrightharpoon{\\mathbf{\\omega}}+\\hat{e}_1",
+     "omml": "1uljmgg",
+     "svg": "1mcu42r"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\vec{\\mathbf{F}}_{\\mathrm{II}}+\\mathbf{c}^T",
+     "omml": "gw29s5",
+     "svg": "maymwa"
+    },
+    {
+     "drawn": "\\mathbf{C}_{ba}\\mathbf{J}+\\mathbf{\\omega}^{\\times}+\\vec{\\mathbf{I}}",
+     "omml": "1kjst9w",
+     "svg": "1ke7cfo"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\vec{\\mathcal{F}}_N+\\mathbf{B}",
+     "omml": "1j9fix0",
+     "svg": "sngemz"
+    },
+    {
+     "drawn": "dt+\\mathbf{C}_{F_{\\mathrm{I}}\\,F}",
+     "omml": "7mm042",
+     "svg": "pcpq82"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1u0py7u",
+     "svg": "seb8m8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "mathtype/none/schaub",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "upright",
+    "greekUpper": "upright",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "italic",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "mathtype",
+    "letters": {},
+    "notation": {
+     "preset": "schaub",
+     "overrides": {}
+    }
+   },
+   "hash": "ngnb54",
+   "drawings": [
+    {
+     "drawn": "\\mathrm{\\sigma}_{sf}=E\\mathrm{\\varepsilon}_{ij}+B_{max}",
+     "omml": "1pp57yc",
+     "svg": "1outr4p"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\mathrm{\\theta}+\\cos (\\mathrm{\\alpha}t)",
+     "omml": "pds1bl",
+     "svg": "j3xcbd"
+    },
+    {
+     "drawn": "\\mathrm{\\alpha}+\\Omega+x+X+\\Gamma_k",
+     "omml": "452pvu",
+     "svg": "1rk5y17"
+    },
+    {
+     "drawn": "\\mathbf{A}^T \\mathbf{r}_{sf}+\\mathbf{A}^T",
+     "omml": "14uar30",
+     "svg": "1yr1mvx"
+    },
+    {
+     "drawn": "{}^{B/N}\\mathbf{r}+\\boldsymbol{\\omega}+\\hat{e}_1",
+     "omml": "1uo9zk7",
+     "svg": "18e3zj5"
+    },
+    {
+     "drawn": "\\hat{f}_1^{\\mathrm{I}}+\\left\\{ \\hat{F} \\right\\}_{\\mathrm{II}}+\\mathbf{c}^T",
+     "omml": "py26ko",
+     "svg": "13s36mm"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{ba} \\right]\\left[ \\mathrm{J} \\right]+\\left[ \\tilde{\\omega} \\right]+\\mathcal{I}",
+     "omml": "18ksd5q",
+     "svg": "1as5sx1"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{T} \\right]+\\mathbf{q}+\\mathcal{N}+\\mathbf{B}",
+     "omml": "lzz41r",
+     "svg": "1kjel47"
+    },
+    {
+     "drawn": "dt+\\left[ \\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F} \\right]",
+     "omml": "jb6uq4",
+     "svg": "182dwxf"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1u0py7u",
+     "svg": "seb8m8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "mathtype/none/markley",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "upright",
+    "greekUpper": "upright",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "italic",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "mathtype",
+    "letters": {},
+    "notation": {
+     "preset": "markley",
+     "overrides": {}
+    }
+   },
+   "hash": "gh45qf",
+   "drawings": [
+    {
+     "drawn": "\\mathrm{\\sigma}_{sf}=E\\mathrm{\\varepsilon}_{ij}+B_{max}",
+     "omml": "1pp57yc",
+     "svg": "1outr4p"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\mathrm{\\theta}+\\cos (\\mathrm{\\alpha}t)",
+     "omml": "pds1bl",
+     "svg": "j3xcbd"
+    },
+    {
+     "drawn": "\\mathrm{\\alpha}+\\Omega+x+X+\\Gamma_k",
+     "omml": "452pvu",
+     "svg": "1rk5y17"
+    },
+    {
+     "drawn": "\\mathbf{A}^T \\mathbf{r}_{sf}+\\mathbf{A}^T",
+     "omml": "14uar30",
+     "svg": "1yr1mvx"
+    },
+    {
+     "drawn": "\\mathbf{r}_{B/N}+\\boldsymbol{\\omega}+\\hat{\\mathbf{e}}_1",
+     "omml": "mfh8gb",
+     "svg": "fc8psr"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\mathcal{F}_{\\mathrm{II}}+\\mathbf{c}^T",
+     "omml": "241yf9",
+     "svg": "dy9fmt"
+    },
+    {
+     "drawn": "\\mathbf{A}_{ba}J+\\left[ \\boldsymbol{\\omega}\\times \\right]+\\bar{\\bar{\\mathbf{I}}}",
+     "omml": "89fa29",
+     "svg": "yf52jb"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\mathcal{F}_N+\\mathbf{B}",
+     "omml": "1gy9coy",
+     "svg": "1h1qv9a"
+    },
+    {
+     "drawn": "dt+\\mathbf{A}_{F_{\\mathrm{I}}\\,F}",
+     "omml": "91myf8",
+     "svg": "1tcfay4"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1u0py7u",
+     "svg": "seb8m8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "mathtype/cls/hughes",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "upright",
+    "greekUpper": "upright",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "italic",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "mathtype",
+    "letters": {
+     "i": "counter",
+     "j": "counter",
+     "f": "label",
+     "e": "constant",
+     "d": "variable"
+    },
+    "notation": {
+     "preset": "hughes",
+     "overrides": {}
+    }
+   },
+   "hash": "17zc628",
+   "drawings": [
+    {
+     "drawn": "\\mathrm{\\sigma}_{sf}=E\\mathrm{\\varepsilon}_{ij}+B_{max}",
+     "omml": "1pp57yc",
+     "svg": "1outr4p"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\mathrm{\\theta}+\\cos (\\mathrm{\\alpha}t)",
+     "omml": "pds1bl",
+     "svg": "j3xcbd"
+    },
+    {
+     "drawn": "\\mathrm{\\alpha}+\\Omega+x+X+\\Gamma_k",
+     "omml": "452pvu",
+     "svg": "1rk5y17"
+    },
+    {
+     "drawn": "\\mathbf{A}^T \\mathbf{r}_{sf}+\\mathbf{A}^T",
+     "omml": "14uar30",
+     "svg": "1yr1mvx"
+    },
+    {
+     "drawn": "\\overrightharpoon{\\mathbf{r}}_{B/N}+\\overrightharpoon{\\mathbf{\\omega}}+\\hat{e}_1",
+     "omml": "1uljmgg",
+     "svg": "1mcu42r"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\vec{\\mathbf{F}}_{\\mathrm{II}}+\\mathbf{c}^T",
+     "omml": "gw29s5",
+     "svg": "maymwa"
+    },
+    {
+     "drawn": "\\mathbf{C}_{ba}\\mathbf{J}+\\mathbf{\\omega}^{\\times}+\\vec{\\mathbf{I}}",
+     "omml": "1kjst9w",
+     "svg": "1ke7cfo"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\vec{\\mathcal{F}}_N+\\mathbf{B}",
+     "omml": "1j9fix0",
+     "svg": "sngemz"
+    },
+    {
+     "drawn": "dt+\\mathbf{C}_{F_{\\mathrm{I}}\\,F}",
+     "omml": "7mm042",
+     "svg": "pcpq82"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1u0py7u",
+     "svg": "seb8m8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "mathtype/cls/schaub",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "upright",
+    "greekUpper": "upright",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "italic",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "mathtype",
+    "letters": {
+     "i": "counter",
+     "j": "counter",
+     "f": "label",
+     "e": "constant",
+     "d": "variable"
+    },
+    "notation": {
+     "preset": "schaub",
+     "overrides": {}
+    }
+   },
+   "hash": "17trbgy",
+   "drawings": [
+    {
+     "drawn": "\\mathrm{\\sigma}_{sf}=E\\mathrm{\\varepsilon}_{ij}+B_{max}",
+     "omml": "1pp57yc",
+     "svg": "1outr4p"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\mathrm{\\theta}+\\cos (\\mathrm{\\alpha}t)",
+     "omml": "pds1bl",
+     "svg": "j3xcbd"
+    },
+    {
+     "drawn": "\\mathrm{\\alpha}+\\Omega+x+X+\\Gamma_k",
+     "omml": "452pvu",
+     "svg": "1rk5y17"
+    },
+    {
+     "drawn": "\\mathbf{A}^T \\mathbf{r}_{sf}+\\mathbf{A}^T",
+     "omml": "14uar30",
+     "svg": "1yr1mvx"
+    },
+    {
+     "drawn": "{}^{B/N}\\mathbf{r}+\\boldsymbol{\\omega}+\\hat{e}_1",
+     "omml": "1uo9zk7",
+     "svg": "18e3zj5"
+    },
+    {
+     "drawn": "\\hat{f}_1^{\\mathrm{I}}+\\left\\{ \\hat{F} \\right\\}_{\\mathrm{II}}+\\mathbf{c}^T",
+     "omml": "py26ko",
+     "svg": "13s36mm"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{ba} \\right]\\left[ \\mathrm{J} \\right]+\\left[ \\tilde{\\omega} \\right]+\\mathcal{I}",
+     "omml": "18ksd5q",
+     "svg": "1as5sx1"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{T} \\right]+\\mathbf{q}+\\mathcal{N}+\\mathbf{B}",
+     "omml": "lzz41r",
+     "svg": "1kjel47"
+    },
+    {
+     "drawn": "dt+\\left[ \\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F} \\right]",
+     "omml": "jb6uq4",
+     "svg": "182dwxf"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1u0py7u",
+     "svg": "seb8m8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "mathtype/cls/markley",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "upright",
+    "greekUpper": "upright",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "italic",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "mathtype",
+    "letters": {
+     "i": "counter",
+     "j": "counter",
+     "f": "label",
+     "e": "constant",
+     "d": "variable"
+    },
+    "notation": {
+     "preset": "markley",
+     "overrides": {}
+    }
+   },
+   "hash": "1cx5fh3",
+   "drawings": [
+    {
+     "drawn": "\\mathrm{\\sigma}_{sf}=E\\mathrm{\\varepsilon}_{ij}+B_{max}",
+     "omml": "1pp57yc",
+     "svg": "1outr4p"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\mathrm{\\theta}+\\cos (\\mathrm{\\alpha}t)",
+     "omml": "pds1bl",
+     "svg": "j3xcbd"
+    },
+    {
+     "drawn": "\\mathrm{\\alpha}+\\Omega+x+X+\\Gamma_k",
+     "omml": "452pvu",
+     "svg": "1rk5y17"
+    },
+    {
+     "drawn": "\\mathbf{A}^T \\mathbf{r}_{sf}+\\mathbf{A}^T",
+     "omml": "14uar30",
+     "svg": "1yr1mvx"
+    },
+    {
+     "drawn": "\\mathbf{r}_{B/N}+\\boldsymbol{\\omega}+\\hat{\\mathbf{e}}_1",
+     "omml": "mfh8gb",
+     "svg": "fc8psr"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\mathcal{F}_{\\mathrm{II}}+\\mathbf{c}^T",
+     "omml": "241yf9",
+     "svg": "dy9fmt"
+    },
+    {
+     "drawn": "\\mathbf{A}_{ba}J+\\left[ \\boldsymbol{\\omega}\\times \\right]+\\bar{\\bar{\\mathbf{I}}}",
+     "omml": "89fa29",
+     "svg": "yf52jb"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\mathcal{F}_N+\\mathbf{B}",
+     "omml": "1gy9coy",
+     "svg": "1h1qv9a"
+    },
+    {
+     "drawn": "dt+\\mathbf{A}_{F_{\\mathrm{I}}\\,F}",
+     "omml": "91myf8",
+     "svg": "1tcfay4"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1u0py7u",
+     "svg": "seb8m8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "mathtype/roman/hughes",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "upright",
+    "greekUpper": "upright",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "italic",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "mathtype",
+    "letters": {
+     "I": "variable",
+     "k": "label"
+    },
+    "notation": {
+     "preset": "hughes",
+     "overrides": {}
+    }
+   },
+   "hash": "53flty",
+   "drawings": [
+    {
+     "drawn": "\\mathrm{\\sigma}_{sf}=E\\mathrm{\\varepsilon}_{ij}+B_{max}",
+     "omml": "1pp57yc",
+     "svg": "1outr4p"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\mathrm{\\theta}+\\cos (\\mathrm{\\alpha}t)",
+     "omml": "pds1bl",
+     "svg": "j3xcbd"
+    },
+    {
+     "drawn": "\\mathrm{\\alpha}+\\Omega+x+X+\\Gamma_k",
+     "omml": "452pvu",
+     "svg": "1rk5y17"
+    },
+    {
+     "drawn": "\\mathbf{A}^T \\mathbf{r}_{sf}+\\mathbf{A}^T",
+     "omml": "14uar30",
+     "svg": "1yr1mvx"
+    },
+    {
+     "drawn": "\\overrightharpoon{\\mathbf{r}}_{B/N}+\\overrightharpoon{\\mathbf{\\omega}}+\\hat{e}_1",
+     "omml": "1uljmgg",
+     "svg": "1mcu42r"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^I+\\vec{\\mathbf{F}}_{\\mathrm{II}}+\\mathbf{c}^T",
+     "omml": "1tzbhj1",
+     "svg": "1okk4jz"
+    },
+    {
+     "drawn": "\\mathbf{C}_{ba}\\mathbf{J}+\\mathbf{\\omega}^{\\times}+\\vec{\\mathbf{I}}",
+     "omml": "1kjst9w",
+     "svg": "1ke7cfo"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\vec{\\mathcal{F}}_N+\\mathbf{B}",
+     "omml": "1j9fix0",
+     "svg": "sngemz"
+    },
+    {
+     "drawn": "dt+\\mathbf{C}_{F_I \\,F}",
+     "omml": "8xxe4g",
+     "svg": "1j7u5q2"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_I+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1ctseyi",
+     "svg": "cli4lz"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "mathtype/roman/schaub",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "upright",
+    "greekUpper": "upright",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "italic",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "mathtype",
+    "letters": {
+     "I": "variable",
+     "k": "label"
+    },
+    "notation": {
+     "preset": "schaub",
+     "overrides": {}
+    }
+   },
+   "hash": "1yhg3hk",
+   "drawings": [
+    {
+     "drawn": "\\mathrm{\\sigma}_{sf}=E\\mathrm{\\varepsilon}_{ij}+B_{max}",
+     "omml": "1pp57yc",
+     "svg": "1outr4p"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\mathrm{\\theta}+\\cos (\\mathrm{\\alpha}t)",
+     "omml": "pds1bl",
+     "svg": "j3xcbd"
+    },
+    {
+     "drawn": "\\mathrm{\\alpha}+\\Omega+x+X+\\Gamma_k",
+     "omml": "452pvu",
+     "svg": "1rk5y17"
+    },
+    {
+     "drawn": "\\mathbf{A}^T \\mathbf{r}_{sf}+\\mathbf{A}^T",
+     "omml": "14uar30",
+     "svg": "1yr1mvx"
+    },
+    {
+     "drawn": "{}^{B/N}\\mathbf{r}+\\boldsymbol{\\omega}+\\hat{e}_1",
+     "omml": "1uo9zk7",
+     "svg": "18e3zj5"
+    },
+    {
+     "drawn": "\\hat{f}_1^I+\\left\\{ \\hat{F} \\right\\}_{\\mathrm{II}}+\\mathbf{c}^T",
+     "omml": "nvro8o",
+     "svg": "1gzwyzl"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{ba} \\right]\\left[ \\mathrm{J} \\right]+\\left[ \\tilde{\\omega} \\right]+\\mathcal{I}",
+     "omml": "18ksd5q",
+     "svg": "1as5sx1"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{T} \\right]+\\mathbf{q}+\\mathcal{N}+\\mathbf{B}",
+     "omml": "lzz41r",
+     "svg": "1kjel47"
+    },
+    {
+     "drawn": "dt+\\left[ \\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F} \\right]",
+     "omml": "jb6uq4",
+     "svg": "182dwxf"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_I+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1ctseyi",
+     "svg": "cli4lz"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "mathtype/roman/markley",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "upright",
+    "greekUpper": "upright",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "italic",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "mathtype",
+    "letters": {
+     "I": "variable",
+     "k": "label"
+    },
+    "notation": {
+     "preset": "markley",
+     "overrides": {}
+    }
+   },
+   "hash": "mugjnv",
+   "drawings": [
+    {
+     "drawn": "\\mathrm{\\sigma}_{sf}=E\\mathrm{\\varepsilon}_{ij}+B_{max}",
+     "omml": "1pp57yc",
+     "svg": "1outr4p"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\mathrm{\\theta}+\\cos (\\mathrm{\\alpha}t)",
+     "omml": "pds1bl",
+     "svg": "j3xcbd"
+    },
+    {
+     "drawn": "\\mathrm{\\alpha}+\\Omega+x+X+\\Gamma_k",
+     "omml": "452pvu",
+     "svg": "1rk5y17"
+    },
+    {
+     "drawn": "\\mathbf{A}^T \\mathbf{r}_{sf}+\\mathbf{A}^T",
+     "omml": "14uar30",
+     "svg": "1yr1mvx"
+    },
+    {
+     "drawn": "\\mathbf{r}_{B/N}+\\boldsymbol{\\omega}+\\hat{\\mathbf{e}}_1",
+     "omml": "mfh8gb",
+     "svg": "fc8psr"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^I+\\mathcal{F}_{\\mathrm{II}}+\\mathbf{c}^T",
+     "omml": "1ejc0nh",
+     "svg": "g20opy"
+    },
+    {
+     "drawn": "\\mathbf{A}_{ba}J+\\left[ \\boldsymbol{\\omega}\\times \\right]+\\bar{\\bar{\\mathbf{I}}}",
+     "omml": "89fa29",
+     "svg": "yf52jb"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\mathcal{F}_N+\\mathbf{B}",
+     "omml": "1gy9coy",
+     "svg": "1h1qv9a"
+    },
+    {
+     "drawn": "dt+\\mathbf{A}_{F_I \\,F}",
+     "omml": "1tanv96",
+     "svg": "1b17qrk"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_I+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1ctseyi",
+     "svg": "cli4lz"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "iso/none/hughes",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "upright",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "iso",
+    "letters": {},
+    "notation": {
+     "preset": "hughes",
+     "overrides": {}
+    }
+   },
+   "hash": "ts8rf1",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=E\\varepsilon_{\\mathrm{ij}}+B_{\\mathrm{max}}",
+     "omml": "ppme5m",
+     "svg": "18b3yav"
+    },
+    {
+     "drawn": "\\frac{\\mathrm{d}x}{\\mathrm{d}t}+\\int_0^1 f(x)\\,\\mathrm{d}x",
+     "omml": "1qle9hp",
+     "svg": "1wn8ssn"
+    },
+    {
+     "drawn": "\\mathrm{e}^{i\\mathrm{\\pi}}+1=0",
+     "omml": "v27356",
+     "svg": "lj5saa"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "\\overrightharpoon{\\mathbf{r}}_{\\mathrm{B}/\\mathrm{N}}+\\overrightharpoon{\\mathbf{\\omega}}+\\hat{e}_1",
+     "omml": "1vztofy",
+     "svg": "57g09v"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\vec{\\mathbf{F}}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "crc5m3",
+     "svg": "f9j63y"
+    },
+    {
+     "drawn": "\\mathbf{C}_{\\mathrm{ba}}\\mathbf{J}+\\mathbf{\\omega}^{\\times}+\\vec{\\mathbf{I}}",
+     "omml": "10rmjcm",
+     "svg": "smfbfw"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\vec{\\mathcal{F}}_{\\mathrm{N}}+\\mathbf{B}",
+     "omml": "17zxgey",
+     "svg": "1tlg12s"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\mathbf{C}_{\\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F}}",
+     "omml": "urjn9u",
+     "svg": "1v0bpne"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{\\mathrm{ij}}",
+     "omml": "56gecq",
+     "svg": "1to0hvh"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{\\mathrm{IIV}}+A_{\\mathrm{ii}}+I+V",
+     "omml": "7i79x8",
+     "svg": "1qyzjy6"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "iso/none/schaub",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "upright",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "iso",
+    "letters": {},
+    "notation": {
+     "preset": "schaub",
+     "overrides": {}
+    }
+   },
+   "hash": "t8rgjj",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=E\\varepsilon_{\\mathrm{ij}}+B_{\\mathrm{max}}",
+     "omml": "ppme5m",
+     "svg": "18b3yav"
+    },
+    {
+     "drawn": "\\frac{\\mathrm{d}x}{\\mathrm{d}t}+\\int_0^1 f(x)\\,\\mathrm{d}x",
+     "omml": "1qle9hp",
+     "svg": "1wn8ssn"
+    },
+    {
+     "drawn": "\\mathrm{e}^{i\\mathrm{\\pi}}+1=0",
+     "omml": "v27356",
+     "svg": "lj5saa"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "{}^{\\mathrm{B}/\\mathrm{N}}\\mathbf{r}+\\boldsymbol{\\omega}+\\hat{e}_1",
+     "omml": "zpgzq9",
+     "svg": "l7tydj"
+    },
+    {
+     "drawn": "\\hat{f}_1^{\\mathrm{I}}+\\left\\{ \\hat{F} \\right\\}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "1nf16ag",
+     "svg": "179tg3p"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{ba} \\right]\\left[ \\mathrm{J} \\right]+\\left[ \\tilde{\\omega} \\right]+\\mathcal{I}",
+     "omml": "18ksd5q",
+     "svg": "1as5sx1"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{T} \\right]+\\mathbf{q}+\\mathcal{N}+\\mathbf{B}",
+     "omml": "lzz41r",
+     "svg": "1kjel47"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\left[ \\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F} \\right]",
+     "omml": "v16uc",
+     "svg": "10u0cnk"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{\\mathrm{ij}}",
+     "omml": "56gecq",
+     "svg": "1to0hvh"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{\\mathrm{IIV}}+A_{\\mathrm{ii}}+I+V",
+     "omml": "7i79x8",
+     "svg": "1qyzjy6"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "iso/none/markley",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "upright",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "iso",
+    "letters": {},
+    "notation": {
+     "preset": "markley",
+     "overrides": {}
+    }
+   },
+   "hash": "1qtw1si",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=E\\varepsilon_{\\mathrm{ij}}+B_{\\mathrm{max}}",
+     "omml": "ppme5m",
+     "svg": "18b3yav"
+    },
+    {
+     "drawn": "\\frac{\\mathrm{d}x}{\\mathrm{d}t}+\\int_0^1 f(x)\\,\\mathrm{d}x",
+     "omml": "1qle9hp",
+     "svg": "1wn8ssn"
+    },
+    {
+     "drawn": "\\mathrm{e}^{i\\mathrm{\\pi}}+1=0",
+     "omml": "v27356",
+     "svg": "lj5saa"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "\\mathbf{r}_{\\mathrm{B}/\\mathrm{N}}+\\boldsymbol{\\omega}+\\hat{\\mathbf{e}}_1",
+     "omml": "6ko65x",
+     "svg": "rwoij5"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\mathcal{F}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "j5k0rv",
+     "svg": "1oodc4a"
+    },
+    {
+     "drawn": "\\mathbf{A}_{\\mathrm{ba}}J+\\left[ \\boldsymbol{\\omega}\\times \\right]+\\bar{\\bar{\\mathbf{I}}}",
+     "omml": "1h5p7zv",
+     "svg": "31iu2n"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\mathcal{F}_{\\mathrm{N}}+\\mathbf{B}",
+     "omml": "1fgpa88",
+     "svg": "18d911p"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\mathbf{A}_{\\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F}}",
+     "omml": "1lbqyto",
+     "svg": "hae540"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{\\mathrm{ij}}",
+     "omml": "56gecq",
+     "svg": "1to0hvh"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{\\mathrm{IIV}}+A_{\\mathrm{ii}}+I+V",
+     "omml": "7i79x8",
+     "svg": "1qyzjy6"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "iso/cls/hughes",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "upright",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "iso",
+    "letters": {
+     "i": "counter",
+     "j": "counter",
+     "f": "label",
+     "e": "constant",
+     "d": "variable"
+    },
+    "notation": {
+     "preset": "hughes",
+     "overrides": {}
+    }
+   },
+   "hash": "12wzi9d",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=E\\varepsilon_{ij}+B_{\\mathrm{max}}",
+     "omml": "1ah6ii",
+     "svg": "q3e5m5"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "\\mathrm{e}^{i\\mathrm{\\pi}}+1=0",
+     "omml": "v27356",
+     "svg": "lj5saa"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "\\overrightharpoon{\\mathbf{r}}_{\\mathrm{B}/\\mathrm{N}}+\\overrightharpoon{\\mathbf{\\omega}}+\\hat{e}_1",
+     "omml": "1vztofy",
+     "svg": "57g09v"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\vec{\\mathbf{F}}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "crc5m3",
+     "svg": "f9j63y"
+    },
+    {
+     "drawn": "\\mathbf{C}_{\\mathrm{ba}}\\mathbf{J}+\\mathbf{\\omega}^{\\times}+\\vec{\\mathbf{I}}",
+     "omml": "10rmjcm",
+     "svg": "smfbfw"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\vec{\\mathcal{F}}_{\\mathrm{N}}+\\mathbf{B}",
+     "omml": "17zxgey",
+     "svg": "1tlg12s"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\mathbf{C}_{\\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F}}",
+     "omml": "urjn9u",
+     "svg": "1v0bpne"
+    },
+    {
+     "drawn": "d=2r+x_i+v_{\\mathrm{f}}+y_t+A_{ij}",
+     "omml": "1xlxuiy",
+     "svg": "18n7gvr"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{\\mathrm{IIV}}+A_{ii}+I+V",
+     "omml": "1s4hais",
+     "svg": "j7tni8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "iso/cls/schaub",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "upright",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "iso",
+    "letters": {
+     "i": "counter",
+     "j": "counter",
+     "f": "label",
+     "e": "constant",
+     "d": "variable"
+    },
+    "notation": {
+     "preset": "schaub",
+     "overrides": {}
+    }
+   },
+   "hash": "xbi90f",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=E\\varepsilon_{ij}+B_{\\mathrm{max}}",
+     "omml": "1ah6ii",
+     "svg": "q3e5m5"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "\\mathrm{e}^{i\\mathrm{\\pi}}+1=0",
+     "omml": "v27356",
+     "svg": "lj5saa"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "{}^{\\mathrm{B}/\\mathrm{N}}\\mathbf{r}+\\boldsymbol{\\omega}+\\hat{e}_1",
+     "omml": "zpgzq9",
+     "svg": "l7tydj"
+    },
+    {
+     "drawn": "\\hat{f}_1^{\\mathrm{I}}+\\left\\{ \\hat{F} \\right\\}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "1nf16ag",
+     "svg": "179tg3p"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{ba} \\right]\\left[ \\mathrm{J} \\right]+\\left[ \\tilde{\\omega} \\right]+\\mathcal{I}",
+     "omml": "18ksd5q",
+     "svg": "1as5sx1"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{T} \\right]+\\mathbf{q}+\\mathcal{N}+\\mathbf{B}",
+     "omml": "lzz41r",
+     "svg": "1kjel47"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\left[ \\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F} \\right]",
+     "omml": "v16uc",
+     "svg": "10u0cnk"
+    },
+    {
+     "drawn": "d=2r+x_i+v_{\\mathrm{f}}+y_t+A_{ij}",
+     "omml": "1xlxuiy",
+     "svg": "18n7gvr"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{\\mathrm{IIV}}+A_{ii}+I+V",
+     "omml": "1s4hais",
+     "svg": "j7tni8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "iso/cls/markley",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "upright",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "iso",
+    "letters": {
+     "i": "counter",
+     "j": "counter",
+     "f": "label",
+     "e": "constant",
+     "d": "variable"
+    },
+    "notation": {
+     "preset": "markley",
+     "overrides": {}
+    }
+   },
+   "hash": "197go2g",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=E\\varepsilon_{ij}+B_{\\mathrm{max}}",
+     "omml": "1ah6ii",
+     "svg": "q3e5m5"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "\\mathrm{e}^{i\\mathrm{\\pi}}+1=0",
+     "omml": "v27356",
+     "svg": "lj5saa"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "\\mathbf{r}_{\\mathrm{B}/\\mathrm{N}}+\\boldsymbol{\\omega}+\\hat{\\mathbf{e}}_1",
+     "omml": "6ko65x",
+     "svg": "rwoij5"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\mathcal{F}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "j5k0rv",
+     "svg": "1oodc4a"
+    },
+    {
+     "drawn": "\\mathbf{A}_{\\mathrm{ba}}J+\\left[ \\boldsymbol{\\omega}\\times \\right]+\\bar{\\bar{\\mathbf{I}}}",
+     "omml": "1h5p7zv",
+     "svg": "31iu2n"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\mathcal{F}_{\\mathrm{N}}+\\mathbf{B}",
+     "omml": "1fgpa88",
+     "svg": "18d911p"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\mathbf{A}_{\\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F}}",
+     "omml": "1lbqyto",
+     "svg": "hae540"
+    },
+    {
+     "drawn": "d=2r+x_i+v_{\\mathrm{f}}+y_t+A_{ij}",
+     "omml": "1xlxuiy",
+     "svg": "18n7gvr"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{\\mathrm{IIV}}+A_{ii}+I+V",
+     "omml": "1s4hais",
+     "svg": "j7tni8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "iso/roman/hughes",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "upright",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "iso",
+    "letters": {
+     "I": "variable",
+     "k": "label"
+    },
+    "notation": {
+     "preset": "hughes",
+     "overrides": {}
+    }
+   },
+   "hash": "rdnmdp",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=E\\varepsilon_{\\mathrm{ij}}+B_{\\mathrm{max}}",
+     "omml": "ppme5m",
+     "svg": "18b3yav"
+    },
+    {
+     "drawn": "\\frac{\\mathrm{d}x}{\\mathrm{d}t}+\\int_0^1 f(x)\\,\\mathrm{d}x",
+     "omml": "1qle9hp",
+     "svg": "1wn8ssn"
+    },
+    {
+     "drawn": "\\mathrm{e}^{i\\mathrm{\\pi}}+1=0",
+     "omml": "v27356",
+     "svg": "lj5saa"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_{\\mathrm{k}}",
+     "omml": "14lwxno",
+     "svg": "sqiwuv"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "\\overrightharpoon{\\mathbf{r}}_{\\mathrm{B}/\\mathrm{N}}+\\overrightharpoon{\\mathbf{\\omega}}+\\hat{e}_1",
+     "omml": "1vztofy",
+     "svg": "57g09v"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^I+\\vec{\\mathbf{F}}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "5f6hv",
+     "svg": "13tnd9h"
+    },
+    {
+     "drawn": "\\mathbf{C}_{\\mathrm{ba}}\\mathbf{J}+\\mathbf{\\omega}^{\\times}+\\vec{\\mathbf{I}}",
+     "omml": "10rmjcm",
+     "svg": "smfbfw"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\vec{\\mathcal{F}}_{\\mathrm{N}}+\\mathbf{B}",
+     "omml": "17zxgey",
+     "svg": "1tlg12s"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\mathbf{C}_{\\mathrm{F}_I \\,\\mathrm{F}}",
+     "omml": "1om9ca8",
+     "svg": "17ca15a"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{\\mathrm{ij}}",
+     "omml": "56gecq",
+     "svg": "1to0hvh"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{\\mathrm{k}=1}^n a_{\\mathrm{k}}b_{\\mathrm{k}}+\\prod_j c_j",
+     "omml": "rdc523",
+     "svg": "1auvw29"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_I+F_{\\mathrm{II}}+A_{\\mathrm{IIV}}+A_{\\mathrm{ii}}+I+V",
+     "omml": "yhqo1o",
+     "svg": "llt5dx"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "iso/roman/schaub",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "upright",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "iso",
+    "letters": {
+     "I": "variable",
+     "k": "label"
+    },
+    "notation": {
+     "preset": "schaub",
+     "overrides": {}
+    }
+   },
+   "hash": "572pjn",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=E\\varepsilon_{\\mathrm{ij}}+B_{\\mathrm{max}}",
+     "omml": "ppme5m",
+     "svg": "18b3yav"
+    },
+    {
+     "drawn": "\\frac{\\mathrm{d}x}{\\mathrm{d}t}+\\int_0^1 f(x)\\,\\mathrm{d}x",
+     "omml": "1qle9hp",
+     "svg": "1wn8ssn"
+    },
+    {
+     "drawn": "\\mathrm{e}^{i\\mathrm{\\pi}}+1=0",
+     "omml": "v27356",
+     "svg": "lj5saa"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_{\\mathrm{k}}",
+     "omml": "14lwxno",
+     "svg": "sqiwuv"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "{}^{\\mathrm{B}/\\mathrm{N}}\\mathbf{r}+\\boldsymbol{\\omega}+\\hat{e}_1",
+     "omml": "zpgzq9",
+     "svg": "l7tydj"
+    },
+    {
+     "drawn": "\\hat{f}_1^I+\\left\\{ \\hat{F} \\right\\}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "xqy5ns",
+     "svg": "1nl5ux8"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{ba} \\right]\\left[ \\mathrm{J} \\right]+\\left[ \\tilde{\\omega} \\right]+\\mathcal{I}",
+     "omml": "18ksd5q",
+     "svg": "1as5sx1"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{T} \\right]+\\mathbf{q}+\\mathcal{N}+\\mathbf{B}",
+     "omml": "lzz41r",
+     "svg": "1kjel47"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\left[ \\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F} \\right]",
+     "omml": "v16uc",
+     "svg": "10u0cnk"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{\\mathrm{ij}}",
+     "omml": "56gecq",
+     "svg": "1to0hvh"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{\\mathrm{k}=1}^n a_{\\mathrm{k}}b_{\\mathrm{k}}+\\prod_j c_j",
+     "omml": "rdc523",
+     "svg": "1auvw29"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_I+F_{\\mathrm{II}}+A_{\\mathrm{IIV}}+A_{\\mathrm{ii}}+I+V",
+     "omml": "yhqo1o",
+     "svg": "llt5dx"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "iso/roman/markley",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "upright",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "iso",
+    "letters": {
+     "I": "variable",
+     "k": "label"
+    },
+    "notation": {
+     "preset": "markley",
+     "overrides": {}
+    }
+   },
+   "hash": "eaxp0u",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=E\\varepsilon_{\\mathrm{ij}}+B_{\\mathrm{max}}",
+     "omml": "ppme5m",
+     "svg": "18b3yav"
+    },
+    {
+     "drawn": "\\frac{\\mathrm{d}x}{\\mathrm{d}t}+\\int_0^1 f(x)\\,\\mathrm{d}x",
+     "omml": "1qle9hp",
+     "svg": "1wn8ssn"
+    },
+    {
+     "drawn": "\\mathrm{e}^{i\\mathrm{\\pi}}+1=0",
+     "omml": "v27356",
+     "svg": "lj5saa"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_{\\mathrm{k}}",
+     "omml": "14lwxno",
+     "svg": "sqiwuv"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "\\mathbf{r}_{\\mathrm{B}/\\mathrm{N}}+\\boldsymbol{\\omega}+\\hat{\\mathbf{e}}_1",
+     "omml": "6ko65x",
+     "svg": "rwoij5"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^I+\\mathcal{F}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "xecij7",
+     "svg": "c3ii7n"
+    },
+    {
+     "drawn": "\\mathbf{A}_{\\mathrm{ba}}J+\\left[ \\boldsymbol{\\omega}\\times \\right]+\\bar{\\bar{\\mathbf{I}}}",
+     "omml": "1h5p7zv",
+     "svg": "31iu2n"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\mathcal{F}_{\\mathrm{N}}+\\mathbf{B}",
+     "omml": "1fgpa88",
+     "svg": "18d911p"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\mathbf{A}_{\\mathrm{F}_I \\,\\mathrm{F}}",
+     "omml": "x8myru",
+     "svg": "224r0w"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{\\mathrm{ij}}",
+     "omml": "56gecq",
+     "svg": "1to0hvh"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{\\mathrm{k}=1}^n a_{\\mathrm{k}}b_{\\mathrm{k}}+\\prod_j c_j",
+     "omml": "rdc523",
+     "svg": "1auvw29"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_I+F_{\\mathrm{II}}+A_{\\mathrm{IIV}}+A_{\\mathrm{ii}}+I+V",
+     "omml": "yhqo1o",
+     "svg": "llt5dx"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "physics/none/hughes",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "physics",
+    "letters": {},
+    "notation": {
+     "preset": "hughes",
+     "overrides": {}
+    }
+   },
+   "hash": "ini05e",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=E\\varepsilon_{\\mathrm{ij}}+B_{\\mathrm{max}}",
+     "omml": "ppme5m",
+     "svg": "18b3yav"
+    },
+    {
+     "drawn": "\\frac{\\mathrm{d}x}{\\mathrm{d}t}+\\int_0^1 f(x)\\,\\mathrm{d}x",
+     "omml": "1qle9hp",
+     "svg": "1wn8ssn"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "\\overrightharpoon{\\mathbf{r}}_{\\mathrm{B}/\\mathrm{N}}+\\overrightharpoon{\\mathbf{\\omega}}+\\hat{e}_1",
+     "omml": "1vztofy",
+     "svg": "57g09v"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\vec{\\mathbf{F}}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "crc5m3",
+     "svg": "f9j63y"
+    },
+    {
+     "drawn": "\\mathbf{C}_{\\mathrm{ba}}\\mathbf{J}+\\mathbf{\\omega}^{\\times}+\\vec{\\mathbf{I}}",
+     "omml": "10rmjcm",
+     "svg": "smfbfw"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\vec{\\mathcal{F}}_{\\mathrm{N}}+\\mathbf{B}",
+     "omml": "17zxgey",
+     "svg": "1tlg12s"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\mathbf{C}_{\\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F}}",
+     "omml": "urjn9u",
+     "svg": "1v0bpne"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{\\mathrm{ij}}",
+     "omml": "56gecq",
+     "svg": "1to0hvh"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{\\mathrm{IIV}}+A_{\\mathrm{ii}}+I+V",
+     "omml": "7i79x8",
+     "svg": "1qyzjy6"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "physics/none/schaub",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "physics",
+    "letters": {},
+    "notation": {
+     "preset": "schaub",
+     "overrides": {}
+    }
+   },
+   "hash": "1mz5pfk",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=E\\varepsilon_{\\mathrm{ij}}+B_{\\mathrm{max}}",
+     "omml": "ppme5m",
+     "svg": "18b3yav"
+    },
+    {
+     "drawn": "\\frac{\\mathrm{d}x}{\\mathrm{d}t}+\\int_0^1 f(x)\\,\\mathrm{d}x",
+     "omml": "1qle9hp",
+     "svg": "1wn8ssn"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "{}^{\\mathrm{B}/\\mathrm{N}}\\mathbf{r}+\\boldsymbol{\\omega}+\\hat{e}_1",
+     "omml": "zpgzq9",
+     "svg": "l7tydj"
+    },
+    {
+     "drawn": "\\hat{f}_1^{\\mathrm{I}}+\\left\\{ \\hat{F} \\right\\}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "1nf16ag",
+     "svg": "179tg3p"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{ba} \\right]\\left[ \\mathrm{J} \\right]+\\left[ \\tilde{\\omega} \\right]+\\mathcal{I}",
+     "omml": "18ksd5q",
+     "svg": "1as5sx1"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{T} \\right]+\\mathbf{q}+\\mathcal{N}+\\mathbf{B}",
+     "omml": "lzz41r",
+     "svg": "1kjel47"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\left[ \\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F} \\right]",
+     "omml": "v16uc",
+     "svg": "10u0cnk"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{\\mathrm{ij}}",
+     "omml": "56gecq",
+     "svg": "1to0hvh"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{\\mathrm{IIV}}+A_{\\mathrm{ii}}+I+V",
+     "omml": "7i79x8",
+     "svg": "1qyzjy6"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "physics/none/markley",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "physics",
+    "letters": {},
+    "notation": {
+     "preset": "markley",
+     "overrides": {}
+    }
+   },
+   "hash": "1wz4cgv",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=E\\varepsilon_{\\mathrm{ij}}+B_{\\mathrm{max}}",
+     "omml": "ppme5m",
+     "svg": "18b3yav"
+    },
+    {
+     "drawn": "\\frac{\\mathrm{d}x}{\\mathrm{d}t}+\\int_0^1 f(x)\\,\\mathrm{d}x",
+     "omml": "1qle9hp",
+     "svg": "1wn8ssn"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "\\mathbf{r}_{\\mathrm{B}/\\mathrm{N}}+\\boldsymbol{\\omega}+\\hat{\\mathbf{e}}_1",
+     "omml": "6ko65x",
+     "svg": "rwoij5"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\mathcal{F}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "j5k0rv",
+     "svg": "1oodc4a"
+    },
+    {
+     "drawn": "\\mathbf{A}_{\\mathrm{ba}}J+\\left[ \\boldsymbol{\\omega}\\times \\right]+\\bar{\\bar{\\mathbf{I}}}",
+     "omml": "1h5p7zv",
+     "svg": "31iu2n"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\mathcal{F}_{\\mathrm{N}}+\\mathbf{B}",
+     "omml": "1fgpa88",
+     "svg": "18d911p"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\mathbf{A}_{\\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F}}",
+     "omml": "1lbqyto",
+     "svg": "hae540"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{\\mathrm{ij}}",
+     "omml": "56gecq",
+     "svg": "1to0hvh"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{\\mathrm{IIV}}+A_{\\mathrm{ii}}+I+V",
+     "omml": "7i79x8",
+     "svg": "1qyzjy6"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "physics/cls/hughes",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "physics",
+    "letters": {
+     "i": "counter",
+     "j": "counter",
+     "f": "label",
+     "e": "constant",
+     "d": "variable"
+    },
+    "notation": {
+     "preset": "hughes",
+     "overrides": {}
+    }
+   },
+   "hash": "1hf6xvs",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=E\\varepsilon_{ij}+B_{\\mathrm{max}}",
+     "omml": "1ah6ii",
+     "svg": "q3e5m5"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "\\overrightharpoon{\\mathbf{r}}_{\\mathrm{B}/\\mathrm{N}}+\\overrightharpoon{\\mathbf{\\omega}}+\\hat{e}_1",
+     "omml": "1vztofy",
+     "svg": "57g09v"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\vec{\\mathbf{F}}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "crc5m3",
+     "svg": "f9j63y"
+    },
+    {
+     "drawn": "\\mathbf{C}_{\\mathrm{ba}}\\mathbf{J}+\\mathbf{\\omega}^{\\times}+\\vec{\\mathbf{I}}",
+     "omml": "10rmjcm",
+     "svg": "smfbfw"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\vec{\\mathcal{F}}_{\\mathrm{N}}+\\mathbf{B}",
+     "omml": "17zxgey",
+     "svg": "1tlg12s"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\mathbf{C}_{\\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F}}",
+     "omml": "urjn9u",
+     "svg": "1v0bpne"
+    },
+    {
+     "drawn": "d=2r+x_i+v_{\\mathrm{f}}+y_t+A_{ij}",
+     "omml": "1xlxuiy",
+     "svg": "18n7gvr"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{\\mathrm{IIV}}+A_{ii}+I+V",
+     "omml": "1s4hais",
+     "svg": "j7tni8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "physics/cls/schaub",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "physics",
+    "letters": {
+     "i": "counter",
+     "j": "counter",
+     "f": "label",
+     "e": "constant",
+     "d": "variable"
+    },
+    "notation": {
+     "preset": "schaub",
+     "overrides": {}
+    }
+   },
+   "hash": "1g1elju",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=E\\varepsilon_{ij}+B_{\\mathrm{max}}",
+     "omml": "1ah6ii",
+     "svg": "q3e5m5"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "{}^{\\mathrm{B}/\\mathrm{N}}\\mathbf{r}+\\boldsymbol{\\omega}+\\hat{e}_1",
+     "omml": "zpgzq9",
+     "svg": "l7tydj"
+    },
+    {
+     "drawn": "\\hat{f}_1^{\\mathrm{I}}+\\left\\{ \\hat{F} \\right\\}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "1nf16ag",
+     "svg": "179tg3p"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{ba} \\right]\\left[ \\mathrm{J} \\right]+\\left[ \\tilde{\\omega} \\right]+\\mathcal{I}",
+     "omml": "18ksd5q",
+     "svg": "1as5sx1"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{T} \\right]+\\mathbf{q}+\\mathcal{N}+\\mathbf{B}",
+     "omml": "lzz41r",
+     "svg": "1kjel47"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\left[ \\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F} \\right]",
+     "omml": "v16uc",
+     "svg": "10u0cnk"
+    },
+    {
+     "drawn": "d=2r+x_i+v_{\\mathrm{f}}+y_t+A_{ij}",
+     "omml": "1xlxuiy",
+     "svg": "18n7gvr"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{\\mathrm{IIV}}+A_{ii}+I+V",
+     "omml": "1s4hais",
+     "svg": "j7tni8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "physics/cls/markley",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "physics",
+    "letters": {
+     "i": "counter",
+     "j": "counter",
+     "f": "label",
+     "e": "constant",
+     "d": "variable"
+    },
+    "notation": {
+     "preset": "markley",
+     "overrides": {}
+    }
+   },
+   "hash": "1lerozj",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=E\\varepsilon_{ij}+B_{\\mathrm{max}}",
+     "omml": "1ah6ii",
+     "svg": "q3e5m5"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "\\mathbf{r}_{\\mathrm{B}/\\mathrm{N}}+\\boldsymbol{\\omega}+\\hat{\\mathbf{e}}_1",
+     "omml": "6ko65x",
+     "svg": "rwoij5"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\mathcal{F}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "j5k0rv",
+     "svg": "1oodc4a"
+    },
+    {
+     "drawn": "\\mathbf{A}_{\\mathrm{ba}}J+\\left[ \\boldsymbol{\\omega}\\times \\right]+\\bar{\\bar{\\mathbf{I}}}",
+     "omml": "1h5p7zv",
+     "svg": "31iu2n"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\mathcal{F}_{\\mathrm{N}}+\\mathbf{B}",
+     "omml": "1fgpa88",
+     "svg": "18d911p"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\mathbf{A}_{\\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F}}",
+     "omml": "1lbqyto",
+     "svg": "hae540"
+    },
+    {
+     "drawn": "d=2r+x_i+v_{\\mathrm{f}}+y_t+A_{ij}",
+     "omml": "1xlxuiy",
+     "svg": "18n7gvr"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{\\mathrm{IIV}}+A_{ii}+I+V",
+     "omml": "1s4hais",
+     "svg": "j7tni8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "physics/roman/hughes",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "physics",
+    "letters": {
+     "I": "variable",
+     "k": "label"
+    },
+    "notation": {
+     "preset": "hughes",
+     "overrides": {}
+    }
+   },
+   "hash": "qu5tzy",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=E\\varepsilon_{\\mathrm{ij}}+B_{\\mathrm{max}}",
+     "omml": "ppme5m",
+     "svg": "18b3yav"
+    },
+    {
+     "drawn": "\\frac{\\mathrm{d}x}{\\mathrm{d}t}+\\int_0^1 f(x)\\,\\mathrm{d}x",
+     "omml": "1qle9hp",
+     "svg": "1wn8ssn"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_{\\mathrm{k}}",
+     "omml": "14lwxno",
+     "svg": "sqiwuv"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "\\overrightharpoon{\\mathbf{r}}_{\\mathrm{B}/\\mathrm{N}}+\\overrightharpoon{\\mathbf{\\omega}}+\\hat{e}_1",
+     "omml": "1vztofy",
+     "svg": "57g09v"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^I+\\vec{\\mathbf{F}}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "5f6hv",
+     "svg": "13tnd9h"
+    },
+    {
+     "drawn": "\\mathbf{C}_{\\mathrm{ba}}\\mathbf{J}+\\mathbf{\\omega}^{\\times}+\\vec{\\mathbf{I}}",
+     "omml": "10rmjcm",
+     "svg": "smfbfw"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\vec{\\mathcal{F}}_{\\mathrm{N}}+\\mathbf{B}",
+     "omml": "17zxgey",
+     "svg": "1tlg12s"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\mathbf{C}_{\\mathrm{F}_I \\,\\mathrm{F}}",
+     "omml": "1om9ca8",
+     "svg": "17ca15a"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{\\mathrm{ij}}",
+     "omml": "56gecq",
+     "svg": "1to0hvh"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{\\mathrm{k}=1}^n a_{\\mathrm{k}}b_{\\mathrm{k}}+\\prod_j c_j",
+     "omml": "rdc523",
+     "svg": "1auvw29"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_I+F_{\\mathrm{II}}+A_{\\mathrm{IIV}}+A_{\\mathrm{ii}}+I+V",
+     "omml": "yhqo1o",
+     "svg": "llt5dx"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "physics/roman/schaub",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "physics",
+    "letters": {
+     "I": "variable",
+     "k": "label"
+    },
+    "notation": {
+     "preset": "schaub",
+     "overrides": {}
+    }
+   },
+   "hash": "1fz7u0g",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=E\\varepsilon_{\\mathrm{ij}}+B_{\\mathrm{max}}",
+     "omml": "ppme5m",
+     "svg": "18b3yav"
+    },
+    {
+     "drawn": "\\frac{\\mathrm{d}x}{\\mathrm{d}t}+\\int_0^1 f(x)\\,\\mathrm{d}x",
+     "omml": "1qle9hp",
+     "svg": "1wn8ssn"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_{\\mathrm{k}}",
+     "omml": "14lwxno",
+     "svg": "sqiwuv"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "{}^{\\mathrm{B}/\\mathrm{N}}\\mathbf{r}+\\boldsymbol{\\omega}+\\hat{e}_1",
+     "omml": "zpgzq9",
+     "svg": "l7tydj"
+    },
+    {
+     "drawn": "\\hat{f}_1^I+\\left\\{ \\hat{F} \\right\\}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "xqy5ns",
+     "svg": "1nl5ux8"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{ba} \\right]\\left[ \\mathrm{J} \\right]+\\left[ \\tilde{\\omega} \\right]+\\mathcal{I}",
+     "omml": "18ksd5q",
+     "svg": "1as5sx1"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{T} \\right]+\\mathbf{q}+\\mathcal{N}+\\mathbf{B}",
+     "omml": "lzz41r",
+     "svg": "1kjel47"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\left[ \\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F} \\right]",
+     "omml": "v16uc",
+     "svg": "10u0cnk"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{\\mathrm{ij}}",
+     "omml": "56gecq",
+     "svg": "1to0hvh"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{\\mathrm{k}=1}^n a_{\\mathrm{k}}b_{\\mathrm{k}}+\\prod_j c_j",
+     "omml": "rdc523",
+     "svg": "1auvw29"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_I+F_{\\mathrm{II}}+A_{\\mathrm{IIV}}+A_{\\mathrm{ii}}+I+V",
+     "omml": "yhqo1o",
+     "svg": "llt5dx"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "physics/roman/markley",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "physics",
+    "letters": {
+     "I": "variable",
+     "k": "label"
+    },
+    "notation": {
+     "preset": "markley",
+     "overrides": {}
+    }
+   },
+   "hash": "fm1usz",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=E\\varepsilon_{\\mathrm{ij}}+B_{\\mathrm{max}}",
+     "omml": "ppme5m",
+     "svg": "18b3yav"
+    },
+    {
+     "drawn": "\\frac{\\mathrm{d}x}{\\mathrm{d}t}+\\int_0^1 f(x)\\,\\mathrm{d}x",
+     "omml": "1qle9hp",
+     "svg": "1wn8ssn"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_{\\mathrm{k}}",
+     "omml": "14lwxno",
+     "svg": "sqiwuv"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "\\mathbf{r}_{\\mathrm{B}/\\mathrm{N}}+\\boldsymbol{\\omega}+\\hat{\\mathbf{e}}_1",
+     "omml": "6ko65x",
+     "svg": "rwoij5"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^I+\\mathcal{F}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "xecij7",
+     "svg": "c3ii7n"
+    },
+    {
+     "drawn": "\\mathbf{A}_{\\mathrm{ba}}J+\\left[ \\boldsymbol{\\omega}\\times \\right]+\\bar{\\bar{\\mathbf{I}}}",
+     "omml": "1h5p7zv",
+     "svg": "31iu2n"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\mathcal{F}_{\\mathrm{N}}+\\mathbf{B}",
+     "omml": "1fgpa88",
+     "svg": "18d911p"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\mathbf{A}_{\\mathrm{F}_I \\,\\mathrm{F}}",
+     "omml": "x8myru",
+     "svg": "224r0w"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{\\mathrm{ij}}",
+     "omml": "56gecq",
+     "svg": "1to0hvh"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{\\mathrm{k}=1}^n a_{\\mathrm{k}}b_{\\mathrm{k}}+\\prod_j c_j",
+     "omml": "rdc523",
+     "svg": "1auvw29"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_I+F_{\\mathrm{II}}+A_{\\mathrm{IIV}}+A_{\\mathrm{ii}}+I+V",
+     "omml": "yhqo1o",
+     "svg": "llt5dx"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "pure/none/hughes",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "italic",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "italic",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "pure",
+    "letters": {},
+    "notation": {
+     "preset": "hughes",
+     "overrides": {}
+    }
+   },
+   "hash": "hxksx8",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{sf}=E\\varepsilon_{ij}+B_{max}",
+     "omml": "1nf7sf2",
+     "svg": "s6uyw3"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\mathit{\\Omega}_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "124y5ao",
+     "svg": "7l7klb"
+    },
+    {
+     "drawn": "\\alpha+\\mathit{\\Omega}+x+X+\\mathit{\\Gamma}_k",
+     "omml": "5vumv0",
+     "svg": "1bkqdb4"
+    },
+    {
+     "drawn": "\\mathbf{A}^T \\mathbf{r}_{sf}+\\mathbf{A}^T",
+     "omml": "14uar30",
+     "svg": "1yr1mvx"
+    },
+    {
+     "drawn": "\\overrightharpoon{\\mathbf{r}}_{B/N}+\\overrightharpoon{\\mathbf{\\omega}}+\\hat{e}_1",
+     "omml": "1uljmgg",
+     "svg": "1mcu42r"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\vec{\\mathbf{F}}_{\\mathrm{II}}+\\mathbf{c}^T",
+     "omml": "gw29s5",
+     "svg": "maymwa"
+    },
+    {
+     "drawn": "\\mathbf{C}_{ba}\\mathbf{J}+\\mathbf{\\omega}^{\\times}+\\vec{\\mathbf{I}}",
+     "omml": "1kjst9w",
+     "svg": "1ke7cfo"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\vec{\\mathcal{F}}_N+\\mathbf{B}",
+     "omml": "1j9fix0",
+     "svg": "sngemz"
+    },
+    {
+     "drawn": "dt+\\mathbf{C}_{F_{\\mathrm{I}}\\,F}",
+     "omml": "7mm042",
+     "svg": "pcpq82"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1u0py7u",
+     "svg": "seb8m8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "pure/none/schaub",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "italic",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "italic",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "pure",
+    "letters": {},
+    "notation": {
+     "preset": "schaub",
+     "overrides": {}
+    }
+   },
+   "hash": "160gzry",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{sf}=E\\varepsilon_{ij}+B_{max}",
+     "omml": "1nf7sf2",
+     "svg": "s6uyw3"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\mathit{\\Omega}_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "124y5ao",
+     "svg": "7l7klb"
+    },
+    {
+     "drawn": "\\alpha+\\mathit{\\Omega}+x+X+\\mathit{\\Gamma}_k",
+     "omml": "5vumv0",
+     "svg": "1bkqdb4"
+    },
+    {
+     "drawn": "\\mathbf{A}^T \\mathbf{r}_{sf}+\\mathbf{A}^T",
+     "omml": "14uar30",
+     "svg": "1yr1mvx"
+    },
+    {
+     "drawn": "{}^{B/N}\\mathbf{r}+\\boldsymbol{\\omega}+\\hat{e}_1",
+     "omml": "1uo9zk7",
+     "svg": "18e3zj5"
+    },
+    {
+     "drawn": "\\hat{f}_1^{\\mathrm{I}}+\\left\\{ \\hat{F} \\right\\}_{\\mathrm{II}}+\\mathbf{c}^T",
+     "omml": "py26ko",
+     "svg": "13s36mm"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{ba} \\right]\\left[ \\mathrm{J} \\right]+\\left[ \\tilde{\\omega} \\right]+\\mathcal{I}",
+     "omml": "18ksd5q",
+     "svg": "1as5sx1"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{T} \\right]+\\mathbf{q}+\\mathcal{N}+\\mathbf{B}",
+     "omml": "lzz41r",
+     "svg": "1kjel47"
+    },
+    {
+     "drawn": "dt+\\left[ \\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F} \\right]",
+     "omml": "jb6uq4",
+     "svg": "182dwxf"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1u0py7u",
+     "svg": "seb8m8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "pure/none/markley",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "italic",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "italic",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "pure",
+    "letters": {},
+    "notation": {
+     "preset": "markley",
+     "overrides": {}
+    }
+   },
+   "hash": "t8zsxh",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{sf}=E\\varepsilon_{ij}+B_{max}",
+     "omml": "1nf7sf2",
+     "svg": "s6uyw3"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\mathit{\\Omega}_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "124y5ao",
+     "svg": "7l7klb"
+    },
+    {
+     "drawn": "\\alpha+\\mathit{\\Omega}+x+X+\\mathit{\\Gamma}_k",
+     "omml": "5vumv0",
+     "svg": "1bkqdb4"
+    },
+    {
+     "drawn": "\\mathbf{A}^T \\mathbf{r}_{sf}+\\mathbf{A}^T",
+     "omml": "14uar30",
+     "svg": "1yr1mvx"
+    },
+    {
+     "drawn": "\\mathbf{r}_{B/N}+\\boldsymbol{\\omega}+\\hat{\\mathbf{e}}_1",
+     "omml": "mfh8gb",
+     "svg": "fc8psr"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\mathcal{F}_{\\mathrm{II}}+\\mathbf{c}^T",
+     "omml": "241yf9",
+     "svg": "dy9fmt"
+    },
+    {
+     "drawn": "\\mathbf{A}_{ba}J+\\left[ \\boldsymbol{\\omega}\\times \\right]+\\bar{\\bar{\\mathbf{I}}}",
+     "omml": "89fa29",
+     "svg": "yf52jb"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\mathcal{F}_N+\\mathbf{B}",
+     "omml": "1gy9coy",
+     "svg": "1h1qv9a"
+    },
+    {
+     "drawn": "dt+\\mathbf{A}_{F_{\\mathrm{I}}\\,F}",
+     "omml": "91myf8",
+     "svg": "1tcfay4"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1u0py7u",
+     "svg": "seb8m8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "pure/cls/hughes",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "italic",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "italic",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "pure",
+    "letters": {
+     "i": "counter",
+     "j": "counter",
+     "f": "label",
+     "e": "constant",
+     "d": "variable"
+    },
+    "notation": {
+     "preset": "hughes",
+     "overrides": {}
+    }
+   },
+   "hash": "6f6pe6",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{sf}=E\\varepsilon_{ij}+B_{max}",
+     "omml": "1nf7sf2",
+     "svg": "s6uyw3"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\mathit{\\Omega}_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "124y5ao",
+     "svg": "7l7klb"
+    },
+    {
+     "drawn": "\\alpha+\\mathit{\\Omega}+x+X+\\mathit{\\Gamma}_k",
+     "omml": "5vumv0",
+     "svg": "1bkqdb4"
+    },
+    {
+     "drawn": "\\mathbf{A}^T \\mathbf{r}_{sf}+\\mathbf{A}^T",
+     "omml": "14uar30",
+     "svg": "1yr1mvx"
+    },
+    {
+     "drawn": "\\overrightharpoon{\\mathbf{r}}_{B/N}+\\overrightharpoon{\\mathbf{\\omega}}+\\hat{e}_1",
+     "omml": "1uljmgg",
+     "svg": "1mcu42r"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\vec{\\mathbf{F}}_{\\mathrm{II}}+\\mathbf{c}^T",
+     "omml": "gw29s5",
+     "svg": "maymwa"
+    },
+    {
+     "drawn": "\\mathbf{C}_{ba}\\mathbf{J}+\\mathbf{\\omega}^{\\times}+\\vec{\\mathbf{I}}",
+     "omml": "1kjst9w",
+     "svg": "1ke7cfo"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\vec{\\mathcal{F}}_N+\\mathbf{B}",
+     "omml": "1j9fix0",
+     "svg": "sngemz"
+    },
+    {
+     "drawn": "dt+\\mathbf{C}_{F_{\\mathrm{I}}\\,F}",
+     "omml": "7mm042",
+     "svg": "pcpq82"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1u0py7u",
+     "svg": "seb8m8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "pure/cls/schaub",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "italic",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "italic",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "pure",
+    "letters": {
+     "i": "counter",
+     "j": "counter",
+     "f": "label",
+     "e": "constant",
+     "d": "variable"
+    },
+    "notation": {
+     "preset": "schaub",
+     "overrides": {}
+    }
+   },
+   "hash": "1cwnvcs",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{sf}=E\\varepsilon_{ij}+B_{max}",
+     "omml": "1nf7sf2",
+     "svg": "s6uyw3"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\mathit{\\Omega}_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "124y5ao",
+     "svg": "7l7klb"
+    },
+    {
+     "drawn": "\\alpha+\\mathit{\\Omega}+x+X+\\mathit{\\Gamma}_k",
+     "omml": "5vumv0",
+     "svg": "1bkqdb4"
+    },
+    {
+     "drawn": "\\mathbf{A}^T \\mathbf{r}_{sf}+\\mathbf{A}^T",
+     "omml": "14uar30",
+     "svg": "1yr1mvx"
+    },
+    {
+     "drawn": "{}^{B/N}\\mathbf{r}+\\boldsymbol{\\omega}+\\hat{e}_1",
+     "omml": "1uo9zk7",
+     "svg": "18e3zj5"
+    },
+    {
+     "drawn": "\\hat{f}_1^{\\mathrm{I}}+\\left\\{ \\hat{F} \\right\\}_{\\mathrm{II}}+\\mathbf{c}^T",
+     "omml": "py26ko",
+     "svg": "13s36mm"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{ba} \\right]\\left[ \\mathrm{J} \\right]+\\left[ \\tilde{\\omega} \\right]+\\mathcal{I}",
+     "omml": "18ksd5q",
+     "svg": "1as5sx1"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{T} \\right]+\\mathbf{q}+\\mathcal{N}+\\mathbf{B}",
+     "omml": "lzz41r",
+     "svg": "1kjel47"
+    },
+    {
+     "drawn": "dt+\\left[ \\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F} \\right]",
+     "omml": "jb6uq4",
+     "svg": "182dwxf"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1u0py7u",
+     "svg": "seb8m8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "pure/cls/markley",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "italic",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "italic",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "pure",
+    "letters": {
+     "i": "counter",
+     "j": "counter",
+     "f": "label",
+     "e": "constant",
+     "d": "variable"
+    },
+    "notation": {
+     "preset": "markley",
+     "overrides": {}
+    }
+   },
+   "hash": "2xriqx",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{sf}=E\\varepsilon_{ij}+B_{max}",
+     "omml": "1nf7sf2",
+     "svg": "s6uyw3"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\mathit{\\Omega}_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "124y5ao",
+     "svg": "7l7klb"
+    },
+    {
+     "drawn": "\\alpha+\\mathit{\\Omega}+x+X+\\mathit{\\Gamma}_k",
+     "omml": "5vumv0",
+     "svg": "1bkqdb4"
+    },
+    {
+     "drawn": "\\mathbf{A}^T \\mathbf{r}_{sf}+\\mathbf{A}^T",
+     "omml": "14uar30",
+     "svg": "1yr1mvx"
+    },
+    {
+     "drawn": "\\mathbf{r}_{B/N}+\\boldsymbol{\\omega}+\\hat{\\mathbf{e}}_1",
+     "omml": "mfh8gb",
+     "svg": "fc8psr"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\mathcal{F}_{\\mathrm{II}}+\\mathbf{c}^T",
+     "omml": "241yf9",
+     "svg": "dy9fmt"
+    },
+    {
+     "drawn": "\\mathbf{A}_{ba}J+\\left[ \\boldsymbol{\\omega}\\times \\right]+\\bar{\\bar{\\mathbf{I}}}",
+     "omml": "89fa29",
+     "svg": "yf52jb"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\mathcal{F}_N+\\mathbf{B}",
+     "omml": "1gy9coy",
+     "svg": "1h1qv9a"
+    },
+    {
+     "drawn": "dt+\\mathbf{A}_{F_{\\mathrm{I}}\\,F}",
+     "omml": "91myf8",
+     "svg": "1tcfay4"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1u0py7u",
+     "svg": "seb8m8"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "pure/roman/hughes",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "italic",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "italic",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "pure",
+    "letters": {
+     "I": "variable",
+     "k": "label"
+    },
+    "notation": {
+     "preset": "hughes",
+     "overrides": {}
+    }
+   },
+   "hash": "d16bc4",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{sf}=E\\varepsilon_{ij}+B_{max}",
+     "omml": "1nf7sf2",
+     "svg": "s6uyw3"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\mathit{\\Omega}_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "124y5ao",
+     "svg": "7l7klb"
+    },
+    {
+     "drawn": "\\alpha+\\mathit{\\Omega}+x+X+\\mathit{\\Gamma}_k",
+     "omml": "5vumv0",
+     "svg": "1bkqdb4"
+    },
+    {
+     "drawn": "\\mathbf{A}^T \\mathbf{r}_{sf}+\\mathbf{A}^T",
+     "omml": "14uar30",
+     "svg": "1yr1mvx"
+    },
+    {
+     "drawn": "\\overrightharpoon{\\mathbf{r}}_{B/N}+\\overrightharpoon{\\mathbf{\\omega}}+\\hat{e}_1",
+     "omml": "1uljmgg",
+     "svg": "1mcu42r"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^I+\\vec{\\mathbf{F}}_{\\mathrm{II}}+\\mathbf{c}^T",
+     "omml": "1tzbhj1",
+     "svg": "1okk4jz"
+    },
+    {
+     "drawn": "\\mathbf{C}_{ba}\\mathbf{J}+\\mathbf{\\omega}^{\\times}+\\vec{\\mathbf{I}}",
+     "omml": "1kjst9w",
+     "svg": "1ke7cfo"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\vec{\\mathcal{F}}_N+\\mathbf{B}",
+     "omml": "1j9fix0",
+     "svg": "sngemz"
+    },
+    {
+     "drawn": "dt+\\mathbf{C}_{F_I \\,F}",
+     "omml": "8xxe4g",
+     "svg": "1j7u5q2"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_I+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1ctseyi",
+     "svg": "cli4lz"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "pure/roman/schaub",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "italic",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "italic",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "pure",
+    "letters": {
+     "I": "variable",
+     "k": "label"
+    },
+    "notation": {
+     "preset": "schaub",
+     "overrides": {}
+    }
+   },
+   "hash": "yi7ytu",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{sf}=E\\varepsilon_{ij}+B_{max}",
+     "omml": "1nf7sf2",
+     "svg": "s6uyw3"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\mathit{\\Omega}_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "124y5ao",
+     "svg": "7l7klb"
+    },
+    {
+     "drawn": "\\alpha+\\mathit{\\Omega}+x+X+\\mathit{\\Gamma}_k",
+     "omml": "5vumv0",
+     "svg": "1bkqdb4"
+    },
+    {
+     "drawn": "\\mathbf{A}^T \\mathbf{r}_{sf}+\\mathbf{A}^T",
+     "omml": "14uar30",
+     "svg": "1yr1mvx"
+    },
+    {
+     "drawn": "{}^{B/N}\\mathbf{r}+\\boldsymbol{\\omega}+\\hat{e}_1",
+     "omml": "1uo9zk7",
+     "svg": "18e3zj5"
+    },
+    {
+     "drawn": "\\hat{f}_1^I+\\left\\{ \\hat{F} \\right\\}_{\\mathrm{II}}+\\mathbf{c}^T",
+     "omml": "nvro8o",
+     "svg": "1gzwyzl"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{ba} \\right]\\left[ \\mathrm{J} \\right]+\\left[ \\tilde{\\omega} \\right]+\\mathcal{I}",
+     "omml": "18ksd5q",
+     "svg": "1as5sx1"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{T} \\right]+\\mathbf{q}+\\mathcal{N}+\\mathbf{B}",
+     "omml": "lzz41r",
+     "svg": "1kjel47"
+    },
+    {
+     "drawn": "dt+\\left[ \\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F} \\right]",
+     "omml": "jb6uq4",
+     "svg": "182dwxf"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_I+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1ctseyi",
+     "svg": "cli4lz"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "pure/roman/markley",
+   "v1": {
+    "labels": "italic",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "italic",
+    "greekLower": "italic",
+    "greekUpper": "italic",
+    "differential": "italic",
+    "constants": "italic",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "italic",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "pure",
+    "letters": {
+     "I": "variable",
+     "k": "label"
+    },
+    "notation": {
+     "preset": "markley",
+     "overrides": {}
+    }
+   },
+   "hash": "aky3fp",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{sf}=E\\varepsilon_{ij}+B_{max}",
+     "omml": "1nf7sf2",
+     "svg": "s6uyw3"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\mathit{\\Omega}_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "124y5ao",
+     "svg": "7l7klb"
+    },
+    {
+     "drawn": "\\alpha+\\mathit{\\Omega}+x+X+\\mathit{\\Gamma}_k",
+     "omml": "5vumv0",
+     "svg": "1bkqdb4"
+    },
+    {
+     "drawn": "\\mathbf{A}^T \\mathbf{r}_{sf}+\\mathbf{A}^T",
+     "omml": "14uar30",
+     "svg": "1yr1mvx"
+    },
+    {
+     "drawn": "\\mathbf{r}_{B/N}+\\boldsymbol{\\omega}+\\hat{\\mathbf{e}}_1",
+     "omml": "mfh8gb",
+     "svg": "fc8psr"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^I+\\mathcal{F}_{\\mathrm{II}}+\\mathbf{c}^T",
+     "omml": "1ejc0nh",
+     "svg": "g20opy"
+    },
+    {
+     "drawn": "\\mathbf{A}_{ba}J+\\left[ \\boldsymbol{\\omega}\\times \\right]+\\bar{\\bar{\\mathbf{I}}}",
+     "omml": "89fa29",
+     "svg": "yf52jb"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\mathcal{F}_N+\\mathbf{B}",
+     "omml": "1gy9coy",
+     "svg": "1h1qv9a"
+    },
+    {
+     "drawn": "dt+\\mathbf{A}_{F_I \\,F}",
+     "omml": "1tanv96",
+     "svg": "1b17qrk"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{ij}",
+     "omml": "a6xjhe",
+     "svg": "120b8mn"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_I+F_{\\mathrm{II}}+A_{IIV}+A_{ii}+I+V",
+     "omml": "1ctseyi",
+     "svg": "cli4lz"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "chemistry/none/hughes",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "upright",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "upright",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "chemistry",
+    "letters": {},
+    "notation": {
+     "preset": "hughes",
+     "overrides": {}
+    }
+   },
+   "hash": "1e3r0zo",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=\\mathrm{E}\\varepsilon_{\\mathrm{ij}}+\\mathrm{B}_{\\mathrm{max}}",
+     "omml": "lgptci",
+     "svg": "1ipbg0o"
+    },
+    {
+     "drawn": "\\frac{\\mathrm{d}x}{\\mathrm{d}t}+\\int_0^1 f(x)\\,\\mathrm{d}x",
+     "omml": "1qle9hp",
+     "svg": "1wn8ssn"
+    },
+    {
+     "drawn": "\\mathrm{e}^{i\\mathrm{\\pi}}+1=0",
+     "omml": "v27356",
+     "svg": "lj5saa"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+\\mathrm{X}+\\Gamma_k",
+     "omml": "w14w0",
+     "svg": "s5kl15"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "\\overrightharpoon{\\mathbf{r}}_{\\mathrm{B}/\\mathrm{N}}+\\overrightharpoon{\\mathbf{\\omega}}+\\hat{e}_1",
+     "omml": "1vztofy",
+     "svg": "57g09v"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\vec{\\mathbf{F}}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "crc5m3",
+     "svg": "f9j63y"
+    },
+    {
+     "drawn": "\\mathbf{C}_{\\mathrm{ba}}\\mathbf{J}+\\mathbf{\\omega}^{\\times}+\\vec{\\mathbf{I}}",
+     "omml": "10rmjcm",
+     "svg": "smfbfw"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\vec{\\mathcal{F}}_{\\mathrm{N}}+\\mathbf{B}",
+     "omml": "17zxgey",
+     "svg": "1tlg12s"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\mathbf{C}_{\\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F}}",
+     "omml": "urjn9u",
+     "svg": "1v0bpne"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+\\mathrm{A}_{\\mathrm{ij}}",
+     "omml": "hgogsi",
+     "svg": "1erojbe"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "\\mathrm{F}_{\\mathrm{I}}+\\mathrm{F}_{\\mathrm{II}}+\\mathrm{A}_{\\mathrm{IIV}}+\\mathrm{A}_{\\mathrm{ii}}+\\mathrm{I}+\\mathrm{V}",
+     "omml": "4axhss",
+     "svg": "1739u8x"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "chemistry/none/schaub",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "upright",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "upright",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "chemistry",
+    "letters": {},
+    "notation": {
+     "preset": "schaub",
+     "overrides": {}
+    }
+   },
+   "hash": "seq9nq",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=\\mathrm{E}\\varepsilon_{\\mathrm{ij}}+\\mathrm{B}_{\\mathrm{max}}",
+     "omml": "lgptci",
+     "svg": "1ipbg0o"
+    },
+    {
+     "drawn": "\\frac{\\mathrm{d}x}{\\mathrm{d}t}+\\int_0^1 f(x)\\,\\mathrm{d}x",
+     "omml": "1qle9hp",
+     "svg": "1wn8ssn"
+    },
+    {
+     "drawn": "\\mathrm{e}^{i\\mathrm{\\pi}}+1=0",
+     "omml": "v27356",
+     "svg": "lj5saa"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+\\mathrm{X}+\\Gamma_k",
+     "omml": "w14w0",
+     "svg": "s5kl15"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "{}^{\\mathrm{B}/\\mathrm{N}}\\mathbf{r}+\\boldsymbol{\\omega}+\\hat{e}_1",
+     "omml": "zpgzq9",
+     "svg": "l7tydj"
+    },
+    {
+     "drawn": "\\hat{f}_1^{\\mathrm{I}}+\\left\\{ \\hat{F} \\right\\}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "1nf16ag",
+     "svg": "179tg3p"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{ba} \\right]\\left[ \\mathrm{J} \\right]+\\left[ \\tilde{\\omega} \\right]+\\mathcal{I}",
+     "omml": "18ksd5q",
+     "svg": "1as5sx1"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{T} \\right]+\\mathbf{q}+\\mathcal{N}+\\mathbf{B}",
+     "omml": "lzz41r",
+     "svg": "1kjel47"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\left[ \\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F} \\right]",
+     "omml": "v16uc",
+     "svg": "10u0cnk"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+\\mathrm{A}_{\\mathrm{ij}}",
+     "omml": "hgogsi",
+     "svg": "1erojbe"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "\\mathrm{F}_{\\mathrm{I}}+\\mathrm{F}_{\\mathrm{II}}+\\mathrm{A}_{\\mathrm{IIV}}+\\mathrm{A}_{\\mathrm{ii}}+\\mathrm{I}+\\mathrm{V}",
+     "omml": "4axhss",
+     "svg": "1739u8x"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "chemistry/none/markley",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "upright",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "upright",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "chemistry",
+    "letters": {},
+    "notation": {
+     "preset": "markley",
+     "overrides": {}
+    }
+   },
+   "hash": "14bydfh",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=\\mathrm{E}\\varepsilon_{\\mathrm{ij}}+\\mathrm{B}_{\\mathrm{max}}",
+     "omml": "lgptci",
+     "svg": "1ipbg0o"
+    },
+    {
+     "drawn": "\\frac{\\mathrm{d}x}{\\mathrm{d}t}+\\int_0^1 f(x)\\,\\mathrm{d}x",
+     "omml": "1qle9hp",
+     "svg": "1wn8ssn"
+    },
+    {
+     "drawn": "\\mathrm{e}^{i\\mathrm{\\pi}}+1=0",
+     "omml": "v27356",
+     "svg": "lj5saa"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+\\mathrm{X}+\\Gamma_k",
+     "omml": "w14w0",
+     "svg": "s5kl15"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "\\mathbf{r}_{\\mathrm{B}/\\mathrm{N}}+\\boldsymbol{\\omega}+\\hat{\\mathbf{e}}_1",
+     "omml": "6ko65x",
+     "svg": "rwoij5"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\mathcal{F}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "j5k0rv",
+     "svg": "1oodc4a"
+    },
+    {
+     "drawn": "\\mathbf{A}_{\\mathrm{ba}}J+\\left[ \\boldsymbol{\\omega}\\times \\right]+\\bar{\\bar{\\mathbf{I}}}",
+     "omml": "1h5p7zv",
+     "svg": "31iu2n"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\mathcal{F}_{\\mathrm{N}}+\\mathbf{B}",
+     "omml": "1fgpa88",
+     "svg": "18d911p"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\mathbf{A}_{\\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F}}",
+     "omml": "1lbqyto",
+     "svg": "hae540"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+\\mathrm{A}_{\\mathrm{ij}}",
+     "omml": "hgogsi",
+     "svg": "1erojbe"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "\\mathrm{F}_{\\mathrm{I}}+\\mathrm{F}_{\\mathrm{II}}+\\mathrm{A}_{\\mathrm{IIV}}+\\mathrm{A}_{\\mathrm{ii}}+\\mathrm{I}+\\mathrm{V}",
+     "omml": "4axhss",
+     "svg": "1739u8x"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "chemistry/cls/hughes",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "upright",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "upright",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "chemistry",
+    "letters": {
+     "i": "counter",
+     "j": "counter",
+     "f": "label",
+     "e": "constant",
+     "d": "variable"
+    },
+    "notation": {
+     "preset": "hughes",
+     "overrides": {}
+    }
+   },
+   "hash": "al7qu",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=\\mathrm{E}\\varepsilon_{ij}+\\mathrm{B}_{\\mathrm{max}}",
+     "omml": "csg6ve",
+     "svg": "skxvvc"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "\\mathrm{e}^{i\\mathrm{\\pi}}+1=0",
+     "omml": "v27356",
+     "svg": "lj5saa"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+\\mathrm{X}+\\Gamma_k",
+     "omml": "w14w0",
+     "svg": "s5kl15"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "\\overrightharpoon{\\mathbf{r}}_{\\mathrm{B}/\\mathrm{N}}+\\overrightharpoon{\\mathbf{\\omega}}+\\hat{e}_1",
+     "omml": "1vztofy",
+     "svg": "57g09v"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\vec{\\mathbf{F}}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "crc5m3",
+     "svg": "f9j63y"
+    },
+    {
+     "drawn": "\\mathbf{C}_{\\mathrm{ba}}\\mathbf{J}+\\mathbf{\\omega}^{\\times}+\\vec{\\mathbf{I}}",
+     "omml": "10rmjcm",
+     "svg": "smfbfw"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\vec{\\mathcal{F}}_{\\mathrm{N}}+\\mathbf{B}",
+     "omml": "17zxgey",
+     "svg": "1tlg12s"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\mathbf{C}_{\\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F}}",
+     "omml": "urjn9u",
+     "svg": "1v0bpne"
+    },
+    {
+     "drawn": "d=2r+x_i+v_{\\mathrm{f}}+y_t+\\mathrm{A}_{ij}",
+     "omml": "kfjr4y",
+     "svg": "vvtzkd"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "\\mathrm{F}_{\\mathrm{I}}+\\mathrm{F}_{\\mathrm{II}}+\\mathrm{A}_{\\mathrm{IIV}}+\\mathrm{A}_{ii}+\\mathrm{I}+\\mathrm{V}",
+     "omml": "1uxoc5g",
+     "svg": "1tf6yw1"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "chemistry/cls/schaub",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "upright",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "upright",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "chemistry",
+    "letters": {
+     "i": "counter",
+     "j": "counter",
+     "f": "label",
+     "e": "constant",
+     "d": "variable"
+    },
+    "notation": {
+     "preset": "schaub",
+     "overrides": {}
+    }
+   },
+   "hash": "1z6jsk",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=\\mathrm{E}\\varepsilon_{ij}+\\mathrm{B}_{\\mathrm{max}}",
+     "omml": "csg6ve",
+     "svg": "skxvvc"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "\\mathrm{e}^{i\\mathrm{\\pi}}+1=0",
+     "omml": "v27356",
+     "svg": "lj5saa"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+\\mathrm{X}+\\Gamma_k",
+     "omml": "w14w0",
+     "svg": "s5kl15"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "{}^{\\mathrm{B}/\\mathrm{N}}\\mathbf{r}+\\boldsymbol{\\omega}+\\hat{e}_1",
+     "omml": "zpgzq9",
+     "svg": "l7tydj"
+    },
+    {
+     "drawn": "\\hat{f}_1^{\\mathrm{I}}+\\left\\{ \\hat{F} \\right\\}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "1nf16ag",
+     "svg": "179tg3p"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{ba} \\right]\\left[ \\mathrm{J} \\right]+\\left[ \\tilde{\\omega} \\right]+\\mathcal{I}",
+     "omml": "18ksd5q",
+     "svg": "1as5sx1"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{T} \\right]+\\mathbf{q}+\\mathcal{N}+\\mathbf{B}",
+     "omml": "lzz41r",
+     "svg": "1kjel47"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\left[ \\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F} \\right]",
+     "omml": "v16uc",
+     "svg": "10u0cnk"
+    },
+    {
+     "drawn": "d=2r+x_i+v_{\\mathrm{f}}+y_t+\\mathrm{A}_{ij}",
+     "omml": "kfjr4y",
+     "svg": "vvtzkd"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "\\mathrm{F}_{\\mathrm{I}}+\\mathrm{F}_{\\mathrm{II}}+\\mathrm{A}_{\\mathrm{IIV}}+\\mathrm{A}_{ii}+\\mathrm{I}+\\mathrm{V}",
+     "omml": "1uxoc5g",
+     "svg": "1tf6yw1"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "chemistry/cls/markley",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "upright",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "upright",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "chemistry",
+    "letters": {
+     "i": "counter",
+     "j": "counter",
+     "f": "label",
+     "e": "constant",
+     "d": "variable"
+    },
+    "notation": {
+     "preset": "markley",
+     "overrides": {}
+    }
+   },
+   "hash": "1pe8llt",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=\\mathrm{E}\\varepsilon_{ij}+\\mathrm{B}_{\\mathrm{max}}",
+     "omml": "csg6ve",
+     "svg": "skxvvc"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "\\mathrm{e}^{i\\mathrm{\\pi}}+1=0",
+     "omml": "v27356",
+     "svg": "lj5saa"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+\\mathrm{X}+\\Gamma_k",
+     "omml": "w14w0",
+     "svg": "s5kl15"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "\\mathbf{r}_{\\mathrm{B}/\\mathrm{N}}+\\boldsymbol{\\omega}+\\hat{\\mathbf{e}}_1",
+     "omml": "6ko65x",
+     "svg": "rwoij5"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\mathcal{F}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "j5k0rv",
+     "svg": "1oodc4a"
+    },
+    {
+     "drawn": "\\mathbf{A}_{\\mathrm{ba}}J+\\left[ \\boldsymbol{\\omega}\\times \\right]+\\bar{\\bar{\\mathbf{I}}}",
+     "omml": "1h5p7zv",
+     "svg": "31iu2n"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\mathcal{F}_{\\mathrm{N}}+\\mathbf{B}",
+     "omml": "1fgpa88",
+     "svg": "18d911p"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\mathbf{A}_{\\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F}}",
+     "omml": "1lbqyto",
+     "svg": "hae540"
+    },
+    {
+     "drawn": "d=2r+x_i+v_{\\mathrm{f}}+y_t+\\mathrm{A}_{ij}",
+     "omml": "kfjr4y",
+     "svg": "vvtzkd"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "\\mathrm{F}_{\\mathrm{I}}+\\mathrm{F}_{\\mathrm{II}}+\\mathrm{A}_{\\mathrm{IIV}}+\\mathrm{A}_{ii}+\\mathrm{I}+\\mathrm{V}",
+     "omml": "1uxoc5g",
+     "svg": "1tf6yw1"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "chemistry/roman/hughes",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "upright",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "upright",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "chemistry",
+    "letters": {
+     "I": "variable",
+     "k": "label"
+    },
+    "notation": {
+     "preset": "hughes",
+     "overrides": {}
+    }
+   },
+   "hash": "lvixnw",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=\\mathrm{E}\\varepsilon_{\\mathrm{ij}}+\\mathrm{B}_{\\mathrm{max}}",
+     "omml": "lgptci",
+     "svg": "1ipbg0o"
+    },
+    {
+     "drawn": "\\frac{\\mathrm{d}x}{\\mathrm{d}t}+\\int_0^1 f(x)\\,\\mathrm{d}x",
+     "omml": "1qle9hp",
+     "svg": "1wn8ssn"
+    },
+    {
+     "drawn": "\\mathrm{e}^{i\\mathrm{\\pi}}+1=0",
+     "omml": "v27356",
+     "svg": "lj5saa"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+\\mathrm{X}+\\Gamma_{\\mathrm{k}}",
+     "omml": "1wh9f8i",
+     "svg": "1vz7yls"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "\\overrightharpoon{\\mathbf{r}}_{\\mathrm{B}/\\mathrm{N}}+\\overrightharpoon{\\mathbf{\\omega}}+\\hat{e}_1",
+     "omml": "1vztofy",
+     "svg": "57g09v"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\vec{\\mathbf{F}}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "crc5m3",
+     "svg": "f9j63y"
+    },
+    {
+     "drawn": "\\mathbf{C}_{\\mathrm{ba}}\\mathbf{J}+\\mathbf{\\omega}^{\\times}+\\vec{\\mathbf{I}}",
+     "omml": "10rmjcm",
+     "svg": "smfbfw"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\vec{\\mathcal{F}}_{\\mathrm{N}}+\\mathbf{B}",
+     "omml": "17zxgey",
+     "svg": "1tlg12s"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\mathbf{C}_{\\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F}}",
+     "omml": "urjn9u",
+     "svg": "1v0bpne"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+\\mathrm{A}_{\\mathrm{ij}}",
+     "omml": "hgogsi",
+     "svg": "1erojbe"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{\\mathrm{k}=1}^n a_{\\mathrm{k}}b_{\\mathrm{k}}+\\prod_j c_j",
+     "omml": "rdc523",
+     "svg": "1auvw29"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "\\mathrm{F}_{\\mathrm{I}}+\\mathrm{F}_{\\mathrm{II}}+\\mathrm{A}_{\\mathrm{IIV}}+\\mathrm{A}_{\\mathrm{ii}}+\\mathrm{I}+\\mathrm{V}",
+     "omml": "4axhss",
+     "svg": "1739u8x"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "chemistry/roman/schaub",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "upright",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "upright",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "chemistry",
+    "letters": {
+     "I": "variable",
+     "k": "label"
+    },
+    "notation": {
+     "preset": "schaub",
+     "overrides": {}
+    }
+   },
+   "hash": "a5cpze",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=\\mathrm{E}\\varepsilon_{\\mathrm{ij}}+\\mathrm{B}_{\\mathrm{max}}",
+     "omml": "lgptci",
+     "svg": "1ipbg0o"
+    },
+    {
+     "drawn": "\\frac{\\mathrm{d}x}{\\mathrm{d}t}+\\int_0^1 f(x)\\,\\mathrm{d}x",
+     "omml": "1qle9hp",
+     "svg": "1wn8ssn"
+    },
+    {
+     "drawn": "\\mathrm{e}^{i\\mathrm{\\pi}}+1=0",
+     "omml": "v27356",
+     "svg": "lj5saa"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+\\mathrm{X}+\\Gamma_{\\mathrm{k}}",
+     "omml": "1wh9f8i",
+     "svg": "1vz7yls"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "{}^{\\mathrm{B}/\\mathrm{N}}\\mathbf{r}+\\boldsymbol{\\omega}+\\hat{e}_1",
+     "omml": "zpgzq9",
+     "svg": "l7tydj"
+    },
+    {
+     "drawn": "\\hat{f}_1^{\\mathrm{I}}+\\left\\{ \\hat{F} \\right\\}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "1nf16ag",
+     "svg": "179tg3p"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{ba} \\right]\\left[ \\mathrm{J} \\right]+\\left[ \\tilde{\\omega} \\right]+\\mathcal{I}",
+     "omml": "18ksd5q",
+     "svg": "1as5sx1"
+    },
+    {
+     "drawn": "\\left[ \\mathrm{T} \\right]+\\mathbf{q}+\\mathcal{N}+\\mathbf{B}",
+     "omml": "lzz41r",
+     "svg": "1kjel47"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\left[ \\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F} \\right]",
+     "omml": "v16uc",
+     "svg": "10u0cnk"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+\\mathrm{A}_{\\mathrm{ij}}",
+     "omml": "hgogsi",
+     "svg": "1erojbe"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{\\mathrm{k}=1}^n a_{\\mathrm{k}}b_{\\mathrm{k}}+\\prod_j c_j",
+     "omml": "rdc523",
+     "svg": "1auvw29"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "\\mathrm{F}_{\\mathrm{I}}+\\mathrm{F}_{\\mathrm{II}}+\\mathrm{A}_{\\mathrm{IIV}}+\\mathrm{A}_{\\mathrm{ii}}+\\mathrm{I}+\\mathrm{V}",
+     "omml": "4axhss",
+     "svg": "1739u8x"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "chemistry/roman/markley",
+   "v1": {
+    "labels": "upright",
+    "counters": "italic",
+    "romans": "upright",
+    "numbers": "upright",
+    "latinLower": "italic",
+    "latinUpper": "upright",
+    "greekLower": "italic",
+    "greekUpper": "upright",
+    "differential": "upright",
+    "constants": "upright",
+    "functions": "upright",
+    "text": "upright",
+    "transpose": "upright",
+    "boldScope": "base",
+    "accentsFollowBold": false,
+    "preset": "chemistry",
+    "letters": {
+     "I": "variable",
+     "k": "label"
+    },
+    "notation": {
+     "preset": "markley",
+     "overrides": {}
+    }
+   },
+   "hash": "c0bcfx",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=\\mathrm{E}\\varepsilon_{\\mathrm{ij}}+\\mathrm{B}_{\\mathrm{max}}",
+     "omml": "lgptci",
+     "svg": "1ipbg0o"
+    },
+    {
+     "drawn": "\\frac{\\mathrm{d}x}{\\mathrm{d}t}+\\int_0^1 f(x)\\,\\mathrm{d}x",
+     "omml": "1qle9hp",
+     "svg": "1wn8ssn"
+    },
+    {
+     "drawn": "\\mathrm{e}^{i\\mathrm{\\pi}}+1=0",
+     "omml": "v27356",
+     "svg": "lj5saa"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+\\mathrm{X}+\\Gamma_{\\mathrm{k}}",
+     "omml": "1wh9f8i",
+     "svg": "1vz7yls"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "\\mathbf{r}_{\\mathrm{B}/\\mathrm{N}}+\\boldsymbol{\\omega}+\\hat{\\mathbf{e}}_1",
+     "omml": "6ko65x",
+     "svg": "rwoij5"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\mathcal{F}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "j5k0rv",
+     "svg": "1oodc4a"
+    },
+    {
+     "drawn": "\\mathbf{A}_{\\mathrm{ba}}J+\\left[ \\boldsymbol{\\omega}\\times \\right]+\\bar{\\bar{\\mathbf{I}}}",
+     "omml": "1h5p7zv",
+     "svg": "31iu2n"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\mathcal{F}_{\\mathrm{N}}+\\mathbf{B}",
+     "omml": "1fgpa88",
+     "svg": "18d911p"
+    },
+    {
+     "drawn": "\\mathrm{d}t+\\mathbf{A}_{\\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F}}",
+     "omml": "1lbqyto",
+     "svg": "hae540"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+\\mathrm{A}_{\\mathrm{ij}}",
+     "omml": "hgogsi",
+     "svg": "1erojbe"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{\\mathrm{k}=1}^n a_{\\mathrm{k}}b_{\\mathrm{k}}+\\prod_j c_j",
+     "omml": "rdc523",
+     "svg": "1auvw29"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "\\mathrm{F}_{\\mathrm{I}}+\\mathrm{F}_{\\mathrm{II}}+\\mathrm{A}_{\\mathrm{IIV}}+\\mathrm{A}_{\\mathrm{ii}}+\\mathrm{I}+\\mathrm{V}",
+     "omml": "4axhss",
+     "svg": "1739u8x"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "bold-scripts",
+   "v1": {
+    "boldScope": "scripts",
+    "labels": "upright",
+    "transpose": "bold"
+   },
+   "hash": "1o4jcs",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=E\\varepsilon_{\\mathrm{ij}}+B_{\\mathrm{max}}",
+     "omml": "ppme5m",
+     "svg": "18b3yav"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathbf{T}}\\mathbf{r}_{\\mathbf{sf}}+\\mathbf{A}^{\\mathbf{T}}",
+     "omml": "1ak90my",
+     "svg": "5hctpx"
+    },
+    {
+     "drawn": "\\overrightharpoon{\\mathbf{r}}_{\\mathrm{B}/\\mathrm{N}}+\\overrightharpoon{\\mathbf{\\omega}}+\\hat{e}_1",
+     "omml": "1vztofy",
+     "svg": "57g09v"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\vec{\\mathbf{F}}_{\\mathrm{II}}+\\mathbf{c}^{\\mathbf{T}}",
+     "omml": "163avml",
+     "svg": "1dluls6"
+    },
+    {
+     "drawn": "\\mathbf{C}_{\\mathrm{ba}}\\mathbf{J}+\\mathbf{\\omega}^{\\times}+\\vec{\\mathbf{I}}",
+     "omml": "10rmjcm",
+     "svg": "smfbfw"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\vec{\\mathcal{F}}_{\\mathrm{N}}+\\mathbf{B}",
+     "omml": "17zxgey",
+     "svg": "1tlg12s"
+    },
+    {
+     "drawn": "dt+\\mathbf{C}_{\\mathrm{F}_{\\mathrm{I}}\\,\\mathrm{F}}",
+     "omml": "1ourqsa",
+     "svg": "8lmio5"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{\\mathrm{ij}}",
+     "omml": "56gecq",
+     "svg": "1to0hvh"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_{\\boldsymbol{i}}+\\boldsymbol{\\omega}_{\\boldsymbol{b}}+\\hat{\\mathbf{n}}",
+     "omml": "psxntd",
+     "svg": "o0062s"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{\\mathrm{IIV}}+A_{\\mathrm{ii}}+I+V",
+     "omml": "7i79x8",
+     "svg": "1qyzjy6"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  },
+  {
+   "name": "romans-italic-size14",
+   "v1": {
+    "romans": "italic",
+    "sizePt": 14,
+    "numbers": "italic"
+   },
+   "hash": "c1fovv",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{sf}=E\\varepsilon_{ij}+B_{max}",
+     "omml": "1nf7sf2",
+     "svg": "s6uyw3"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_{\\mathit{0}}^{\\mathit{1}} f(x)\\,dx",
+     "omml": "5epycl",
+     "svg": "1rol4a7"
+    },
+    {
+     "drawn": "e^{i\\pi}+\\mathit{1}=\\mathit{0}",
+     "omml": "1t9lq6w",
+     "svg": "37w7jd"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{sf}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "t5a30q",
+     "svg": "1yiapv9"
+    },
+    {
+     "drawn": "\\overrightharpoon{\\mathbf{r}}_{B/N}+\\overrightharpoon{\\mathbf{\\omega}}+\\hat{e}_{\\mathit{1}}",
+     "omml": "h6gzjb",
+     "svg": "ew81zo"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_{\\mathit{1}}^I+\\vec{\\mathbf{F}}_{II}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "i14uti",
+     "svg": "mgxytk"
+    },
+    {
+     "drawn": "\\mathbf{C}_{ba}\\mathbf{J}+\\mathbf{\\omega}^{\\times}+\\vec{\\mathbf{I}}",
+     "omml": "1kjst9w",
+     "svg": "1ke7cfo"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\vec{\\mathcal{F}}_N+\\mathbf{B}",
+     "omml": "1j9fix0",
+     "svg": "sngemz"
+    },
+    {
+     "drawn": "dt+\\mathbf{C}_{F_I \\,F}",
+     "omml": "8xxe4g",
+     "svg": "1j7u5q2"
+    },
+    {
+     "drawn": "d=\\mathit{2}r+x_i+v_f+y_t+A_{ij}",
+     "omml": "7tschb",
+     "svg": "descro"
+    },
+    {
+     "drawn": "\\text{if }x>\\mathit{0},~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "5v04sc",
+     "svg": "1f5s7wf"
+    },
+    {
+     "drawn": "\\sum_{k=\\mathit{1}}^n a_k b_k+\\prod_j c_j",
+     "omml": "pdkdx8",
+     "svg": "dlvyqr"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_I+F_{II}+A_{IIV}+A_{ii}+I+V",
+     "omml": "uybsya",
+     "svg": "1fcjwwp"
+    },
+    {
+     "drawn": "\\mathit{3.5}+\\tfrac{\\mathit{1}}{\\mathit{2}}mv^{\\mathit{2}}+\\det (\\mathbf{M})",
+     "omml": "1ofzx8z",
+     "svg": "ivqoyq"
+    }
+   ]
+  },
+  {
+   "name": "dcm-own-frames",
+   "v1": {
+    "labels": "upright",
+    "notation": {
+     "preset": "hughes",
+     "overrides": {
+      "dcm": {
+       "frames": {
+        "position": "sub",
+        "separator": "",
+        "shape": "italic"
+       }
+      }
+     }
+    }
+   },
+   "hash": "quap2i",
+   "drawings": [
+    {
+     "drawn": "\\sigma_{\\mathrm{sf}}=E\\varepsilon_{\\mathrm{ij}}+B_{\\mathrm{max}}",
+     "omml": "ppme5m",
+     "svg": "18b3yav"
+    },
+    {
+     "drawn": "\\frac{dx}{dt}+\\int_0^1 f(x)\\,dx",
+     "omml": "1joep35",
+     "svg": "1xeps73"
+    },
+    {
+     "drawn": "e^{i\\pi}+1=0",
+     "omml": "d6vhde",
+     "svg": "jugqeo"
+    },
+    {
+     "drawn": "\\Omega_n+\\sin \\theta+\\cos (\\alpha t)",
+     "omml": "19s3s11",
+     "svg": "63eozv"
+    },
+    {
+     "drawn": "\\alpha+\\Omega+x+X+\\Gamma_k",
+     "omml": "nuanz6",
+     "svg": "19jq68w"
+    },
+    {
+     "drawn": "\\mathbf{A}^{\\mathrm{T}}\\mathbf{r}_{\\mathrm{sf}}+\\mathbf{A}^{\\mathrm{T}}",
+     "omml": "og25da",
+     "svg": "1wsvv0s"
+    },
+    {
+     "drawn": "\\overrightharpoon{\\mathbf{r}}_{\\mathrm{B}/\\mathrm{N}}+\\overrightharpoon{\\mathbf{\\omega}}+\\hat{e}_1",
+     "omml": "1vztofy",
+     "svg": "57g09v"
+    },
+    {
+     "drawn": "\\hat{\\mathbf{f}}_1^{\\mathrm{I}}+\\vec{\\mathbf{F}}_{\\mathrm{II}}+\\mathbf{c}^{\\mathrm{T}}",
+     "omml": "crc5m3",
+     "svg": "f9j63y"
+    },
+    {
+     "drawn": "\\mathbf{C}_{ba}\\mathbf{J}+\\mathbf{\\omega}^{\\times}+\\vec{\\mathbf{I}}",
+     "omml": "1kjst9w",
+     "svg": "1ke7cfo"
+    },
+    {
+     "drawn": "\\mathsf{T}+\\mathbf{q}+\\vec{\\mathcal{F}}_{\\mathrm{N}}+\\mathbf{B}",
+     "omml": "17zxgey",
+     "svg": "1tlg12s"
+    },
+    {
+     "drawn": "dt+\\mathbf{C}_{F_{\\mathrm{I}}\\,F}",
+     "omml": "7mm042",
+     "svg": "pcpq82"
+    },
+    {
+     "drawn": "d=2r+x_i+v_f+y_t+A_{\\mathrm{ij}}",
+     "omml": "56gecq",
+     "svg": "1to0hvh"
+    },
+    {
+     "drawn": "\\text{if }x>0,~\\mathrm{d}t+v_{\\mathit{max}}",
+     "omml": "1iag41n",
+     "svg": "1wbbxg4"
+    },
+    {
+     "drawn": "\\sum_{k=1}^n a_k b_k+\\prod_j c_j",
+     "omml": "1xshtoj",
+     "svg": "sktge8"
+    },
+    {
+     "drawn": "\\mathbf{x}_i+\\boldsymbol{\\omega}_b+\\hat{\\mathbf{n}}",
+     "omml": "scrp3f",
+     "svg": "xown8h"
+    },
+    {
+     "drawn": "F_{\\mathrm{I}}+F_{\\mathrm{II}}+A_{\\mathrm{IIV}}+A_{\\mathrm{ii}}+I+V",
+     "omml": "7i79x8",
+     "svg": "1qyzjy6"
+    },
+    {
+     "drawn": "3.5+\\tfrac{1}{2}mv^2+\\det (\\mathbf{M})",
+     "omml": "1i05psf",
+     "svg": "18skejt"
+    }
+   ]
+  }
+ ]
+}

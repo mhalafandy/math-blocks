@@ -1,4 +1,4 @@
-import { DEFAULT_STYLE, normalizeStyle, styleHash, type MathStyle, type NotationProfile, type StylePreset } from "@mathblocks/math-core";
+import { DEFAULT_STYLE, normalizeStyle, readLooks, styleHash, type MathStyle, type NotationProfile, type StylePreset } from "@mathblocks/math-core";
 import { broadcastNotation, useApp, type DocStyleState } from "./store";
 
 // Loaded when needed: the drawing code imports this module, and the connector imports the drawing code.
@@ -53,8 +53,8 @@ export function parseStyleXml(xml: string | null | undefined, fallback: MathStyl
 export function userDefaultStyle(): MathStyle {
   const s = useApp.getState();
   if (s.defaultStyle) return normalizeStyle(s.defaultStyle);
+  // The app's own settings as a v1 (flat) style, read through the migration.
   return normalizeStyle({
-    ...DEFAULT_STYLE,
     notation: s.notationProfile,
     sizePt: s.equationSizePt,
     boldScope: s.boldScope === "base" ? "base" : "scripts",
@@ -215,10 +215,7 @@ export function presetFromJson(text: string): StylePreset {
   }
   const f = o as { kind?: string; preset?: StylePreset };
   if (f.kind !== PRESET_FILE_KIND || !f.preset || typeof f.preset.name !== "string" || typeof f.preset.values !== "object") throw new Error("This file is not a MathBlocks style preset.");
-  // Only known look settings, with valid values.
-  const values = normalizeStyle(f.preset.values);
-  const keep = Object.keys(f.preset.values).filter((k) => k in values) as (keyof MathStyle)[];
-  const clean: StylePreset["values"] = {};
-  for (const k of keep) (clean as Record<string, unknown>)[k] = values[k];
+  // Only known look settings, with valid values (presets written before the kinds model read the same way).
+  const clean: StylePreset["values"] = readLooks(f.preset.values as Record<string, unknown>);
   return { id: String(f.preset.id || `user-${Date.now()}`), name: f.preset.name, description: String(f.preset.description ?? ""), values: clean };
 }

@@ -176,6 +176,17 @@ export const KIND_RULES: KindRule[] = [
     apply: (s) => outsideScripts(s, (p) => p.replace(/\\(?:mathrm|mathit)\s*\{\s*([A-Za-z])\s*\}/g, "$1")),
   },
   {
+    id: "units",
+    label: "A unit written upright or as text after a number (3\\,\\mathrm{m/s}, 5\\text{ kg}) → \\unit{m/s}",
+    auto: false,
+    suggested: true,
+    note: "Units are a kind of their own (drawn upright, a thin space after the number); check that each example is a unit.",
+    apply: (s) =>
+      outsideScripts(s, (p) =>
+        p.replace(/([0-9])\s*(?:\\[,;: ]\s*|~\s*)?\\(?:mathrm|text|textrm)\s*\{\s*([A-Za-z][A-Za-z0-9/^{}\-\\, ]*?)\s*\}/g, (all, digit: string, unit: string) => (/^(?:if|and|or|for|where|with)$/i.test(unit.trim()) ? all : `${digit}\\unit{${unit.trim().replace(/\s+/g, "\\,")}}`)),
+      ),
+  },
+  {
     id: "body-plain",
     label: "Bold B with an index (𝐁₁, a body) → plain B₁",
     auto: false,

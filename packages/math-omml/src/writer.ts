@@ -1,5 +1,5 @@
 import type { AccentKind, MathNode, MathVariant, Matrix, MatrixKind, Row } from "@mathblocks/math-core";
-import { expandNotation, isRunNode, styleAst, styleNotation, type MathStyle, type NotationProfile } from "@mathblocks/math-core";
+import { expandNotation, isRunNode, styleAst, styleNotation, looksOf, type Looks, type MathStyle, type NotationProfile } from "@mathblocks/math-core";
 import { TUNED_PROFILE, type StyleProfile } from "./style";
 import { el, NS_M, NS_W, val } from "./xml";
 
@@ -100,7 +100,7 @@ interface RunOptions {
 export function toOmml(root: Row, options: OmmlOptions = {}): string {
   const ms = options.mathStyle;
   root = ms ? expandNotation(styleAst(root, ms), styleNotation(ms)) : expandNotation(root, options.notation);
-  const w = new OmmlWriter(options.profile ?? TUNED_PROFILE, ms);
+  const w = new OmmlWriter(options.profile ?? TUNED_PROFILE, ms ? looksOf(ms) : undefined);
   const ns = options.standalone ? { "xmlns:m": NS_M, "xmlns:w": NS_W } : null;
   const math = el("m:oMath", options.display ? null : ns, w.row(root));
   if (!options.display) return math;
@@ -115,7 +115,7 @@ class OmmlWriter {
 
   constructor(
     private readonly profile: StyleProfile,
-    private readonly look?: Pick<MathStyle, "functions" | "text">,
+    private readonly look?: Pick<Looks, "functions" | "text">,
   ) {}
 
   // ------------------------------------------------------------- primitives

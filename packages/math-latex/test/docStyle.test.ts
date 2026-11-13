@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { applyPreset, DEFAULT_PROFILE, DEFAULT_STYLE, expandNotation, normalizeStyle, STYLE_PRESET_BY_ID, styleAst, styleHash, type MathStyle } from "@mathblocks/math-core";
+import { applyPreset, DEFAULT_PROFILE, DEFAULT_STYLE, expandNotation, letterRoles, looksOf, normalizeStyle, STYLE_PRESET_BY_ID, styleAst, styleHash, withLetterRoles, type MathStyle } from "@mathblocks/math-core";
 import { parseLatex, serializeLatex } from "../src";
 
 /** How the style draws an equation, written as explicit LaTeX (what the renderer receives). */
 const drawn = (latex: string, style: MathStyle) => serializeLatex(styleAst(parseLatex(latex).root, style));
-const withLooks = (v: Partial<MathStyle>): MathStyle => ({ ...DEFAULT_STYLE, ...v });
+/** A style written as a v1 (flat) style, read through the migration: every test below checks that it draws as v1 did. */
+const withLooks = (v: Record<string, unknown>): MathStyle => normalizeStyle(v);
 
 describe("document style (render time)", () => {
   it("the default style changes nothing", () => {
@@ -24,12 +25,12 @@ describe("document style (render time)", () => {
     expect(drawn("x_i+v_f+y_t", s)).toBe("x_i+v_{\\mathrm{f}}+y_t");
     // Two counters together stay counters; a word with a counter is a label.
     expect(drawn("A_{ij}", s)).toBe("A_{\\mathrm{ij}}");
-    expect(drawn("A_{ij}", { ...s, letters: { i: "counter", j: "counter" } })).toBe("A_{ij}");
+    expect(drawn("A_{ij}", withLetterRoles(s, { i: "counter", j: "counter" }))).toBe("A_{ij}");
   });
 
   it("ISO: upright d, e, i, π; e's exponent is an expression, not a label", () => {
     const iso = applyPreset(DEFAULT_STYLE, STYLE_PRESET_BY_ID.get("iso")!);
-    const isoI = { ...iso, letters: { i: "constant" as const } };
+    const isoI = withLetterRoles(iso, { i: "constant" });
     expect(drawn("\\frac{dx}{dt}", iso)).toBe("\\frac{\\mathrm{d}x}{\\mathrm{d}t}");
     expect(drawn("\\int_0^1 f(x)\\,dx", iso)).toBe("\\int_0^1 f(x)\\,\\mathrm{d}x");
     expect(drawn("e^{i\\pi}+1=0", isoI)).toBe("\\mathrm{e}^{\\mathrm{i\\pi}}+1=0");
@@ -56,9 +57,9 @@ describe("document style (render time)", () => {
 
   it("stored styles are normalised; the hash follows the look", () => {
     const s = normalizeStyle({ labels: "upright", letters: { i: "counter", q: "nonsense" }, sizePt: 500 });
-    expect(s.labels).toBe("upright");
-    expect(s.letters).toEqual({ i: "counter" });
-    expect(s.sizePt).toBe(DEFAULT_STYLE.sizePt);
+    expect(looksOf(s).labels).toBe("upright");
+    expect(letterRoles(s)).toEqual({ i: "counter" });
+    expect(s.global.sizePt).toBe(DEFAULT_STYLE.global.sizePt);
     expect(styleHash(s)).not.toBe(styleHash(DEFAULT_STYLE));
     expect(styleHash(normalizeStyle(JSON.parse(JSON.stringify(s))))).toBe(styleHash(s));
     expect(styleHash({ ...s, exceptions: ["x"] })).toBe(styleHash(s));
@@ -90,7 +91,7 @@ describe("document style (render time)", () => {
     expect(drawn("\\dcm{F_{I}}{F}", DEFAULT_STYLE)).toBe("\\dcm{F_{\\mathrm{I}}}{F}");
     expect(drawn("\\dcm{F_{II}}{F_{I}}", up)).toBe("\\dcm{\\mathrm{F}_{\\mathrm{II}}}{\\mathrm{F}_{\\mathrm{I}}}");
     // Stored styles from before keep their fingerprint (the numerals' default is left out of it).
-    expect(styleHash(normalizeStyle({ labels: "upright" }))).toBe(styleHash({ ...normalizeStyle({ labels: "upright" }), romans: "upright" }));
-    expect(styleHash({ ...DEFAULT_STYLE, romans: "italic" })).not.toBe(styleHash(DEFAULT_STYLE));
+    expect(styleHash(normalizeStyle({ labels: "upright" }))).toBe(styleHash(normalizeStyle({ labels: "upright", romans: "upright" })));
+    expect(styleHash(withLooks({ romans: "italic" }))).not.toBe(styleHash(DEFAULT_STYLE));
   });
 });

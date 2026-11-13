@@ -40,7 +40,7 @@ export async function measureWidth(latex: string, numbered: boolean): Promise<Wi
   const app = useApp.getState();
   const fonts: FontSet = await loadFonts();
   const ms = (await import("./docStyle")).activeStyle();
-  const sizePt = ms.sizePt;
+  const sizePt = ms.global.sizePt;
   // Same padding as the picture in Word.
   const opts = { fonts, style: classicStyle(), display: true, sizePt, mathStyle: ms, padding: mathTypePadding(sizePt) };
   const measure = (l: string) => renderSvg(parseLatex(l).root, opts).widthPt;

@@ -58,3 +58,15 @@ describe("notation kinds from older forms (generic examples)", () => {
     expect(by.vectrix!.examples[0]).toEqual({ before: "\\vec{\\mathbf{F}}", after: "\\vectrix{F}" });
   });
 });
+
+describe("units rule (suggested, never automatic)", () => {
+  it("turns a hand-written unit after a number into \\unit", async () => {
+    const { KIND_RULES } = await import("./kindRules");
+    const r = KIND_RULES.find((x) => x.id === "units")!;
+    expect(r.auto).toBe(false);
+    expect(r.apply("v=3\\,\\mathrm{m/s}")).toBe("v=3\\unit{m/s}");
+    expect(r.apply("m=5\\text{ kg}")).toBe("m=5\\unit{kg}");
+    expect(r.apply("x_{\\mathrm{max}}=2")).toBe("x_{\\mathrm{max}}=2");
+    expect(r.apply("1\\text{ if }x>0")).toBe("1\\text{ if }x>0");
+  });
+});

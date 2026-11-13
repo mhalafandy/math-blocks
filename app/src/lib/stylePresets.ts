@@ -1,4 +1,4 @@
-import { applyPreset, BLANK_STYLE_VALUES, presetFrom, STYLE_PRESETS, STYLE_PRESET_BY_ID, type MathStyle, type StylePreset } from "@mathblocks/math-core";
+import { applyPreset, BLANK_STYLE_VALUES, withLetterRoles, presetFrom, STYLE_PRESETS, STYLE_PRESET_BY_ID, type MathStyle, type StylePreset } from "@mathblocks/math-core";
 import { useApp } from "./store";
 import { userDefaultStyle } from "./docStyle";
 
@@ -74,7 +74,7 @@ export function deleteStyle(id: string) {
 export function setDefaultStyle(id: string): MathStyle {
   const p = allStyles().find((x) => x.id === id);
   if (!p) throw new Error("That style no longer exists.");
-  const style = { ...applyPreset(userDefaultStyle(), p), letters: {}, exceptions: [] };
+  const style = { ...withLetterRoles(applyPreset(userDefaultStyle(), p), {}), exceptions: [] };
   useApp.getState().setPrefs({ defaultStyle: style });
   return style;
 }

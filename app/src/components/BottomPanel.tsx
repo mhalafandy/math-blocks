@@ -134,7 +134,7 @@ export function StylePanel() {
   const numberStyle = useApp((s) => s.numberStyle);
   const look = useApp((s) => s.look);
   const docStyle = useApp((s) => s.docStyle);
-  const sizePt = useApp((s) => (s.docStyle?.stored ? s.docStyle.style.sizePt : s.equationSizePt));
+  const sizePt = useApp((s) => (s.docStyle?.stored ? s.docStyle.style.global.sizePt : s.equationSizePt));
   const width = useWidthMeasure();
   const convention = useApp((s) => s.spacecraftConvention);
   const scVector = useApp((s) => s.spacecraftVector);

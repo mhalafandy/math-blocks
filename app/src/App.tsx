@@ -160,7 +160,7 @@ export function App() {
       .catch(() => undefined);
     return () => off?.();
   }, []);
-  const activeSizePt = useApp((st) => (st.docStyle?.stored ? st.docStyle.style.sizePt : st.equationSizePt));
+  const activeSizePt = useApp((st) => (st.docStyle?.stored ? st.docStyle.style.global.sizePt : st.equationSizePt));
   useEffect(() => initPreviewSync(), []);
 
   const status = eq.errors > 0 ? `${eq.errors} error${eq.errors > 1 ? "s" : ""}` : eq.diagnostics.length > 0 ? `${eq.diagnostics.length} warning(s)` : "Valid";

@@ -6,8 +6,7 @@ slots with Space, and it becomes ordinary math. Blocks are for any user and any 
 and in the tests is generic.
 
 Status: **approved** (all seven recommendations in §9, plus the four additions in §10), then **amended
-for the kinds model** (docs/KINDS-MODEL.md): §6b and the changes marked *(kinds)* — the amendment awaits
-approval together with the kinds model. Blocks are built after the kinds model.
+for the kinds model** (docs/KINDS-MODEL.md): §6b and the changes marked *(kinds)* — the amendment is approved. Blocks are built after the kinds model.
 
 ---
 

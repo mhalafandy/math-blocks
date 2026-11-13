@@ -25,6 +25,30 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added — everything is a kind (docs/KINDS-MODEL.md)
+- One model for every symbol: token kinds (variable with Latin/Greek, lower/upper variants, constant,
+  function, operator, label, counter, Roman numeral, number, unit, text, transpose) and the wrapper kinds
+  (`\pvec`, `\dcm`, your own). Every symbol's look comes from its kind's style.
+- Document style v2: a kinds table, symbol rules, global settings. v1 styles (documents, your default, your
+  saved and exported styles) are read through a migration and draw exactly as before: a golden file written
+  by the previous code (57 styles × 17 equations: drawn LaTeX, Word output, SVG, style hash) is reproduced
+  exactly in CI.
+- Symbol rules per document: "e is a constant", "J is a matrix", "ω is a vector when bold", a subscripted
+  symbol (v_0), in indices or outside. The LaTeX never changes; the drawing follows. The index-letter
+  classification is kept as rules.
+- `\unit{m/s}` (upright, a thin space after a number) and explicit forms of the token kinds (`\const`,
+  `\var`, `\op`, `\lbl`, `\ctr`) for exceptions; Review kinds suggests `\unit` for hand-written units.
+- Document style page: one table of kinds (Units row new), wrapper kinds with the notation preset, and a
+  Symbols section for the document's rules.
+- Editor: hovering a letter tells its kind and why; right-click → Kind of x ▸ (this occurrence, this
+  document, every new document).
+- Check style proposes rules (a letter always bold → a vector or matrix when bold; e only as a power base →
+  a constant): Accept rule (redraws, one Ctrl+Z) or Reject (not proposed again).
+- Self-test section "Kinds model"; CI check of the hover in the real editor.
+
+### Fixed
+- The Roman-numeral sample on the Document style page had doubled backslashes.
+
 ### Blocks design; measured comparison with MathType; writing speed
 - docs/BLOCKS-DESIGN.md (for approval).
 - MathType comparison: WMF reader and MathType sample extraction (packages/mathtype), MathType's picture drawn

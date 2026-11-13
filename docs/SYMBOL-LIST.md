@@ -6,8 +6,9 @@ defined, defined but not used, and where one symbol has two meanings. Built on t
 (docs/KINDS-MODEL.md) and the symbol index (M11). Generic, for any document and field; every example here
 and in the tests is generic.
 
-Status: **design only, awaiting approval.** Decisions marked **[decide n]** are collected in §9 with my
-recommendation.
+Status: **approved** with all six recommendations in §9, and two corrections: the markers are hidden
+fields, not content controls (§2), and no example forces a look with `\mathrm`/`\mathit` (labels are drawn
+by the document style).
 
 ---
 
@@ -30,17 +31,24 @@ Written **in the text, right after the sentence that introduces the symbol**:
 
 **Index labels and abbreviations** are defined the same way **[decide 2]**:
 
-- a subscript or superscript label on an empty base: `\define{{}_{\mathrm{max}}}{maximum value}` — listed in
+- a subscript or superscript label on an empty base: `\define{{}_{max}}{maximum value}` (written plainly: the document style draws labels upright or italic) — listed in
   the "Subscripts" group as "( )_max"; `\define{{}^{\T}}{transpose}` in "Superscripts";
 - an abbreviation as upright text: `\define{\text{RMS}}{root mean square}` — listed in "Abbreviations".
 
 ## 2. Where definitions live in Word
 
 - **Convert LaTeX** turns each `\define{…}{…}[…]` into a **hidden definition marker** at the same place
-  in the paragraph (like `\mbnumbering`, but inline): a hidden run whose text is the tag itself, inside a
-  content control tagged `mbdef` **[decide 1]**. The position is the *place of definition*. The marker is
-  self-contained (copying the paragraph to another document carries it), readable when hidden text is
-  shown, and converts back to the same tag (interchange round trip).
+  in the paragraph, with **the same mechanism as the numbering markers**: a hidden field
+  (`MACROBUTTON MBDefine` followed by the tag in the field's instruction text, every run hidden). The
+  position is the *place of definition*. **No content control** (content controls caused the "wrappers
+  that grow" bug: text typed or pasted at their edge ended up inside). A field is one unit for Word:
+  text typed, pasted, cut or deleted next to it stays outside, and it cannot be half-deleted. The marker
+  is self-contained (copying the paragraph to another document carries it), readable when field codes
+  are shown, and converts back to the same tag (interchange round trip).
+- **Self-test** (Word): typing, pasting, cutting and deleting right before and right after a definition,
+  and pasting a paragraph that contains one, never changes the definition's tag, never puts text inside
+  it, and never duplicates or loses it (a copied paragraph gives a second marker only where it was
+  pasted, reported by the checks as a second definition).
 - **Define symbol…** (editor and floating editor context menu on a selected symbol, ribbon, Ctrl+K): a
   small dialog with the symbol (drawn), meaning and unit, then **where**: right after the paragraph of the
   equation being edited (default), or at Word's cursor. An existing definition of the same symbol is shown
@@ -60,9 +68,10 @@ symbol as without labels unless the definition gives the labels **[decide 3]**.
 
 **One click** — ribbon **Symbols list** and Ctrl+K "Insert / update list of symbols":
 
-- at the cursor if the document has no list yet; otherwise **at its existing place** (the list is a Word
-  table inside a content control tagged `mbsymbols`), replaced in place;
+- at the cursor if the document has no list yet; otherwise **at its existing place**, replaced in place;
 - one Ctrl+Z (the existing document-operation batching), backup first for large documents;
+- the list's place is marked the same way (a hidden `MACROBUTTON MBSymbolList` field before the table,
+  no content control); updating replaces the table that follows the marker;
 - columns: **symbol** (drawn by math-render in the document style, as a Classic picture or a native
   equation like the document's equations), **meaning** (inline math in it drawn the same way), **unit**,
   and optionally **first defined**: the number of the first numbered equation using the symbol at or
@@ -104,7 +113,7 @@ Symbols you do not want listed (a dummy index, a summation variable) can be igno
 > `\define{symbol}{meaning}[unit]` in the same paragraph (the unit is optional). The symbol is written as
 > in equations (`\pvec{\omega}`, `v_0`); the meaning is plain text and may contain `$…$`; the unit is
 > LaTeX (`[m/s]`, `[-]` for dimensionless). Define each symbol once. Index labels on an empty base
-> (`\define{{}_{\mathrm{max}}}{maximum}`) and abbreviations (`\define{\text{RMS}}{root mean square}`) are
+> (`\define{{}_{max}}{maximum}`) and abbreviations (`\define{\text{RMS}}{root mean square}`) are
 > defined the same way.
 
 Convert LaTeX's pre-flight reports malformed tags and second definitions of the same symbol.
@@ -123,7 +132,7 @@ Convert LaTeX's pre-flight reports malformed tags and second definitions of the 
 
 | # | Question | My recommendation |
 |---|---|---|
-| 1 | Marker in Word | Hidden run holding the tag, in a content control `mbdef` (self-contained, survives copy/paste, round-trips) |
+| 1 | Marker in Word | **Corrected (approved):** a hidden field like the numbering markers (`MACROBUTTON MBDefine` + the tag), no content control; self-test of edits around it |
 | 2 | Index labels and abbreviations | Same tag: empty base for sub/superscript labels, `\text{…}` for abbreviations |
 | 3 | Frame labels on wrapper kinds | Same symbol with or without labels, unless the definition itself has labels |
 | 4 | "First defined" column | Equation number (cross-reference) when the symbol is in a numbered equation after the definition, else the page; off by default |
