@@ -227,6 +227,12 @@ export function PanelApp() {
           </div>
           {info?.linked && <span className="panel-linked" title="A linked copy: applying updates every copy">⛓ {info.linked}</span>}
           <div className="spacer" data-tauri-drag-region />
+          <button className="panel-icon" title="Settings (opens in the main window)" onClick={() => void import("../lib/settingsStore").then((m) => m.openSettings())}>
+            ⚙
+          </button>
+          <button className="panel-icon" title="Word preview window: as Word gets it, true size, line width (Ctrl+Alt+P)" onClick={() => void import("../lib/previewWindow").then((m) => m.togglePreview())}>
+            ◫
+          </button>
           <button className="panel-icon" title="Word's own menu (cut, copy, paste…)" onClick={() => void send("panel:wordMenu").then(cancel)}>
             ☰
           </button>
@@ -283,19 +289,16 @@ export function PanelApp() {
                   {flyout === "collections" && <GroupFlyout row="tabs" />}
                   {flyout === "style" && (
                     <div className="form narrow">
-                      <label>
-                        Equations in Word
-                        <select value={look} onChange={(e) => app.setPrefs({ look: e.target.value as "classic" | "native" })}>
-                          <option value="classic">Classic: MathType look</option>
-                          <option value="native">Native Word equation</option>
-                        </select>
-                      </label>
-                      <button className="link-button" onClick={() => void import("./NotationSettings").then((m) => m.openNotationSettings())}>
-                        Kinds and their styles, my own kinds…
-                      </button>
+                      <p className="hint">Word style, document style, kinds, accents and every other setting are in Settings (in the main window).</p>
+                      <button onClick={() => void import("../lib/settingsStore").then((m) => m.openSettings("word"))}>Open Settings</button>
                     </div>
                   )}
-                  {flyout === "preview" && (look === "classic" ? <ClassicPreview latex={latex} display={display} sizePt={sizePt} guidePt={width?.availPt} /> : <MathPreview latex={latex} />)}
+                  {flyout === "preview" && (
+                    <div className="form narrow">
+                      {look === "classic" ? <ClassicPreview latex={latex} display={display} sizePt={sizePt} guidePt={width?.availPt} /> : <MathPreview latex={latex} />}
+                      <button onClick={() => void import("../lib/previewWindow").then((m) => m.togglePreview())}>Open the Word preview window (true size, zoom, line width) — Ctrl+Alt+P</button>
+                    </div>
+                  )}
                 </div>
               </section>
             )}

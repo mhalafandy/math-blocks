@@ -37,6 +37,18 @@
         "focus": true,
         "shadow": false,
         "transparent": true
+      },
+      {
+        "label": "preview",
+        "title": "MathBlocks — Word preview",
+        "url": "index.html?preview=1",
+        "width": 820,
+        "height": 460,
+        "minWidth": 380,
+        "minHeight": 220,
+        "visible": false,
+        "resizable": true,
+        "dragDropEnabled": false
       }
     ],
     "security": {

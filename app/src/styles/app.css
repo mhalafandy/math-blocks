@@ -808,3 +808,39 @@ html.panel-window, html.panel-window body, html.panel-window #root { height: 100
 .issue-list li.error strong { color: var(--bad); }
 .issue-list li.warning strong { color: var(--warn, #b26a00); }
 .issue-list code { display: inline-block; max-width: 100%; white-space: pre-wrap; word-break: break-word; opacity: 0.85; }
+
+
+/* ================================================================ Word preview (window, or a pane in the browser preview) */
+html.preview-window, html.preview-window body, html.preview-window #root { height: 100%; }
+html.preview-window body { background: var(--bg); }
+.preview-view { height: 100%; display: flex; flex-direction: column; color: var(--text); background: var(--surface); }
+.preview-bar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+.preview-bar .muted { color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.preview-note { padding: 4px 10px; font-size: 12px; color: var(--text-3); background: var(--surface-2); }
+.preview-canvas { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 20px; background: var(--surface-2); }
+/* The page is white in both themes: what prints. */
+.preview-page { background: #fff; color: #000; padding: 20px; box-shadow: 0 1px 3px rgb(0 0 0 / 0.15); margin: 0 auto; box-sizing: content-box; }
+.preview-line { position: relative; margin: 0 auto; }
+.preview-eq { position: absolute; top: 0; }
+.preview-eq svg { display: block; }
+.preview-guide { position: absolute; pointer-events: none; }
+.preview-guide.v { top: -14px; bottom: -14px; border-left: 1px dashed rgb(40 90 220 / 0.55); }
+.preview-guide.h { left: -14px; right: -14px; border-top: 1px dotted rgb(220 60 40 / 0.6); }
+.preview-guide-label { position: absolute; top: -18px; transform: translateX(-100%); font: 10.5px var(--font-ui); color: rgb(40 90 220); padding-right: 4px; }
+.preview-page .bad { color: #b42318; font: 12px var(--font-ui); margin: 10px 0 0; }
+.preview-pane { position: fixed; right: 20px; bottom: 40px; width: 640px; height: 340px; min-width: 320px; min-height: 180px; resize: both; overflow: hidden; z-index: 40; border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 10px 30px rgb(0 0 0 / 0.25); }
+
+/* ================================================================ Settings window */
+.settings-window { display: grid; grid-template-columns: 230px 1fr; width: min(1180px, calc(100vw - 48px)); height: min(820px, calc(100vh - 48px)); background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 18px 50px rgb(0 0 0 / 0.3); overflow: hidden; }
+.settings-side { display: flex; flex-direction: column; gap: 2px; padding: 12px 8px; background: var(--surface-2); border-right: 1px solid var(--border); overflow: auto; }
+.settings-side button { text-align: left; padding: 7px 10px; border-radius: 8px; color: var(--text-2); font-size: 13px; }
+.settings-side button:hover { background: var(--surface-3, var(--surface)); color: var(--text); }
+.settings-side button.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.settings-search { margin-bottom: 8px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.settings-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.settings-head { display: flex; align-items: center; padding: 10px 14px 6px 20px; border-bottom: 1px solid var(--border); }
+.settings-head h2 { margin: 0; font-size: 15px; }
+.settings-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 14px 20px 20px; }
+.settings-embedded > h3 { margin: 0 0 12px; font-size: 16px; }
+.settings-field { display: grid; grid-template-columns: 240px 1fr; gap: 6px 14px; align-items: center; margin: 0 0 14px; }
+.settings-field > small { grid-column: 2; }

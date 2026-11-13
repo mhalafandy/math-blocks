@@ -19,6 +19,44 @@ recording stays in the add-in and in the self-test, so a recurrence will name it
 
 ## This round
 
+**Editor and floating editor (your eight priorities).** Self-test of 0.1.126 (13 Nov, 11:36): 0 failures.
+
+1. **Right-click → floating editor** for equation objects (Word honours Cancel there); the ☰ button in the
+   floating editor shows the MathBlocks equation menu (cut, copy, paste, delete, number, copy LaTeX). Word's
+   picture-menu items remain only as the fallback for older pictures, where Word ignores Cancel. Self-test check.
+2. **Floating editor:** 900×580 by default; resize from any edge or corner; size and position remembered per
+   screen; placed below, above, right or left of the equation (the first that leaves it uncovered), or where you
+   left it on that screen if that leaves it uncovered; minimum 560×360. Placement is unit-tested; the frameless
+   resizing itself can only be tried on Windows.
+3. **Space through the slots**, Shift+Space back; after the last slot the caret leaves the structure; in \text{}
+   Space types a space; Space Space opens the palette only outside every structure; Ctrl+K anywhere. Sheet,
+   placeholder and floating-editor hint updated.
+4. **Backspace:** the cause was not only the whole-kind rule. Deleting something that fills a slot (a kind
+   inside \left(…\right), inside a root, alone in a matrix cell) is widened by the editor itself to the structure
+   around it — and, when that structure is the whole equation, to everything. The old kind rule erased the whole
+   equation at 3 of 157 caret positions in the check set. New rule: one character; a structure or kind is selected
+   first and the second Backspace deletes exactly it, the slot staying; Ctrl+Z restores. Checked in the real editor
+   at every caret position of 16 equations (157 positions), each followed by Ctrl+Z, in CI.
+5. **Editor area** follows the window and the side panels (the field was fixed at 560 px; measured 676 → 1040 →
+   1294 px as the symbols and library close).
+6. **Print check** (self-test): every palette entry inline in a sentence and as a display equation, Word's PDF
+   rendered to page images in the test folder (print/page-NNN.png) and an HTML contact sheet
+   (print/contact-sheet.html: tile, inline, display, flags). The analysis was checked here on a PDF with planted
+   defects (empty, enlarged, off the baseline, cut in half): exactly those were flagged.
+   **Square root:** rebuilt as MathType draws it — Symbol's radical with Symbol's own extender bar (same
+   thickness and height as the sign's stroke where it ends, so no step at the join); √x, √2, √(a+b) share one
+   height; the bar clears the contents' ink (a harpoon included); the index sits over the short arm. I have no
+   MathType here to put the two side by side: please compare a MathType √x with ours in Word (see below).
+7. **Word preview window** (Ctrl+Alt+P, ◫ in the main toolbar and the floating editor): the equation exactly as
+   Word gets it, true size, zoom 50–800 %, line-width and baseline guides, live as you type. The small box in the
+   Word style tab is gone (a button there opens the window).
+8. **Settings window** (⚙ in the main toolbar and the floating editor; Ctrl+K → Settings): Word style, document
+   style, notation kinds, accents, numbering, snippets and shortcuts, palette, editor behaviour, Word connection
+   and add-in, backups, updates, screenshot to LaTeX (API key), with a search. The old settings dialogs are its
+   pages; every old link opens the right page; the Word style tab left the bottom panel. Checked in the browser:
+   every page renders, the search finds settings by name, a page's own Close closes the window.
+
+
 **1c, finished (correction).** Earlier rounds said 1c was "already in place". That was wrong: the palette
 tiles were still drawn by MathLive (and plain text for symbols), and lib/tiles.ts was used only by the review
 tool. Now:
@@ -93,6 +131,18 @@ new section this round.
 
 ## What to test (next build)
 
+0. **Editor round:**
+   - right-click a Classic equation → the floating editor (no Word menu); ☰ there → cut / copy / paste / delete;
+   - resize the floating editor from an edge and a corner, close it, right-click again: same size and place
+     (unless that would cover the equation);
+   - Space through a fraction, a sum with limits, a root with an index, a 2×2 matrix; Shift+Space back;
+   - Backspace through an equation with kinds inside parentheses: nothing ever disappears at once;
+   - close the library and symbols: the editor field widens;
+   - self-test: the new section "Every palette entry … as it prints" (it takes a few minutes), then open
+     print/contact-sheet.html in the test folder and look at the flagged rows;
+   - square root: insert √x with MathType next to MathBlocks' √x in the same paragraph and compare;
+   - Ctrl+Alt+P: the preview window, zoom, guides, typing updates it;
+   - ⚙: every page; the old links (Document style → Accents…) open the right page.
 0. **Palette (1c):** the tiles should now look like what Word gets, in every palette; switch the document
    style (e.g. ISO) and watch d/dt and similar tiles change; drag a favourite; search "arrow", "gradient",
    `\alpha`; click the fraction three times for the hint. Self-test section "Palette tiles".

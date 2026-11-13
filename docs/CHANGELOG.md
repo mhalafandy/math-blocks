@@ -25,6 +25,35 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Editor and floating editor (your priorities 1–8)
+- Right-click on an equation object opens the floating editor (Word's menu suppressed); the floating editor's
+  Word-menu button shows the MathBlocks equation menu (cut, copy, paste, delete, number, copy LaTeX). Word's
+  picture-menu items stay only for older pictures. Self-test check.
+- Floating editor: 900×580 by default, resizable from any edge or corner, size and position remembered per
+  screen, never over the equation it edits when there is room; minimum 560×360.
+- Space / Shift+Space move through the slots of the structure around the caret (fraction, big operators with
+  limits, roots with an index, scripts, matrices cell by cell, accents, fences, every template), then out;
+  Space in \text{} types a space; Space Space opens the palette only outside every structure; Ctrl+K anywhere.
+- Backspace never removes more than one character: a structure or kind is selected first, the second Backspace
+  deletes exactly it (the slot stays). The cause of whole-equation erasures: deleting something that filled a
+  slot (a kind inside a fence, a root, a matrix cell) was widened by the editor to the structure around it, up
+  to the whole equation. tools/editor-keys-check.ts (CI): Space cases and Backspace at every caret position of
+  16 equations, each followed by Ctrl+Z.
+- The editor field fills the editor area and follows the window and the side panels.
+- Self-test "Every palette entry in Word, checked as it prints": every entry inline and as a display equation,
+  PDF rendered to page images, flags (not converted, empty, missing glyph, clipped, touching its neighbours, off
+  the baseline, different size), HTML contact sheet. tools/print-check-harness.ts checks the analysis on a PDF
+  with planted defects.
+- Square root as MathType draws it: Symbol's radical and its extender bar (joined without a step, the same
+  thickness), one height for short contents, clearance measured on the ink, index over the short arm.
+- Word preview window (Ctrl+Alt+P, ◫ in both windows): the equation as Word gets it, true size, zoom, line-width
+  and baseline guides, live; a pane in the browser preview.
+- Settings window (⚙ in both windows, Ctrl+K → Settings): Word style, document style, notation kinds, accents,
+  numbering, snippets, palette, editor behaviour, Word connection, backups, updates, screenshot to LaTeX, with a
+  search; the old settings dialogs are its pages and their links open the right page. The Word style tab left
+  the bottom panel.
+- \imath and \jmath (dotless i, j) are understood.
+
 ### Fixed — 1c finished: every palette tile drawn by math-render in the document style
 - Palette tiles (right panel, top palette and group buttons, floating editor, Quick access, Recent, search
   results, My notation, cheat sheet, quick-style bar) are drawn by math-render through lib/tiles.ts in the

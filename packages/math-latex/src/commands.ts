@@ -32,6 +32,8 @@ export const SYMBOLS: Record<string, SymbolDef> = {
   // Ordinary symbols
   infty: ident("∞"), partial: ident("∂"), nabla: ident("∇"), hbar: ident("ℏ"),
   ell: ident("ℓ"), Re: ident("ℜ"), Im: ident("ℑ"), aleph: ident("ℵ"), wp: ident("℘"),
+  // Dotless i and j (under accents: \hat{\imath})
+  imath: ident("ı"), jmath: ident("ȷ"),
   emptyset: ident("∅"), varnothing: ident("∅"), forall: ord("∀"), exists: ord("∃"),
   nexists: ord("∄"), neg: ord("¬"), lnot: ord("¬"), angle: ord("∠"), triangle: ord("△"),
   prime: ord("′"), degree: ord("°"), top: ord("⊤"), bot: ord("⊥"), varkappa: ident("ϰ"),

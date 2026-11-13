@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { parseLatex } from "@mathblocks/math-latex";
 import { DEFAULT_ACCENTS, MATHTYPE_ACCENTS, renderSvg, type AccentRules } from "@mathblocks/math-render";
 import { Modal } from "./Dialogs";
+import { openSettings } from "../lib/settingsStore";
 import { useApp } from "../lib/store";
 
 /**
@@ -11,7 +12,10 @@ import { useApp } from "../lib/store";
  * length — with a live preview on this PC's fonts at 12 pt and 10 pt.
  */
 export const useAccents = create<{ open: boolean; set: (o: boolean) => void }>((set) => ({ open: false, set: (open) => set({ open }) }));
-export const openAccents = () => useAccents.getState().set(true);
+export const openAccents = () => {
+  if (openSettings("accents")) return;
+  useAccents.getState().set(true);
+};
 
 /** Letters that are hard for accents: thin, wide, with ascenders, italic overhang, bold, Greek. */
 export const ACCENT_SAMPLES = "\\overrightharpoon{r}\\ \\overrightharpoon{\\omega}\\ \\vec{F}\\ \\vec{\\ell}\\ \\vec{W}\\ \\hat{\\imath}\\ \\hat{x}\\ \\bar{x}\\ \\dot{x}\\ \\ddot{x}\\ \\pvec{r}\\ \\bvec{f}_1\\ \\vectrix{F}";
@@ -76,7 +80,7 @@ export function AccentsDialog() {
     </label>
   );
   return (
-    <Modal title="Accents" onClose={() => set(false)} width={900}>
+    <Modal title="Accents" onClose={() => set(false)} width={900} page="accents">
       <div className="form">
         <p className="hint">How harpoons, arrows and the other accents sit over letters in Classic equations. Sizes are relative to MathType's (measured on its pictures).</p>
         {slider("Harpoon / arrow size (× MathType)", "size", 0.7, 1.5, 0.05, "×")}

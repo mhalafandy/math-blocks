@@ -1,16 +1,32 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, createContext, useContext } from "react";
+import { useSettings, type SettingsPage } from "../lib/settingsStore";
 import { create } from "zustand";
 import { restoreEditorFocus } from "../lib/editorFocus";
 
 /** Generic modal frame: Escape or clicking outside cancels. */
-export function Modal({ title, onClose, children, width = 440 }: { title: string; onClose: () => void; children: ReactNode; width?: number }) {
+/** True inside a settings page: a settings dialog's Modal draws its contents in place (no overlay). */
+export const ModalInline = createContext(false);
+
+export function Modal({ title, onClose, children, width = 440, page }: { title: string; onClose: () => void; children: ReactNode; width?: number; page?: SettingsPage }) {
+  const inline = useContext(ModalInline);
+  // A settings dialog lives in the settings window while it is open (its own pop-up stays hidden).
+  const inSettings = useSettings((s) => s.open) && !!page;
   useEffect(() => {
+    if (inline || inSettings) return;
     const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [onClose]);
+  }, [onClose, inline, inSettings]);
   // Closing a dialog returns the keyboard to the equation editor, caret where it was.
-  useEffect(() => () => restoreEditorFocus(), []);
+  useEffect(() => () => void (!inline && restoreEditorFocus()), [inline]);
+  if (inline)
+    return (
+      <section className="settings-embedded" aria-label={title}>
+        <h3>{title}</h3>
+        {children}
+      </section>
+    );
+  if (inSettings) return null;
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       {/* Never taller than the window: the title and the button row stay visible, the body scrolls. */}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { openSettings } from "../lib/settingsStore";
 import { create } from "zustand";
 import { Modal } from "./Dialogs";
 import { insertIntoVisual } from "./MathEditor";
@@ -11,7 +12,10 @@ export const useRecognition = create<{ open: boolean; busy: boolean; set: (s: Pa
   busy: false,
   set: (s) => set(s),
 }));
-export const openRecognitionSettings = () => useRecognition.getState().set({ open: true });
+export const openRecognitionSettings = () => {
+  if (openSettings("recognition")) return;
+  useRecognition.getState().set({ open: true });
+};
 
 export function RecognitionDialog() {
   const open = useRecognition((s) => s.open);
@@ -24,7 +28,7 @@ export function RecognitionDialog() {
     set({ open: false });
   };
   return (
-    <Modal title="Equation recognition" onClose={close} width={520}>
+    <Modal title="Equation recognition" onClose={close} width={520} page="recognition">
       <form
         className="form"
         onSubmit={(e) => {

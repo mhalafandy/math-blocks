@@ -1,4 +1,8 @@
 import { MathPreview } from "./components/MathPreview";
+import { PreviewView } from "./components/PreviewView";
+import { SettingsDialog } from "./components/SettingsDialog";
+import { openSettings, type SettingsPage } from "./lib/settingsStore";
+import { initPreviewSync, togglePreview, usePreviewPane } from "./lib/previewWindow";
 import { NotationSettings } from "./components/NotationSettings";
 import { QuickStyleBar } from "./components/QuickStyleBar";
 import { WidthBar } from "./components/WidthBar";
@@ -113,6 +117,7 @@ export function App() {
       else if (k === "l") focusLatex();
       else if (k === "b" && e.shiftKey) toggleBold();
       else if (k === "n") newEquation();
+      else if (k === "p" && e.altKey) void togglePreview();
       else if (k === "b" && e.altKey) st.setPrefs({ rightOpen: !st.rightOpen });
       else if (k === "b") st.setPrefs({ leftOpen: !st.leftOpen });
       else if (k === "j") st.setPrefs({ bottomOpen: !st.bottomOpen });
@@ -131,6 +136,29 @@ export function App() {
     window.addEventListener("paste", onPasteImage, true);
     return () => window.removeEventListener("paste", onPasteImage, true);
   }, []);
+
+  const previewOpen = usePreviewPane((p) => p.open);
+  // The floating editor's ⚙ opens the settings here (its window is too small for them).
+  useEffect(() => {
+    let off: (() => void) | undefined;
+    if (!("__TAURI_INTERNALS__" in window)) return;
+    void import("@tauri-apps/api/event")
+      .then((m) =>
+        m.listen<{ page: SettingsPage | null }>("panel:openSettings", async (e) => {
+          openSettings(e.payload.page ?? undefined);
+          const { getCurrentWindow } = await import("@tauri-apps/api/window");
+          const w = getCurrentWindow();
+          await w.unminimize();
+          await w.show();
+          await w.setFocus();
+        }),
+      )
+      .then((f) => (off = f))
+      .catch(() => undefined);
+    return () => off?.();
+  }, []);
+  const activeSizePt = useApp((st) => (st.docStyle?.stored ? st.docStyle.style.sizePt : st.equationSizePt));
+  useEffect(() => initPreviewSync(), []);
 
   const status = eq.errors > 0 ? `${eq.errors} error${eq.errors > 1 ? "s" : ""}` : eq.diagnostics.length > 0 ? `${eq.diagnostics.length} warning(s)` : "Valid";
   const showRight = s.rightOpen && s.paletteLocation === "right";
@@ -167,6 +195,12 @@ export function App() {
           </button>
         )}
         {s.update.status === "installing" && <span className="update-pill busy">Installing update…</span>}
+        <button className="icon-btn" title="Settings: Word style, document style, kinds, accents, numbering, snippets, palette, editor, Word, backups, updates" onClick={() => openSettings()}>
+          ⚙
+        </button>
+        <button className={previewOpen ? "icon-btn on" : "icon-btn"} title="Word preview: the equation as Word gets it, true size, with the line width (Ctrl+Alt+P)" onClick={() => void togglePreview()}>
+          ◫
+        </button>
         <button
           className="icon-btn"
           title={`Theme: ${s.theme} (click to change)`}
@@ -293,7 +327,7 @@ export function App() {
       <footer className="statusbar">
         <span className={eq.errors > 0 ? "bad" : "good"}>● {status}</span>
         <span>{s.numbered ? "Numbered" : s.display ? "Display" : "Inline"}</span>
-        <button className="status-btn" title="How equations go into Word (Word style tab)" onClick={() => s.setPrefs({ bottomOpen: true, bottomTab: "style" })}>
+        <button className="status-btn" title="How equations go into Word (Settings → Word style)" onClick={() => openSettings("word")}>
           {s.look === "classic" ? `Classic ${s.equationSizePt} pt` : `Native · ${profile.mathFont}`}
         </button>
         <button className="status-btn" title="Keyboard shortcuts (F1)" onClick={() => openShortcuts()}>
@@ -317,6 +351,12 @@ export function App() {
       <NotationDialog />
       <NotationSettings />
       <QuickStyleBar />
+      {previewOpen && (
+        // Browser preview (no desktop window): the Word preview as a resizable pane.
+        <div className="preview-pane">
+          <PreviewView latex={s.latex} display={s.display} numbered={s.numbered} sizePt={activeSizePt} textWidthPt={s.textWidthPt} onClose={() => usePreviewPane.getState().set(false)} />
+        </div>
+      )}
       <NomenclatureDialog />
       <ThesisDialog />
       <NormalizeBoldDialog />
@@ -330,6 +370,7 @@ export function App() {
       <CheckStyleDialog />
       <BoldGreekSheet />
       <AccentsDialog />
+      <SettingsDialog />
       <ShortcutsDialog />
       <RecognitionDialog />
       <SnippetsDialog />

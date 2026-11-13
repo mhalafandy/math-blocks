@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { openSettings } from "../lib/settingsStore";
 import { setActiveNotation, useActiveNotation } from "../lib/docStyle";
 import { create } from "zustand";
 import { isCustomKind, KIND_BY_ID, NEW_KIND_STYLE, PRESETS, presetStyle, type KindAccent, type KindStyle, type PresetId } from "@mathblocks/math-core";
@@ -19,7 +20,10 @@ export const useNotationSettings = create<{ open: boolean; kind: string | null; 
   kind: null,
   set: (open, kind = null) => set({ open, kind }),
 }));
-export const openNotationSettings = (kind: string | null = null) => useNotationSettings.getState().set(true, kind);
+export const openNotationSettings = (kind: string | null = null) => {
+  if (openSettings("kinds")) return;
+  useNotationSettings.getState().set(true, kind);
+};
 
 const OPTIONS: { key: keyof KindStyle; label: string; values: [string, string][] }[] = [
   { key: "weight", label: "Weight", values: [["regular", "Regular"], ["bold", "Bold"]] },
@@ -106,7 +110,7 @@ export function NotationSettings() {
   };
 
   return (
-    <Modal title="Notation: kinds and their styles" onClose={close} width={1040}>
+    <Modal title="Notation: kinds and their styles" onClose={close} width={1040} page="kinds">
       <div className="notation-settings">
         <div className="ns-top">
           <label>

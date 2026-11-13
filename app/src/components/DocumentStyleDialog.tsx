@@ -1,4 +1,5 @@
 import { useMemo, useRef } from "react";
+import { openSettings } from "../lib/settingsStore";
 import { create } from "zustand";
 import { convertLatexToMarkup } from "mathlive/ssr";
 import { applyPreset, expandNotation, PRESETS, presetFrom, STYLE_PRESETS, styleAst, styleLabel, styleNotation, type LetterRole, type MathStyle, type PresetId, type Shape, type StylePreset } from "@mathblocks/math-core";
@@ -31,7 +32,14 @@ interface State {
 
 export const useDocumentStyle = create<State>((set) => ({ open: false, busy: false, document: "", stored: false, draft: null, proposals: [], roles: {}, others: [], newForm: null, set: (s) => set(s) }));
 
+/** Opens the document style (in the settings window, at its page). */
 export async function openDocumentStyle() {
+  if (openSettings("docstyle")) return;
+  return openDocumentStyleHere();
+}
+
+/** Loads the document's style into the page (the settings window calls this when the page shows). */
+export async function openDocumentStyleHere() {
   const app = useApp.getState();
   const ui = useDocumentStyle.getState();
   ui.set({ open: true, busy: true, draft: null, proposals: [], roles: {}, message: undefined });
@@ -215,7 +223,7 @@ export function DocumentStyleDialog() {
       return "Style copied (Save to keep it in this document).";
     });
   return (
-    <Modal title={s.document ? `Document style — “${s.document}”` : "Document style"} onClose={close} width={860}>
+    <Modal title={s.document ? `Document style — “${s.document}”` : "Document style"} onClose={close} width={860} page="docstyle">
       <div className="form">
         {!d ? (
           <p className="hint">{s.busy ? "Reading the document…" : ""}</p>

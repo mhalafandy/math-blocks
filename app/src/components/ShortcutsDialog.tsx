@@ -139,15 +139,16 @@ export function ShortcutsDialog() {
       ) : (
       <>
       <div className="sheet-setting">
-        <label>
-          <input type="checkbox" checked={doubleSpace} onChange={(e) => useApp.getState().setPrefs({ doubleSpace: e.target.checked })} /> Space Space in the equation editor opens the
-          command palette
-        </label>
-        <label>
-          within{" "}
-          <input type="number" min={150} max={800} step={25} value={doubleSpaceMs} disabled={!doubleSpace} onChange={(e) => useApp.getState().setPrefs({ doubleSpaceMs: Math.max(150, Math.min(800, Number(e.target.value) || 300)) })} />{" "}
-          ms
-        </label>
+        <span className="hint">Space Space {doubleSpace ? `opens the command palette (within ${doubleSpaceMs} ms, outside every structure)` : "is off"}.</span>{" "}
+        <button
+          className="link-button"
+          onClick={() => {
+            set(false);
+            void import("../lib/settingsStore").then((m) => m.openSettings("editor"));
+          }}
+        >
+          Change in Settings → Editor behaviour
+        </button>
       </div>
       <div className="shortcuts">
         <section>

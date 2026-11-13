@@ -58,7 +58,8 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
     { id: "word.reference", title: "Insert reference to an equation…", group: "Word", keywords: "cross reference ref number cite eq", run: () => import("./numbering").then((m) => m.openReferencePicker()) },
     { id: "word.updateNumbers", title: "Update equation numbers and references", group: "Word", keywords: "renumber refresh fields", run: () => import("./numbering").then((m) => m.updateNumbers()) },
     { id: "edit.numbered", title: "Numbered equation (toggle)", group: "Edit", keywords: "number label tag display", run: () => app.setNumbered(!useApp.getState().numbered) },
-    { id: "view.numberStyle", title: "Equation number style…", group: "View", keywords: "format chapter brackets parentheses", run: () => app.setPrefs({ bottomOpen: true, bottomTab: "style" }) },
+    { id: "view.numberStyle", title: "Equation number style…", group: "View", keywords: "format chapter brackets parentheses", run: () => import("./settingsStore").then((m) => m.openSettings("numbering")) },
+    { id: "app.settings", title: "Settings…", group: "View", keywords: "preferences options configure word style document style kinds accents numbering snippets palette editor backups updates api key", run: () => import("./settingsStore").then((m) => m.openSettings()) },
     {
       id: "edit.template",
       title: "Use this equation with other symbols…",
@@ -276,6 +277,7 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
     { id: "edit.copyLatex", title: "Copy LaTeX", group: "Edit", run: actions.copyLatex },
     { id: "edit.focusLatex", title: "Switch to LaTeX editor", group: "Edit", shortcut: "Ctrl+L", keywords: "latex mode source", run: actions.focusLatex },
     { id: "view.left", title: "Toggle library panel", group: "View", shortcut: "Ctrl+B", keywords: "sidebar left hide show", run: () => app.setPrefs({ leftOpen: !useApp.getState().leftOpen }) },
+    { id: "view.preview", title: "Word preview window (true size, zoom, line width)", group: "View", shortcut: "Ctrl+Alt+P", keywords: "preview word picture classic true size zoom line width guides", run: () => import("./previewWindow").then((m) => m.togglePreview()) },
     { id: "view.right", title: "Toggle symbols panel", group: "View", shortcut: "Ctrl+Alt+B", keywords: "palette right hide show", run: () => app.setPrefs({ rightOpen: !useApp.getState().rightOpen }) },
     { id: "view.bottom", title: "Toggle LaTeX / details panel", group: "View", shortcut: "Ctrl+J", keywords: "bottom latex structure hide show", run: () => app.setPrefs({ bottomOpen: !useApp.getState().bottomOpen }) },
     { id: "view.focus", title: "Focus mode: hide all panels", group: "View", keywords: "zen distraction large equation space", run: () => app.setPrefs({ leftOpen: false, rightOpen: false, bottomOpen: false }) },

@@ -14,7 +14,6 @@ const TABS: { id: BottomTab; label: string }[] = [
   { id: "details", label: "Library" },
   { id: "symbols", label: "Symbol index" },
   { id: "structure", label: "Structure" },
-  { id: "style", label: "Word style" },
   { id: "omml", label: "OMML" },
 ];
 
@@ -50,7 +49,12 @@ export function BottomPanel({ eq }: { eq: CompiledEquation }) {
           {tab === "details" && <div className="scroll pad"><DetailsPanel /></div>}
           {tab === "symbols" && <div className="scroll pad"><SymbolsPanel /></div>}
           {tab === "structure" && <div className="scroll pad"><StructureTree root={eq.root} /></div>}
-          {tab === "style" && <div className="scroll pad"><StylePanel /></div>}
+          {tab === "style" && (
+            <div className="scroll pad">
+              <p className="hint">The Word style settings are in Settings now.</p>
+              <button onClick={() => void import("../lib/settingsStore").then((m) => m.openSettings("word"))}>Open Settings → Word style</button>
+            </div>
+          )}
           {tab === "omml" && <pre className="code scroll pad">{eq.omml}</pre>}
         </div>
       )}
@@ -123,7 +127,7 @@ function TreeNode({ node }: { node: MathNode }) {
 
 const FONTS = ["Cambria Math", "Latin Modern Math", "STIX Two Math", "XITS Math", "Asana Math"];
 
-function StylePanel() {
+export function StylePanel() {
   const profileBase = useApp((s) => s.profileBase);
   const mathFont = useApp((s) => s.mathFont);
   const vectorStyle = useApp((s) => s.vectorStyle);
@@ -203,7 +207,10 @@ function StylePanel() {
               ))}
             </select>
           </label>
-          <ClassicPreview latex={latex} display={display} sizePt={sizePt} guidePt={width?.availPt} />
+          <p>
+            <button onClick={() => void import("../lib/previewWindow").then((m) => m.togglePreview())}>Open the Word preview</button>{" "}
+            <span className="hint">its own window: the equation exactly as Word gets it, at true size and zoomable, with the line width (Ctrl+Alt+P)</span>
+          </p>
           <p className="hint">Classic equations use MathType's fonts and spacing (Times New Roman, Symbol) and look the same on every PC. Double-click one in Word to edit it in MathBlocks.</p>
         </>
       ) : (
@@ -242,7 +249,7 @@ function StylePanel() {
 }
 
 /** Equation numbers: format, brackets, separator, restart rule, where chapter/section numbers come from. */
-function NumberingSettings() {
+export function NumberingSettings() {
   const ns = useApp((s) => s.numberStyle);
   const setPrefs = useApp((s) => s.setPrefs);
   const set = (patch: Partial<typeof ns>) => {
