@@ -5,3 +5,5 @@ export { convertDocx, convertFlatOpc, mathTypeObjectToLatex, type FlatOpcConvert
 export { SYNTHETIC_EQUATIONS, syntheticMathTypeObject, syntheticMathTypeDocument, mathTypeRun, mathTypeDocx, styledParagraph, mathTypeBreak, numbered as mathTypeNumbered, numbered3 as mathTypeNumbered3, reference as mathTypeReference, type SyntheticEquation, type SyntheticDocument } from "./synthetic";
 export { lookalikeWarnings, dollarWarnings } from "./docx";
 export { MATHTYPE_OUTPUT_FORMS } from "./outputForms";
+export { readWmf, writeWmf, type Wmf, type WmfOp, type WmfFont } from "./wmf";
+export { mathTypeSamples, type MathTypeSample } from "./compare";

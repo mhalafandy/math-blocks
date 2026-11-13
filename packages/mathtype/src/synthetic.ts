@@ -174,7 +174,7 @@ export function syntheticMathTypeDocument(): SyntheticDocument {
  * A MathType-style .docx from paragraphs (WordprocessingML) and the MathType objects they use (object n
  * of mathTypeRun(n) is objects[n - 1]); styles: Normal, Heading 1, Heading 2, MTDisplayEquation.
  */
-export function mathTypeDocx(paragraphs: string[], objects: SyntheticEquation[]): Uint8Array {
+export function mathTypeDocx(paragraphs: string[], objects: SyntheticEquation[], pictures?: (Uint8Array | undefined)[]): Uint8Array {
   const rels = objects
     .map((_, i) => `<Relationship Id="rIdOle${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/oleObject" Target="embeddings/oleObject${i + 1}.bin"/><Relationship Id="rIdImg${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image${i + 1}.wmf"/>`)
     .join("");
@@ -193,7 +193,7 @@ export function mathTypeDocx(paragraphs: string[], objects: SyntheticEquation[])
   };
   objects.forEach((name, i) => {
     files[`word/embeddings/oleObject${i + 1}.bin`] = syntheticMathTypeObject(name);
-    files[`word/media/image${i + 1}.wmf`] = new Uint8Array([0xd7, 0xcd, 0xc6, 0x9a, 0, 0]);
+    files[`word/media/image${i + 1}.wmf`] = pictures?.[i] ?? new Uint8Array([0xd7, 0xcd, 0xc6, 0x9a, 0, 0]);
   });
   return zipSync(files);
 }

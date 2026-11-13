@@ -1343,6 +1343,53 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       check("time to draw the whole palette once (then cached until the style changes)", null, `${Math.round(ms)} ms, ${(ms / ALL_ITEMS.length).toFixed(2)} ms per tile; fonts: ${fonts.regular === fonts.math ? "STIX (Times New Roman not found)" : "Times New Roman"}${fonts.symbol ? " + Symbol" : ""}`);
     });
 
+    section = "Visual comparison with MathType (a document you choose; it stays on this PC)";
+    await step("mathtype comparison", async () => {
+      if (!(await import("./connector")).isDesktop()) return check("comparison with MathType", null, "desktop only");
+      const { open } = await import("@tauri-apps/plugin-dialog");
+      const picked = await open({ title: "Visual comparison: choose a Word document with MathType equations (Cancel to skip)", multiple: false, filters: [{ name: "Word document", extensions: ["docx", "docm"] }] });
+      if (!picked || Array.isArray(picked)) return check("comparison with MathType", null, "skipped (no document chosen)");
+      const { invoke } = await import("@tauri-apps/api/core");
+      const bytes = new Uint8Array(await invoke<ArrayBuffer>("document_read", { path: picked }));
+      const { mathTypeSamples, readWmf } = await import("@mathblocks/mathtype");
+      const { CATEGORIES, categoryOf, compareDrawings, compareReport, mathTypeSizePt, ourDrawing, wmfToSvg } = await import("./mtCompare");
+      const { loadFonts, classicStyle } = await import("./render");
+      const { activeStyle } = await import("./docStyle");
+      const fonts = await loadFonts();
+      const samples = mathTypeSamples(bytes);
+      const rows: import("./mtCompare").CompareRow[] = [];
+      const t0 = performance.now();
+      for (const sm of samples) {
+        if (!sm.latex?.trim()) {
+          rows.push({ sample: sm, category: "spacing", sizePt: null, result: null, problem: "empty equation" });
+          continue;
+        }
+        if (!sm.picture || sm.pictureType !== "wmf") {
+          rows.push({ sample: sm, category: categoryOf(sm.latex), sizePt: null, result: null, problem: `preview picture: ${sm.pictureType ?? "none"}` });
+          continue;
+        }
+        try {
+          const wmf = readWmf(sm.picture);
+          const sizePt = mathTypeSizePt(wmf, sm.heightPt) ?? activeStyle().sizePt;
+          const mt = { svg: wmfToSvg(wmf, fonts, sm.widthPt, sm.heightPt), widthPt: sm.widthPt, heightPt: sm.heightPt, depthPt: sm.depthPt };
+          const ours = ourDrawing(sm.latex, sm.display, { fonts, style: classicStyle(), mathStyle: activeStyle(), sizePt });
+          rows.push({ sample: sm, category: categoryOf(sm.latex), sizePt, result: await compareDrawings(mt, ours) });
+        } catch (e) {
+          rows.push({ sample: sm, category: categoryOf(sm.latex), sizePt: null, result: null, problem: e instanceof Error ? e.message : String(e) });
+        }
+      }
+      const scored = rows.filter((r) => r.result);
+      await smoke("writeFile", { file: "mathtype-compare/report.html", text: compareReport(rows, `MathBlocks vs MathType — ${new Date().toLocaleString()}`) });
+      check(`compared ${scored.length} of ${samples.length} MathType equation(s); report written (mathtype-compare/report.html)`, scored.length > 0 || samples.length === 0, `${Math.round((performance.now() - t0) / 1000)} s; skipped: ${rows.length - scored.length}`);
+      // Only scores here (no equations): the report with the pictures stays in the folder.
+      const mean = (l: typeof scored) => (l.length ? (l.reduce((x, r) => x + r.result!.score, 0) / l.length).toFixed(1) : "—");
+      check("overall mean difference score (0 = identical, 100 = nothing in common)", null, `${mean(scored)} over ${scored.length}`);
+      for (const c of CATEGORIES) {
+        const l = scored.filter((r) => r.category === c.id);
+        if (l.length) check(`category “${c.label}”: mean score`, null, `${mean(l)} (${l.length} equation(s); worst ${Math.max(...l.map((r) => r.result!.score))})`);
+      }
+    });
+
     section = "Saved test documents";
     const a = await step("save A", () => smoke("save", { file: "self-test A.docx" }));
     await smoke("activate", { name: docB.name });

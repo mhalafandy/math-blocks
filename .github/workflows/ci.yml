@@ -34,6 +34,8 @@ jobs:
         run: pnpm tsx tools/snippet-check.ts
       - name: Visual editor keys (Space through slots, Backspace at every caret position)
         run: pnpm tsx tools/editor-keys-check.ts
+      - name: MathType comparison harness (synthetic MathType document)
+        run: pnpm tsx tools/mt-compare-check.ts
       - name: Add-in Word-free tests (number fields, LaTeX spans, identity, read-back of the Classic insertion .docx)
         run: dotnet run --project connector-word/tests
       - name: Compile the .tex export of every notation kind under every preset (Tectonic)
