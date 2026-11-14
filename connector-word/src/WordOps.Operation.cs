@@ -383,9 +383,9 @@ namespace MathBlocks.WordConnector
                         var code = f.Code;
                         Word.Range result = null;
                         try { result = f.Result; } catch (COMException) { }
-                        int start = code.Start - 1;
-                        int end = Math.Max(code.End, result?.End ?? code.End) + 1;
-                        ranges.Add(new[] { Math.Max(0, start), end });
+                        int fieldStart = code.Start - 1;
+                        int fieldEnd = Math.Max(code.End, result?.End ?? code.End) + 1;
+                        ranges.Add(new[] { Math.Max(0, fieldStart), fieldEnd });
                     }
                     catch (COMException) { }
                 }
