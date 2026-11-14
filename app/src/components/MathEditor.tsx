@@ -1,3 +1,4 @@
+import { EDITOR_ACCENT_CSS } from "../lib/editorAccents";
 import { isAllBold, KIND_BY_ID, KINDS, setBold, type BoldScope } from "@mathblocks/math-core";
 import { explainSymbol, kindDisplayName } from "@mathblocks/math-core";
 import { symbolContextAt } from "../lib/kindHover";
@@ -625,7 +626,7 @@ export function MathEditor() {
     host.current?.addEventListener("contextmenu", onMenu, true);
     try {
       const style = document.createElement("style");
-      style.textContent = kindHintCss();
+      style.textContent = kindHintCss() + EDITOR_ACCENT_CSS;
       kindTooltip(mf);
       mf.shadowRoot?.appendChild(style);
     } catch {

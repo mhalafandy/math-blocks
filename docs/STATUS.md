@@ -61,6 +61,27 @@ checks) and with screenshots.
   ![Empty editor, 1366×768, 100 %](images/ui/empty-editor-1366x768-100.png)
   ![Empty editor, 900×600, 400 %](images/ui/empty-editor-900x600-400.png)
 
+#### 3. Accent indices, polish: harpoon the letter's width, index right after the letter — built
+
+- MathLive draws a stretchy harpoon at least 0.888 em wide and pads the letter with two 0.12 em null
+  delimiters, so the accent box was about twice the letter and the index started after the harpoon's end. The
+  editor now adds display rules to the field (`EDITOR_ACCENT_CSS` in `app/src/lib/editorAccents.ts`): for a
+  harpoon accent (kinds drawn with it and `\overrightharpoon`), no padding, the harpoon as wide as the letter
+  and 0.1 em closer above it. Display only: the LaTeX, hit-testing and editing are unchanged (round trip, keys,
+  hover, blocks and snippets checks all pass).
+- `\overrightarrow` keeps MathLive's width: its arrow is the same drawing as `\xrightarrow`'s, whose arrow must
+  stay as wide as its label; its gap (0.18 em) is reported by the check, not failed.
+- **accent-index-check** now also measures: the gap from the letter's right edge to the index ≤ a thin space
+  (3/18 em) — measured 0.02–0.17 em over all harpoon, hat, bar and kind cases; each harpoon's width within ±20 %
+  of its letter — measured 103–107 %. Without the rules the check fails 16 times (gap 0.23 em, harpoon 196 %).
+  ![Editor (app), repro](images/ui/accent-index-app-editor.png)
+  ![MathLive with the editor's rules (the check's screenshot)](images/ui/accent-index-mathlive.png)
+
+#### 4. Reference links — waiting for your self-test report
+
+When it arrives I will report the "top of the tall equation on screen" results (Word and PDF) and apply the
+`_MBEqT_` fix if either is out of view.
+
 ### Docked preview height; indices after accent-style vectors — built
 
 - **Bottom panel height:** the splitter above the tabs drags it (up to the window's height less 260 px, so the

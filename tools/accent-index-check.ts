@@ -17,6 +17,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "playwright";
+import { EDITOR_ACCENT_CSS } from "../app/src/lib/editorAccents";
 import { fromEditorLatex, toEditorLatex } from "../app/src/lib/kinds";
 
 const shots = process.argv[2];
@@ -29,6 +30,12 @@ writeFileSync(html, `<!doctype html><html><body style="margin:20px"><math-field 
 await page.goto(pathToFileURL(html).href);
 await page.waitForFunction(() => (window as unknown as { __ready?: boolean }).__ready === true, null, { timeout: 30000 });
 await page.evaluate("window.__name = (f) => f");
+// The editor's own accent display rules (as MathEditor adds them to the field's shadow root).
+await page.evaluate((css) => {
+  const st = document.createElement("style");
+  st.textContent = css;
+  (document.getElementById("mf") as unknown as { shadowRoot: ShadowRoot }).shadowRoot.appendChild(st);
+}, EDITOR_ACCENT_CSS);
 
 interface Atom {
   offset: number;
@@ -86,12 +93,25 @@ interface Vec {
 }
 
 /** Checks each vector of an equation (in order) and returns the accent widths. */
+const gaps: number[] = [];
+const ratios: number[] = [];
 async function checkCase(stored: string, vecs: Vec[]): Promise<number[]> {
+  const wantsHarpoon = /overrightharpoon|\\pvec/.test(stored);
   const editor = toEditorLatex(stored);
   const back = fromEditorLatex(editor).latex;
   if (process.env.DEBUG) console.log(stored, editor, JSON.stringify((await atoms(editor)).map((a) => [a.latex, Math.round(a.l), Math.round(a.r), Math.round(a.t), Math.round(a.b)])));
   if (back !== stored) fail(`${stored}: the stored LaTeX changes through the editor (${back})`);
   const as = await atoms(editor);
+  // The harpoons as drawn (their boxes), to compare with the letters' widths.
+  const harpoons = await page.evaluate(() =>
+    Array.from((document.getElementById("mf") as unknown as { shadowRoot: ShadowRoot }).shadowRoot.querySelectorAll('span[style*="min-width"]'))
+      .filter((e) => e.querySelector('path[d^="M0 241v40h399993"]'))
+      .map((e) => {
+        const r = e.getBoundingClientRect();
+        return { l: r.left, r: r.right, b: r.bottom };
+      }),
+  );
+  const fontPx = 48;
   let from = 0;
   const widths: number[] = [];
   let prevScriptRight = -Infinity;
@@ -126,6 +146,20 @@ async function checkCase(stored: string, vecs: Vec[]): Promise<number[]> {
     const h = base.b - base.t;
     const what = `${stored}: ${v.base}${v.sup ? "^" : "_"}{${v.script}}`;
     if (sl < right - 0.5) fail(`${what}: the index starts under the letter (index left ${sl.toFixed(1)}, letter right ${right.toFixed(1)})`);
+    // The index starts right after the letter: at most a thin space (3/18 em) from the letter's right edge.
+    const gap = sl - base.r;
+    // (\overrightarrow keeps MathLive's own width — its arrow is shared with \xrightarrow — and is only reported.)
+    if (/overrightarrow/.test(stored)) console.log(`      ${what}: gap ${(gap / fontPx).toFixed(2)} em (reported)`);
+    else if (gap > (3 / 18) * fontPx + 0.5) fail(`${what}: a gap of ${(gap / fontPx).toFixed(2)} em between the letter and its index (more than a thin space)`);
+    gaps.push(gap / fontPx);
+    // A harpoon over this letter: about the letter's width (±20 %), close above it.
+    const hp = harpoons.find((h) => (h.l + h.r) / 2 >= base.l - 4 && (h.l + h.r) / 2 <= base.r + 4);
+    if (wantsHarpoon && !hp) fail(`${what}: no harpoon found over the letter`);
+    if (hp) {
+      const ratio = (hp.r - hp.l) / (base.r - base.l);
+      ratios.push(ratio);
+      if (ratio < 0.8 || ratio > 1.2) fail(`${what}: the harpoon is ${(ratio * 100).toFixed(0)} % of the letter's width (outside ±20 %)`);
+    }
     if (v.sup) {
       if (!(st < base.t)) fail(`${what}: the superscript is not above the letter's top (${st.toFixed(1)} ≥ ${base.t.toFixed(1)})`);
       if (!(sb > base.t + 0.2 * h)) fail(`${what}: the superscript floats above the letter`);
@@ -185,4 +219,5 @@ if (failures.length) {
   console.log(`${failures.length} failure(s).`);
   process.exit(1);
 }
+console.log(`Gap letter → index: ${Math.min(...gaps).toFixed(2)}–${Math.max(...gaps).toFixed(2)} em; harpoon / letter width: ${Math.min(...ratios).toFixed(2)}–${Math.max(...ratios).toFixed(2)}.`);
 console.log(`Indices after accents in the editor: ${n} cases — each index right of its letter at the script position, harpoon width independent of the index, no overlaps in a run, stored LaTeX unchanged.`);

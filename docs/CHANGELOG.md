@@ -25,6 +25,10 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Changed — editor harpoons
+- In the visual editor a harpoon (kinds and `\overrightharpoon`) is as wide as its letter and sits closer above it;
+  the index starts right after the letter. Display only.
+
 ### Fixed — empty editor hints
 - One plain grey placeholder in the field (gone on the first keystroke) and one shortcut line below it; nothing
   drawn over the field's border or under the zoom tools.
