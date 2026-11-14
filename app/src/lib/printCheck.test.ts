@@ -58,3 +58,20 @@ describe("print check: the flags", () => {
     expect(inkBox(new Uint8ClampedArray(16).fill(255), 2, 0, 0, 2, 2)).toBeNull();
   });
 });
+
+describe("print check: no flags from measurement noise", () => {
+  const ink = (x0: number, x1: number, bottom: number, top: number) => ({ x0, x1, bottom, top });
+  it("a small dot a pixel smaller than drawn is not clipped", () => {
+    expect(flagsOf({ pdf: ink(0, 1.0, 2, 3.0), expected: ink(0, 1.33, 2, 3.33) }, { scale: 1, inline: true })).toEqual([]);
+  });
+  it("a relation sign within a point of its drawn size is not a different size", () => {
+    expect(flagsOf({ pdf: ink(0, 7.8, 1, 5.4), expected: ink(0, 7.0, 1, 4.7) }, { scale: 1, inline: true })).toEqual([]);
+  });
+  it("an inline equation within the half-point run position and a pixel is on the baseline", () => {
+    expect(flagsOf({ pdf: ink(0, 20, -2.4, 9.6), expected: ink(0, 20, -3.3, 8.7) }, { scale: 1, inline: true })).toEqual([]);
+  });
+  it("still flags an equation 2 pt off the baseline, or half of it missing", () => {
+    expect(flagsOf({ pdf: ink(0, 20, -1.3, 10.7), expected: ink(0, 20, -3.3, 8.7) }, { scale: 1, inline: true })).toContain("off the baseline");
+    expect(flagsOf({ pdf: ink(0, 10, -3.3, 8.7), expected: ink(0, 20, -3.3, 8.7) }, { scale: 1, inline: true })).toContain("clipped");
+  });
+});

@@ -88,15 +88,20 @@ export function flagsOf(m: Measured, o: { scale: number; inline: boolean }): Fla
   const ph = m.pdf.top - m.pdf.bottom;
   const ew = m.expected.x1 - m.expected.x0;
   const eh = m.expected.top - m.expected.bottom;
-  const rw = ew > 0.5 ? pw / ew : 1;
-  const rh = eh > 0.5 ? ph / eh : 1;
+  // What the measurement can resolve: the page images are 216 dpi (1 px = ⅓ pt, on each edge of both crops) and
+  // Word places an inline picture's run in half points. Below these, a difference is noise, not a defect: a
+  // small dot or a relation sign is a few pixels, so a ratio alone would call one pixel "clipped".
+  const slackPt = 1;
+  const gone = (p: number, e: number) => e * o.scale - p > Math.max(0.15 * e * o.scale, slackPt);
+  const off = (p: number, e: number) => Math.abs(p - e * o.scale) > Math.max(0.08 * e * o.scale, slackPt);
   // Part of it missing: noticeably narrower or shorter than the drawing (relative to the neighbours' size).
-  if (rw < o.scale * 0.85 || rh < o.scale * 0.85) flags.push("clipped");
+  if ((ew > 0.5 && gone(pw, ew)) || (eh > 0.5 && gone(ph, eh))) flags.push("clipped");
   // The same equation at a different size than its neighbours.
-  else if (Math.abs(rw / o.scale - 1) > 0.08 && Math.abs(rh / o.scale - 1) > 0.08) flags.push("different size");
+  else if (ew > 0.5 && eh > 0.5 && off(pw, ew) && off(ph, eh)) flags.push("different size");
   if (o.inline && m.touchesSides) flags.push("touches its neighbours");
-  // Inline: the ink's bottom where the drawing puts it relative to the baseline (within ¾ pt).
-  if (o.inline && Math.abs(m.pdf.bottom - m.expected.bottom * o.scale) > 0.75) flags.push("off the baseline");
+  // Inline: the ink's bottom where the drawing puts it relative to the baseline (half-point run position ± a
+  // pixel on each crop: 1.25 pt).
+  if (o.inline && Math.abs(m.pdf.bottom - m.expected.bottom * o.scale) > 1.25) flags.push("off the baseline");
   return flags;
 }
 

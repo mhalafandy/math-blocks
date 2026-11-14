@@ -96,9 +96,15 @@ checks) and with screenshots.
   sheet. All print correctly — relation signs, dots, bullets, fences, roots, matrices, operator names and the
   long inline equations sit on the text's baseline at the expected size. The flags ("different size" on single
   symbols, "clipped" on small dots, "off the baseline" on inline equations taller than the line) come from the
-  check's measurements, not from the printing. I will make the check stricter about what it calls a defect
-  (compare ink against the drawing's own ink box, measure the baseline from the surrounding text) and re-run
-  it on this PDF here.
+  check's measurements, not from the printing. Measured on your PDF: the inline baseline differences of all
+  446 inline entries lie between −0.5 and +0.75 pt (median 0.3 pt) — Word's half-point run position plus a
+  pixel (⅓ pt at 216 dpi) on each crop — and the check flagged anything over 0.75 pt; small symbols (dots,
+  bullets, a bar) are a few pixels, so one pixel made them "clipped" or "a different size".
+  **Fix:** the check allows what it can resolve — 1.25 pt for the baseline, and size/clipping differences only
+  when over 1 pt as well as over 8 % / 15 % — and still flags real defects (2 pt off the baseline, half missing:
+  unit tests). Re-run here on your PDF: every structure is now clean (fractions, roots, fences, matrices,
+  operators, kinds, the long equations); what is still flagged here are Symbol-font glyphs (this machine has a
+  substitute Symbol font) and four entries drawn here in a different document style than your run's.
 
 ### Docked preview height; indices after accent-style vectors — built
 
