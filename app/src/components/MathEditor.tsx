@@ -567,8 +567,8 @@ export function MathEditor() {
     mf.smartSuperscript = true;
     mf.mathVirtualKeyboardPolicy = "manual";
     mf.placeholderSymbol = "□"; // lighter than the default ▢ (styled further in app.css)
-    // Shown while the equation is empty, so it is clear where to type.
-    mf.placeholder = "\\text{Type here · Space: next slot · Ctrl+K: commands}";
+    // No MathLive placeholder: it is drawn as a selected atom. The editor shows its own plain grey one.
+    mf.placeholder = "";
     mf.className = "mathfield";
     mf.setAttribute("aria-label", "Equation editor");
     mf.value = toMathLive(useApp.getState().latex);
@@ -678,5 +678,14 @@ export function MathEditor() {
     if (mf && source !== "visual" && fromMathLive(mf.value) !== latex) mf.setValue(toMathLive(latex), { silenceNotifications: true });
   }, [latex, source]);
 
-  return <div className="math-editor" ref={host} />;
+  return (
+    <div className="math-editor">
+      <div className="math-editor-host" ref={host} />
+      {!latex.trim() && (
+        <span className="math-editor-placeholder" aria-hidden>
+          Type an equation
+        </span>
+      )}
+    </div>
+  );
 }

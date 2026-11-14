@@ -256,6 +256,62 @@ async function layoutProblems(page: Page): Promise<string[]> {
   }
 }
 
+// ------------------------------------------------------------------ the empty editor: one placeholder, one hint line
+{
+  for (const [w, h] of [[1366, 768], [900, 600]] as const)
+    for (const zoom of [0.5, 1, 2, 4]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: h } });
+      const page = await ctx.newPage();
+      await open(page);
+      await page.evaluate((z) => {
+        const key = "mathblocks.prefs.v3";
+        const p = JSON.parse(localStorage.getItem(key) ?? "{}") as Record<string, unknown>;
+        Object.assign(p, { zoom: z });
+        localStorage.setItem(key, JSON.stringify(p));
+      }, zoom);
+      await page.reload();
+      await page.waitForSelector("math-field", { timeout: 30000 });
+      await page.evaluate(() => {
+        const mf = document.querySelector("math-field") as unknown as HTMLElement & { value: string };
+        mf.value = "";
+        mf.dispatchEvent(new InputEvent("input", { bubbles: true, composed: true }));
+        mf.focus();
+      });
+      await page.waitForTimeout(500);
+      const r = await page.evaluate(() => {
+        const field = document.querySelector("math-field") as HTMLElement;
+        const f = field.getBoundingClientRect();
+        const bw = parseFloat(getComputedStyle(field).borderTopWidth) || 0;
+        const ph = document.querySelectorAll(".math-editor-placeholder");
+        const p = ph[0]?.getBoundingClientRect();
+        const hint = document.querySelectorAll(".canvas-hint");
+        const hr = hint[0]?.getBoundingClientRect();
+        const sc = document.querySelector(".canvas-scroll")!.getBoundingClientRect();
+        // MathLive's own placeholder (drawn as a selected atom) is not used.
+        const mlPlaceholder = !!field.shadowRoot?.querySelector(".ML__placeholder, [part=placeholder]:not(:empty)") && (field as unknown as { placeholder: string }).placeholder !== "";
+        const inside = !!p && p.left >= f.left + bw && p.right <= f.right - bw && p.top >= f.top + bw && p.bottom <= f.bottom - bw;
+        const below = !!hr && hr.top >= f.bottom + 8;
+        const tools = document.querySelector(".canvas-tools")!.getBoundingClientRect();
+        // The editing area (which clips what scrolls) ends above the zoom tools, so nothing is drawn under them.
+        const clearOfTools = sc.bottom <= tools.top + 0.5;
+        const hintInView = !!hr && hr.bottom <= sc.bottom + 0.5;
+        return { placeholders: ph.length, hints: hint.length, inside, below, hintInView, clearOfTools, mlPlaceholder, gap: hr ? Math.round(hr.top - f.bottom) : null };
+      });
+      const what = `empty editor ${w}×${h} at ${zoom * 100}%`;
+      check(r.placeholders === 1 && r.hints === 1 && !r.mlPlaceholder, `${what}: one plain placeholder and one hint line (no MathLive placeholder)`);
+      check(r.inside, `${what}: the placeholder is inside the field, clear of its border`);
+      check(r.below, `${what}: the shortcut line is below the field with a gap (${r.gap} px)`);
+      check(r.clearOfTools, `${what}: nothing scrolls under the zoom tools`);
+      if (w === 1366 && zoom <= 1) check(r.hintInView, `${what}: the shortcut line is in view`);
+      if (zoom === 1 || zoom === 4) await page.screenshot({ path: `${out}/empty-editor-${w}x${h}-${zoom * 100}.png` });
+      await page.keyboard.type("x");
+      await page.waitForTimeout(200);
+      const gone = await page.evaluate(() => document.querySelectorAll(".math-editor-placeholder, .canvas-hint").length === 0);
+      check(gone, `${what}: the placeholder and the hint go on the first keystroke`);
+      await ctx.close();
+    }
+}
+
 // ------------------------------------------------------------------ large equations: editor and docked preview
 const BIG = {
   wide: "E=" + Array.from({ length: 30 }, (_, i) => `a_{${i}}x^{${i}}`).join("+"),

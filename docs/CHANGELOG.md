@@ -25,6 +25,10 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed — empty editor hints
+- One plain grey placeholder in the field (gone on the first keystroke) and one shortcut line below it; nothing
+  drawn over the field's border or under the zoom tools.
+
 ### Fixed — heights always fit the window
 - The editor column (top palette, editor, bottom panel) never overflows: the editor keeps its first line, the top
   palette takes at most 35 % and scrolls, the bottom panel shrinks first. Side panels give way in narrow windows.

@@ -648,7 +648,15 @@ html.panel-window, html.panel-window body, html.panel-window #root { height: 100
 .shortcuts td:first-child { white-space: nowrap; width: 1%; }
 .autocorrect { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; align-items: center; }
 /* Empty editor hint */
-.canvas-hint { position: absolute; inset: auto 0 18% 0; text-align: center; color: var(--text-3); font-size: 13px; pointer-events: none; line-height: 1.7; }
+.canvas-hint { margin-top: 18px; text-align: center; color: var(--text-3); font: 13px/1.7 var(--font-ui); pointer-events: none; white-space: normal; max-width: 100%; }
+/* The empty editor's placeholder: plain grey text inside the field (no selection look), gone on the first keystroke. */
+.math-editor { position: relative; }
+.math-editor-host { display: contents; }
+.math-editor-placeholder {
+  /* It starts just right of the caret, which sits in the middle of the empty field. */
+  position: absolute; inset: 3px 20px 3px calc(50% + 10px); display: flex; align-items: center; justify-content: flex-start; pointer-events: none;
+  color: var(--text-3); font: 15px var(--font-ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .canvas-hint kbd { font-size: 11.5px; }
 .panel-quick { display: flex; flex-wrap: wrap; gap: 2px; padding: 0 12px 8px; }
 .panel-quick .pal-item:hover { background: var(--accent-soft); }
@@ -921,3 +929,5 @@ html.preview-window body { background: var(--bg); }
 /* The settings window: centred in the app window, as large as it allows. */
 .modal-backdrop.settings-backdrop { align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; }
 .preview-bar .link-button.on { color: var(--accent); font-weight: 600; }
+/* Without the width bar (empty editor) the zoom tools get their own row: nothing scrolls under them. */
+.canvas:not(:has(> .width-bar)) .canvas-scroll { margin-bottom: 46px; }

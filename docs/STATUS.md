@@ -46,6 +46,21 @@ checks) and with screenshots.
   ![1280×720: top palette, side panels collapsed, Preview open](images/ui/layout-1280x720-top-collapsed-preview.png)
   ![900×600, same](images/ui/layout-900x600-top-collapsed-preview.png)
 
+#### 2. Empty editor: one placeholder, one hint line — built
+
+- MathLive's placeholder is no longer used (it is drawn as an atom, so it looked selected). The field shows its
+  own plain grey "Type an equation", starting just right of the caret (which sits in the middle of the empty
+  field), clipped inside the field; it goes on the first keystroke.
+- One shortcut line below the field, in the normal flow with an 18 px gap (it can no longer be drawn over the
+  border): `x^2` `alpha` `->` typed as LaTeX · `/` or Ctrl F fraction · Ctrl R root · … · F1 shortcuts. The old
+  absolutely-placed "Type an equation: …" line is gone. Without the width bar, the zoom tools get their own row,
+  so nothing scrolls under them.
+- ui-check, 1366×768 and 900×600 at 50/100/200/400 %: exactly one placeholder and one hint, no MathLive
+  placeholder; the placeholder inside the field clear of its border; the hint below the field with a gap;
+  nothing under the zoom tools; both gone after typing a key. All pass.
+  ![Empty editor, 1366×768, 100 %](images/ui/empty-editor-1366x768-100.png)
+  ![Empty editor, 900×600, 400 %](images/ui/empty-editor-900x600-400.png)
+
 ### Docked preview height; indices after accent-style vectors — built
 
 - **Bottom panel height:** the splitter above the tabs drags it (up to the window's height less 260 px, so the
