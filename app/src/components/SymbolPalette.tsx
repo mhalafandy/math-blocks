@@ -323,6 +323,7 @@ export function PaletteTop() {
   const recents = useApp((s) => s.recents);
   const tab = useApp((s) => s.paletteTab);
   const setPrefs = useApp((s) => s.setPrefs);
+  const collapsed = useApp((s) => s.paletteCollapsed);
   const close = () => {
     setOpenId(null);
     setQuery("");
@@ -340,43 +341,71 @@ export function PaletteTop() {
   else if (openGroup) popover = <Grid items={groupItems(openGroup)} size={sizeOf(openGroup)} />;
 
   return (
-    <div className="palette-top" ref={ref}>
-      {rows.map((row) => (
-        <div key={row} className="pal-row">
-          {GROUPS.filter((g) => g.row === row).map((g) => (
-            <DropdownButton key={g.id} group={g} open={openId === g.id} onToggle={() => setOpenId(openId === g.id ? null : g.id)} />
-          ))}
+    <div className={collapsed ? "palette-top collapsed" : "palette-top"} ref={ref}>
+      <div className="palette-top-scroll">
+        <div className="palette-top-content">
+          {!collapsed &&
+            rows.map((row) => (
+              <div key={row} className="pal-row">
+                {GROUPS.filter((g) => g.row === row).map((g) => (
+                  <DropdownButton key={g.id} group={g} open={openId === g.id} onToggle={() => setOpenId(openId === g.id ? null : g.id)} />
+                ))}
+              </div>
+            ))}
+          <div className="pal-row quick">
+            <QuickAccess />
+            <div className="spacer" />
+            <SearchBox query={query} setQuery={(q) => { setQuery(q); setOpenId(null); }} />
+            <button
+              type="button"
+              className="icon-btn pal-collapse"
+              title={collapsed ? "Show the whole palette" : "Collapse the palette to the Quick access row"}
+              aria-expanded={!collapsed}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                close();
+                setPrefs({ paletteCollapsed: !collapsed });
+              }}
+            >
+              {collapsed ? "▾" : "▴"}
+            </button>
+          </div>
+          {!collapsed && (
+            <div className="pal-tabs" role="tablist">
+              {[{ id: "recent", label: "Recent" }, ...tabs].map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === t.id}
+                  className={tab === t.id ? "active" : undefined}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => setPrefs({ paletteTab: tab === t.id ? null : t.id })}
+                >
+                  {t.label}
+                </button>
+              ))}
+              <div className="spacer" />
+              <LocationToggle />
+            </div>
+          )}
+          {!collapsed && tab && (
+            <div className="pal-tab-body">
+              {tabItems.length === 0 ? <p className="empty">Symbols you insert will appear here.</p> : <Grid items={tabItems} size={tab === "recent" ? "small" : "large"} />}
+            </div>
+          )}
         </div>
-      ))}
-      <div className="pal-row quick">
-        <QuickAccess />
-        <div className="spacer" />
-        <SearchBox query={query} setQuery={(q) => { setQuery(q); setOpenId(null); }} />
       </div>
-      <div className="pal-tabs" role="tablist">
-        {[{ id: "recent", label: "Recent" }, ...tabs].map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === t.id}
-            className={tab === t.id ? "active" : undefined}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => setPrefs({ paletteTab: tab === t.id ? null : t.id })}
-          >
-            {t.label}
-          </button>
-        ))}
-        <div className="spacer" />
-        <LocationToggle />
-      </div>
-      {tab && (
-        <div className="pal-tab-body">
-          {tabItems.length === 0 ? <p className="empty">Symbols you insert will appear here.</p> : <Grid items={tabItems} size={tab === "recent" ? "small" : "large"} />}
-        </div>
-      )}
       {popover && (
-        <div className="pal-popover" role="dialog" aria-label={openGroup?.label ?? "Search results"}>
+        <div
+          className="pal-popover"
+          role="dialog"
+          aria-label={openGroup?.label ?? "Search results"}
+          // A drop-down closes once something from it is inserted (a click on one of its items).
+          onClick={(e) => {
+            if ((e.target as HTMLElement).closest("button")) close();
+          }}
+        >
           {openGroup && !query && <div className="pal-popover-title">{openGroup.label}</div>}
           {popover}
         </div>

@@ -55,6 +55,8 @@ interface Prefs {
   vectorStyle: VectorStyle;
   /** Where the symbol palette lives (user can switch). */
   paletteLocation: "right" | "top";
+  /** The top palette collapsed to its Quick access row. */
+  paletteCollapsed: boolean;
   /** Pinned palette items (keys from palette.ts). */
   favorites: string[];
   /** Recently inserted palette items, newest first (at most 16, one per LaTeX). */
@@ -185,6 +187,7 @@ const DEFAULT_PREFS: Prefs = {
   mathFont: "Latin Modern Math",
   vectorStyle: "arrow",
   paletteLocation: "right",
+  paletteCollapsed: false,
   favorites: DEFAULT_FAVORITES,
   recents: [],
   paletteUse: {},

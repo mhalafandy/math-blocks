@@ -147,6 +147,115 @@ async function previewFits(page: Page, margin = 0) {
   }, margin);
 }
 
+// ------------------------------------------------------------------ heights always fit the window
+/** Every region of the window; none may intersect, the status bar is never overlapped, the equation box shows. */
+async function layoutProblems(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const out: string[] = [];
+    const sel: Record<string, string> = { topbar: ".topbar", sidebar: ".sidebar", symbols: ".symbol-panel", palette: ".palette-top", editor: ".canvas", splitter: ".hsplitter", bottom: ".bottom-panel", status: ".statusbar" };
+    const rects: [string, DOMRect][] = [];
+    for (const [name, q] of Object.entries(sel)) {
+      const el = document.querySelector(q);
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) rects.push([name, r]);
+    }
+    for (let i = 0; i < rects.length; i++)
+      for (let j = i + 1; j < rects.length; j++) {
+        const [a, ra] = rects[i]!;
+        const [b, rb] = rects[j]!;
+        const w = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left);
+        const h = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top);
+        if (w > 0.5 && h > 0.5) out.push(`${a} and ${b} overlap (${Math.round(w)}×${Math.round(h)} px)`);
+      }
+    const status = document.querySelector(".statusbar")!.getBoundingClientRect();
+    if (status.bottom > window.innerHeight + 0.5) out.push(`the status bar is below the window (${Math.round(status.bottom)} > ${window.innerHeight})`);
+    // Nothing of the panel's content is drawn over the status bar (content is clipped to the panel).
+    for (const q of [".bottom-panel", ".panel-body", ".preview-view", ".canvas", ".palette-top"]) {
+      const el = document.querySelector(q);
+      if (el && el.getBoundingClientRect().height > 0 && el.getBoundingClientRect().bottom > status.top + 0.5) out.push(`${q} runs under the status bar`);
+    }
+    const sc = document.querySelector(".canvas-scroll")!.getBoundingClientRect();
+    const field = document.querySelector("math-field")!.getBoundingClientRect();
+    if (field.top < sc.top - 0.5 || field.bottom > sc.bottom + 0.5 || field.left < sc.left - 0.5 || field.right > sc.right + 0.5)
+      out.push(`the equation box is cut off (box ${Math.round(field.top)}–${Math.round(field.bottom)}, area ${Math.round(sc.top)}–${Math.round(sc.bottom)})`);
+    return out;
+  });
+}
+{
+  const LAYOUT_SIZES: [string, number, number, number][] = [
+    ["1280x720", 1280, 720, 1],
+    ["1920x1080 at 150%", 1280, 720, 1.5],
+    ["1366x768", 1366, 768, 1],
+    ["1093x614", 1093, 614, 1],
+    ["900x600", 900, 600, 1],
+  ];
+  for (const [label, w, h, dpr] of LAYOUT_SIZES) {
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: dpr });
+    const page = await ctx.newPage();
+    await open(page);
+    for (const location of ["top", "right"] as const)
+      for (const sides of [false, true])
+        for (const preview of [true, false]) {
+          await page.evaluate(
+            ([loc, sd, pv]) => {
+              const key = "mathblocks.prefs.v3";
+              const p = JSON.parse(localStorage.getItem(key) ?? "{}") as Record<string, unknown>;
+              Object.assign(p, { paletteLocation: loc, paletteTab: "tab-spacecraft", paletteCollapsed: false, leftOpen: sd, rightOpen: sd || loc === "right", bottomOpen: pv, bottomTab: "preview", bottomHeight: 280 });
+              localStorage.setItem(key, JSON.stringify(p));
+            },
+            [location, sides, preview] as const,
+          );
+          await page.reload();
+          await page.waitForSelector("math-field", { timeout: 30000 });
+          await page.evaluate(() => {
+            const mf = document.querySelector("math-field") as unknown as HTMLElement & { value: string };
+            mf.value = "\\class{nk-pvec}{{\\overrightharpoon{\\mathbf{r}}}_{P/O}}=\\hat{x}_{i}^{2}+\\bar{y}_{max}";
+            mf.dispatchEvent(new InputEvent("input", { bubbles: true, composed: true }));
+          });
+          await page.waitForTimeout(700);
+          const what = `layout ${label}, symbols ${location}, side panels ${sides ? "shown" : "collapsed"}, Preview ${preview ? "open" : "closed"}`;
+          const problems = await layoutProblems(page);
+          check(problems.length === 0, `${what}: regions fit${problems.length ? ` — ${problems.join("; ")}` : ""}`);
+          if (location === "top" && !sides && preview) await page.screenshot({ path: `${out}/layout-${label.replace(/[^0-9a-z]+/gi, "-")}-top-collapsed-preview.png` });
+        }
+    // The palette collapses to its Quick access row (remembered).
+    await page.evaluate(() => {
+      const key = "mathblocks.prefs.v3";
+      const p = JSON.parse(localStorage.getItem(key) ?? "{}") as Record<string, unknown>;
+      Object.assign(p, { paletteLocation: "top", leftOpen: false, rightOpen: false, bottomOpen: true, bottomTab: "preview" });
+      localStorage.setItem(key, JSON.stringify(p));
+    });
+    await page.reload();
+    await page.waitForSelector("math-field", { timeout: 30000 });
+    const full = (await page.locator(".palette-top").boundingBox())!.height;
+    await page.locator(".pal-collapse").click();
+    await page.waitForTimeout(300);
+    const small = (await page.locator(".palette-top").boundingBox())!.height;
+    await page.reload();
+    await page.waitForSelector("math-field", { timeout: 30000 });
+    const kept = await page.locator(".pal-row:not(.quick)").count();
+    check(small < full - 30 && kept === 0, `layout ${label}: the top palette collapses to its Quick access row (${Math.round(full)} → ${Math.round(small)} px) and stays collapsed after a reload`);
+    const problems = await layoutProblems(page);
+    check(problems.length === 0, `layout ${label}, palette collapsed: regions fit${problems.length ? ` — ${problems.join("; ")}` : ""}`);
+    await page.locator(".pal-collapse").click();
+    // Drop-downs close on Esc, on an outside click and after inserting.
+    const dd = page.locator(".pal-group").first();
+    await dd.click();
+    const opened = await page.locator(".pal-popover").count();
+    await page.keyboard.press("Escape");
+    const afterEsc = await page.locator(".pal-popover").count();
+    await dd.click();
+    await page.mouse.click(5, h - 60);
+    const afterOutside = await page.locator(".pal-popover").count();
+    await dd.click();
+    await page.locator(".pal-popover button").first().click();
+    const afterInsert = await page.locator(".pal-popover").count();
+    check(opened === 1 && afterEsc === 0 && afterOutside === 0 && afterInsert === 0, `layout ${label}: a palette drop-down closes on Esc (${afterEsc === 0}), an outside click (${afterOutside === 0}) and after inserting (${afterInsert === 0})`);
+    await ctx.close();
+  }
+}
+
 // ------------------------------------------------------------------ large equations: editor and docked preview
 const BIG = {
   wide: "E=" + Array.from({ length: 30 }, (_, i) => `a_{${i}}x^{${i}}`).join("+"),

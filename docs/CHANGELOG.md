@@ -25,6 +25,11 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed — heights always fit the window
+- The editor column (top palette, editor, bottom panel) never overflows: the editor keeps its first line, the top
+  palette takes at most 35 % and scrolls, the bottom panel shrinks first. Side panels give way in narrow windows.
+  The top palette collapses to its Quick access row (remembered); drop-downs close after inserting.
+
 ### Changed — docked preview height; indices after accent-style vectors
 - The bottom panel's splitter drags its height (remembered; default 280 px). Fit in the docked preview fits width
   and height and keeps fitting while the panel is resized.

@@ -23,6 +23,29 @@ recording stays in the add-in and in the self-test, so a recurrence will name it
 order, then MathType parity. Each item below is checked in the browser by `tools/ui-check.ts` (now in CI: 222
 checks) and with screenshots.
 
+### Round after 0.1.142 (your status read: accepted). Items in your order:
+
+#### 1. Heights always fit the window — built
+
+- **The cause:** the editor column's rows were "palette (natural height), editor (at least 140 px), bottom panel
+  (its stored height)", so a tall top palette plus the bottom panel added up to more than the window; the column
+  overflowed under the status bar. Also, the columns (250 + 360 + 360 px minimum) were wider than a 900 px window.
+- **Now** (`app/src/lib/workspaceFit.ts`, measured on every resize): the editor comes first, with a minimum that
+  shows its whole first line (accents and indices; it scales with the zoom); the top palette takes at most 35 %
+  of the column and scrolls inside; the bottom panel takes what is left. When room runs out, the bottom panel
+  shrinks first, down to its tab strip, then the palette. Your stored panel height is kept and comes back when
+  the window grows; the splitter stops at what fits. Side panels give way in narrow windows (the editor keeps
+  440 px; panels down to 160 / 220 px). Panel content is clipped to its panel, so nothing is drawn over the status bar.
+- **Top palette:** collapses to its Quick access row (▴ at the end of the row; remembered); drop-downs close on
+  Esc, an outside click and after inserting; a drop-down is at most 60 % of the window high.
+- **ui-check:** palette top and right × side panels shown/collapsed × Preview open/closed at 1280×720, 1920×1080
+  at 150 %, 1366×768, 1093×614 and 900×600 (40 layouts) plus the collapsed palette at each size: no two regions
+  (top bar, side panels, palette, editor, splitter, bottom panel, status bar) intersect, nothing runs under the
+  status bar, the editor's equation box (a vector with an index, a hat with both scripts, a bar with a long
+  index) is fully visible; collapse is remembered; drop-downs close three ways. All pass.
+  ![1280×720: top palette, side panels collapsed, Preview open](images/ui/layout-1280x720-top-collapsed-preview.png)
+  ![900×600, same](images/ui/layout-900x600-top-collapsed-preview.png)
+
 ### Docked preview height; indices after accent-style vectors — built
 
 - **Bottom panel height:** the splitter above the tabs drags it (up to the window's height less 260 px, so the

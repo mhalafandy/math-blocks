@@ -14,7 +14,8 @@ import { dockPreview, initPreviewSync, previewShown, togglePreview, usePreviewPa
 import { NotationSettings } from "./components/NotationSettings";
 import { QuickStyleBar } from "./components/QuickStyleBar";
 import { WidthBar } from "./components/WidthBar";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { fitColumns, useWindowWidth, useWorkspaceFit } from "./lib/workspaceFit";
 import { BottomPanel } from "./components/BottomPanel";
 import { CommandPalette } from "./components/CommandPalette";
 import { focusLatexEditor } from "./components/LatexEditor";
@@ -65,6 +66,9 @@ export function App() {
   const s = useApp();
   const eq = useCompiledEquation();
   const profile = useProfile();
+  const workspaceRef = useRef<HTMLElement>(null);
+  const fit = useWorkspaceFit(workspaceRef);
+  const windowWidth = useWindowWidth();
 
   // Theme: explicit choice or follow the operating system.
   useEffect(() => {
@@ -174,7 +178,9 @@ export function App() {
 
   const status = eq.errors > 0 ? `${eq.errors} error${eq.errors > 1 ? "s" : ""}` : eq.diagnostics.length > 0 ? `${eq.diagnostics.length} warning(s)` : "Valid";
   const showRight = s.rightOpen && s.paletteLocation === "right";
-  const columns = [s.leftOpen ? `${s.leftWidth}px 4px` : "", "minmax(360px, 1fr)", showRight ? `4px ${s.rightWidth}px` : ""].join(" ");
+  // Side panels give way when the window is narrow: the editor keeps at least 440 px (down to 160 / 220 px panels).
+  const { left: leftW, right: rightW } = fitColumns(windowWidth, s.leftOpen ? s.leftWidth : 0, showRight ? s.rightWidth : 0);
+  const columns = [s.leftOpen ? `${leftW}px 4px` : "", "minmax(0, 1fr)", showRight ? `4px ${rightW}px` : ""].join(" ");
 
   return (
     <div className="app">
@@ -242,11 +248,15 @@ export function App() {
         {s.leftOpen && (
           <>
             <Sidebar />
-            <Splitter width={s.leftWidth} direction={1} min={180} max={420} onChange={(w) => s.setPrefs({ leftWidth: w })} />
+            <Splitter width={leftW} direction={1} min={180} max={420} onChange={(w) => s.setPrefs({ leftWidth: w })} />
           </>
         )}
 
-        <main className="workspace" style={{ gridTemplateRows: s.bottomOpen ? `auto minmax(140px, 1fr) 4px ${s.bottomHeight}px` : "auto minmax(140px, 1fr) 0 auto" }}>
+        <main
+          ref={workspaceRef}
+          className="workspace"
+          style={{ gridTemplateRows: s.bottomOpen ? `auto minmax(0, 1fr) 4px ${fit.bottom}px` : "auto minmax(0, 1fr) 0 auto", ["--pal-max" as string]: fit.palette == null ? undefined : `${fit.palette}px` }}
+        >
           <div>
         {s.editing && (
           <div
@@ -324,7 +334,7 @@ export function App() {
             </div>
           </section>
           {s.bottomOpen ? (
-            <HSplitter height={s.bottomHeight} min={110} max={Math.max(300, window.innerHeight - 260)} onChange={(h) => s.setPrefs({ bottomHeight: h })} />
+            <HSplitter height={fit.bottom} min={fit.tabs} max={fit.bottomMax} onChange={(h) => s.setPrefs({ bottomHeight: h })} />
           ) : (
             <div />
           )}
@@ -333,7 +343,7 @@ export function App() {
 
         {showRight && (
           <>
-            <Splitter width={s.rightWidth} direction={-1} min={260} max={620} onChange={(w) => s.setPrefs({ rightWidth: w })} />
+            <Splitter width={rightW} direction={-1} min={260} max={620} onChange={(w) => s.setPrefs({ rightWidth: w })} />
             <SymbolPanel />
           </>
         )}
