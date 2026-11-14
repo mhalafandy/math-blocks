@@ -372,6 +372,25 @@ namespace MathBlocks.WordConnector
             var ranges = new List<int[]>();
             if (exclude != null) ranges.AddRange(exclude);
             try { foreach (Word.OMath m in doc.OMaths) ranges.Add(new[] { m.Range.Start, m.Range.End }); } catch (COMException) { }
+            // Every field by its range (code and result): Range.Text does not always carry the field characters —
+            // a REF \h (a linked reference) comes back as its result alone, which then read as new text.
+            try
+            {
+                foreach (Word.Field f in doc.Fields)
+                {
+                    try
+                    {
+                        var code = f.Code;
+                        Word.Range result = null;
+                        try { result = f.Result; } catch (COMException) { }
+                        int start = code.Start - 1;
+                        int end = Math.Max(code.End, result?.End ?? code.End) + 1;
+                        ranges.Add(new[] { Math.Max(0, start), end });
+                    }
+                    catch (COMException) { }
+                }
+            }
+            catch (COMException) { }
             ranges.Sort((a, b) => a[0].CompareTo(b[0]));
             var sb = new System.Text.StringBuilder();
             int pos = 0, end = doc.Content.End;

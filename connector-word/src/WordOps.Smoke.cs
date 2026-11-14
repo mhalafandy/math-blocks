@@ -538,6 +538,7 @@ namespace MathBlocks.WordConnector
         {
             switch (mode)
             {
+                case "default":
                 case "ctrlV": sel.Paste(); break;
                 case "keepSource": sel.PasteAndFormat(Word.WdRecoveryType.wdFormatOriginalFormatting); break;
                 case "merge": sel.PasteAndFormat(Word.WdRecoveryType.wdFormatSurroundingFormattingWithEmphasis); break;

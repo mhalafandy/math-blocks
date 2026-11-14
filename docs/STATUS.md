@@ -77,10 +77,28 @@ checks) and with screenshots.
   ![Editor (app), repro](images/ui/accent-index-app-editor.png)
   ![MathLive with the editor's rules (the check's screenshot)](images/ui/accent-index-mathlive.png)
 
-#### 4. Reference links — waiting for your self-test report
+#### 4. Reference links — your self-test of 0.1.142 (14 Nov, 13:31): not measured yet; the cause found and fixed
 
-When it arrives I will report the "top of the tall equation on screen" results (Word and PDF) and apply the
-`_MBEqT_` fix if either is out of view.
+- **Result:** 355 checks, 283 passed, **36 failed**; the object spike 99/99. The "top of the tall equation on
+  screen" was **not measured** (Word or PDF): the section stopped at "No reference 0", because Convert LaTeX had
+  been undone. So the `_MBEqT_` question is still open — it needs the next run.
+- **Cause of 34 of the 36 failures (one bug, since 0.1.141):** the text guard (which undoes an operation that
+  changed text outside the equations) compares the document's text without fields. It removed fields by their
+  field characters in Word's range text — but a `REF … \h` (the linked reference introduced in 0.1.141) comes
+  back as its result alone, without those characters. So every new reference number read as new text, the guard
+  undid every Convert LaTeX / Convert numbering / Convert MathType that wrote references ("nothing changed"),
+  and everything after it failed (bookmarks, references, numbering, the reference-links section).
+  **Fix:** the guard now leaves out every field by its range in the document (code and result), whatever Word's
+  text shows. (No Word in CI: the next self-test is the check — the "text guard: no false alarm" checks.)
+- **List of symbols** (1 failure): the self-test asked the add-in for a paste mode it did not know ("default");
+  the add-in accepts it now (an ordinary paste).
+- **Print check** (1 failure, 49 entries flagged on your PC): I looked at every flagged crop in your contact
+  sheet. All print correctly — relation signs, dots, bullets, fences, roots, matrices, operator names and the
+  long inline equations sit on the text's baseline at the expected size. The flags ("different size" on single
+  symbols, "clipped" on small dots, "off the baseline" on inline equations taller than the line) come from the
+  check's measurements, not from the printing. I will make the check stricter about what it calls a defect
+  (compare ink against the drawing's own ink box, measure the baseline from the surrounding text) and re-run
+  it on this PDF here.
 
 ### Docked preview height; indices after accent-style vectors — built
 

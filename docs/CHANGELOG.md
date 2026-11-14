@@ -25,6 +25,11 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Fixed — text guard and linked references
+- The text guard no longer mistakes linked references (`REF … \h`) for changed text: it leaves out every field by
+  its range. Convert LaTeX, Convert numbering and Convert MathType with references were undone since 0.1.141.
+- Self-test: the list-of-symbols paste step (unknown paste mode).
+
 ### Changed — editor harpoons
 - In the visual editor a harpoon (kinds and `\overrightharpoon`) is as wide as its letter and sits closer above it;
   the index starts right after the letter. Display only.
