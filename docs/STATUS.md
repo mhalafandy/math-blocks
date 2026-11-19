@@ -2,9 +2,9 @@
 
 Updated at the end of every round. Public repository: generic content only. Earlier rounds: `docs/status-archive/`.
 
-## Latest round — 0.1.163
+## Latest round — 0.1.164
 
-**Build:** 0.1.163 (test channel), CI: pending. Not promoted: the 0.1.162 self-test had 3 failures.
+**Build:** 0.1.164 (test channel), CI passed (0.1.163 was superseded). Not promoted: the 0.1.162 self-test had 3 failures.
 
 **Reports read:** self-test 22:18 (0.1.162: 432 passed, 3 failed; spike 99/0), thesis-size 22:45, soak 23:31 (failed after #200).
 
@@ -23,13 +23,13 @@ Updated at the end of every round. Public repository: generic content only. Earl
 **Added:** 67 recorded guard fixtures from the 0.1.162 self-test (`rec-162-*.json`, generic test documents, all pass; the probe reads as changed). Unit test for the read-only Repair rule.
 
 **Needs your PC:**
-- Self-test of 0.1.163. Clean → I promote it to stable. Send the lines of "Equation objects" and "Check document" if they fail.
+- Self-test of 0.1.164. Clean → I promote it to stable. Send the lines of "Equation objects" and "Check document" if they fail.
 - Thesis-size test: send `thesis-size report.txt` from its folder (that file has the timings).
 - Soak test again.
 
 **Open:**
 - Edit = more than one undo step (cause unknown until the new check reports where).
-- Convert LaTeX on the thesis-size document: 1142 ms per equation in 0.1.161; waiting for the 0.1.162/0.1.163 timings.
+- Convert LaTeX on the thesis-size document: 1142 ms per equation in 0.1.161; waiting for the 0.1.162/0.1.164 timings.
 - Update numbers has no progress bar; `\overrightarrow` width in the editor.
 
 ## Details
