@@ -2,8 +2,24 @@
  "firstSeen": 1795110999569,
  "items": {
   "tool:Bash": {
-   "count": 14,
-   "last": 1795111146956
+   "count": 38,
+   "last": 1795111624748
+  },
+  "tool:AskUserQuestion": {
+   "count": 1,
+   "last": 1795111415951
+  },
+  "mcp:claude-code-remote": {
+   "count": 2,
+   "last": 1795111477670
+  },
+  "skill:plugin-authoring": {
+   "count": 1,
+   "last": 1795111524000
+  },
+  "tool:Write": {
+   "count": 1,
+   "last": 1795111560446
   }
  }
 }
