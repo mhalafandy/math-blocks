@@ -1,0 +1,54 @@
+name: Promote to stable
+
+# Moves the stable update channel to one build, after a clean self-test of that exact build on the owner's PC
+# (the self-test report names the app and add-in version and shows 0 failures). The stable build before it is kept
+# as previous.json, so the app can roll back to it in one click. Run from the Actions tab, or:
+#   gh workflow run promote.yml -f version=0.1.N -f report="self-test of DD Mon: 0 failed"
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Build to promote (0.1.N)"
+        required: true
+      report:
+        description: "The clean self-test it passed (date, checks)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Promote
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ inputs.version }}
+          REPORT: ${{ inputs.report }}
+        run: |
+          set -euo pipefail
+          [[ "$VERSION" =~ ^0\.1\.[0-9]+$ ]] || { echo "Not a build version: $VERSION"; exit 1; }
+          mkdir -p m
+          gh release download "v$VERSION" -p latest.json -D m/new || { echo "No build v$VERSION (or it has no signed manifest)"; exit 1; }
+          got=$(jq -r .version m/new/latest.json)
+          [ "$got" = "$VERSION" ] || { echo "Manifest is for $got, not $VERSION"; exit 1; }
+          files=(m/new/latest.json)
+          if gh release download stable -p latest.json -D m/old 2>/dev/null; then
+            old=$(jq -r .version m/old/latest.json)
+            if [ "$old" != "$VERSION" ]; then
+              cp m/old/latest.json m/previous.json
+              files+=(m/previous.json)
+            elif gh release download stable -p previous.json -D m/keep 2>/dev/null; then
+              cp m/keep/previous.json m/previous.json
+              files+=(m/previous.json)
+            fi
+          fi
+          gh release delete stable --cleanup-tag --yes || true
+          gh release create stable "${files[@]}" --latest \
+            --title "Stable ($VERSION)" \
+            --notes "Stable channel: build $VERSION, promoted after a clean self-test ($REPORT). Previous stable: $( [ -f m/previous.json ] && jq -r .version m/previous.json || echo none )."
+          gh release edit "v$VERSION" --title "Stable build $VERSION"
+          echo "Stable is now $VERSION"

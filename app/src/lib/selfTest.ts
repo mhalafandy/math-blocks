@@ -1750,6 +1750,10 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     `Word ${begin.word}; look ${useApp.getState().look}; equation size ${useApp.getState().equationSizePt} pt; Word's smart cut and paste ${begin.smartCutPaste ? "on (turned off during the test, restored after)" : "off"}`,
     `Current design (pictures): ${count(main)}`,
     ...(spike.length ? [`Embedded-object spike: ${count(spike)}`] : []),
+    // The stable channel: a build is promoted only after a self-test of that exact build with no failure.
+    fails === 0 && appVersion === begin.addin
+      ? `Stable channel: build ${appVersion} passed — it can be promoted (Promote to stable, version ${appVersion})`
+      : `Stable channel: build ${appVersion} cannot be promoted (${fails} failure(s)${appVersion !== begin.addin ? `; the add-in is ${begin.addin ?? "unknown"}, not the same build` : ""})`,
     closedDocs ? `Test documents: ${(closedDocs as { closed: number }).closed} saved in this folder and closed` : "Test documents: not closed (older add-in, or Word refused)",
     "",
   );

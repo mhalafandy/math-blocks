@@ -146,12 +146,25 @@ function BackupsPage() {
 
 function UpdatesPage() {
   const u = useApp((s) => s.update);
+  const channel = useApp((s) => s.updateChannel);
+  const setPrefs = useApp((s) => s.setPrefs);
   return (
     <section className="settings-embedded">
       <h3>Updates</h3>
       <Field label="This version">{u.currentVersion ?? "—"}</Field>
-      <Field label="Updates" hint="MathBlocks checks at start; an update downloads in the background and installs on restart.">
+      <Field label="Channel" hint="Stable: only builds that passed the self-test on your PC (promoted by hand after a clean report). Test: every new build, as soon as it is built — the status bar says “test build”.">
+        <label className="check">
+          <input type="radio" checked={channel === "stable"} onChange={() => setPrefs({ updateChannel: "stable" })} /> Stable (recommended)
+        </label>{" "}
+        <label className="check">
+          <input type="radio" checked={channel === "test"} onChange={() => setPrefs({ updateChannel: "test" })} /> Test
+        </label>
+      </Field>
+      <Field label="Updates" hint="MathBlocks checks its channel at start and every 2 hours; an update downloads in the background and installs on restart.">
         <button onClick={() => void import("../lib/updates").then((m) => m.checkForUpdate(true))}>Check now</button> <span className="hint">{u.status === "ready" ? `${u.newVersion} is ready: restart to install` : u.status === "downloading" ? `downloading ${u.newVersion}…` : ""}</span>
+      </Field>
+      <Field label="Roll back" hint="Installs the stable build before the current stable one (asks first).">
+        <button onClick={() => void import("../lib/updates").then((m) => m.rollbackToPreviousStable())}>Roll back to the previous stable build</button>
       </Field>
     </section>
   );

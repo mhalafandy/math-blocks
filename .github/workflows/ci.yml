@@ -149,7 +149,8 @@ jobs:
               platforms = @{
                 "windows-x86_64" = @{
                   signature = (Get-Content "$($exe.FullName).sig" -Raw).Trim()
-                  url       = "https://github.com/${{ github.repository }}/releases/download/dev-build/$($exe.Name)"
+                  # The build's own release (kept): a promoted build stays downloadable after newer builds.
+                  url       = "https://github.com/${{ github.repository }}/releases/download/v$env:APP_VERSION/$($exe.Name)"
                 }
               }
             }
@@ -172,10 +173,21 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # The build under its own version (the test channel's manifest points to it; "Promote to stable" moves the
+          # stable channel to it after a clean self-test on the owner's PC).
+          gh release create "v$APP_VERSION" dl/* --prerelease --target "$GITHUB_SHA" \
+            --title "Test build $APP_VERSION" \
+            --notes "Build $APP_VERSION of commit ${GITHUB_SHA::7}: test channel. Reaches the stable channel only when promoted after a clean self-test."
           gh release delete dev-build --cleanup-tag --yes || true
           gh release create dev-build dl/* --prerelease --target "$GITHUB_SHA" \
             --title "Latest test build ($APP_VERSION)" \
-            --notes "Automatic build $APP_VERSION of commit ${GITHUB_SHA::7}. Installed apps update themselves and keep the Word add-in installed. First install: docs/DEVELOPMENT.md section 0."
+            --notes "Automatic build $APP_VERSION of commit ${GITHUB_SHA::7} (test channel). Apps on the stable channel do not install it until it is promoted. First install: docs/DEVELOPMENT.md section 0."
+          # Keep the 30 newest test builds, and always the current and previous stable ones.
+          keep=$(for f in latest.json previous.json; do gh release download stable -p "$f" -O - 2>/dev/null | jq -r '.version // empty'; done | sed 's/^/v/')
+          gh release list --limit 300 --json tagName,isPrerelease -q '.[] | select(.isPrerelease) | .tagName' | grep -E '^v0\.' | sort -t. -k3 -n -r | tail -n +31 | while read -r tag; do
+            if echo "$keep" | grep -qx "$tag"; then continue; fi
+            gh release delete "$tag" --cleanup-tag --yes || true
+          done
 
       - uses: actions/upload-artifact@v4
         with:

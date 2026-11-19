@@ -25,6 +25,10 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added — stable and test update channels
+- Builds reach the stable channel only when promoted after a clean self-test (Promote to stable workflow); the
+  test channel gets every build and is marked in the status bar; one-click roll back to the previous stable build.
+
 ### Added — Change symbol…
 - A quantity gets another symbol everywhere: equations (decorated forms kept, related forms on request),
   its definition (meaning and unit kept), the document's rule for the letter, its blocks (asked), the list of

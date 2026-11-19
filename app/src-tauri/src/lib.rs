@@ -10,6 +10,7 @@ mod documents;
 mod library;
 mod pipe;
 mod shortcuts;
+mod updates;
 
 #[tauri::command]
 fn app_version() -> &'static str {
@@ -26,8 +27,12 @@ pub fn run() {
         .manage(pipe::PipeState::default())
         .manage(connector_install::InstallState::default())
         .manage(library::LibraryState::default())
+        .manage(updates::UpdateState::default())
         .invoke_handler(tauri::generate_handler![
             app_version,
+            updates::update_check,
+            updates::update_download,
+            updates::update_install,
             pipe::connector_send,
             pipe::connector_status,
             connector_install::connector_install_status,

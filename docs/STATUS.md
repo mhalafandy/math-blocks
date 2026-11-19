@@ -83,6 +83,27 @@ bottom 2.0 pt against 1.7 pt: no flag. The picture itself was right.
   or text box is not converted. Equations already in those places are found and changed. I will extend it with
   the thesis-size work (C3).
 
+#### C1. Stable and test channels — built
+
+- **Two channels.** Every build of `main` is the **test** channel ("Latest test build") and is also kept under its
+  own version (release `v0.1.N`, the 30 newest; a stable build is never pruned). The **stable** channel is a release
+  of its own whose manifest moves only by the **Promote to stable** workflow (`.github/workflows/promote.yml`), run
+  for one version after a clean self-test of that exact build on your PC. It keeps the stable before it as
+  `previous.json`.
+- **The self-test says it:** the report's header now ends with "Stable channel: build 0.1.N passed — it can be
+  promoted" (0 failures, app and add-in the same build) or why it cannot. When a report like that arrives I run
+  the promotion for that version (you can too: Actions → Promote to stable).
+- **The app** (Settings → Updates): channel Stable (default) / Test; Check now; **Roll back to the previous stable
+  build** (asks, installs the older build, restarts). On the test channel the status bar shows
+  "v0.1.N · test build" in the warning colour, so a test build is never silent. Every download is still verified
+  against the project's signing key. The checks are done by the app's Rust side per channel (new commands
+  update_check / update_download / update_install; rollback allows an older version).
+- **What this means now:** no build has been promoted yet. Once you install this build, an app on the stable channel
+  waits for the first promotion; set the channel to Test (Settings → Updates) to keep receiving every build until
+  then. I will promote the first stable build when a clean self-test report arrives.
+- Not testable here: the promotion and the update download/installation need GitHub and Windows; the Rust code
+  compiles (cargo check) and CI builds the installer.
+
 #### A1. Your 0.1.149 self-test — waiting for the report
 
 ### Round after 0.1.148 (your status read: accepted)

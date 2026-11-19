@@ -57,6 +57,8 @@ interface Prefs {
   paletteLocation: "right" | "top";
   /** The top palette collapsed to its Quick access row. */
   paletteCollapsed: boolean;
+  /** Update channel: "stable" (builds promoted after a clean self-test on the owner's PC) or "test" (every build). */
+  updateChannel: "stable" | "test";
   /** Pinned palette items (keys from palette.ts). */
   favorites: string[];
   /** Recently inserted palette items, newest first (at most 16, one per LaTeX). */
@@ -188,6 +190,7 @@ const DEFAULT_PREFS: Prefs = {
   vectorStyle: "arrow",
   paletteLocation: "right",
   paletteCollapsed: false,
+  updateChannel: "stable",
   favorites: DEFAULT_FAVORITES,
   recents: [],
   paletteUse: {},
