@@ -132,6 +132,30 @@ bottom 2.0 pt against 1.7 pt: no flag. The picture itself was right.
 - **Speed:** the self-test reports the time; the thesis-size measurement (1500 equations) comes with C3.
   ![Check document](images/ui/check-document.png)
 
+#### C3. Thesis-size documents — the test is built; the measurements need your PC
+
+- **The document** (`thesisParagraphs` in `app/src/lib/interchangeFixture.ts`, generic): 10 chapters + 2
+  appendices, 5 sections each, about 1530 equations (990 inline, 540 display of which 420 numbered, in 60 tables,
+  12 footnotes and 12 text boxes), about 1000 references, symbol definitions, filler to about 250–300 pages.
+  Unit test pins the counts and the footnotes, text boxes and tables in the .docx.
+- **The run** (Ctrl+K "Thesis-size test…", about 20–40 min, its own document): open; **Convert LaTeX cancelled at
+  the first progress step** (as if Cancel were pressed) and the document checked **exactly as before**; Convert
+  LaTeX; Update numbers; the list of symbols; **Apply style cancelled** and checked exactly as before; Apply style;
+  Check document (must be clean); Change symbol (read + preview, then apply); save. Every step timed; the report is
+  `thesis-size report.txt` in its folder. **I record the numbers here when you send that report** — I cannot
+  measure Word here.
+- **Found and fixed while building it:**
+  - Convert LaTeX wrote everything in one request: on 1500 equations the progress bar would not move and Cancel
+    could not act. It now writes in batches of 40 with progress and Cancel between them; numbers and references
+    are updated once, by the last batch; **Cancel undoes the whole conversion** (the operation's single record)
+    and checks the text against what it was before (`endOperation` with rollback).
+  - **Convert LaTeX outside the main text:** inline `$…$` in footnotes, endnotes, text boxes, headers and footers
+    is converted now (each in its own story; numbers, references and markers stay main-text features).
+  - Unit tests: batches with progress, Cancel → rollback, a footnote equation written in its story; guard fixture
+    `gen-convert-latex-footnote`.
+- **Still to look at with the numbers:** Update numbers runs as one Word call without a progress window (fields
+  are updated by Word itself); if it takes long on 1000 references, it needs batching too.
+
 #### A1. Your 0.1.149 self-test — waiting for the report
 
 ### Round after 0.1.148 (your status read: accepted)

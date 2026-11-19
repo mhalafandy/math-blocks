@@ -25,6 +25,11 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added — thesis-size test; Convert LaTeX in batches and in footnotes
+- Ctrl+K "Thesis-size test…": a generated 300-page generic document through every operation, timed, Cancel tried.
+- Convert LaTeX writes in batches (progress, Cancel undoes it all) and converts inline equations in footnotes,
+  endnotes, text boxes, headers and footers.
+
 ### Added — Check document
 - One report (ribbon, Ctrl+K): LaTeX that does not parse, pictures that do not match their LaTeX or style,
   unreadable object data, numbers out of order or repeated, references that point nowhere or show a wrong number,

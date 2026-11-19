@@ -107,19 +107,44 @@ const STYLES =
   `<w:style w:type="paragraph" w:customStyle="1" w:styleId="MTDisplayEquation"><w:name w:val="MTDisplayEquation"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr><w:tabs><w:tab w:val="center" w:pos="4513"/><w:tab w:val="right" w:pos="9026"/></w:tabs></w:pPr></w:style>` +
   `</w:styles>`;
 
-/** The document as a .docx (A4, 2.54 cm margins: centre tab 4513, right tab 9026 twips). */
+/**
+ * The document as a .docx (A4, 2.54 cm margins: centre tab 4513, right tab 9026 twips). Besides paragraphs:
+ * consecutive "TableRow" entries make one table (cells separated by " | "); a "Footnote" entry is a footnote of the
+ * paragraph before it; a "TextBox" entry is a paragraph holding an inline text box with that text; "PageBreak"
+ * starts a new page.
+ */
 export function interchangeDocx(paragraphs: { style: string; text: string; keepNext?: boolean }[] = INTERCHANGE_PARAGRAPHS): Uint8Array {
-  // Consecutive "TableRow" entries make one table; their cells are separated by " | " (each cell one Normal paragraph).
-  const para = (p: { style: string; text: string; keepNext?: boolean }) => `<w:p><w:pPr><w:pStyle w:val="${STYLE_ID[p.style] ?? "Normal"}"/>${p.keepNext ? "<w:keepNext/>" : ""}</w:pPr>${runs(p.text)}</w:p>`;
+  const footnotes: string[] = [];
+  type Para = { style: string; text: string; keepNext?: boolean; notes?: number[] };
+  const list: Para[] = [];
+  for (const p of paragraphs) {
+    if (p.style === "Footnote") {
+      footnotes.push(p.text);
+      const prev = list[list.length - 1];
+      if (prev) prev.notes = [...(prev.notes ?? []), footnotes.length];
+      continue;
+    }
+    list.push({ ...p });
+  }
+  const noteRef = (id: number) => `<w:r><w:rPr><w:vertAlign w:val="superscript"/></w:rPr><w:footnoteReference w:id="${id}"/></w:r>`;
+  let boxes = 0;
+  const para = (p: Para) => {
+    if (p.style === "PageBreak") return `<w:p><w:r><w:br w:type="page"/></w:r></w:p>`;
+    if (p.style === "TextBox") {
+      boxes++;
+      return `<w:p><w:r><w:pict><v:shape id="mbTextBox${boxes}" type="#_x0000_t202" style="width:360pt;height:54pt" strokeweight=".5pt"><v:textbox><w:txbxContent><w:p>${runs(p.text)}</w:p></w:txbxContent></v:textbox></v:shape></w:pict></w:r></w:p>`;
+    }
+    return `<w:p><w:pPr><w:pStyle w:val="${STYLE_ID[p.style] ?? "Normal"}"/>${p.keepNext ? "<w:keepNext/>" : ""}</w:pPr>${runs(p.text)}${(p.notes ?? []).map(noteRef).join("")}</w:p>`;
+  };
   const parts: string[] = [];
-  for (let i = 0; i < paragraphs.length; i++) {
-    if (paragraphs[i]!.style !== "TableRow") {
-      parts.push(para(paragraphs[i]!));
+  for (let i = 0; i < list.length; i++) {
+    if (list[i]!.style !== "TableRow") {
+      parts.push(para(list[i]!));
       continue;
     }
     const rows: string[] = [];
-    while (i < paragraphs.length && paragraphs[i]!.style === "TableRow") {
-      const cells = paragraphs[i]!.text.split(" | ");
+    while (i < list.length && list[i]!.style === "TableRow") {
+      const cells = list[i]!.text.split(" | ");
       rows.push(`<w:tr>${cells.map((c) => `<w:tc><w:tcPr><w:tcW w:w="${Math.floor(9000 / cells.length)}" w:type="dxa"/></w:tcPr>${para({ style: "Normal", text: c })}</w:tc>`).join("")}</w:tr>`);
       i++;
     }
@@ -127,21 +152,77 @@ export function interchangeDocx(paragraphs: { style: string; text: string; keepN
     parts.push(`<w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="4"/><w:bottom w:val="single" w:sz="4"/><w:insideH w:val="single" w:sz="4"/></w:tblBorders></w:tblPr>${rows.join("")}</w:tbl>`, para({ style: "Normal", text: "" }));
   }
   const body = parts.join("");
+  const hasNotes = footnotes.length > 0;
+  const FOOTNOTES =
+    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:footnotes ${NS}>` +
+    `<w:footnote w:type="separator" w:id="-1"><w:p><w:r><w:separator/></w:r></w:p></w:footnote>` +
+    `<w:footnote w:type="continuationSeparator" w:id="0"><w:p><w:r><w:continuationSeparator/></w:r></w:p></w:footnote>` +
+    footnotes.map((t, k) => `<w:footnote w:id="${k + 1}"><w:p><w:pPr><w:pStyle w:val="FootnoteText"/></w:pPr><w:r><w:rPr><w:vertAlign w:val="superscript"/></w:rPr><w:footnoteRef/></w:r>${runs(` ${t}`)}</w:p></w:footnote>`).join("") +
+    `</w:footnotes>`;
+  const SETTINGS = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings ${NS}>${hasNotes ? `<w:footnotePr><w:footnote w:id="-1"/><w:footnote w:id="0"/></w:footnotePr>` : ""}</w:settings>`;
   return zipSync({
     "[Content_Types].xml": strToU8(
-      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>`,
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>${hasNotes ? `<Override PartName="/word/footnotes.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml"/>` : ""}</Types>`,
     ),
     "_rels/.rels": strToU8(
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`,
     ),
     "word/document.xml": strToU8(
-      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${NS}><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>`,
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${NS} xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>`,
     ),
     "word/styles.xml": strToU8(STYLES),
+    "word/settings.xml": strToU8(SETTINGS),
+    ...(hasNotes ? { "word/footnotes.xml": strToU8(FOOTNOTES) } : {}),
     "word/_rels/document.xml.rels": strToU8(
-      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`,
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rIdSettings" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/>${hasNotes ? `<Relationship Id="rIdNotes" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes" Target="footnotes.xml"/>` : ""}</Relationships>`,
     ),
   });
+}
+
+/**
+ * A generic thesis-size document (C3): 10 chapters and 2 appendices, 5 sections each, every section with numbered and
+ * unnumbered display equations, inline equations in the text, a table with equations, a footnote and a text box with
+ * an equation, references to earlier equations, symbol definitions; filler text to about 300 pages. Counts, for
+ * `scale` 1: about 1500 equations and 1000 references.
+ */
+export function thesisParagraphs(scale = 1): { style: string; text: string }[] {
+  const out: { style: string; text: string }[] = [];
+  const filler = (k: number) => `Filler paragraph ${k}: the method is applied step by step and the result is compared with the reference case, so that the reader can follow the argument without the equations.`;
+  const chapters = [...Array.from({ length: 10 }, (_, i) => ({ label: String(i + 1), appendix: false })), { label: "A", appendix: true }, { label: "B", appendix: true }];
+  const perSection = Math.max(1, Math.round(7 * scale));
+  let f = 0;
+  const labels: string[] = [];
+  chapters.forEach((ch, ci) => {
+    out.push({ style: "Heading 1", text: ch.appendix ? `Appendix ${ch.label}` : `Chapter ${ch.label}` });
+    out.push({ style: "Normal", text: `\\mbnumbering{${ch.appendix ? `Appendix ${ch.label}` : ch.label}}` });
+    if (ci === 0) out.push({ style: "Normal", text: "A body of mass $m$ \\define{m}{mass of the body}[kg] turns with angular velocity $\\pvec{\\omega}$ \\define{\\pvec{\\omega}}{angular velocity of the body}[rad/s] about its centre $\\pvec{r}_{c}$ \\define{\\pvec{r}_{c}}{position of the centre of mass}[m]." });
+    for (let s = 1; s <= 5; s++) {
+      out.push({ style: "Heading 2", text: `Section ${ch.label}.${s}` });
+      out.push({ style: "Normal", text: `\\mbnumbering{${ch.label}.${s}}` });
+      for (let e = 1; e <= perSection; e++) {
+        const label = `eq:${ch.label}.${s}.${e}`;
+        out.push({ style: "Normal", text: `${filler(++f)} With $\\pvec{v}_{${s}${e}}$ the relation reads` });
+        out.push({ style: "MTDisplayEquation", text: `\t$$\\pvec{h}_{${e}}=\\mat{I}\\pvec{\\omega}+\\sum_{k=1}^{${e + 2}}m_k\\,\\pvec{r}_k\\times\\dot{\\pvec{r}}_k$$\t\\label{${label}}` });
+        // References to earlier equations (about two per numbered equation in the end).
+        const back = labels.length ? labels[Math.max(0, labels.length - 1 - (e % 7))]! : null;
+        const back2 = labels.length > 20 ? labels[labels.length - 20]! : null;
+        out.push({ style: "Normal", text: `${back ? `Compared with \\eqref{${back}}` : "Here"}${back2 ? ` and \\ref{${back2}}` : ""}, the energy $E_{${e}}=\\frac{1}{2}m v_{${e}}^{2}$ follows.` });
+        if (e % 2 === 0) out.push({ style: "Normal", text: `${filler(++f)} The same holds by \\eqref{${labels[Math.max(0, labels.length - 3)] ?? label}}.` });
+        if (e % 3 === 0) out.push({ style: "MTDisplayEquation", text: `\t$$\\int_{0}^{T}\\pvec{\\omega}^{\\T}\\mat{I}\\,\\dot{\\pvec{\\omega}}\\,\\mathrm{d}t=0$$` });
+        labels.push(label);
+      }
+      out.push({ style: "TableRow", text: "Quantity | Expression | Value" });
+      out.push({ style: "TableRow", text: `velocity | $\\pvec{v}_{${s}}$ | $${s}\\,\\mathrm{m/s}$` });
+      if (s === 2) {
+        out.push({ style: "Normal", text: filler(++f) });
+        out.push({ style: "Footnote", text: `The small-angle form $\\sin\\theta_{${s}}\\approx\\theta_{${s}}$ is used here.` });
+      }
+      if (s === 4) out.push({ style: "TextBox", text: `Box ${ch.label}.${s}: $\\pvec{F}=m\\pvec{a}$ in the inertial frame.` });
+      for (let k = 0; k < Math.round(22 * scale); k++) out.push({ style: "Normal", text: filler(++f) });
+    }
+    out.push({ style: "PageBreak", text: "" });
+  });
+  return out;
 }
 
 /** A larger document for the time per equation: 100 numbered display equations and 50 inline ones. */

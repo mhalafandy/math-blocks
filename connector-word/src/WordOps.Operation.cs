@@ -147,7 +147,10 @@ namespace MathBlocks.WordConnector
                 Application.DoEvents();
             }
             CheckOperationUndo("progress window events");
-            return new Dictionary<string, object> { ["cancelled"] = _progress != null && _progress.Cancelled };
+            // Tests: "Cancel" pressed at this progress step (smoke cancelNextProgress).
+            bool testCancel = CancelNextProgress;
+            CancelNextProgress = false;
+            return new Dictionary<string, object> { ["cancelled"] = testCancel || (_progress != null && _progress.Cancelled) };
         }
 
         /// <summary>Closes the undo record and the progress window; logs the time per equation.</summary>
@@ -300,6 +303,8 @@ namespace MathBlocks.WordConnector
 
         private Word.Document _guardDoc;
         private string _guardBefore, _guardBeforeFull;
+        /// <summary>Tests: the next progress step reports Cancel, as if the user pressed it.</summary>
+        internal static bool CancelNextProgress;
         private List<int[]> _guardExclude;
         private string _guardLabel;
 

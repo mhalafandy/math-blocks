@@ -143,6 +143,13 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => import("../components/SymbolList").then((m) => m.openSymbolList()),
     },
     {
+      id: "word.thesisTest",
+      title: "Thesis-size test (a generated 300-page document through every operation, timed; 20–40 min)…",
+      group: "Word",
+      keywords: "benchmark thesis large document speed performance test cancel big",
+      run: () => import("./thesisTest").then((m) => m.thesisTestCommand()),
+    },
+    {
       id: "word.checkDocument",
       title: "Check document (equations, numbers, references, markers, style) and repair",
       group: "Word",

@@ -371,6 +371,9 @@ namespace MathBlocks.WordConnector
                     var ok = _app.ActiveDocument.Undo(n);
                     return new Dictionary<string, object> { ["ok"] = ok };
                 }
+                case "cancelNextProgress":
+                    CancelNextProgress = true;
+                    return new Dictionary<string, object> { ["ok"] = true };
                 case "unhideMarker":
                 {
                     // Check document's self-test: the first marker field of this kind made visible (a deliberate fault).
