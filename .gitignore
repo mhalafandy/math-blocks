@@ -17,5 +17,5 @@ connector-word/tests/out/
 /local/
 /fixtures/private/
 
-# Local Claude Code state
-.claude/plan-optimizer/
+# plan-optimizer session memories: they may quote private documents; the repository is public
+.claude/memory/
