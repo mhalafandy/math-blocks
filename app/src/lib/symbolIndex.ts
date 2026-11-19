@@ -41,6 +41,8 @@ export interface IndexedEquation {
   fallback?: string;
   /** Classic picture: fingerprint of the document style it was drawn in. */
   styleHash?: string;
+  /** Where it is when not in the main text (footnotes, endnotes, a text box, a header or footer). */
+  story?: string;
 }
 
 export interface IndexedSymbol {
@@ -104,7 +106,7 @@ export async function buildDocumentIndex(): Promise<DocumentIndex> {
       if (wordHash(i.flatOpc!) === src.hash) latex = src.latex;
       else editedInWord = true;
     }
-    equations.push({ tag: i.tag, ...(i.start !== undefined ? { start: i.start } : {}), ...(i.bookmark ? { bookmark: i.bookmark } : {}), page: i.page, context: i.context, latex, display: read.display, blockId: linkOf(i.tag)?.blockId ?? null, kind: read.kind, numbered: read.numbered, number: i.number ?? null, flatOpc: i.flatOpc ?? undefined, editedInWord, ...(read.fallback ? { fallback: read.fallback } : {}), ...(read.styleHash ? { styleHash: read.styleHash } : {}) });
+    equations.push({ tag: i.tag, ...(i.start !== undefined ? { start: i.start } : {}), ...(i.bookmark ? { bookmark: i.bookmark } : {}), page: i.page, context: i.context, latex, display: read.display, blockId: linkOf(i.tag)?.blockId ?? null, kind: read.kind, numbered: read.numbered, number: i.number ?? null, flatOpc: i.flatOpc ?? undefined, editedInWord, ...(read.fallback ? { fallback: read.fallback } : {}), ...(read.styleHash ? { styleHash: read.styleHash } : {}), ...(i.story ? { story: i.story } : {}) });
   }
   return { document: doc.fullName, name: doc.name, equations, symbols: indexEquations(equations) };
 }

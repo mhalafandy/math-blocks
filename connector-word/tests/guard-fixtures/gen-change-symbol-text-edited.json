@@ -1,0 +1,312 @@
+{
+ "operation": "Change symbol that also changed the text mention (must be caught)",
+ "source": "generated (tools/make-guard-fixtures.ts) from the field codes of a 0.1.148 self-test run",
+ "expect": "changed",
+ "exclude": [],
+ "before": {
+  "end": 474,
+  "fields": [
+   {
+    "start": 0,
+    "end": 29,
+    "code": " MACROBUTTON MBSymbolList "
+   },
+   {
+    "start": 128,
+    "end": 213,
+    "code": " MACROBUTTON MBDefine \\define{\\pvec{\\omega}}{angular velocity of the body}[rad/s] "
+   },
+   {
+    "start": 288,
+    "end": 307,
+    "code": " STYLEREF 1 \\s "
+   },
+   {
+    "start": 308,
+    "end": 351,
+    "code": " SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 352,
+    "end": 391,
+    "code": " SEQ MBEq \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 246,
+    "end": 393,
+    "code": " MACROBUTTON MBPlaceRef \\* MERGEFORMAT "
+   },
+   {
+    "start": 399,
+    "end": 461,
+    "code": " REF _MBEq_1_1_1 \\h \\* Charformat \\! \\* MERGEFORMAT "
+   }
+  ],
+  "equations": [
+   [
+    126,
+    127
+   ],
+   [
+    244,
+    245
+   ]
+  ],
+  "lists": [
+   [
+    0,
+    89
+   ]
+  ],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 29,
+    "text": "\u0013 MACROBUTTON MBSymbolList \u0014\u0015"
+   },
+   {
+    "start": 29,
+    "end": 89,
+    "text": "\rSymbol\r\u0007Meaning\r\u0007Unit\r\u0007\r\u0007\u0001\r\u0007angular velocity of the body\r\u0007rad/s\r\u0007\r\u0007"
+   },
+   {
+    "start": 89,
+    "end": 126,
+    "text": "The body turns with angular velocity "
+   },
+   {
+    "start": 126,
+    "end": 127,
+    "text": "\u0001"
+   },
+   {
+    "start": 127,
+    "end": 128,
+    "text": " "
+   },
+   {
+    "start": 128,
+    "end": 213,
+    "text": "\u0013 MACROBUTTON MBDefine \\define{\\pvec{\\omega}}{angular velocity of the body}[rad/s] \u0014\u0015"
+   },
+   {
+    "start": 213,
+    "end": 244,
+    "text": ". In the text it is called ω.\r\t"
+   },
+   {
+    "start": 244,
+    "end": 245,
+    "text": "\u0001"
+   },
+   {
+    "start": 245,
+    "end": 246,
+    "text": "\t"
+   },
+   {
+    "start": 246,
+    "end": 288,
+    "text": "\u0013 MACROBUTTON MBPlaceRef \\* MERGEFORMAT \u0014("
+   },
+   {
+    "start": 288,
+    "end": 307,
+    "text": "\u0013 STYLEREF 1 \\s \u00141\u0015"
+   },
+   {
+    "start": 307,
+    "end": 308,
+    "text": "."
+   },
+   {
+    "start": 308,
+    "end": 351,
+    "text": "\u0013 SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT \u00141\u0015"
+   },
+   {
+    "start": 351,
+    "end": 352,
+    "text": "."
+   },
+   {
+    "start": 352,
+    "end": 391,
+    "text": "\u0013 SEQ MBEq \\* ARABIC \\* MERGEFORMAT \u00141\u0015"
+   },
+   {
+    "start": 391,
+    "end": 393,
+    "text": ")\u0015"
+   },
+   {
+    "start": 393,
+    "end": 399,
+    "text": "\rFrom "
+   },
+   {
+    "start": 399,
+    "end": 461,
+    "text": "(1.1.1)"
+   },
+   {
+    "start": 461,
+    "end": 474,
+    "text": " it follows.\r"
+   }
+  ]
+ },
+ "after": {
+  "end": 474,
+  "fields": [
+   {
+    "start": 0,
+    "end": 29,
+    "code": " MACROBUTTON MBSymbolList "
+   },
+   {
+    "start": 128,
+    "end": 213,
+    "code": " MACROBUTTON MBDefine \\define{\\pvec{\\Omega}}{angular velocity of the body}[rad/s] "
+   },
+   {
+    "start": 288,
+    "end": 307,
+    "code": " STYLEREF 1 \\s "
+   },
+   {
+    "start": 308,
+    "end": 351,
+    "code": " SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 352,
+    "end": 391,
+    "code": " SEQ MBEq \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 246,
+    "end": 393,
+    "code": " MACROBUTTON MBPlaceRef \\* MERGEFORMAT "
+   },
+   {
+    "start": 399,
+    "end": 461,
+    "code": " REF _MBEq_1_1_1 \\h \\* Charformat \\! \\* MERGEFORMAT "
+   }
+  ],
+  "equations": [
+   [
+    126,
+    127
+   ],
+   [
+    244,
+    245
+   ]
+  ],
+  "lists": [
+   [
+    0,
+    89
+   ]
+  ],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 29,
+    "text": "\u0013 MACROBUTTON MBSymbolList \u0014\u0015"
+   },
+   {
+    "start": 29,
+    "end": 89,
+    "text": "\rSymbol\r\u0007Meaning\r\u0007Unit\r\u0007\r\u0007\u0001\r\u0007angular velocity of the body\r\u0007rad/s\r\u0007\r\u0007"
+   },
+   {
+    "start": 89,
+    "end": 126,
+    "text": "The body turns with angular velocity "
+   },
+   {
+    "start": 126,
+    "end": 127,
+    "text": "\u0001"
+   },
+   {
+    "start": 127,
+    "end": 128,
+    "text": " "
+   },
+   {
+    "start": 128,
+    "end": 213,
+    "text": "\u0013 MACROBUTTON MBDefine \\define{\\pvec{\\Omega}}{angular velocity of the body}[rad/s] \u0014\u0015"
+   },
+   {
+    "start": 213,
+    "end": 244,
+    "text": ". In the text it is called Ω.\r\t"
+   },
+   {
+    "start": 244,
+    "end": 245,
+    "text": "\u0001"
+   },
+   {
+    "start": 245,
+    "end": 246,
+    "text": "\t"
+   },
+   {
+    "start": 246,
+    "end": 288,
+    "text": "\u0013 MACROBUTTON MBPlaceRef \\* MERGEFORMAT \u0014("
+   },
+   {
+    "start": 288,
+    "end": 307,
+    "text": "\u0013 STYLEREF 1 \\s \u00141\u0015"
+   },
+   {
+    "start": 307,
+    "end": 308,
+    "text": "."
+   },
+   {
+    "start": 308,
+    "end": 351,
+    "text": "\u0013 SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT \u00141\u0015"
+   },
+   {
+    "start": 351,
+    "end": 352,
+    "text": "."
+   },
+   {
+    "start": 352,
+    "end": 391,
+    "text": "\u0013 SEQ MBEq \\* ARABIC \\* MERGEFORMAT \u00141\u0015"
+   },
+   {
+    "start": 391,
+    "end": 393,
+    "text": ")\u0015"
+   },
+   {
+    "start": 393,
+    "end": 399,
+    "text": "\rFrom "
+   },
+   {
+    "start": 399,
+    "end": 461,
+    "text": "(1.1.1)"
+   },
+   {
+    "start": 461,
+    "end": 474,
+    "text": " it follows.\r"
+   }
+  ]
+ }
+}

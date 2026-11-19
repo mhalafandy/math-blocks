@@ -469,6 +469,82 @@ const BIG = {
   await page.screenshot({ path: `${out}/preview-docked-derivation-lower-fit.png` });
   await ctx.close();
 }
+// ------------------------------------------------------------------ Change symbol… (the dialog, on a generic document)
+{
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 } });
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.log("page error:", e.message));
+  await open(page);
+  await page.evaluate("window.__name = (f) => f");
+  const openDialog = async (withClash: boolean) =>
+    page.evaluate(async (clash) => {
+      const m = await import("/src/components/ChangeSymbolDialog.tsx" as string);
+      const eq = (tag: string, latex: string, display: boolean, numbered: boolean, number: string | null, section: string) => ({ tag, latex, display, numbered, number, section, eq: { tag, latex, display, numbered, number, page: 1, context: "", blockId: null } });
+      const eqs = [
+        eq("a", "\\pvec{\\omega}=\\dot{\\theta}\\bvec{f}_3", false, false, null, "1 Kinematics"),
+        eq("b", "\\pvec{h}=\\mat{I}\\pvec{\\omega}_{ba}", true, true, "(1.1)", "1 Kinematics"),
+        eq("c", "\\cmat{\\omega}=\\mat{C}\\cmat{\\omega}", true, false, null, "2 Matrices"),
+        ...(clash ? [eq("d", "\\pvec{\\Omega}=0", false, false, null, "2 Matrices")] : []),
+      ];
+      const defs = [
+        { start: 10, symbol: "\\pvec{\\omega}", meaning: "angular velocity of the body", unit: "rad/s", equationsBefore: 0 },
+        { start: 50, symbol: "\\cmat{\\omega}", meaning: "angular velocity in the body frame", unit: "rad/s", equationsBefore: 2 },
+      ];
+      (window as unknown as { __applied: unknown }).__applied = null;
+      m.openChangeSymbol({
+        from: "\\pvec{\\omega}",
+        ctx: { doc: { defs, eqs: eqs.map((e) => ({ ...e, index: 0 })), listAt: 0, settings: {}, unreadable: [] }, eqs },
+        apply: async (c: { skip: Set<string>; related: Set<string> }, o: unknown) => {
+          (window as unknown as { __applied: unknown }).__applied = { skip: [...c.skip], related: [...c.related], o };
+          return { equations: 2, definitions: 1, rules: 0, blocks: 0, list: true, skipped: 0, note: "", cancelled: false };
+        },
+      });
+    }, withClash);
+  await openDialog(false);
+  await page.waitForSelector("[data-testid=cs-to]");
+  await page.fill("[data-testid=cs-to]", "\\pvec{\\Omega}");
+  await page.waitForSelector("[data-testid=cs-preview]", { timeout: 5000 });
+  const r1 = await page.evaluate(() => {
+    const q = (s: string) => document.querySelector(`[data-testid=${s}]`);
+    return {
+      quantity: q("cs-quantity")?.textContent ?? "",
+      exact: !!q("cs-group-exact"),
+      decorated: !!q("cs-group-decorated"),
+      related: !!q("cs-group-related"),
+      relatedTicked: (q("cs-related-all") as HTMLInputElement | null)?.checked,
+      left: q("cs-related-left")?.textContent ?? "",
+      counts: q("cs-counts")?.textContent ?? "",
+      defs: q("cs-definitions")?.textContent ?? "",
+      apply: (q("cs-apply") as HTMLButtonElement).disabled,
+    };
+  });
+  check(r1.quantity.includes("angular velocity of the body") && r1.quantity.includes("rad/s"), `Change symbol: the quantity's meaning and unit are shown (${r1.quantity.slice(0, 80)})`);
+  check(r1.exact && r1.decorated && r1.related, "Change symbol: the preview has the symbol, its decorated forms and the related forms in separate groups");
+  check(r1.relatedTicked === false && /2 related occurrence/.test(r1.left), `Change symbol: related forms are unticked by default and counted as left alone (${r1.left})`);
+  check(/2 equation\(s\) change/.test(r1.counts) && /1 definition/.test(r1.counts), `Change symbol: the counts (${r1.counts.slice(0, 120)})`);
+  check(r1.defs.includes("angular velocity of the body") && !r1.apply, "Change symbol: the definition is listed with its meaning kept, Apply enabled");
+  await page.screenshot({ path: `${out}/change-symbol-preview.png` });
+  await page.click("[data-testid=cs-related-all]");
+  await page.waitForTimeout(200);
+  const r2 = await page.evaluate(() => document.querySelector("[data-testid=cs-counts]")?.textContent ?? "");
+  check(/3 equation\(s\) change/.test(r2) && /2 definition/.test(r2), `Change symbol: "Include all" adds the related forms and their definition (${r2.slice(0, 120)})`);
+  await page.screenshot({ path: `${out}/change-symbol-related.png` });
+  await page.click("[data-testid=cs-apply]");
+  await page.waitForTimeout(300);
+  const applied = await page.evaluate(() => (window as unknown as { __applied: { related: string[] } | null }).__applied);
+  check(!!applied && applied.related.includes("\\cmat{\\omega}"), `Change symbol: Apply passes the choices (related: ${applied?.related.join(", ")})`);
+  // A clash: the new symbol is used already — warned, Apply waits for a merge choice.
+  await openDialog(true);
+  await page.waitForSelector("[data-testid=cs-to]");
+  await page.fill("[data-testid=cs-to]", "\\pvec{\\Omega}");
+  await page.waitForSelector("[data-testid=cs-clash]", { timeout: 5000 });
+  const blocked = await page.evaluate(() => (document.querySelector("[data-testid=cs-apply]") as HTMLButtonElement).disabled);
+  await page.locator("[data-testid=cs-clash] input[type=radio]").first().check();
+  const unblocked = await page.evaluate(() => !(document.querySelector("[data-testid=cs-apply]") as HTMLButtonElement).disabled);
+  check(blocked && unblocked, "Change symbol: a clash with an existing symbol is shown and Apply waits for a merge choice");
+  await page.screenshot({ path: `${out}/change-symbol-clash.png` });
+  await ctx.close();
+}
 // ------------------------------------------------------------------ a block pinned to Quick access
 {
   const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 } });

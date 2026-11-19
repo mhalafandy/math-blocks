@@ -143,6 +143,13 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => import("../components/SymbolList").then((m) => m.openSymbolList()),
     },
     {
+      id: "word.changeSymbol",
+      title: "Change symbol… (a quantity gets another symbol everywhere in the document)",
+      group: "Word",
+      keywords: "change rename symbol letter notation everywhere quantity replace define list",
+      run: () => import("../components/ChangeSymbolDialog").then((m) => m.openChangeSymbol({ from: "" })),
+    },
+    {
       id: "word.defineSymbol",
       title: "Define symbol… (meaning and unit, for the list of symbols)",
       group: "Word",

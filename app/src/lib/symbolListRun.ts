@@ -58,13 +58,9 @@ async function segments(text: string): Promise<SymbolListSegment[]> {
   return out;
 }
 
-/** Inserts the table of symbols at the cursor, or updates it at its place (one Ctrl+Z). */
-export async function updateSymbolList(): Promise<{ rows: number; replaced: boolean; checks: ListCheck[] }> {
-  const doc = await readDocumentSymbols();
-  const s = doc.settings;
-  const style = activeStyle();
-  const entries = tableEntries(doc.defs, doc.eqs, style, s);
-  if (!entries.some((e) => !("heading" in e))) throw new Error("This document has no symbol definitions yet: write \\define{symbol}{meaning}[unit] after the sentence that introduces a symbol (then Convert LaTeX), or use Define symbol… in the editor.");
+/** The table's rows for these definitions (drawn equations built here: no Word access, so callable before an operation). */
+export async function buildSymbolListRows(defs: DefinitionIn[], eqs: EquationIn[], s: SymbolListSettings, style = activeStyle()): Promise<{ header: string[]; rows: SymbolListRow[]; entries: number }> {
+  const entries = tableEntries(defs, eqs, style, s);
   const header = s.columns.map((c) => s.columnTitles[c]);
   const rows: SymbolListRow[] = [];
   for (const e of entries) {
@@ -89,7 +85,17 @@ export async function updateSymbolList(): Promise<{ rows: number; replaced: bool
     }
     rows.push({ cells });
   }
-  const r = await connector.request("writeSymbolList", { header, rows, ...(s.tableStyle ? { tableStyle: s.tableStyle } : {}), repeatHeader: s.repeatHeader }, 600_000);
+  return { header, rows, entries: entries.filter((e) => !("heading" in e)).length };
+}
+
+/** Inserts the table of symbols at the cursor, or updates it at its place (one Ctrl+Z). */
+export async function updateSymbolList(): Promise<{ rows: number; replaced: boolean; checks: ListCheck[] }> {
+  const doc = await readDocumentSymbols();
+  const s = doc.settings;
+  const style = activeStyle();
+  const built = await buildSymbolListRows(doc.defs, doc.eqs, s, style);
+  if (!built.entries) throw new Error("This document has no symbol definitions yet: write \\define{symbol}{meaning}[unit] after the sentence that introduces a symbol (then Convert LaTeX), or use Define symbol… in the editor.");
+  const r = await connector.request("writeSymbolList", { header: built.header, rows: built.rows, ...(s.tableStyle ? { tableStyle: s.tableStyle } : {}), repeatHeader: s.repeatHeader }, 600_000);
   const checks = checkList(doc.defs, doc.eqs, style, s);
   return { rows: r.rows, replaced: r.replaced, checks };
 }

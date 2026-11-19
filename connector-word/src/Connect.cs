@@ -185,7 +185,7 @@ namespace MathBlocks.WordConnector
         private static readonly string[] Methods =
         {
             "ping", "insertEquation", "replaceEquation", "readEquation", "documentInfo",
-            "listInstances", "replaceMany", "verifyMany", "scanInterchange", "convertInterchange", "scanNumbering", "convertNumbering", "retag", "selectInstance", "getRegistry", "setRegistry", "getDocumentStyle", "setDocumentStyle", "getDocumentBlocks", "setDocumentBlocks", "listDefinitions", "insertDefinition", "updateDefinition", "writeSymbolList", "listDocuments",
+            "listInstances", "replaceMany", "verifyMany", "scanInterchange", "convertInterchange", "scanNumbering", "convertNumbering", "retag", "selectInstance", "getRegistry", "setRegistry", "getDocumentStyle", "setDocumentStyle", "getDocumentBlocks", "setDocumentBlocks", "listDefinitions", "insertDefinition", "updateDefinition", "writeSymbolList", "listDocuments", "listHeadings", "findTextMentions", "selectRange",
             "listMathTypeParagraphs", "replaceParagraphs", "activateObject",
             "numberEquation", "unnumberEquation", "listNumbered", "insertReference", "updateNumbers",
             "showWordMenu", "selectionInfo", "findLatex", "replaceRanges", "equationToText",
@@ -852,6 +852,9 @@ namespace MathBlocks.WordConnector
                     case "insertDefinition": result = _ops.InsertDefinition(p); break;
                     case "updateDefinition": result = _ops.UpdateDefinition(p); break;
                     case "writeSymbolList": result = _ops.WriteSymbolList(p); break;
+                    case "listHeadings": result = _ops.ListHeadings(p); break;
+                    case "findTextMentions": result = _ops.FindTextMentions(p); break;
+                    case "selectRange": result = _ops.SelectRange(p); break;
                     case "setDocumentBlocks": result = _ops.SetDocumentBlocks(p); break;
                     case "setDocumentStyle": result = _ops.SetDocumentStyle(p); break;
                     case "listDocuments": result = _ops.ListDocuments(); break;

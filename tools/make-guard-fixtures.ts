@@ -200,6 +200,30 @@ const rows1 = [
 make("gen-symbol-list-insert", "Update the list of symbols (first time: marker and table)", body, [...table(rows1), ...body]);
 make("gen-symbol-list-update", "Update the list of symbols (replaced in place)", [...table(rows1), ...body, t("Acceleration "), define("\\define{a}{acceleration}[m/s^2]"), t(".")], [...table([...rows1, ["a", "acceleration", "m/s^2"]]), ...body, t("Acceleration "), define("\\define{a}{acceleration}[m/s^2]"), t(".")]);
 
+// Change symbol: the definition's marker gets the new symbol (meaning and unit kept), equations are redrawn, the
+// list of symbols is rewritten in place; a plain-text mention of the letter stays as it was.
+const quantity = (sym: string): Tok[] => [
+  listMarker,
+  t(P),
+  { k: "table", rows: [["Symbol", "Meaning", "Unit"], ["\u0001", "angular velocity of the body", "rad/s"]], list: true },
+  t("The body turns with angular velocity "),
+  eq,
+  t(" "),
+  define(`\\define{${sym}}{angular velocity of the body}[rad/s]`),
+  t(". In the text it is called ω."),
+  t(P),
+  t("\t"),
+  eq,
+  t("\t"),
+  number("(1.1.1)"),
+  t(P),
+  t("From "),
+  refLinked("_MBEq_1_1_1", "(1.1.1)"),
+  t(" it follows."),
+];
+make("gen-change-symbol", "Change symbol (definition, equations and the list; the text mention stays)", quantity("\\pvec{\\omega}"), quantity("\\pvec{\\Omega}"));
+make("gen-change-symbol-text-edited", "Change symbol that also changed the text mention (must be caught)", quantity("\\pvec{\\omega}"), quantity("\\pvec{\\Omega}").map((x) => (x.k === "t" && x.text.includes("called ω") ? t(". In the text it is called Ω.") : x)), "changed");
+
 const dir = new URL("../connector-word/tests/guard-fixtures/", import.meta.url);
 mkdirSync(dir, { recursive: true });
 for (const [name, fx] of Object.entries(fixtures)) writeFileSync(new URL(`${name}.json`, dir), JSON.stringify(fx, null, 1) + "\n");

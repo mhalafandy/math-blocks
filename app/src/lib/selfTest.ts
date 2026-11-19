@@ -881,6 +881,72 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       await smoke("save", { file: "symbols test.docx" });
     });
 
+    section = "Change symbol: a quantity gets another symbol everywhere";
+    await step("change symbol", async () => {
+      if (!addinSupports("listHeadings")) return check("change symbol (the Word add-in is older than this build)", null, "update the add-in");
+      const { interchangeDocx } = await import("./interchangeFixture");
+      const { toBase64 } = await import("./render");
+      // Generic: the symbol inline, in a numbered and an unnumbered display equation, in a table, decorated (index,
+      // dot, power), a related form (its column matrix) with its own definition, a reference and a text mention.
+      const paras: { style: string; text: string }[] = [
+        { style: "Heading 1", text: "Rotation" },
+        { style: "Normal", text: "\\mbnumbering{1}" },
+        { style: "Normal", text: "\\mbnumbering{1.1}" },
+        { style: "Normal", text: "The body turns with angular velocity $\\pvec{\\omega}$ \\define{\\pvec{\\omega}}{angular velocity of the body}[rad/s], in body components $\\cmat{\\omega}$ \\define{\\cmat{\\omega}}{angular velocity in the body frame}[rad/s]. In the text it is called ω." },
+        { style: "MTDisplayEquation", text: "\t$$\\pvec{h}=\\mat{I}\\pvec{\\omega}_{ba}$$\t\\label{eq:1.1.1}" },
+        { style: "MTDisplayEquation", text: "\t$$\\dot{\\pvec{\\omega}}=\\mat{I}^{-1}\\pvec{\\tau}$$" },
+        { style: "Normal", text: "From \\eqref{eq:1.1.1} and $\\omega^2=\\cmat{\\omega}^{\\T}\\cmat{\\omega}$ it follows." },
+        { style: "TableRow", text: "Quantity | Vector | Components" },
+        { style: "TableRow", text: "angular velocity | $\\pvec{\\omega}$ | $\\cmat{\\omega}$" },
+      ];
+      const docC = await smoke("openDocx", { file: "change symbol test.docx", base64: toBase64(interchangeDocx(paras)) });
+      const { convertLatexDocument } = await import("./latexInterchangeRun");
+      await convertLatexDocument({ yes: true });
+      await smoke("caretTo", { where: "start" });
+      const sl = await import("./symbolListRun");
+      await sl.updateSymbolList();
+      const run = await import("./changeSymbolRun");
+      const { symbolIndex } = { symbolIndex: await import("./symbolIndex") };
+      const read = async () => {
+        const idx = await symbolIndex.buildDocumentIndex();
+        const defs = (await connector.request("listDefinitions", {}, SLOW)) as { definitions: { tag: string }[]; listAt: number; listEnd: number };
+        const inList = idx.equations.filter((e) => e.start !== undefined && e.start >= defs.listAt && e.start <= defs.listEnd).map((e) => e.latex);
+        const body = idx.equations.filter((e) => !inList.includes(e.latex) || e.start === undefined || e.start < defs.listAt || e.start > defs.listEnd).map((e) => e.latex);
+        const refs = ((await smoke("refFields")).fields as { code: string; text?: string }[]).map((f) => `${f.code.trim()}=${f.text ?? ""}`);
+        const numbers = (await connector.request("listNumbered", {}, SLOW)).equations.map((e: { number: string }) => e.number);
+        return { body, inList, defs: defs.definitions.map((d) => d.tag).sort(), refs, numbers };
+      };
+      const before = await read();
+      const ctx = await run.readForChange();
+      const pv = await run.previewChange(ctx, "\\pvec{\\omega}", "\\pvec{\\Omega}");
+      if ("error" in pv) return check("change symbol: the preview", false, pv.error);
+      check("the preview finds the symbol inline, displayed, numbered and in the table", pv.plan.counts.equations >= 4 && pv.plan.counts.numbered >= 1 && pv.plan.counts.inline >= 2, JSON.stringify(pv.plan.counts));
+      check("…its decorated forms (index, dot) and the related form \\cmat{\\omega} in their own groups", pv.plan.counts.decorated >= 2 && pv.plan.related.some((g) => g.key === "\\cmat{\\omega}" && !!g.definition), pv.plan.related.map((g) => `${g.key}×${g.count}`).join(", "));
+      check("…and the plain-text mention ω (listed, not changed)", pv.mentions.some((m) => m.text === "ω"), pv.mentions.map((m) => m.text).join(", "));
+      // Related forms unticked: only the vector changes.
+      await oneCtrlZ("Change symbol (related forms unticked)", docC.name, () => run.applyChange(ctx, pv.plan, { skip: new Set(), related: new Set() }));
+      const after = await read();
+      check("every equation with the vector uses the new symbol; none keeps the old one", after.body.some((l) => l.includes("\\pvec{\\Omega}")) && !after.body.some((l) => l.includes("\\pvec{\\omega}")), after.body.join(" | "));
+      check("…the index and the dot are kept", after.body.some((l) => l.includes("\\pvec{\\Omega}_{ba}")) && after.body.some((l) => l.includes("\\dot{\\pvec{\\Omega}}")), after.body.filter((l) => l.includes("Omega")).join(" | "));
+      check("related forms unticked are unchanged (\\cmat{\\omega}, \\omega^2)", after.body.some((l) => l.includes("\\cmat{\\omega}")) && after.body.some((l) => l.includes("\\omega^2")), "");
+      check("the definition has the new symbol, its meaning and unit unchanged", after.defs.includes("\\define{\\pvec{\\Omega}}{angular velocity of the body}[rad/s]") && after.defs.includes("\\define{\\cmat{\\omega}}{angular velocity in the body frame}[rad/s]"), after.defs.join(" | "));
+      check("the list of symbols is updated in place", after.inList.includes("\\pvec{\\Omega}") && !after.inList.includes("\\pvec{\\omega}") && after.inList.length === before.inList.length, `${before.inList.join(", ")} → ${after.inList.join(", ")}`);
+      check("numbers and references are unchanged", after.numbers.join() === before.numbers.join() && after.refs.join() === before.refs.join(), `${after.numbers.join(" ")}; ${after.refs.join(" | ")}`);
+      // One Ctrl+Z restores everything exactly (oneCtrlZ checked the document; here the definitions and the list too).
+      await smoke("undo", { times: 1 });
+      const restored = await read();
+      check("one Ctrl+Z restores everything exactly (equations, definitions, the list, numbers, references)", JSON.stringify(restored) === JSON.stringify(before), JSON.stringify(restored) === JSON.stringify(before) ? "identical" : `${restored.defs.join(" | ")}; ${restored.inList.join(", ")}`);
+      // Related forms ticked: the column matrix and the scalar change too, their definition keeps its meaning.
+      const ctx2 = await run.readForChange();
+      const pv2 = await run.previewChange(ctx2, "\\pvec{\\omega}", "\\pvec{\\Omega}");
+      if ("error" in pv2) return check("change symbol: the second preview", false, pv2.error);
+      await run.applyChange(ctx2, pv2.plan, { skip: new Set(), related: new Set(pv2.plan.related.map((g) => g.key)) });
+      const all = await read();
+      check("with related forms ticked: \\cmat{\\Omega} and \\Omega^2 too", all.body.some((l) => l.includes("\\cmat{\\Omega}")) && all.body.some((l) => l.includes("\\Omega^2")) && !all.body.some((l) => /\\omega/.test(l)), all.body.join(" | "));
+      check("…and the related definition keeps its meaning and unit", all.defs.includes("\\define{\\cmat{\\Omega}}{angular velocity in the body frame}[rad/s]"), all.defs.join(" | "));
+      await smoke("save", { file: "change symbol test.docx" });
+    });
+
     section = "Reference links: Ctrl+click in Word, a link in the PDF";
     await step("reference links", async () => {
       if (!addinSupports("listDefinitions")) return check("reference links (the Word add-in is older than this build)", null, "update the add-in");

@@ -54,6 +54,12 @@ export function openEditorMenu(mf: MathfieldElement, e: MouseEvent) {
       { separator: true, label: "" },
     );
   }
+  if (sym) {
+    // The symbol as written: a kind object (\pvec{\omega}), an indexed letter (v_0), a bold or plain letter.
+    const letter = latexOfLetter(sym.text);
+    const from = sym.inKind ? `\\${sym.inKind}{${letter}}` : sym.sub ? `${letter}_{${sym.sub}}` : sym.bold ? `\\boldsymbol{${letter}}` : letter;
+    items.push({ label: `Change ${sym.label} everywhere in the document…`, onSelect: () => void import("./ChangeSymbolDialog").then((m) => m.openChangeSymbol({ from })) }, { separator: true, label: "" });
+  }
   items.push(
     {
       label: mf.selectionIsCollapsed ? "Make the symbol before the cursor a kind…" : "Make the selection a kind…",

@@ -36,6 +36,53 @@ equation's end, and measured "c" and "d" with it. **Fixed:** the markers are fou
 or not (unit tests). Re-run on your PDF: the entry measures 10.7 × 10.0 pt against the drawing's 10.3 × 10.7 pt,
 bottom 2.0 pt against 1.7 pt: no flag. The picture itself was right.
 
+#### B. Change symbol… — built (Word side checked by the self-test on your PC)
+
+- **Entry points:** the list of symbols (each definition: "Change its symbol…"), right-click a symbol in the
+  editor or the floating editor ("Change ω everywhere in the document…"), Ctrl+K ("Change symbol…", then choose a
+  defined symbol).
+- **Dialog:** the quantity (meaning and unit, read-only), the old symbol drawn, the new one typed in a small
+  editor field (kinds included) with its LaTeX beside it. The preview follows as you type: counts (equations,
+  inline/display/numbered, occurrences, definitions, the list), then every occurrence with its equation drawn
+  before → after, by section (headings; footnotes, text boxes and headers as their own sections), a tick each:
+  - **the symbol** itself;
+  - **with an index, power, prime, dot or frame label** (`\pvec{\omega}_{ba}`, `\omega^2`, `\omega'`,
+    `\dot{\pvec{\omega}}`, `\pvec[B/N]{\omega}`): changed keeping the decoration, in their own group;
+  - **related forms** (same letter, other kinds: `\cmat{\omega}`, plain `\omega`, `\hat{\omega}`), each with its own
+    definition, **unticked** by default, "Include all"; when ticked they change the same way and their
+    definitions keep their meaning and unit; unticked, the preview says how many were left alone;
+  - **definitions** (meaning and unit kept), **plain-text mentions** (the LaTeX typed as text, a Greek letter in
+    the text; listed with Go to, never changed), and "also change this document's blocks" (off).
+  - **Clashes:** if the new symbol is already used or defined, the preview says where (with both definitions)
+    and Apply waits until you choose: merge keeping both definitions, keep the existing one, or keep this one.
+- **Identity:** as the list of symbols identifies symbols — a bold ω made a vector by a rule is `\pvec{\omega}`;
+  `v_0` is not `v`. The equations are rewritten through their parsed form; an equation without the symbol is left
+  exactly as written.
+- **Apply = one operation:** one Ctrl+Z, under the text guard, a backup first when it touches more than 10 things;
+  inside it, the definitions' markers (new symbol, same meaning and unit), the document's rule for the letter
+  ("ω is a vector when bold" → Ω), the document's blocks when asked, the list of symbols rewritten in place, then
+  every changed equation redrawn in its own form (picture or Word equation). Numbers, bookmarks and references are
+  not touched (an equation is replaced in place, its number field stays).
+- **Equations outside the main text:** the add-in now finds MathBlocks equations in footnotes, endnotes, text
+  boxes, headers and footers too (it saw only the main text before — for every operation, not just this one).
+- **Checks:** unit tests of the matching (kinds, rules, indices, frame labels, primes, dots, `v_0` vs `v`,
+  related forms only when ticked, definitions, clashes, the rule following the letter; 14 tests); guard fixtures
+  `gen-change-symbol` (passes) and `gen-change-symbol-text-edited` (a changed text mention is caught); the
+  browser check of the dialog on a generic document (quantity shown, groups, related unticked and counted,
+  "Include all", Apply passes the choices, a clash blocks Apply until a merge choice); the Word self-test section
+  "Change symbol" (inline, numbered and unnumbered display, table, decorated forms, a related form with its
+  definition, a reference, a text mention, the list): everything updated, the definition's meaning and unit kept,
+  related forms unchanged when unticked and changed when ticked, the list updated in place, numbers and
+  references unchanged, one Ctrl+Z restores everything exactly.
+- Also fixed: the small drawings (library, palette tiles, previews) drew an index under a harpoon; they now group
+  it like the editor.
+  ![Change symbol: preview](images/ui/change-symbol-preview.png)
+  ![Change symbol: related forms included](images/ui/change-symbol-related.png)
+  ![Change symbol: a clash](images/ui/change-symbol-clash.png)
+- **Not yet:** Convert LaTeX still reads LaTeX in the main text only (tables included); `$…$` typed in a footnote
+  or text box is not converted. Equations already in those places are found and changed. I will extend it with
+  the thesis-size work (C3).
+
 #### A1. Your 0.1.149 self-test — waiting for the report
 
 ### Round after 0.1.148 (your status read: accepted)

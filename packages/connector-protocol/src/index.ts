@@ -243,8 +243,10 @@ export interface InstanceInfo {
   context: string;
   /** Its equation number, e.g. "(2.3)", when it is numbered (not in light listings). */
   number?: string | null;
-  /** Its position in the document (document order). */
+  /** Its position in the main text (document order); absent for an equation in another story. */
   start?: number;
+  /** Where it is when not in the main text: footnotes, endnotes, a text box, a header or footer. */
+  story?: "footnotes" | "endnotes" | "textbox" | "header" | "footer" | "comments" | "other";
   /** The bookmark of its number (references link to it), when numbered (not in light listings). */
   bookmark?: string;
   /** WordprocessingML of the equation, when requested (includeContent). */
@@ -377,6 +379,12 @@ export interface AppToConnector {
   insertDefinition: { params: DocTarget & { tag: string; where?: "cursor" | "afterEquation" | "at"; equation?: string; at?: number }; result: { ok: true; at: number } };
   /** Replaces (tag) or deletes (no tag) the definition starting at `start`. */
   updateDefinition: { params: DocTarget & { start: number; tag?: string }; result: { ok: true } };
+  /** The main text's headings (Change symbol groups its preview by section). */
+  listHeadings: { params: DocTarget; result: { headings: { start: number; level: number; text: string }[] } };
+  /** Plain-text mentions outside equations and fields (Change symbol lists them with Go to). */
+  findTextMentions: { params: DocTarget & { texts: { text: string; wholeWord?: boolean; matchCase?: boolean }[] }; result: { mentions: { text: string; start: number; end: number; context: string }[] } };
+  /** Selects a range of the main text and scrolls to it. */
+  selectRange: { params: DocTarget & { start: number; end?: number }; result: { ok: true } };
   writeSymbolList: { params: DocTarget & { header: string[]; rows: SymbolListRow[]; tableStyle?: string; repeatHeader?: boolean }; result: { ok: true; replaced: boolean; rows: number; equations: number } };
   /** Open documents (copy style from another document). */
   listDocuments: { params: Record<string, never>; result: { documents: { name: string; fullName: string; active: boolean; hasStyle: boolean }[] } };

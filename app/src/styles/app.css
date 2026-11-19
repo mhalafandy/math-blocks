@@ -931,3 +931,16 @@ html.preview-window body { background: var(--bg); }
 .preview-bar .link-button.on { color: var(--accent); font-weight: 600; }
 /* Without the width bar (empty editor) the zoom tools get their own row: nothing scrolls under them. */
 .canvas:not(:has(> .width-bar)) .canvas-scroll { margin-bottom: 46px; }
+
+/* Change symbol… */
+.change-symbol .mini-mathfield { font-size: 26px; min-width: 200px; border: 1.5px solid var(--border); border-radius: 8px; padding: 4px 10px; background: var(--surface); }
+.change-symbol .cs-latex { margin-top: 6px; font-family: var(--font-mono, monospace); font-size: 12.5px; }
+.cs-preview { max-height: min(460px, 50vh); overflow: auto; display: grid; gap: 10px; padding-right: 4px; }
+.cs-counts { font-size: 13px; margin: 0; }
+.cs-clash { border: 1px solid var(--warn, #c88a00); border-radius: 8px; padding: 8px 10px; display: grid; gap: 4px; }
+.cs-section { font-size: 11.5px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; margin: 6px 0 2px; }
+.cs-eq { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 10px; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--border); }
+.cs-occ { display: grid; gap: 2px; }
+.cs-eq-draw { overflow-x: auto; white-space: nowrap; }
+.cs-related { margin: 4px 0 4px 6px; }
+.cs-mention { font-size: 12.5px; }

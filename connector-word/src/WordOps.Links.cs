@@ -65,7 +65,10 @@ namespace MathBlocks.WordConnector
                         var item = light
                             ? new Dictionary<string, object> { ["tag"] = tag, ["page"] = 0, ["context"] = "" }
                             : NumberedItem(tag, eq);
-                        item["start"] = SafeStart(eq);
+                        // Positions are per story: given for the main text; elsewhere the story is named instead.
+                        var story = eq.Story;
+                        if (story == "main") item["start"] = SafeStart(eq);
+                        else item["story"] = story;
                         if (includeContent) item["flatOpc"] = PictureXmlForApp(eq);
                         items.Add(item);
                     }

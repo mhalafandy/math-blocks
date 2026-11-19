@@ -25,6 +25,13 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added — Change symbol…
+- A quantity gets another symbol everywhere: equations (decorated forms kept, related forms on request),
+  its definition (meaning and unit kept), the document's rule for the letter, its blocks (asked), the list of
+  symbols; preview with ticks, clashes, text mentions; one Ctrl+Z, guarded.
+- The add-in finds equations in footnotes, endnotes, text boxes, headers and footers.
+- Previews draw an index after a harpoon beside the letter.
+
 ### Changed — text guard testable without Word
 - The guard's comparison is a pure function (GuardText) over a recorded document; fixtures of each operation in
   CI; a deleted space between words now counts as a change. The list of symbols is left out (updating it was undone).

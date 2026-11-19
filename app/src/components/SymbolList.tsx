@@ -99,6 +99,9 @@ export function SymbolListDialog() {
                         <button className="link-button" onClick={() => openDefineSymbol({ symbol: d.symbol, meaning: d.meaning, unit: d.unit, editStart: d.start })} disabled={s.busy}>
                           Edit
                         </button>{" "}
+                        <button className="link-button" onClick={() => void import("./ChangeSymbolDialog").then((m) => m.openChangeSymbol({ from: d.symbol }))} disabled={s.busy} title="Give this quantity another symbol everywhere (its meaning and unit stay)">
+                          Change its symbol…
+                        </button>{" "}
                         <button className="link-button" onClick={() => void remove(d)} disabled={s.busy}>
                           Delete
                         </button>

@@ -279,8 +279,10 @@ namespace MathBlocks.WordConnector
                     {
                         string code;
                         try { code = (f.Code.Text ?? "").Trim(); } catch (COMException) { continue; }
-                        if (OldButtonRef.IsMatch(code) || RefCode.IsMatch(code))
-                            list.Add(new Dictionary<string, object> { ["code"] = code, ["start"] = f.Code.Start - 1 });
+                        if (!OldButtonRef.IsMatch(code) && !RefCode.IsMatch(code)) continue;
+                        string shown = "";
+                        try { shown = f.Result?.Text ?? ""; } catch (COMException) { }
+                        list.Add(new Dictionary<string, object> { ["code"] = code, ["start"] = f.Code.Start - 1, ["text"] = shown });
                     }
                     return new Dictionary<string, object> { ["fields"] = list };
                 }

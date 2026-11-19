@@ -1,4 +1,5 @@
 import { kindMacroRe } from "../lib/kinds";
+import { groupScriptedAccents } from "../lib/editorAccents";
 import { memo } from "react";
 import { convertLatexToMarkup } from "mathlive/ssr";
 import { expandNotation, KINDS, styleAst, styleNotation } from "@mathblocks/math-core";
@@ -26,7 +27,8 @@ export const MathPreview = memo(function MathPreview({ latex, className }: { lat
   let html = cache.get(key);
   if (html === undefined) {
     try {
-      html = convertLatexToMarkup(expandKindsForPreview(latex).replace(/\\placeholder\{\}/g, "\\square"));
+      // A script after a stretchy accent is grouped, so MathLive draws it beside the letter (as in the editor).
+      html = convertLatexToMarkup(groupScriptedAccents(expandKindsForPreview(latex)).replace(/\\placeholder\{\}/g, "\\square"));
     } catch {
       html = "";
     }

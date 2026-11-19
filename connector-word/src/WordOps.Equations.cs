@@ -49,6 +49,9 @@ namespace MathBlocks.WordConnector
 
         public string Xml => Range.WordOpenXML;
 
+        /// <summary>Where it is: "main", "footnotes", "endnotes", "textbox", "header", "footer", "comments".</summary>
+        public string Story => WordOps.StoryName(Range);
+
         public override string ToString() => (IsPicture ? "picture " : "wrapper ") + Tag;
     }
 
@@ -149,7 +152,10 @@ namespace MathBlocks.WordConnector
             return list;
         }
 
-        /// <summary>Every MathBlocks equation of the document, in document order.</summary>
+        /// <summary>
+        /// Every MathBlocks equation of the document: the main text in document order, then those in footnotes,
+        /// endnotes, text boxes, headers and footers (each story in its order).
+        /// </summary>
         internal static List<Eq> AllEquations(Word.Document doc)
         {
             var list = new List<Eq>();
@@ -160,7 +166,88 @@ namespace MathBlocks.WordConnector
                 list.Add(new Eq(s));
             }
             foreach (var cc in WrapperControls(doc)) list.Add(new Eq(cc));
-            return WithoutTrackedDeletions(doc, list).OrderBy(e => SafeStart(e)).ToList();
+            var main = WithoutTrackedDeletions(doc, list).OrderBy(e => SafeStart(e)).ToList();
+            foreach (var story in OtherStories(doc)) main.AddRange(WithoutTrackedDeletions(doc, StoryEquations(story, null)).OrderBy(e => SafeStart(e)));
+            return main;
+        }
+
+        /// <summary>The equations of one story other than the main text (all, or those with this ID).</summary>
+        private static List<Eq> StoryEquations(Word.Range story, string tag)
+        {
+            var list = new List<Eq>();
+            try
+            {
+                foreach (Word.InlineShape s in story.InlineShapes)
+                {
+                    var t = TagOf(s);
+                    if (!IsTag(t) || (tag != null && t != tag)) continue;
+                    if (InsideMathBlocksControl(s.Range)) continue;
+                    list.Add(new Eq(s));
+                }
+                foreach (Word.ContentControl cc in story.ContentControls)
+                    if (IsMathBlocks(cc) && (tag == null || cc.Tag == tag)) list.Add(new Eq(cc));
+            }
+            catch (COMException)
+            {
+            }
+            return list;
+        }
+
+        /// <summary>
+        /// Every story of the document other than the main text that can hold equations: footnotes, endnotes, text
+        /// boxes, headers and footers (each linked story followed through NextStoryRange). Comments are left out.
+        /// </summary>
+        internal static IEnumerable<Word.Range> OtherStories(Word.Document doc)
+        {
+            var list = new List<Word.Range>();
+            try
+            {
+                foreach (Word.Range first in doc.StoryRanges)
+                {
+                    Word.WdStoryType type;
+                    try { type = first.StoryType; } catch (COMException) { continue; }
+                    if (type == Word.WdStoryType.wdMainTextStory || type == Word.WdStoryType.wdCommentsStory) continue;
+                    if (type == Word.WdStoryType.wdFootnoteSeparatorStory || type == Word.WdStoryType.wdFootnoteContinuationSeparatorStory || type == Word.WdStoryType.wdFootnoteContinuationNoticeStory) continue;
+                    if (type == Word.WdStoryType.wdEndnoteSeparatorStory || type == Word.WdStoryType.wdEndnoteContinuationSeparatorStory || type == Word.WdStoryType.wdEndnoteContinuationNoticeStory) continue;
+                    var r = first;
+                    for (int guard = 0; r != null && guard < 10000; guard++)
+                    {
+                        list.Add(r);
+                        try { r = r.NextStoryRange; } catch (COMException) { r = null; }
+                    }
+                }
+            }
+            catch (COMException)
+            {
+            }
+            return list;
+        }
+
+        /// <summary>The story a range is in, by name (see Eq.Story).</summary>
+        internal static string StoryName(Word.Range r)
+        {
+            try
+            {
+                switch (r.StoryType)
+                {
+                    case Word.WdStoryType.wdMainTextStory: return "main";
+                    case Word.WdStoryType.wdFootnotesStory: return "footnotes";
+                    case Word.WdStoryType.wdEndnotesStory: return "endnotes";
+                    case Word.WdStoryType.wdTextFrameStory: return "textbox";
+                    case Word.WdStoryType.wdCommentsStory: return "comments";
+                    case Word.WdStoryType.wdEvenPagesHeaderStory:
+                    case Word.WdStoryType.wdPrimaryHeaderStory:
+                    case Word.WdStoryType.wdFirstPageHeaderStory: return "header";
+                    case Word.WdStoryType.wdEvenPagesFooterStory:
+                    case Word.WdStoryType.wdPrimaryFooterStory:
+                    case Word.WdStoryType.wdFirstPageFooterStory: return "footer";
+                    default: return "other";
+                }
+            }
+            catch (COMException)
+            {
+                return "main";
+            }
         }
 
         /// <summary>
@@ -212,7 +299,11 @@ namespace MathBlocks.WordConnector
             foreach (Word.InlineShape s in doc.InlineShapes)
                 if (TagOf(s) == tag && !InsideMathBlocksControl(s.Range)) list.Add(new Eq(s));
             foreach (Word.ContentControl cc in doc.SelectContentControlsByTag(tag)) list.Add(new Eq(cc));
-            return WithoutTrackedDeletions(doc, list).OrderBy(e => SafeStart(e)).ToList();
+            var found = WithoutTrackedDeletions(doc, list).OrderBy(e => SafeStart(e)).ToList();
+            if (found.Count > 0) return found;
+            // Not in the main text: footnotes, endnotes, text boxes, headers and footers.
+            foreach (var story in OtherStories(doc)) found.AddRange(WithoutTrackedDeletions(doc, StoryEquations(story, tag)));
+            return found;
         }
 
         private static string NewTagLike(string tag)

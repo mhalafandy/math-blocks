@@ -109,7 +109,24 @@ const STYLES =
 
 /** The document as a .docx (A4, 2.54 cm margins: centre tab 4513, right tab 9026 twips). */
 export function interchangeDocx(paragraphs: { style: string; text: string; keepNext?: boolean }[] = INTERCHANGE_PARAGRAPHS): Uint8Array {
-  const body = paragraphs.map((p) => `<w:p><w:pPr><w:pStyle w:val="${STYLE_ID[p.style]}"/>${p.keepNext ? "<w:keepNext/>" : ""}</w:pPr>${runs(p.text)}</w:p>`).join("");
+  // Consecutive "TableRow" entries make one table; their cells are separated by " | " (each cell one Normal paragraph).
+  const para = (p: { style: string; text: string; keepNext?: boolean }) => `<w:p><w:pPr><w:pStyle w:val="${STYLE_ID[p.style] ?? "Normal"}"/>${p.keepNext ? "<w:keepNext/>" : ""}</w:pPr>${runs(p.text)}</w:p>`;
+  const parts: string[] = [];
+  for (let i = 0; i < paragraphs.length; i++) {
+    if (paragraphs[i]!.style !== "TableRow") {
+      parts.push(para(paragraphs[i]!));
+      continue;
+    }
+    const rows: string[] = [];
+    while (i < paragraphs.length && paragraphs[i]!.style === "TableRow") {
+      const cells = paragraphs[i]!.text.split(" | ");
+      rows.push(`<w:tr>${cells.map((c) => `<w:tc><w:tcPr><w:tcW w:w="${Math.floor(9000 / cells.length)}" w:type="dxa"/></w:tcPr>${para({ style: "Normal", text: c })}</w:tc>`).join("")}</w:tr>`);
+      i++;
+    }
+    i--;
+    parts.push(`<w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="4"/><w:bottom w:val="single" w:sz="4"/><w:insideH w:val="single" w:sz="4"/></w:tblBorders></w:tblPr>${rows.join("")}</w:tbl>`, para({ style: "Normal", text: "" }));
+  }
+  const body = parts.join("");
   return zipSync({
     "[Content_Types].xml": strToU8(
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>`,
