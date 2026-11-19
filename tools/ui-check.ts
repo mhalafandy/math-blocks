@@ -579,7 +579,7 @@ const BIG = {
     summary: document.querySelector("[data-testid=cd-summary]")?.textContent ?? "",
     groups: ["equations", "style", "references", "markers", "mathtype"].filter((g) => document.querySelector(`[data-testid=cd-group-${g}]`)).length,
     boxes: document.querySelectorAll(".cd-problem input[type=checkbox]").length,
-    goto: [...document.querySelectorAll(".cd-problem button")].filter((b) => b.textContent === "Go to").length,
+    goto: Array.from(document.querySelectorAll(".cd-problem button")).filter((b) => b.textContent === "Go to").length,
   }));
   check(/120 equation\(s\) checked in 1\.8 s/.test(r.summary) && /2 error\(s\), 3 warning\(s\); 3 can be repaired/.test(r.summary), `Check document: the summary (${r.summary})`);
   check(r.groups === 5 && r.boxes === 3 && r.goto === 5, `Check document: grouped problems, a tick for each repairable one, Go to for each (${r.groups} groups, ${r.boxes} ticks, ${r.goto} Go to)`);
