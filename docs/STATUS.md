@@ -104,6 +104,34 @@ bottom 2.0 pt against 1.7 pt: no flag. The picture itself was right.
 - Not testable here: the promotion and the update download/installation need GitHub and Windows; the Rust code
   compiles (cargo check) and CI builds the installer.
 
+#### C2. Check document — built (Word side checked by the self-test on your PC)
+
+- **Where:** ribbon (Convert group: "Check document", keytip D) and Ctrl+K. One report, grouped, each problem with
+  Go to; the safe repairs are ticked and run together as **one Ctrl+Z**, under the text guard.
+- **What it checks:**
+  - every equation's stored LaTeX parses (else: an error, fix by hand);
+  - its picture matches its LaTeX: the picture's size against a drawing made now from its LaTeX in the document
+    style (resized by hand, or out of date → draw again); its description and its source agree (→ draw again from
+    the source); an embedded object's data is there and readable (→ draw again from its description);
+  - pictures drawn in an older document style (→ draw again);
+  - numbers unique and in order (chapters before appendices) (→ Update numbers);
+  - every reference points to an equation in the document (else: an error, fix by hand) and shows its number
+    (→ Update numbers); references in the earlier form (→ Update numbers makes them links);
+  - markers (section, `\define`, list of symbols): hidden (→ hide), readable, not duplicated, one list;
+  - MathType left: objects, numbering fields, bookmarks (→ the Convert MathType / Convert numbering buttons).
+- **How:** the add-in reads every field once (`checkFields`: references with the number they show and their
+  target's number, markers with their hidden state, MathType leftovers); the equations come from the usual
+  listing with their XML; the judging is a pure function (`app/src/lib/checkDocument.ts`) with unit tests. Repair:
+  markers hidden (`hideFields`), Update numbers, then the equations drawn again, all inside one operation.
+- **Checks:** unit tests (a clean document; every kind of problem with its repair; number order with appendices;
+  the repair plan; reading a picture's facts); guard fixture `gen-check-document-repair`; the browser check of
+  the report (summary, groups, ticks, Go to, Repair runs only the ticked ones); the Word self-test section
+  "Check document": a freshly converted document checks clean; three deliberate faults (a definition marker made
+  visible, a picture resized by hand, a reference in the earlier form) are each found with their repair; Repair
+  fixes them and the document checks clean; one Ctrl+Z brings back exactly those problems; Ctrl+Y repairs again.
+- **Speed:** the self-test reports the time; the thesis-size measurement (1500 equations) comes with C3.
+  ![Check document](images/ui/check-document.png)
+
 #### A1. Your 0.1.149 self-test — waiting for the report
 
 ### Round after 0.1.148 (your status read: accepted)

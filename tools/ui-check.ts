@@ -545,6 +545,52 @@ const BIG = {
   await page.screenshot({ path: `${out}/change-symbol-clash.png` });
   await ctx.close();
 }
+// ------------------------------------------------------------------ Check document (the report, on given results)
+{
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 } });
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.log("page error:", e.message));
+  await open(page);
+  await page.evaluate("window.__name = (f) => f");
+  await page.evaluate(async () => {
+    const m = await import("/src/components/CheckDocumentDialog.tsx" as string);
+    (window as unknown as { __repaired: unknown }).__repaired = null;
+    m.openCheckDocument({
+      result: {
+        document: "generic.docx",
+        equations: 120,
+        ms: 1800,
+        problems: [
+          { id: "p1", group: "equations", severity: "error", message: "Its stored LaTeX does not parse: Missing closing brace", tag: "a" },
+          { id: "p2", group: "style", severity: "warning", message: "Drawn in an older document style", tag: "b", repair: "redraw", latex: "x" },
+          { id: "p3", group: "references", severity: "error", message: "A reference shows (1.1) but its equation is (1.2)", start: 40, repair: "updateNumbers" },
+          { id: "p4", group: "markers", severity: "warning", message: "A symbol definition marker is not hidden (it would print)", start: 12, repair: "hide" },
+          { id: "p5", group: "mathtype", severity: "warning", message: "3 MathType equation(s) left", start: 90, command: "convertMathType" },
+        ],
+      },
+      repair: async (chosen: Set<string>) => {
+        (window as unknown as { __repaired: string[] }).__repaired = [...chosen];
+        return "repaired";
+      },
+    });
+  });
+  await page.waitForSelector("[data-testid=cd-summary]");
+  const r = await page.evaluate(() => ({
+    summary: document.querySelector("[data-testid=cd-summary]")?.textContent ?? "",
+    groups: ["equations", "style", "references", "markers", "mathtype"].filter((g) => document.querySelector(`[data-testid=cd-group-${g}]`)).length,
+    boxes: document.querySelectorAll(".cd-problem input[type=checkbox]").length,
+    goto: [...document.querySelectorAll(".cd-problem button")].filter((b) => b.textContent === "Go to").length,
+  }));
+  check(/120 equation\(s\) checked in 1\.8 s/.test(r.summary) && /2 error\(s\), 3 warning\(s\); 3 can be repaired/.test(r.summary), `Check document: the summary (${r.summary})`);
+  check(r.groups === 5 && r.boxes === 3 && r.goto === 5, `Check document: grouped problems, a tick for each repairable one, Go to for each (${r.groups} groups, ${r.boxes} ticks, ${r.goto} Go to)`);
+  await page.screenshot({ path: `${out}/check-document.png` });
+  await page.locator(".cd-problem input[type=checkbox]").first().uncheck();
+  await page.click("[data-testid=cd-repair]");
+  await page.waitForTimeout(300);
+  const repaired = await page.evaluate(() => (window as unknown as { __repaired: string[] | null }).__repaired);
+  check(JSON.stringify(repaired) === JSON.stringify(["p3", "p4"]), `Check document: Repair runs the ticked repairs only (${JSON.stringify(repaired)})`);
+  await ctx.close();
+}
 // ------------------------------------------------------------------ a block pinned to Quick access
 {
   const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 } });

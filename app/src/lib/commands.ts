@@ -143,6 +143,13 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => import("../components/SymbolList").then((m) => m.openSymbolList()),
     },
     {
+      id: "word.checkDocument",
+      title: "Check document (equations, numbers, references, markers, style) and repair",
+      group: "Word",
+      keywords: "check verify validate document problems broken references numbers markers style outdated repair health",
+      run: () => import("../components/CheckDocumentDialog").then((m) => m.openCheckDocument()),
+    },
+    {
       id: "word.changeSymbol",
       title: "Change symbol… (a quantity gets another symbol everywhere in the document)",
       group: "Word",

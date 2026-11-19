@@ -202,6 +202,7 @@ class ConnectorClient {
           else if (params.command === "documentStyle") void import("../components/DocumentStyleDialog").then((m) => m.openDocumentStyle());
           else if (params.command === "checkStyle") void import("../components/CheckStyleDialog").then((m) => m.openCheckStyle());
           else if (params.command === "applyStyle") void import("./styleRun").then((m) => m.applyStyleCommand({ fromWord: true }));
+          else if (params.command === "checkDocument") void import("../components/CheckDocumentDialog").then((m) => m.openCheckDocument());
           else if (params.command === "listOfSymbols") void import("../components/SymbolList").then((m) => m.openSymbolList());
         }
         break;

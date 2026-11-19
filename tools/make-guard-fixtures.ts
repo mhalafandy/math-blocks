@@ -224,6 +224,24 @@ const quantity = (sym: string): Tok[] => [
 make("gen-change-symbol", "Change symbol (definition, equations and the list; the text mention stays)", quantity("\\pvec{\\omega}"), quantity("\\pvec{\\Omega}"));
 make("gen-change-symbol-text-edited", "Change symbol that also changed the text mention (must be caught)", quantity("\\pvec{\\omega}"), quantity("\\pvec{\\Omega}").map((x) => (x.k === "t" && x.text.includes("called ω") ? t(". In the text it is called Ω.") : x)), "changed");
 
+// Check document's repair: markers hidden (a field property), numbers and references updated (field results),
+// pictures drawn again: nothing outside fields and equations changes.
+const checked = (shown: string): Tok[] => [
+  sectionMarker("1.1"),
+  t(P),
+  t("The value follows from "),
+  refLinked("_MBEq_1_1_1", shown),
+  t(" and "),
+  refOld("_MBEq_1_1_2", "(1.1.2)"),
+  t("."),
+  t(P),
+  t("\t"),
+  eq,
+  t("\t"),
+  number("(1.1.1)"),
+];
+make("gen-check-document-repair", "Repair (Check document): markers hidden, numbers and references updated, pictures redrawn", checked("(1.1.3)"), checked("(1.1.1)").map((x) => (x.k === "f" && x.code.startsWith("GOTOBUTTON") ? refLinked("_MBEq_1_1_2", "(1.1.2)") : x)));
+
 const dir = new URL("../connector-word/tests/guard-fixtures/", import.meta.url);
 mkdirSync(dir, { recursive: true });
 for (const [name, fx] of Object.entries(fixtures)) writeFileSync(new URL(`${name}.json`, dir), JSON.stringify(fx, null, 1) + "\n");

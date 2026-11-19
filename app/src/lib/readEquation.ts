@@ -39,7 +39,7 @@ function emfSource(xml: string): { latex: string; mode: string; fallback?: strin
 }
 
 /** The data inside a MathBlocks embedded object ("MathBlocks" stream of its compound file), if any. */
-function objectSource(xml: string): { latex: string; mode: string; styleHash?: string } | null {
+export function objectSource(xml: string): { latex: string; mode: string; styleHash?: string } | null {
   if (!/ProgID="MathBlocks\.Equation/.test(xml)) return null;
   for (const m of xml.matchAll(/<pkg:part\b[^>]*pkg:contentType="application\/vnd\.openxmlformats-officedocument\.oleObject"[^>]*>\s*<pkg:binaryData>([\s\S]*?)<\/pkg:binaryData>/g)) {
     try {

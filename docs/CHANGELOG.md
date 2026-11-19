@@ -25,6 +25,11 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added — Check document
+- One report (ribbon, Ctrl+K): LaTeX that does not parse, pictures that do not match their LaTeX or style,
+  unreadable object data, numbers out of order or repeated, references that point nowhere or show a wrong number,
+  markers that print, MathType leftovers; Go to each; safe repairs together in one Ctrl+Z.
+
 ### Added — stable and test update channels
 - Builds reach the stable channel only when promoted after a clean self-test (Promote to stable workflow); the
   test channel gets every build and is marked in the status bar; one-click roll back to the previous stable build.

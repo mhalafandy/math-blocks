@@ -2,6 +2,7 @@ import { MathPreview } from "./components/MathPreview";
 import { GearIcon, PreviewIcon } from "./components/Icons";
 import { DefineSymbolDialog, SymbolListDialog } from "./components/SymbolList";
 import { ChangeSymbolDialog } from "./components/ChangeSymbolDialog";
+import { CheckDocumentDialog } from "./components/CheckDocumentDialog";
 import { useBlocks } from "./lib/blocks/useBlocks";
 import { SaveBlockDialog } from "./components/SaveBlockDialog";
 import { BlockStatus, SlotHints } from "./components/BlockSlots";
@@ -410,6 +411,7 @@ export function App() {
       <SymbolListDialog />
       <DefineSymbolDialog />
       <ChangeSymbolDialog />
+      <CheckDocumentDialog />
       <ContextMenu />
       {s.toast && <div className={`toast ${s.toast.kind}`} role="status">{s.toast.text}</div>}
     </div>

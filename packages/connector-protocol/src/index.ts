@@ -383,6 +383,19 @@ export interface AppToConnector {
   listHeadings: { params: DocTarget; result: { headings: { start: number; level: number; text: string }[] } };
   /** Plain-text mentions outside equations and fields (Change symbol lists them with Go to). */
   findTextMentions: { params: DocTarget & { texts: { text: string; wholeWord?: boolean; matchCase?: boolean }[] }; result: { mentions: { text: string; start: number; end: number; context: string }[] } };
+  /** Check document: references (shown vs target number), hidden markers, MathType leftovers. */
+  checkFields: {
+    params: DocTarget;
+    result: {
+      references: { start: number; code: string; bookmark: string; shown: string; target: string; exists: boolean; linked: boolean }[];
+      markers: { start: number; kind: "MBEquationSection" | "MBDefine" | "MBSymbolList"; code: string; hidden: boolean }[];
+      mathTypeFields: { start: number; code: string }[];
+      mathTypeObjects: { start: number }[];
+      mathTypeBookmarks: number;
+    };
+  };
+  /** Check document's repair: hides marker fields (one undo step). */
+  hideFields: { params: DocTarget & { starts: number[] }; result: { hidden: number } };
   /** Selects a range of the main text and scrolls to it. */
   selectRange: { params: DocTarget & { start: number; end?: number }; result: { ok: true } };
   writeSymbolList: { params: DocTarget & { header: string[]; rows: SymbolListRow[]; tableStyle?: string; repeatHeader?: boolean }; result: { ok: true; replaced: boolean; rows: number; equations: number } };

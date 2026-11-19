@@ -947,6 +947,52 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       await smoke("save", { file: "change symbol test.docx" });
     });
 
+    section = "Check document: one report, safe repairs in one Ctrl+Z";
+    await step("check document", async () => {
+      if (!addinSupports("checkFields")) return check("check document (the Word add-in is older than this build)", null, "update the add-in");
+      const { interchangeDocx } = await import("./interchangeFixture");
+      const { toBase64 } = await import("./render");
+      const paras: { style: string; text: string }[] = [
+        { style: "Heading 1", text: "Checks" },
+        { style: "Normal", text: "\\mbnumbering{1}" },
+        { style: "Normal", text: "\\mbnumbering{1.1}" },
+        { style: "Normal", text: "A mass $m$ \\define{m}{mass of the body}[kg] moves with speed $v_0$; see \\eqref{eq:1.1.1}." },
+        { style: "MTDisplayEquation", text: "\t$$E=\\frac{1}{2}mv_0^2$$\t\\label{eq:1.1.1}" },
+        { style: "MTDisplayEquation", text: "\t$$p=mv_0$$\t\\label{eq:1.1.2}" },
+      ];
+      const docK = await smoke("openDocx", { file: "check document test.docx", base64: toBase64(interchangeDocx(paras)) });
+      void docK;
+      const { convertLatexDocument } = await import("./latexInterchangeRun");
+      await convertLatexDocument({ yes: true });
+      const cd = await import("./checkDocumentRun");
+      const clean = await cd.runCheck();
+      check("a document MathBlocks just converted checks clean", clean.problems.length === 0, clean.problems.map((p) => p.message).join(" | ") || `${clean.equations} equation(s), ${Math.round(clean.ms)} ms`);
+      check("time to check (for the report)", null, `${clean.equations} equation(s) in ${Math.round(clean.ms)} ms`);
+      // Three deliberate faults: a definition marker that prints, a picture resized by hand, a reference in the earlier form.
+      await smoke("unhideMarker", { kind: "MBDefine" });
+      const first = clean.problems.length === 0 ? [...clean.forms.keys()][1] : undefined;
+      if (first) await smoke("resizePicture", { tag: first, factor: 1.5 });
+      await smoke("caretTo", { where: "end" });
+      await smoke("typeText", { text: "Again " });
+      await smoke("insertOldRef", { bookmark: "_MBEq_1_1_2" });
+      const faulty = await cd.runCheck();
+      const has = (s: string) => faulty.problems.find((p) => p.message.includes(s));
+      check("the marker that prints is found (repair: hide)", has("not hidden")?.repair === "hide", faulty.problems.map((p) => p.message).join(" | "));
+      check("the resized picture is found (repair: draw again)", !first || has("does not match its LaTeX")?.repair === "redraw", "");
+      check("the reference in the earlier form is found (repair: update)", has("earlier form")?.repair === "updateNumbers", "");
+      const r = await cd.repairChosen(faulty, new Set(faulty.problems.filter((p) => p.repair).map((p) => p.id)));
+      check("Repair runs (markers hidden, pictures drawn again, numbers and references updated)", !r.cancelled && !r.guardFailed && r.hidden >= 1 && r.numbersUpdated, JSON.stringify(r));
+      const repaired = await cd.runCheck();
+      check("after Repair the document checks clean", repaired.problems.length === 0, repaired.problems.map((p) => p.message).join(" | "));
+      await smoke("undo", { times: 1 });
+      const undone = await cd.runCheck();
+      check("one Ctrl+Z brings back exactly the problems repaired", undone.problems.map((p) => p.message).sort().join("|") === faulty.problems.map((p) => p.message).sort().join("|"), undone.problems.map((p) => p.message).join(" | "));
+      await smoke("redo", { times: 1 });
+      const redone = await cd.runCheck();
+      check("Ctrl+Y repairs again", redone.problems.length === 0, redone.problems.map((p) => p.message).join(" | "));
+      await smoke("save", { file: "check document test.docx" });
+    });
+
     section = "Reference links: Ctrl+click in Word, a link in the PDF";
     await step("reference links", async () => {
       if (!addinSupports("listDefinitions")) return check("reference links (the Word add-in is older than this build)", null, "update the add-in");

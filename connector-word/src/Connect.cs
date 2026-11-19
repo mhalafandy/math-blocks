@@ -185,7 +185,7 @@ namespace MathBlocks.WordConnector
         private static readonly string[] Methods =
         {
             "ping", "insertEquation", "replaceEquation", "readEquation", "documentInfo",
-            "listInstances", "replaceMany", "verifyMany", "scanInterchange", "convertInterchange", "scanNumbering", "convertNumbering", "retag", "selectInstance", "getRegistry", "setRegistry", "getDocumentStyle", "setDocumentStyle", "getDocumentBlocks", "setDocumentBlocks", "listDefinitions", "insertDefinition", "updateDefinition", "writeSymbolList", "listDocuments", "listHeadings", "findTextMentions", "selectRange",
+            "listInstances", "replaceMany", "verifyMany", "scanInterchange", "convertInterchange", "scanNumbering", "convertNumbering", "retag", "selectInstance", "getRegistry", "setRegistry", "getDocumentStyle", "setDocumentStyle", "getDocumentBlocks", "setDocumentBlocks", "listDefinitions", "insertDefinition", "updateDefinition", "writeSymbolList", "listDocuments", "listHeadings", "findTextMentions", "selectRange", "checkFields", "hideFields",
             "listMathTypeParagraphs", "replaceParagraphs", "activateObject",
             "numberEquation", "unnumberEquation", "listNumbered", "insertReference", "updateNumbers",
             "showWordMenu", "selectionInfo", "findLatex", "replaceRanges", "equationToText",
@@ -300,6 +300,7 @@ namespace MathBlocks.WordConnector
         }
 
         public void OnRepairEquations(IRibbonControl control) => RunAppCommand("repair");
+        public void OnCheckDocument(IRibbonControl control) => RunAppCommand("checkDocument");
         public void OnSelfTest(IRibbonControl control) => RunAppCommand("selfTest");
         public void OnSelfTestSpike(IRibbonControl control) => RunAppCommand("selfTestSpike");
         public void OnListOfSymbols(IRibbonControl control) => RunAppCommand("listOfSymbols");
@@ -855,6 +856,8 @@ namespace MathBlocks.WordConnector
                     case "listHeadings": result = _ops.ListHeadings(p); break;
                     case "findTextMentions": result = _ops.FindTextMentions(p); break;
                     case "selectRange": result = _ops.SelectRange(p); break;
+                    case "checkFields": result = _ops.CheckFields(p); break;
+                    case "hideFields": result = _ops.HideFields(p); break;
                     case "setDocumentBlocks": result = _ops.SetDocumentBlocks(p); break;
                     case "setDocumentStyle": result = _ops.SetDocumentStyle(p); break;
                     case "listDocuments": result = _ops.ListDocuments(); break;

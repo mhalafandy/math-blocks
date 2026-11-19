@@ -371,6 +371,33 @@ namespace MathBlocks.WordConnector
                     var ok = _app.ActiveDocument.Undo(n);
                     return new Dictionary<string, object> { ["ok"] = ok };
                 }
+                case "unhideMarker":
+                {
+                    // Check document's self-test: the first marker field of this kind made visible (a deliberate fault).
+                    var d = _app.ActiveDocument;
+                    var kind = Rpc.GetString(p, "kind");
+                    foreach (Word.Field f in d.Fields)
+                    {
+                        string code;
+                        try { code = f.Code.Text ?? ""; } catch (COMException) { continue; }
+                        if (!code.Contains("MACROBUTTON " + kind)) continue;
+                        f.Code.Font.Hidden = 0;
+                        if (f.Result != null) f.Result.Font.Hidden = 0;
+                        return new Dictionary<string, object> { ["start"] = f.Code.Start - 1 };
+                    }
+                    throw new RpcException(Rpc.InvalidParams, "No " + kind + " marker");
+                }
+                case "resizePicture":
+                {
+                    // Check document's self-test: an equation's picture resized by hand (a deliberate fault).
+                    var eqs = FindByTag(_app.ActiveDocument, Rpc.GetString(p, "tag"));
+                    if (eqs.Count == 0 || !eqs[0].IsPicture) throw new RpcException(Rpc.InvalidParams, "No picture with this ID");
+                    var s = eqs[0].Picture;
+                    double k = Convert.ToDouble(p["factor"], System.Globalization.CultureInfo.InvariantCulture);
+                    s.ScaleWidth = (float)(s.ScaleWidth * k);
+                    s.ScaleHeight = (float)(s.ScaleHeight * k);
+                    return new Dictionary<string, object> { ["width"] = s.Width, ["height"] = s.Height };
+                }
                 case "guardFixtures":
                 {
                     // Self-test: every guarded operation from now on saves its before/after records (the guard's
