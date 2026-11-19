@@ -23,6 +23,21 @@ recording stays in the add-in and in the self-test, so a recurrence will name it
 order, then MathType parity. Each item below is checked in the browser by `tools/ui-check.ts` (now in CI: 222
 checks) and with screenshots.
 
+### Rounds after 0.1.149 (your status read: accepted): reliability, plus "Change symbol"
+
+Your order: A (carry-over), B (Change symbol), C1, C2, C3, C5, C6, C7, C4. MathType parity is postponed.
+
+#### A2. Inline `\overset{\text{def}}{=}` in the print check — done: no difference in the picture
+
+Measured on your 0.1.148 PDF: the inline crop was 25.7 pt wide against the drawing's 10.3 pt, and its ink reached
+the text baseline. The crop held more than the equation: on that line Word split the marker "cd" after the
+equation into two pieces ("c", "d"), the check looked for a piece starting with "cd", did not find the
+equation's end, and measured "c" and "d" with it. **Fixed:** the markers are found on the joined line text, split
+or not (unit tests). Re-run on your PDF: the entry measures 10.7 × 10.0 pt against the drawing's 10.3 × 10.7 pt,
+bottom 2.0 pt against 1.7 pt: no flag. The picture itself was right.
+
+#### A1. Your 0.1.149 self-test — waiting for the report
+
 ### Round after 0.1.148 (your status read: accepted)
 
 #### Your self-test of 0.1.148 (14 Nov, 15:38): 405 checks, 342 passed, 12 failed; object spike 99/99

@@ -59,6 +59,22 @@ async function drawnInk(latex: string, o: { fonts: FontSet; style: RenderStyle; 
   }
 }
 
+/** On one line's pieces (left to right): the piece in which the text "ab" ends and the one in which "cd" starts. */
+export function markerPieces<T extends { str: string }>(line: T[]): { left: T | undefined; right: T | undefined } {
+  const text = line.map((x) => x.str).join("");
+  const owner = (pos: number) => {
+    let at = 0;
+    for (const x of line) {
+      if (pos < at + x.str.length) return x;
+      at += x.str.length;
+    }
+    return undefined;
+  };
+  const a = text.search(/ab(?=\s*$|\s)/);
+  const c = text.search(/(?<=\s|^)cd/);
+  return { left: a >= 0 ? owner(a + 1) : undefined, right: c >= 0 ? owner(c) : undefined };
+}
+
 /**
  * Renders the PDF, measures every entry, and saves the page images through `save` (file name, PNG data URL).
  * `failed`: Convert LaTeX's problems by entry index (not written).
@@ -111,8 +127,9 @@ export async function analysePrint(
       const e = /E(\d+):/.exec(text);
       if (e) {
         const i = Number(e[1]);
-        const left = line.find((x) => /ab\s*$/.test(x.str));
-        const right = line.find((x) => /^\s*cd/.test(x.str));
+        // Word may split "ab" or "cd" into single letters: the piece where "ab" ends, and the one where "cd"
+        // starts, are found on the joined line text.
+        const { left, right } = markerPieces(line);
         inlineAt.set(i, { page: p, y, xEnd: left ? left.x + left.w : line[0]!.x + line[0]!.w, xRight: right?.x });
         pageMarkers.push({ i, kind: "E", y });
         continue;
