@@ -87,8 +87,9 @@ export interface DocumentIndex {
 }
 
 export async function buildDocumentIndex(): Promise<DocumentIndex> {
-  // Pasted copies first get their identity back (Repair equations), quietly unless it changed something.
-  await import("./repair").then((m) => m.repairDocument(undefined, { quiet: true })).catch((e: unknown) => console.warn("repair", e));
+  // Pasted copies first get their identity back (Repair equations), quietly unless it changed something;
+  // with no copies to fix, reading writes nothing (no undo step).
+  await import("./repair").then((m) => m.repairDocument(undefined, { quiet: true, identityOnly: true })).catch((e: unknown) => console.warn("repair", e));
   await import("./docStyle").then((m) => m.loadDocumentStyle()).catch(() => undefined);
   const r = await connector.request("listInstances", { includeContent: true }, 120_000);
   const doc = r.documents[0];
@@ -134,7 +135,7 @@ export async function rewriteDocument(
   undoLabel: string,
   /** Draw these again although their LaTeX stays (a kind's style changed). */
   redraw?: (latex: string) => boolean,
-): Promise<{ equations: number; libraryEquations: number; note: string }> {
+): Promise<{ equations: number; libraryEquations: number; note: string; undoBrokenAt?: string }> {
   const profile = currentProfile();
   const items: ReplaceItem[] = [];
   const blocks = new Set<string>();
@@ -152,8 +153,10 @@ export async function rewriteDocument(
     items.push({ tag: eq.tag, flatOpc: (await buildInsertion(next, eq.numbered ? false : eq.display, profile, eq.tag, eq.kind === "picture" ? "classic" : "native", eq.display)).flatOpc, previous: eq.flatOpc });
   }
   let note = "";
+  let undoBrokenAt: string | undefined;
   if (items.length) {
     const op = await replaceInDocument({ document: index.document, title: undoLabel, undoLabel, items });
+    undoBrokenAt = op.undoBrokenAt;
     if (op.cancelled) throw new Error(describeOperation(op, undoLabel));
     note = op.replaced > BACKUP_ABOVE ? ` ${describeOperation(op, "Done")}` : "";
     const natives = items.map((it) => equations.find((e) => e.tag === it.tag)!).filter((e) => e.kind === "native");
@@ -176,7 +179,7 @@ export async function rewriteDocument(
     }
     await lib.refresh();
   }
-  return { equations: items.length, libraryEquations, note };
+  return { equations: items.length, libraryEquations, note, ...(undoBrokenAt ? { undoBrokenAt } : {}) };
 }
 
 export type DefinitionStatus = "defined" | "undefined" | "usedBefore";

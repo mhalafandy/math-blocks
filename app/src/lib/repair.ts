@@ -49,12 +49,16 @@ export interface RepairReport {
   backup?: string;
 }
 
-export async function repairDocument(document?: string, o: { quiet?: boolean; fromWord?: boolean } = {}): Promise<RepairReport | null> {
+export async function repairDocument(document?: string, o: { quiet?: boolean; fromWord?: boolean; identityOnly?: boolean } = {}): Promise<RepairReport | null> {
   if (!addinSupports("repairEquations")) return null;
   const target = document ? { document } : {};
   await import("./docStyle").then((m) => m.loadDocumentStyle(document)).catch(() => undefined);
   const dry = await connector.request("repairEquations", { ...target, dryRun: true }, 120_000);
   const changes = (dry.inlined ?? 0) + (dry.split?.length ?? 0) + (dry.converted ?? 0) + (dry.styled ?? 0) + (dry.lowered ?? 0) + (dry.redraw?.length ?? 0) + dry.renamed.length + dry.wrapped.length + dry.bookmarks;
+  // Reading the document (the document index) writes only when copies need their own ID: anything
+  // else (baselines, Classic pictures, paragraph styles) waits for Repair or Check document, so a read
+  // never adds an undo step in front of the user's last edit.
+  if (o.identityOnly && !identityChanges(dry)) return null;
   const report: RepairReport = { inlined: 0, split: 0, converted: 0, lowered: 0, toObjects: 0, idRewrites: 0, redrawn: 0, ms: 0, styled: 0, native: dry.native ?? 0, mathType: dry.mathType ?? 0, renamed: 0, wrapped: 0, fromAlt: 0, bookmarks: 0, linkedAdded: 0, unlinked: 0, otherPictures: dry.otherPictures };
   if (changes > 0) {
     report.backup = await backupIfMany(dry.document, changes);
@@ -107,6 +111,11 @@ export async function repairDocument(document?: string, o: { quiet?: boolean; fr
     tell(describeRepair(report), "info", !!o.fromWord);
   }
   return report;
+}
+
+/** What a quiet Repair before a read may fix: copies with another's ID, wrapped equations, numbered copies' bookmarks. */
+export function identityChanges(dry: { renamed: unknown[]; wrapped: unknown[]; bookmarks: number; redraw?: { reason?: string }[] }): number {
+  return dry.renamed.length + dry.wrapped.length + dry.bookmarks + (dry.redraw ?? []).filter((r) => r.reason === "id").length;
 }
 
 /**

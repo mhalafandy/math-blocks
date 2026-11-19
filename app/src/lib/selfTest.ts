@@ -504,7 +504,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const latexOfTag = async (tag: string) => (await buildDocumentIndex()).equations.find((e) => e.tag === tag)?.latex ?? null;
       const edit = async (tag: string, to: string) => {
         const ix = await buildDocumentIndex();
-        await rewriteDocument(ix, ix.equations.filter((e) => e.tag === tag), () => to, "Edit equation");
+        return rewriteDocument(ix, ix.equations.filter((e) => e.tag === tag), () => to, "Edit equation");
       };
       // Undo and redo of an insert and of an edit.
       const docU = await smoke("newDocument");
@@ -523,12 +523,20 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
         const read = i?.flatOpc ? readEquationXml(i.flatOpc) : null;
         return read ? serializeLatex(read.root) : null;
       };
-      await edit(a.tag, "a^2+b^2=c^2");
+      const editOp = await edit(a.tag, "a^2+b^2=c^2");
       const edited = (await rawLatexOfTag(a.tag)) ?? "not found";
       check("an edit changes the equation", norm(edited) === norm("a^2+b^2=c^2"), edited);
+      check("Word kept the edit in one undo record", !editOp.undoBrokenAt, editOp.undoBrokenAt ? `ended at: ${editOp.undoBrokenAt}` : "intact");
       await smoke("undo", { times: 1 });
       const undone = (await rawLatexOfTag(a.tag)) ?? "not found";
-      check("Ctrl+Z restores the equation before the edit", norm(undone) === norm("a^2+b^2"), undone);
+      // When it fails, what one Ctrl+Z left: every equation's ID and LaTeX, and the pictures.
+      let undoneWhat = undone;
+      if (norm(undone) !== norm("a^2+b^2")) {
+        const sn = await snap();
+        const all = ((await connector.request("listInstances", { includeContent: true }, SLOW)).documents[0]?.instances ?? []).map((x) => `${x.tag}: ${x.flatOpc ? "readable" : "no content"}`);
+        undoneWhat = `${undone}; IDs ${sn.tags.join(", ") || "none"}; pictures ${sn.pictures}; instances ${all.join(" | ") || "none"}`;
+      }
+      check("Ctrl+Z restores the equation before the edit", norm(undone) === norm("a^2+b^2"), undoneWhat);
       await smoke("redo", { times: 1 });
       const redone = (await rawLatexOfTag(a.tag)) ?? "not found";
       check("Ctrl+Y redoes the edit", norm(redone) === norm("a^2+b^2=c^2"), redone);
@@ -994,18 +1002,26 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       check("a document MathBlocks just converted checks clean", clean.problems.length === 0, clean.problems.map((p) => p.message).join(" | ") || `${clean.equations} equation(s), ${Math.round(clean.ms)} ms`);
       check("time to check (for the report)", null, `${clean.equations} equation(s) in ${Math.round(clean.ms)} ms`);
       // Three deliberate faults: a definition marker that prints, a picture resized by hand, a reference in the earlier form.
-      await smoke("unhideMarker", { kind: "MBDefine" });
+      // Each step named in the error, so a Word error says which one failed.
+      const named = async <T,>(what: string, f: () => Promise<T>): Promise<T> => {
+        try {
+          return await f();
+        } catch (e) {
+          throw new Error(`${what}: ${e instanceof Error ? e.message : String(e)}`);
+        }
+      };
+      await named("unhide a marker", () => smoke("unhideMarker", { kind: "MBDefine" }));
       const first = clean.problems.length === 0 ? [...clean.forms.keys()][1] : undefined;
-      if (first) await smoke("resizePicture", { tag: first, factor: 1.5 });
+      if (first) await named("resize a picture", () => smoke("resizePicture", { tag: first, factor: 1.5 }));
       await smoke("caretTo", { where: "end" });
       await smoke("typeText", { text: "Again " });
-      await smoke("insertOldRef", { bookmark: "_MBEq_1_1_2" });
-      const faulty = await cd.runCheck();
+      await named("insert an older reference", () => smoke("insertOldRef", { bookmark: "_MBEq_1_1_2" }));
+      const faulty = await named("check the faulty document", () => cd.runCheck());
       const has = (s: string) => faulty.problems.find((p) => p.message.includes(s));
       check("the marker that prints is found (repair: hide)", has("not hidden")?.repair === "hide", faulty.problems.map((p) => p.message).join(" | "));
       check("the resized picture is found (repair: draw again)", !first || has("does not match its LaTeX")?.repair === "redraw", "");
       check("the reference in the earlier form is found (repair: update)", has("earlier form")?.repair === "updateNumbers", "");
-      const r = await cd.repairChosen(faulty, new Set(faulty.problems.filter((p) => p.repair).map((p) => p.id)));
+      const r = await named("repair", () => cd.repairChosen(faulty, new Set(faulty.problems.filter((p) => p.repair).map((p) => p.id))));
       check("Repair runs (markers hidden, pictures drawn again, numbers and references updated)", !r.cancelled && !r.guardFailed && r.hidden >= 1 && r.numbersUpdated, JSON.stringify(r));
       const repaired = await cd.runCheck();
       check("after Repair the document checks clean", repaired.problems.length === 0, repaired.problems.map((p) => p.message).join(" | "));

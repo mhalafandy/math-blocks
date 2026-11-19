@@ -151,7 +151,9 @@ export async function runSoak(o: { seed: number; operations: number; batch?: num
           model.redo = [];
           const { convertLatexDocument } = await import("./latexInterchangeRun");
           remember(doc);
-          await convertLatexDocument({ yes: true });
+          const conv = await convertLatexDocument({ yes: true });
+          // One Ctrl+Z must undo it: a record Word ended early is the failure, named where it ended.
+          if (conv?.undoBrokenAt) throw new Error(`Convert LaTeX took more than one undo step (Word ended its record ${conv.undoBrokenAt})`);
           eqs.push(latex);
           log.push(`${entry}: $${latex}$`);
         } else if (op === "updateNumbers") {

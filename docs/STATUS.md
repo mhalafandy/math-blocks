@@ -2,37 +2,38 @@
 
 Updated at the end of every round. Public repository: generic content only. Earlier rounds: `docs/status-archive/`.
 
-## Latest round — 0.1.162
+## Latest round — 0.1.163
 
-**Build:** 0.1.162 (test channel), CI passed (tests, guard fixtures, UI check, Windows build). Not promoted: the 0.1.161 self-test had 7 failures.
+**Build:** 0.1.163 (test channel), CI: pending. Not promoted: the 0.1.162 self-test had 3 failures.
 
-**Reports read:** self-test 19:04 (0.1.161: 392 passed, 7 failed), thesis-size 19:28, soak 20:12.
+**Reports read:** self-test 22:18 (0.1.162: 432 passed, 3 failed; spike 99/0), thesis-size 22:45, soak 23:31 (failed after #200).
+
+**New check "reading the document index adds no undo step": FAILED.** Reading did add one. Fixed (below).
+
+**Thesis-size time per equation: not available.** The zip had only `thesis-size test.docx`, without `thesis-size report.txt`. The document shows numbers and references this time, so Convert LaTeX was not undone.
 
 **Fixed:**
-- Text guard: a field showing nothing (definition markers, hidden SEQ) was taken one character too long, so a comma or full stop right after `\define{…}` read as deleted and Convert LaTeX was undone. This failed Change symbol (self-test) and the whole thesis-size run (Convert LaTeX undone, so: no definitions, 0 numbers, "older style" in Check document).
-- Check document crashed on a marker field with no result ("Object reference not set…"); it also failed Round trips and Undo integrity.
-- Saving the document style with no document named went to the last document read, not the one in front: Apply style changed nothing (Undo integrity), the soak test stopped at #11 ("document no longer open").
-- An operation undone when the app goes away now checks the equations as well as the text (an edited equation leaves the text unchanged, so it stopped after one undo step); never undoes past the operation.
-- Change symbol: the heading walk and text search no longer stop the command on a Word error ("Value out of range"); `^` searched literally.
-- Self-test "objects: Ctrl+Z restores the equation" reads Word directly; a new check says whether reading the document index adds an undo step (suspected cause).
+- Reading the document index (list of symbols, Change symbol, Apply style, Check document, Notation…) ran a quiet Repair that could write baselines or redraws: one undo step in front of your last edit. Now it writes only when copies need their own ID.
+- Check document self-test: "The number must be between…" came from Word. The deliberate resize fault now resizes in points (embedded objects refuse their own scale back), and each fault step is named in any error.
 
-**Added:** 62 recorded guard fixtures (`rec-*.json`, generic self-test documents); field-end unit tests.
+**Diagnostics added (cause needs Word):**
+- Objects: "Ctrl+Z restores the equation before the edit" (one Ctrl+Z left the equation "not found"). New check "Word kept the edit in one undo record" says where Word ended the record; on failure the line lists the IDs, pictures and readable equations left.
+- Soak: one Ctrl+Z after Convert LaTeX left the converted equation (model 2 × `x^2+y^2`, Word 3). The soak now stops at a Convert LaTeX whose undo record Word ended early and names where. Apply style no longer adds the hidden Repair step (fix above), which could also shift later undos.
 
-**Reference links:** the top of the tall equation is on screen in Word after Ctrl+click (picture top 426 px, window 320–1046 px): `_MBEqT_` not needed.
+**Added:** 67 recorded guard fixtures from the 0.1.162 self-test (`rec-162-*.json`, generic test documents, all pass; the probe reads as changed). Unit test for the read-only Repair rule.
 
 **Needs your PC:**
-- Self-test of 0.1.162. Clean → I promote it to stable.
-- Thesis-size test again (0.1.161's numbers are not usable: Convert LaTeX was undone by the guard bug).
+- Self-test of 0.1.163. Clean → I promote it to stable. Send the lines of "Equation objects" and "Check document" if they fail.
+- Thesis-size test: send `thesis-size report.txt` from its folder (that file has the timings).
 - Soak test again.
 
-**Decided:** Stable channel stays empty until the first promotion (no fallback to test builds); the owner uses Test meanwhile. plan-optimizer 0.2.0 loads from the owner's account (memory in its private repo); its repo settings were removed here, `.claude/memory/` and `.claude/plan-optimizer/` are ignored.
-
 **Open:**
-- Convert LaTeX on the thesis-size document took 1763 s (1142 ms per equation): look at it with the new timings.
+- Edit = more than one undo step (cause unknown until the new check reports where).
+- Convert LaTeX on the thesis-size document: 1142 ms per equation in 0.1.161; waiting for the 0.1.162/0.1.163 timings.
 - Update numbers has no progress bar; `\overrightarrow` width in the editor.
 
 ## Details
 
-- Guard: `GuardText.FieldEnd` (pure, tested); used by the guard, Change symbol's mentions and the definitions list.
-- Fixture 028 (Convert LaTeX, `\define` before a comma) was recorded with the bug: its two definition field ends are corrected and it must pass; the probe fixture 014 must fail (it deletes a letter on purpose).
-- Recorded fixtures with no two words side by side skip the typed-word/deleted-space mutation (66 operations still mutated).
+- `repairDocument(…, { identityOnly })` returns before writing unless `identityChanges(dry)` > 0 (renamed, wrapped, bookmarks, redraws for "id"). Explicit Repair and Check document are unchanged.
+- `rewriteDocument` returns the operation's `undoBrokenAt`.
+- Smoke `resizePicture`: Width/Height in points, aspect lock off.

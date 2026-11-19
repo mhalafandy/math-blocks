@@ -461,8 +461,12 @@ namespace MathBlocks.WordConnector
                     if (eqs.Count == 0 || !eqs[0].IsPicture) throw new RpcException(Rpc.InvalidParams, "No picture with this ID");
                     var s = eqs[0].Picture;
                     double k = Convert.ToDouble(p["factor"], System.Globalization.CultureInfo.InvariantCulture);
-                    s.ScaleWidth = (float)(s.ScaleWidth * k);
-                    s.ScaleHeight = (float)(s.ScaleHeight * k);
+                    // In points, not ScaleWidth/ScaleHeight: an embedded object can report a scale Word then
+                    // refuses to take back ("The number must be between …").
+                    float w = s.Width, h = s.Height;
+                    try { ((dynamic)s).LockAspectRatio = 0; } catch (Exception) { } // msoFalse (no Office core reference)
+                    s.Width = (float)(w * k);
+                    s.Height = (float)(h * k);
                     return new Dictionary<string, object> { ["width"] = s.Width, ["height"] = s.Height };
                 }
                 case "guardFixtures":
