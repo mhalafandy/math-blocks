@@ -156,6 +156,23 @@ bottom 2.0 pt against 1.7 pt: no flag. The picture itself was right.
 - **Still to look at with the numbers:** Update numbers runs as one Word call without a progress window (fields
   are updated by Word itself); if it takes long on 1000 references, it needs batching too.
 
+#### C5. Round trips and compatibility — built (checked by the self-test on your PC)
+
+New self-test section "Round trips and compatibility" on generic documents:
+- **Save → close → reopen:** identical LaTeX of every equation, numbers, references (code and what they show)
+  and definitions. The document has a continuous section break and two columns after it.
+- **Edited where MathBlocks is not installed:** the saved file is changed while closed (text added, as Word on
+  another PC would), reopened: equations, numbers and references as before, Check document clean.
+- **Track Changes on:** a new equation and a reference converted, numbers updated as tracked changes; after
+  Accept all, Check document clean.
+- **Compare documents** (Review → Compare): the comparison document holds the equations.
+- **Word 2010 compatibility mode:** converted, saved, reopened identical, clean.
+- **Documents written by earlier versions:** the generic test documents earlier self-tests saved on your PC
+  (newest 8) are opened with this version and checked (errors reported; MathType leftovers not counted). They stay
+  on your PC — none of them goes into the repository (they carry your PC's author details).
+- **Manual** (trial checklist 3.6b, 3.6c): a PC without MathBlocks, and OneDrive AutoSave.
+- Save As PDF keeping equations, numbers and links is the existing reference-links / objects sections.
+
 #### A1. Your 0.1.149 self-test — waiting for the report
 
 ### Round after 0.1.148 (your status read: accepted)

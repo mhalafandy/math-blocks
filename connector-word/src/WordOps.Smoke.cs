@@ -371,6 +371,63 @@ namespace MathBlocks.WordConnector
                     var ok = _app.ActiveDocument.Undo(n);
                     return new Dictionary<string, object> { ["ok"] = ok };
                 }
+                case "closeDocument":
+                {
+                    // Round trips: a test document saved (or not) and closed, by its window name.
+                    var name = Rpc.GetString(p, "name");
+                    foreach (Word.Document d in _app.Documents)
+                    {
+                        if (d.Name != name) continue;
+                        object save = Rpc.GetBool(p, "save") ? Word.WdSaveOptions.wdSaveChanges : Word.WdSaveOptions.wdDoNotSaveChanges;
+                        d.Close(ref save);
+                        return new Dictionary<string, object> { ["closed"] = true };
+                    }
+                    return new Dictionary<string, object> { ["closed"] = false };
+                }
+                case "reopen":
+                {
+                    // A file of the test folder (or an absolute path given by "path"), opened again.
+                    var path = Rpc.GetOptString(p, "path") ?? SmokePath(Rpc.GetString(p, "file"));
+                    var opened = _app.Documents.Open(path, AddToRecentFiles: false);
+                    opened.Activate();
+                    return new Dictionary<string, object> { ["name"] = opened.Name, ["fullName"] = opened.FullName };
+                }
+                case "compareDocuments":
+                {
+                    // Word's Review → Compare of two open test documents: the comparison document's name.
+                    Word.Document a = null, c = null;
+                    foreach (Word.Document d in _app.Documents)
+                    {
+                        if (d.Name == Rpc.GetString(p, "original")) a = d;
+                        if (d.Name == Rpc.GetString(p, "revised")) c = d;
+                    }
+                    if (a == null || c == null) throw new RpcException(Rpc.InvalidParams, "Both documents must be open");
+                    var result = _app.CompareDocuments(a, c);
+                    result.Activate();
+                    return new Dictionary<string, object> { ["name"] = result.Name, ["revisions"] = result.Revisions.Count };
+                }
+                case "earlierTestDocuments":
+                {
+                    // Test documents saved by earlier self-tests on this PC (generic documents the self-test made),
+                    // newest first: documents written by older versions of MathBlocks, to open with this one.
+                    var root = Path.GetDirectoryName(SmokeFolder ?? Path.Combine(Path.GetTempPath(), "x"));
+                    var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "interchange test.docx", "numbering test.docx", "reference links test.docx", "objects test.docx", "self-test A.docx", "style test.docx" };
+                    var found = new List<object>();
+                    if (root != null && Directory.Exists(root))
+                    {
+                        var dirs = new List<string>(Directory.GetDirectories(root));
+                        dirs.Sort(StringComparer.Ordinal);
+                        dirs.Reverse();
+                        foreach (var dir in dirs)
+                        {
+                            if (SmokeFolder != null && string.Equals(dir, SmokeFolder, StringComparison.OrdinalIgnoreCase)) continue;
+                            foreach (var f in Directory.GetFiles(dir, "*.docx"))
+                                if (names.Contains(Path.GetFileName(f))) found.Add(new Dictionary<string, object> { ["path"] = f, ["run"] = Path.GetFileName(dir) });
+                            if (found.Count >= Rpc.GetInt(p, "max", 12)) break;
+                        }
+                    }
+                    return new Dictionary<string, object> { ["documents"] = found };
+                }
                 case "cancelNextProgress":
                     CancelNextProgress = true;
                     return new Dictionary<string, object> { ["ok"] = true };

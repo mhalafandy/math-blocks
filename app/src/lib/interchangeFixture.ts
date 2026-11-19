@@ -117,7 +117,12 @@ export function interchangeDocx(paragraphs: { style: string; text: string; keepN
   const footnotes: string[] = [];
   type Para = { style: string; text: string; keepNext?: boolean; notes?: number[] };
   const list: Para[] = [];
+  // "Compat2010": the document in Word 2010 compatibility mode; "SectionBreakTwoColumns": a continuous section
+  // break, the rest of the document in two columns.
+  const compat2010 = paragraphs.some((p) => p.style === "Compat2010");
+  let twoColumns = false;
   for (const p of paragraphs) {
+    if (p.style === "Compat2010") continue;
     if (p.style === "Footnote") {
       footnotes.push(p.text);
       const prev = list[list.length - 1];
@@ -130,6 +135,10 @@ export function interchangeDocx(paragraphs: { style: string; text: string; keepN
   let boxes = 0;
   const para = (p: Para) => {
     if (p.style === "PageBreak") return `<w:p><w:r><w:br w:type="page"/></w:r></w:p>`;
+    if (p.style === "SectionBreakTwoColumns") {
+      twoColumns = true;
+      return `<w:p><w:pPr><w:sectPr><w:type w:val="continuous"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:pPr></w:p>`;
+    }
     if (p.style === "TextBox") {
       boxes++;
       return `<w:p><w:r><w:pict><v:shape id="mbTextBox${boxes}" type="#_x0000_t202" style="width:360pt;height:54pt" strokeweight=".5pt"><v:textbox><w:txbxContent><w:p>${runs(p.text)}</w:p></w:txbxContent></v:textbox></v:shape></w:pict></w:r></w:p>`;
@@ -159,7 +168,7 @@ export function interchangeDocx(paragraphs: { style: string; text: string; keepN
     `<w:footnote w:type="continuationSeparator" w:id="0"><w:p><w:r><w:continuationSeparator/></w:r></w:p></w:footnote>` +
     footnotes.map((t, k) => `<w:footnote w:id="${k + 1}"><w:p><w:pPr><w:pStyle w:val="FootnoteText"/></w:pPr><w:r><w:rPr><w:vertAlign w:val="superscript"/></w:rPr><w:footnoteRef/></w:r>${runs(` ${t}`)}</w:p></w:footnote>`).join("") +
     `</w:footnotes>`;
-  const SETTINGS = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings ${NS}>${hasNotes ? `<w:footnotePr><w:footnote w:id="-1"/><w:footnote w:id="0"/></w:footnotePr>` : ""}</w:settings>`;
+  const SETTINGS = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings ${NS}>${hasNotes ? `<w:footnotePr><w:footnote w:id="-1"/><w:footnote w:id="0"/></w:footnotePr>` : ""}${compat2010 ? `<w:compat><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="14"/></w:compat>` : ""}</w:settings>`;
   return zipSync({
     "[Content_Types].xml": strToU8(
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>${hasNotes ? `<Override PartName="/word/footnotes.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml"/>` : ""}</Types>`,
@@ -168,7 +177,7 @@ export function interchangeDocx(paragraphs: { style: string; text: string; keepN
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`,
     ),
     "word/document.xml": strToU8(
-      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${NS} xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>`,
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${NS} xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office"><w:body>${body}<w:sectPr>${twoColumns ? `<w:type w:val="continuous"/>` : ""}<w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/>${twoColumns ? `<w:cols w:num="2" w:space="425"/>` : ""}</w:sectPr></w:body></w:document>`,
     ),
     "word/styles.xml": strToU8(STYLES),
     "word/settings.xml": strToU8(SETTINGS),

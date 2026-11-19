@@ -51,6 +51,8 @@ repository is public: files you send are only looked at locally and never commit
 | 3.4 | Print one page. | Equations at the right size, nothing missing. |
 | 3.5 | Save, close Word, reopen the copy. | Everything as you left it; double-click still opens equations. |
 | 3.6 | Open the copy on a PC without MathBlocks (or send it to someone). | Equations show (they are pictures with their data inside); editing needs MathBlocks. |
+| 3.6b | On that PC, type a sentence and save; bring the file back and run Check document (ribbon). | No problems; equations, numbers and references as before. |
+| 3.6c | If the document lives in OneDrive with AutoSave on: work for a while with AutoSave on, then run Check document. | No problems; Ctrl+Z still undoes a MathBlocks operation in one step. |
 | 3.7 | Run the self-test again and send the zip together with notes on anything that felt slow or wrong. | — |
 
 ## What "ready" means

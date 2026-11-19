@@ -993,6 +993,106 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       await smoke("save", { file: "check document test.docx" });
     });
 
+    section = "Round trips and compatibility: reopen, edited elsewhere, track changes, compare, Word 2010 mode, older documents";
+    await step("round trips", async () => {
+      if (!addinSupports("checkFields")) return check("round trips (the Word add-in is older than this build)", null, "update the add-in");
+      const { interchangeDocx } = await import("./interchangeFixture");
+      const { toBase64 } = await import("./render");
+      const { convertLatexDocument } = await import("./latexInterchangeRun");
+      const cd = await import("./checkDocumentRun");
+      const idx = await import("./symbolIndex");
+      // What must survive: every equation's LaTeX, the numbers, the references (code and what they show), the definitions.
+      const stateOf = async () => {
+        const index = await idx.buildDocumentIndex();
+        const refs = ((await smoke("refFields")).fields as { code: string; text?: string }[]).map((f) => `${f.code.trim()}=${f.text ?? ""}`);
+        const numbers = (await connector.request("listNumbered", {}, SLOW)).equations.map((e: { number: string }) => e.number);
+        const defs = ((await connector.request("listDefinitions", {}, SLOW)) as { definitions: { tag: string }[] }).definitions.map((d) => d.tag);
+        return JSON.stringify({ eqs: index.equations.map((e) => e.latex), numbers, refs, defs });
+      };
+      const paras = (compat: boolean): { style: string; text: string }[] => [
+        ...(compat ? [{ style: "Compat2010", text: "" }] : []),
+        { style: "Heading 1", text: "Round trip" },
+        { style: "Normal", text: "\\mbnumbering{1}" },
+        { style: "Normal", text: "\\mbnumbering{1.1}" },
+        { style: "Normal", text: "A mass $m$ \\define{m}{mass of the body}[kg] with speed $v_0$; see \\eqref{eq:1.1.1}." },
+        { style: "MTDisplayEquation", text: "\t$$E=\\frac{1}{2}mv_0^2$$\t\\label{eq:1.1.1}" },
+        { style: "SectionBreakTwoColumns", text: "" },
+        { style: "Normal", text: "In two columns: $p=mv_0$ and \\ref{eq:1.1.2}." },
+        { style: "MTDisplayEquation", text: "\t$$\\pvec{h}=\\mat{I}\\pvec{\\omega}$$\t\\label{eq:1.1.2}" },
+      ];
+      const docRt = await smoke("openDocx", { file: "round trip test.docx", base64: toBase64(interchangeDocx(paras(false))) });
+      await convertLatexDocument({ yes: true });
+      const s1 = await stateOf();
+      check("after Convert LaTeX (a section break, two columns): every number and reference right, the document checks clean", (await cd.runCheck()).problems.length === 0, s1.slice(0, 160));
+      // Save, close, reopen: identical.
+      await smoke("save", { file: "round trip test.docx" });
+      await smoke("closeDocument", { name: docRt.name === "round trip test.docx" ? docRt.name : "round trip test.docx", save: false });
+      const re1 = await smoke("reopen", { file: "round trip test.docx" });
+      const s2 = await stateOf();
+      check("save → close → reopen: identical LaTeX, numbers, references and definitions", s2 === s1, s2 === s1 ? "identical" : s2.slice(0, 200));
+      // Edited where MathBlocks is not installed (the file changed while closed): a word typed, a paragraph added.
+      await smoke("closeDocument", { name: re1.name, save: false });
+      const { unzipSync, zipSync, strFromU8, strToU8 } = await import("fflate");
+      const file = (await smoke("readFile", { file: "round trip test.docx" })) as { base64: string };
+      const bytes = Uint8Array.from(atob(file.base64), (c) => c.charCodeAt(0));
+      const parts = unzipSync(bytes);
+      let docXml = strFromU8(parts["word/document.xml"]!);
+      docXml = docXml.replace(/(<w:body>)/, '$1<w:p><w:r><w:t xml:space="preserve">Edited on a PC without MathBlocks.</w:t></w:r></w:p>');
+      parts["word/document.xml"] = strToU8(docXml);
+      await smoke("writeFile", { file: "round trip test.docx", base64: toBase64(zipSync(parts)) });
+      const re2 = await smoke("reopen", { file: "round trip test.docx" });
+      const s3 = await stateOf();
+      const chk3 = await cd.runCheck();
+      check("edited elsewhere (text added while closed): the equations, numbers and references are as before, the document checks clean", s3 === s1 && chk3.problems.length === 0, s3 === s1 ? chk3.problems.map((x) => x.message).join(" | ") || "clean" : s3.slice(0, 200));
+      await smoke("save", { file: "round trip A.docx" });
+      // Track Changes on: a new equation and a reference converted, numbers updated, then everything accepted.
+      await smoke("trackChanges", { on: true });
+      await smoke("caretTo", { where: "end" });
+      await smoke("newParagraph");
+      await smoke("typeText", { text: "Tracked: $a+b$ and \\eqref{eq:1.1.2}." });
+      await convertLatexDocument({ yes: true });
+      await connector.request("updateNumbers", {}, SLOW);
+      const tracked = (await smoke("revisions")).count as number;
+      await smoke("acceptAll");
+      await smoke("trackChanges", { on: false });
+      const chk4 = await cd.runCheck();
+      const s4 = JSON.parse(await stateOf()) as { eqs: string[]; refs: string[] };
+      check("with Track Changes on: converted and numbered as tracked changes; after Accept all the document checks clean", tracked > 0 && chk4.problems.length === 0 && s4.eqs.some((l) => l === "a+b") && s4.refs.length === 3, `${tracked} revision(s); ${chk4.problems.map((x) => x.message).join(" | ") || "clean"}`);
+      await smoke("save", { file: "round trip B.docx" });
+      // Compare documents (Review → Compare): the comparison shows the equations.
+      const a = await smoke("reopen", { file: "round trip A.docx" });
+      const cmp = await smoke("compareDocuments", { original: a.name, revised: "round trip B.docx" });
+      const inCmp = (await connector.request("listInstances", {}, SLOW)).documents[0]?.instances.length ?? 0;
+      check("Compare documents: the comparison holds the equations (and the revisions between the two)", inCmp >= 4, `${inCmp} equation(s), ${cmp.revisions} revision(s)`);
+      await smoke("closeDocument", { name: cmp.name, save: false });
+      await smoke("closeDocument", { name: a.name, save: false });
+      void re2;
+      // Word 2010 compatibility mode.
+      const docC = await smoke("openDocx", { file: "compat 2010 test.docx", base64: toBase64(interchangeDocx(paras(true))) });
+      await convertLatexDocument({ yes: true });
+      const c1 = await stateOf();
+      await smoke("save", { file: "compat 2010 test.docx" });
+      await smoke("closeDocument", { name: docC.name, save: false });
+      await smoke("reopen", { file: "compat 2010 test.docx" });
+      const c2 = await stateOf();
+      check("Word 2010 compatibility mode: converted, saved, reopened identical, checks clean", c2 === c1 && (await cd.runCheck()).problems.length === 0, c2 === c1 ? "identical" : c2.slice(0, 200));
+      // Documents written by earlier versions on this PC (earlier self-tests' generic documents): open, check.
+      const older = ((await smoke("earlierTestDocuments", { max: 8 })) as { documents: { path: string; run: string }[] }).documents;
+      if (!older.length) check("documents written by earlier versions", null, "none on this PC yet");
+      for (const o of older) {
+        try {
+          const d = await smoke("reopen", { path: o.path });
+          const r = await cd.runCheck();
+          const errors = r.problems.filter((x) => x.severity === "error" && x.group !== "mathtype");
+          check(`an earlier version's document opens and checks (${o.run}, ${o.path.split(/[\\/]/).pop()})`, errors.length === 0 ? true : null, `${r.equations} equation(s); ${errors.length} error(s), ${r.problems.length - errors.length} warning(s)${errors.length ? `: ${errors.slice(0, 2).map((x) => x.message).join(" | ")}` : ""}`);
+          await smoke("closeDocument", { name: d.name, save: false });
+        } catch (e) {
+          check(`an earlier version's document (${o.run})`, false, e instanceof Error ? e.message : String(e));
+        }
+      }
+      check("OneDrive autosave and a PC without MathBlocks (open there, edit, bring back)", null, "manual: in the trial checklist");
+    });
+
     section = "Reference links: Ctrl+click in Word, a link in the PDF";
     await step("reference links", async () => {
       if (!addinSupports("listDefinitions")) return check("reference links (the Word add-in is older than this build)", null, "update the add-in");
