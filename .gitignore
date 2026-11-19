@@ -17,5 +17,6 @@ connector-word/tests/out/
 /local/
 /fixtures/private/
 
-# plan-optimizer session memories: they may quote private documents; the repository is public
+# plan-optimizer fallback folders (used only if its private memory repo is unreachable); the repository is public
 .claude/memory/
+.claude/plan-optimizer/

@@ -1,6 +1,0 @@
-{
-  "extraKnownMarketplaces": {
-    "plan-optimizer": { "source": { "source": "github", "repo": "mhalafandy/plan-optimizer" } }
-  },
-  "enabledPlugins": { "plan-optimizer@plan-optimizer": true }
-}
