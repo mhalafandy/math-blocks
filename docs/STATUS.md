@@ -173,6 +173,22 @@ New self-test section "Round trips and compatibility" on generic documents:
 - **Manual** (trial checklist 3.6b, 3.6c): a PC without MathBlocks, and OneDrive AutoSave.
 - Save As PDF keeping equations, numbers and links is the existing reference-links / objects sections.
 
+#### C6. Failure handling — built
+
+- **The app gone mid-operation** (closed, crashed, the connection lost): the add-in notices the dropped connection
+  and undoes the operation's single record, checking the text against what it was before; it tells you whether
+  the document is confirmed as before. Nothing stays half-written. Self-test section "Failure handling": an
+  operation writes an equation, the connection drop is simulated, the document is exactly as before.
+- **Cancel** of a long operation undoes it as a whole too (C3: Convert LaTeX; Apply style restores what it drew).
+- **Word restarting** mid-operation: the unsaved operation is lost with Word's own unsaved changes (nothing was
+  saved half-done; a backup is made before large operations).
+- **Reconnecting:** the add-in reconnects to the app by itself every 2 s (already so); the app shows the state.
+- **The editor's equation after a restart:** saved as you type and restored at start-up (already so, now in the
+  self-test report as information).
+- **Report a problem** (Ctrl+K): one zip — versions, update channel, the app's last 600 messages (now kept from
+  start-up, uncaught errors included), the Word add-in's log — with document names, paths and LaTeX masked
+  (unit test); the open document and unmasked logs only if you tick it. Saved where you choose; nothing is sent.
+
 #### A1. Your 0.1.149 self-test — waiting for the report
 
 ### Round after 0.1.148 (your status read: accepted)

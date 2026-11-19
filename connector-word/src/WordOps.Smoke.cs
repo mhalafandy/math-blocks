@@ -428,6 +428,13 @@ namespace MathBlocks.WordConnector
                     }
                     return new Dictionary<string, object> { ["documents"] = found };
                 }
+                case "abandonOperation":
+                {
+                    // Failure handling: what happens when the app's connection drops in the middle of an operation.
+                    bool open = OperationOpen;
+                    AbandonOperation();
+                    return new Dictionary<string, object> { ["wasOpen"] = open, ["open"] = OperationOpen };
+                }
                 case "cancelNextProgress":
                     CancelNextProgress = true;
                     return new Dictionary<string, object> { ["ok"] = true };

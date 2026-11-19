@@ -15,8 +15,8 @@ fn check_docx(path: &str) -> Result<(), String> {
 fn check_export(path: &str) -> Result<(), String> {
     let ext = Path::new(path).extension().and_then(|e| e.to_str()).unwrap_or("").to_ascii_lowercase();
     match ext.as_str() {
-        "svg" | "png" | "tex" | "mml" | "html" | "txt" | "json" => Ok(()),
-        _ => Err("Exports are saved as .svg, .png, .tex, .mml, .html, .txt or .json".into()),
+        "svg" | "png" | "tex" | "mml" | "html" | "txt" | "json" | "zip" => Ok(()),
+        _ => Err("Exports are saved as .svg, .png, .tex, .mml, .html, .txt, .json or .zip".into()),
     }
 }
 
@@ -173,4 +173,14 @@ pub fn system_font(name: String) -> Result<tauri::ipc::Response, String> {
         }
     }
     Err(format!("Font {name} is not installed"))
+}
+
+/// Report a problem: the Word add-in's log (the last 2 MB), empty when there is none.
+#[tauri::command]
+pub fn connector_log() -> Result<String, String> {
+    let Some(base) = std::env::var_os("LOCALAPPDATA") else { return Ok(String::new()) };
+    let path = Path::new(&base).join("MathBlocks").join("connector.log");
+    let Ok(bytes) = std::fs::read(&path) else { return Ok(String::new()) };
+    let start = bytes.len().saturating_sub(2 * 1024 * 1024);
+    Ok(String::from_utf8_lossy(&bytes[start..]).into_owned())
 }

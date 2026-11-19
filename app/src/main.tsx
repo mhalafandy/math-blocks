@@ -6,6 +6,10 @@ import { PreviewApp } from "./components/PreviewApp";
 import "mathlive/fonts.css";
 import "mathlive/static.css";
 import "./styles/app.css";
+import { startLogRing } from "./lib/problemReport";
+
+// The app's recent messages, for Report a problem.
+startLogRing();
 
 const params = new URLSearchParams(location.search);
 const isPanel = params.has("panel");

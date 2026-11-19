@@ -1093,6 +1093,35 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       check("OneDrive autosave and a PC without MathBlocks (open there, edit, bring back)", null, "manual: in the trial checklist");
     });
 
+    section = "Failure handling: the app gone in the middle of an operation";
+    await step("failure handling", async () => {
+      if (!addinSupports("checkFields")) return check("failure handling (the Word add-in is older than this build)", null, "update the add-in");
+      const { interchangeDocx } = await import("./interchangeFixture");
+      const { toBase64 } = await import("./render");
+      const { convertLatexDocument } = await import("./latexInterchangeRun");
+      const paras = [
+        { style: "Normal", text: "Before the failure: $a^2+b^2=c^2$ and $\\pvec{v}=\\dot{\\pvec{r}}$." },
+        { style: "MTDisplayEquation", text: "\t$$E=mc^2$$" },
+      ];
+      const docF = await smoke("openDocx", { file: "failure test.docx", base64: toBase64(interchangeDocx(paras)) });
+      void docF;
+      await convertLatexDocument({ yes: true });
+      const before = await docState();
+      // An operation that has written something, then the app's connection drops (as if it crashed).
+      const inst = (await connector.request("listInstances", { includeContent: true }, SLOW)).documents[0]?.instances ?? [];
+      const first = inst[0];
+      if (!first) return check("failure handling: an equation to change", false, "none");
+      const { buildInsertion, currentProfile } = await import("./equation");
+      const changed = await buildInsertion("x+y", false, currentProfile(), first.tag);
+      await connector.request("beginOperation", { title: "Failure test", total: 1, undoLabel: "Failure test" });
+      await connector.request("replaceMany", { items: [{ tag: first.tag, flatOpc: changed.flatOpc }], undoLabel: "Failure test" }, SLOW);
+      const mid = await docState();
+      const r = (await smoke("abandonOperation")) as { wasOpen: boolean; open: boolean };
+      const after = await docState();
+      check("the app gone mid-operation: what it had written is undone, the document exactly as before", r.wasOpen && !r.open && mid !== before && after === before, `${r.wasOpen ? "operation was open" : "no operation"}; ${mid !== before ? "had written" : "nothing written"}; ${after === before ? "as before" : "differs"}`);
+      check("an equation left in the editor comes back after a restart (the draft is saved as you type)", null, "built in since the library: the editor's content is saved every few seconds and restored at start-up");
+    });
+
     section = "Reference links: Ctrl+click in Word, a link in the PDF";
     await step("reference links", async () => {
       if (!addinSupports("listDefinitions")) return check("reference links (the Word add-in is older than this build)", null, "update the add-in");

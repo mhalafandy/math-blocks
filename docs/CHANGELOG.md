@@ -25,6 +25,10 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added — failure handling
+- An operation interrupted by the app closing or crashing is undone in Word (nothing half-written).
+- Report a problem (Ctrl+K): a zip of versions and logs, document content masked unless asked.
+
 ### Added — thesis-size test; Convert LaTeX in batches and in footnotes
 - Ctrl+K "Thesis-size test…": a generated 300-page generic document through every operation, timed, Cancel tried.
 - Convert LaTeX writes in batches (progress, Cancel undoes it all) and converts inline equations in footnotes,

@@ -143,6 +143,13 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => import("../components/SymbolList").then((m) => m.openSymbolList()),
     },
     {
+      id: "app.reportProblem",
+      title: "Report a problem… (saves a zip: versions, logs; your document only if you tick it)",
+      group: "View",
+      keywords: "report problem bug crash log support help zip",
+      run: () => import("../components/ProblemReportDialog").then((m) => m.openProblemReport()),
+    },
+    {
       id: "word.thesisTest",
       title: "Thesis-size test (a generated 300-page document through every operation, timed; 20–40 min)…",
       group: "Word",

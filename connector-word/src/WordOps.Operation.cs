@@ -62,6 +62,32 @@ namespace MathBlocks.WordConnector
             }
         }
 
+        /// <summary>A whole-document operation is open (between beginOperation and endOperation).</summary>
+        internal bool OperationOpen => _operationUndo || _progress != null;
+
+        /// <summary>
+        /// The app went away (closed, crashed) in the middle of an operation: nothing may stay half-written. The
+        /// operation's single undo record is closed and undone, the text checked against what it was before.
+        /// </summary>
+        internal void AbandonOperation()
+        {
+            if (!OperationOpen) return;
+            try
+            {
+                var r = EndOperation(new Dictionary<string, object> { ["done"] = 0, ["rollback"] = true });
+                bool back = r.TryGetValue("rolledBack", out var v) && v is bool bv && bv;
+                Log.Info("the app disconnected during an operation: undone (" + (back ? "document as before" : "not confirmed") + ")");
+                if (!Testing) System.Windows.Forms.MessageBox.Show(
+                    back ? "The MathBlocks app closed in the middle of an operation. What it had written was undone: the document is as it was before."
+                         : "The MathBlocks app closed in the middle of an operation. It was undone, but the document could not be confirmed as before: check it (Ctrl+Z / Ctrl+Y, or run Check document).",
+                    "MathBlocks", System.Windows.Forms.MessageBoxButtons.OK, back ? System.Windows.Forms.MessageBoxIcon.Information : System.Windows.Forms.MessageBoxIcon.Warning);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("abandoning the operation", ex);
+            }
+        }
+
         /// <summary>Opens one undo record for the whole operation and shows the progress window.</summary>
         public Dictionary<string, object> BeginOperation(Dictionary<string, object> p)
         {

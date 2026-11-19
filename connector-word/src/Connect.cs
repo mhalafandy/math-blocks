@@ -79,7 +79,8 @@ namespace MathBlocks.WordConnector
 
                 _pipe = new PipeClient(PipeClient.DefaultPipeName());
                 _pipe.LineReceived += OnLine;
-                _pipe.ConnectionChanged += connected => { if (connected) OnUi(SendHello); };
+                // Connected: hello. Disconnected in the middle of an operation (the app closed or crashed): undo it.
+                _pipe.ConnectionChanged += connected => { if (connected) OnUi(SendHello); else OnUi(() => _ops?.AbandonOperation()); };
                 _pipe.Start();
                 Log.Info("connector " + Version + " loaded in Word " + _app.Build + " (" + connectMode + ", " + _app.Documents.Count + " document(s) open)");
                 // Loaded mid-session (enabled again in COM Add-ins): attach to every window already open.
