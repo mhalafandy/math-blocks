@@ -1,0 +1,373 @@
+{
+ "operation": "Convert LaTeX that also deleted a space",
+ "source": "generated (tools/make-guard-fixtures.ts) from the field codes of a 0.1.148 self-test run",
+ "expect": "changed",
+ "exclude": [
+  [
+   0,
+   17
+  ],
+  [
+   33,
+   49
+  ],
+  [
+   66,
+   80
+  ],
+  [
+   87,
+   90
+  ],
+  [
+   102,
+   111
+  ],
+  [
+   112,
+   128
+  ],
+  [
+   130,
+   137
+  ],
+  [
+   138,
+   154
+  ],
+  [
+   161,
+   177
+  ]
+ ],
+ "before": {
+  "end": 179,
+  "fields": [],
+  "equations": [],
+  "lists": [],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 17,
+    "text": "\\mbnumbering{1.1}"
+   },
+   {
+    "start": 17,
+    "end": 33,
+    "text": "\rThe derivation "
+   },
+   {
+    "start": 33,
+    "end": 49,
+    "text": "\\eqref{eq:1.1.1}"
+   },
+   {
+    "start": 49,
+    "end": 66,
+    "text": " gives the value "
+   },
+   {
+    "start": 66,
+    "end": 80,
+    "text": "\\ref{eq:1.1.2}"
+   },
+   {
+    "start": 80,
+    "end": 87,
+    "text": ".\rMass "
+   },
+   {
+    "start": 87,
+    "end": 90,
+    "text": "$m$"
+   },
+   {
+    "start": 90,
+    "end": 102,
+    "text": " is given.\r\t"
+   },
+   {
+    "start": 102,
+    "end": 111,
+    "text": "$$y=a+b$$"
+   },
+   {
+    "start": 111,
+    "end": 112,
+    "text": "\t"
+   },
+   {
+    "start": 112,
+    "end": 128,
+    "text": "\\label{eq:1.1.1}"
+   },
+   {
+    "start": 128,
+    "end": 130,
+    "text": "\r\t"
+   },
+   {
+    "start": 130,
+    "end": 137,
+    "text": "$$x=1$$"
+   },
+   {
+    "start": 137,
+    "end": 138,
+    "text": "\t"
+   },
+   {
+    "start": 138,
+    "end": 154,
+    "text": "\\label{eq:1.1.2}"
+   },
+   {
+    "start": 154,
+    "end": 161,
+    "text": "\rAgain "
+   },
+   {
+    "start": 161,
+    "end": 177,
+    "text": "\\eqref{eq:1.1.2}"
+   },
+   {
+    "start": 177,
+    "end": 179,
+    "text": ".\r"
+   }
+  ]
+ },
+ "after": {
+  "end": 583,
+  "fields": [
+   {
+    "start": 0,
+    "end": 37,
+    "code": " MACROBUTTON MBEquationSection "
+   },
+   {
+    "start": 53,
+    "end": 115,
+    "code": " REF _MBEq_1_1_1 \\h \\* Charformat \\! \\* MERGEFORMAT "
+   },
+   {
+    "start": 131,
+    "end": 192,
+    "code": " REF _MBEqN_1_1_2 \\h \\* Charformat \\! \\* MERGEFORMAT "
+   },
+   {
+    "start": 256,
+    "end": 275,
+    "code": " STYLEREF 1 \\s "
+   },
+   {
+    "start": 276,
+    "end": 319,
+    "code": " SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 320,
+    "end": 359,
+    "code": " SEQ MBEq \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 214,
+    "end": 361,
+    "code": " MACROBUTTON MBPlaceRef \\* MERGEFORMAT "
+   },
+   {
+    "start": 407,
+    "end": 426,
+    "code": " STYLEREF 1 \\s "
+   },
+   {
+    "start": 427,
+    "end": 470,
+    "code": " SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 471,
+    "end": 510,
+    "code": " SEQ MBEq \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 365,
+    "end": 512,
+    "code": " MACROBUTTON MBPlaceRef \\* MERGEFORMAT "
+   },
+   {
+    "start": 519,
+    "end": 581,
+    "code": " REF _MBEq_1_1_2 \\h \\* Charformat \\! \\* MERGEFORMAT "
+   }
+  ],
+  "equations": [
+   [
+    199,
+    200
+   ],
+   [
+    212,
+    213
+   ],
+   [
+    363,
+    364
+   ]
+  ],
+  "lists": [],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 37,
+    "text": "\u0013 MACROBUTTON MBEquationSection \u00141.1\u0015"
+   },
+   {
+    "start": 37,
+    "end": 53,
+    "text": "\rThe derivation "
+   },
+   {
+    "start": 53,
+    "end": 115,
+    "text": "(1.1.1)"
+   },
+   {
+    "start": 115,
+    "end": 131,
+    "text": " gives thevalue "
+   },
+   {
+    "start": 131,
+    "end": 192,
+    "text": "1.1.2"
+   },
+   {
+    "start": 192,
+    "end": 199,
+    "text": ".\rMass "
+   },
+   {
+    "start": 199,
+    "end": 200,
+    "text": "\u0001"
+   },
+   {
+    "start": 200,
+    "end": 212,
+    "text": " is given.\r\t"
+   },
+   {
+    "start": 212,
+    "end": 213,
+    "text": "\u0001"
+   },
+   {
+    "start": 213,
+    "end": 214,
+    "text": "\t"
+   },
+   {
+    "start": 214,
+    "end": 256,
+    "text": "\u0013 MACROBUTTON MBPlaceRef \\* MERGEFORMAT \u0014("
+   },
+   {
+    "start": 256,
+    "end": 275,
+    "text": "\u0013 STYLEREF 1 \\s \u00141\u0015"
+   },
+   {
+    "start": 275,
+    "end": 276,
+    "text": "."
+   },
+   {
+    "start": 276,
+    "end": 319,
+    "text": "\u0013 SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT \u00141\u0015"
+   },
+   {
+    "start": 319,
+    "end": 320,
+    "text": "."
+   },
+   {
+    "start": 320,
+    "end": 359,
+    "text": "\u0013 SEQ MBEq \\* ARABIC \\* MERGEFORMAT \u00141\u0015"
+   },
+   {
+    "start": 359,
+    "end": 361,
+    "text": ")\u0015"
+   },
+   {
+    "start": 361,
+    "end": 363,
+    "text": "\r\t"
+   },
+   {
+    "start": 363,
+    "end": 364,
+    "text": "\u0001"
+   },
+   {
+    "start": 364,
+    "end": 365,
+    "text": "\t"
+   },
+   {
+    "start": 365,
+    "end": 407,
+    "text": "\u0013 MACROBUTTON MBPlaceRef \\* MERGEFORMAT \u0014("
+   },
+   {
+    "start": 407,
+    "end": 426,
+    "text": "\u0013 STYLEREF 1 \\s \u00141\u0015"
+   },
+   {
+    "start": 426,
+    "end": 427,
+    "text": "."
+   },
+   {
+    "start": 427,
+    "end": 470,
+    "text": "\u0013 SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT \u00141\u0015"
+   },
+   {
+    "start": 470,
+    "end": 471,
+    "text": "."
+   },
+   {
+    "start": 471,
+    "end": 510,
+    "text": "\u0013 SEQ MBEq \\* ARABIC \\* MERGEFORMAT \u00142\u0015"
+   },
+   {
+    "start": 510,
+    "end": 512,
+    "text": ")\u0015"
+   },
+   {
+    "start": 512,
+    "end": 519,
+    "text": "\rAgain "
+   },
+   {
+    "start": 519,
+    "end": 581,
+    "text": "(1.1.2)"
+   },
+   {
+    "start": 581,
+    "end": 583,
+    "text": ".\r"
+   }
+  ]
+ }
+}

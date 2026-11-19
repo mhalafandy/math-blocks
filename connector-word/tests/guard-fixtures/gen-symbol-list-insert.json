@@ -1,0 +1,84 @@
+{
+ "operation": "Update the list of symbols (first time: marker and table)",
+ "source": "generated (tools/make-guard-fixtures.ts) from the field codes of a 0.1.148 self-test run",
+ "expect": "unchanged",
+ "exclude": [],
+ "before": {
+  "end": 79,
+  "fields": [
+   {
+    "start": 18,
+    "end": 76,
+    "code": " MACROBUTTON MBDefine \\define{m}{mass of the body}[kg] "
+   }
+  ],
+  "equations": [],
+  "lists": [],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 18,
+    "text": "The body has mass "
+   },
+   {
+    "start": 18,
+    "end": 76,
+    "text": "\u0013 MACROBUTTON MBDefine \\define{m}{mass of the body}[kg] \u0014\u0015"
+   },
+   {
+    "start": 76,
+    "end": 79,
+    "text": ".\r\r"
+   }
+  ]
+ },
+ "after": {
+  "end": 153,
+  "fields": [
+   {
+    "start": 0,
+    "end": 29,
+    "code": " MACROBUTTON MBSymbolList "
+   },
+   {
+    "start": 92,
+    "end": 150,
+    "code": " MACROBUTTON MBDefine \\define{m}{mass of the body}[kg] "
+   }
+  ],
+  "equations": [],
+  "lists": [
+   [
+    0,
+    74
+   ]
+  ],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 29,
+    "text": "\u0013 MACROBUTTON MBSymbolList \u0014\u0015"
+   },
+   {
+    "start": 29,
+    "end": 74,
+    "text": "\rSymbol\r\u0007Meaning\r\u0007Unit\r\u0007\r\u0007m\r\u0007mass of the body\r\u0007kg\r\u0007\r\u0007"
+   },
+   {
+    "start": 74,
+    "end": 92,
+    "text": "The body has mass "
+   },
+   {
+    "start": 92,
+    "end": 150,
+    "text": "\u0013 MACROBUTTON MBDefine \\define{m}{mass of the body}[kg] \u0014\u0015"
+   },
+   {
+    "start": 150,
+    "end": 153,
+    "text": ".\r\r"
+   }
+  ]
+ }
+}

@@ -1,0 +1,92 @@
+{
+ "operation": "Convert LaTeX (\\define tags become hidden markers)",
+ "source": "generated (tools/make-guard-fixtures.ts) from the field codes of a 0.1.148 self-test run",
+ "expect": "unchanged",
+ "exclude": [
+  [
+   18,
+   50
+  ],
+  [
+   72,
+   94
+  ]
+ ],
+ "before": {
+  "end": 96,
+  "fields": [],
+  "equations": [],
+  "lists": [],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 18,
+    "text": "The body has mass "
+   },
+   {
+    "start": 18,
+    "end": 50,
+    "text": "\\define{m}{mass of the body}[kg]"
+   },
+   {
+    "start": 50,
+    "end": 72,
+    "text": ". It moves with speed "
+   },
+   {
+    "start": 72,
+    "end": 94,
+    "text": "\\define{v}{speed}[m/s]"
+   },
+   {
+    "start": 94,
+    "end": 96,
+    "text": ".\r"
+   }
+  ]
+ },
+ "after": {
+  "end": 148,
+  "fields": [
+   {
+    "start": 18,
+    "end": 76,
+    "code": " MACROBUTTON MBDefine \\define{m}{mass of the body}[kg] "
+   },
+   {
+    "start": 98,
+    "end": 146,
+    "code": " MACROBUTTON MBDefine \\define{v}{speed}[m/s] "
+   }
+  ],
+  "equations": [],
+  "lists": [],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 18,
+    "text": "The body has mass "
+   },
+   {
+    "start": 18,
+    "end": 76,
+    "text": "\u0013 MACROBUTTON MBDefine \\define{m}{mass of the body}[kg] \u0014\u0015"
+   },
+   {
+    "start": 76,
+    "end": 98,
+    "text": ". It moves with speed "
+   },
+   {
+    "start": 98,
+    "end": 146,
+    "text": "\u0013 MACROBUTTON MBDefine \\define{v}{speed}[m/s] \u0014\u0015"
+   },
+   {
+    "start": 146,
+    "end": 148,
+    "text": ".\r"
+   }
+  ]
+ }
+}

@@ -11,5 +11,7 @@
     <Compile Include="../src/LatexText.cs" />
     <Compile Include="../src/EquationIdentity.cs" />
     <Compile Include="../src/PictureXml.cs" />
+    <Compile Include="../src/GuardText.cs" />
+    <None Include="guard-fixtures/*.json" CopyToOutputDirectory="PreserveNewest" LinkBase="guard-fixtures" />
   </ItemGroup>
 </Project>

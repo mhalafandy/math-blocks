@@ -25,6 +25,12 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Changed — text guard testable without Word
+- The guard's comparison is a pure function (GuardText) over a recorded document; fixtures of each operation in
+  CI; a deleted space between words now counts as a change. The list of symbols is left out (updating it was undone).
+- Self-test: follows references as Ctrl+click does (Go To the bookmark); finds the equation's number at the right
+  margin in the PDF; records guard fixtures from every guarded operation.
+
 ### Fixed — text guard and linked references
 - The text guard no longer mistakes linked references (`REF … \h`) for changed text: it leaves out every field by
   its range. Convert LaTeX, Convert numbering and Convert MathType with references were undone since 0.1.141.

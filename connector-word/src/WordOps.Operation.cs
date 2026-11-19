@@ -73,6 +73,7 @@ namespace MathBlocks.WordConnector
             _undoBrokenAt = null;
             // Text guard: the document's text outside equations, fields and the ranges this operation is meant
             // to change; compared at the end, and the operation undone if anything else changed.
+            _guardLabel = title;
             if (!Rpc.GetBool(p, "noGuard")) GuardStart(doc, ExcludeOf(p));
             var undo = _app.UndoRecord;
             if (!undo.IsRecordingCustomRecord)
@@ -249,6 +250,7 @@ namespace MathBlocks.WordConnector
             bool own = !undo.IsRecordingCustomRecord;
             if (own)
             {
+                _guardLabel = label;
                 GuardStart(guardDoc ?? _app.ActiveDocument, exclude);
                 undo.StartCustomRecord(label);
                 _operationUndo = true;
@@ -290,6 +292,7 @@ namespace MathBlocks.WordConnector
         private Word.Document _guardDoc;
         private string _guardBefore, _guardBeforeFull;
         private List<int[]> _guardExclude;
+        private string _guardLabel;
 
         private static List<int[]> ExcludeOf(Dictionary<string, object> p)
         {
@@ -306,8 +309,9 @@ namespace MathBlocks.WordConnector
             {
                 _guardDoc = doc;
                 _guardExclude = exclude ?? new List<int[]>();
-                _guardBefore = CanonicalText(doc, _guardExclude);
-                _guardBeforeFull = _guardExclude.Count > 0 ? CanonicalText(doc, null) : _guardBefore;
+                _guardBeforeDoc = RecordGuardDoc(doc, _guardExclude);
+                _guardBefore = GuardText.Canonical(_guardBeforeDoc, _guardExclude);
+                _guardBeforeFull = _guardExclude.Count > 0 ? GuardText.Canonical(_guardBeforeDoc, null) : _guardBefore;
             }
             catch (Exception ex)
             {
@@ -321,17 +325,20 @@ namespace MathBlocks.WordConnector
         {
             if (_guardDoc == null) return null;
             string after;
-            try { after = CanonicalText(_guardDoc, null); }
+            GuardDoc afterDoc;
+            try
+            {
+                afterDoc = RecordGuardDoc(_guardDoc, null);
+                after = GuardText.Canonical(afterDoc, null);
+            }
             catch (Exception ex)
             {
                 Log.Error("text guard: reading the document afterwards", ex);
                 return null;
             }
-            if (after == _guardBefore) return null;
-            int i = 0;
-            while (i < after.Length && i < _guardBefore.Length && after[i] == _guardBefore[i]) i++;
-            string around(string s) => s.Substring(Math.Max(0, i - 30), Math.Min(s.Length, i + 30) - Math.Max(0, i - 30));
-            var what = "text outside the equations changed near “…" + around(_guardBefore) + "…” (now “…" + around(after) + "…”)";
+            var what = GuardText.Difference(_guardBefore, after);
+            SaveGuardFixture(afterDoc, what);
+            if (what == null) return null;
             Log.Error("text guard: " + what);
             return what;
         }
@@ -360,20 +367,14 @@ namespace MathBlocks.WordConnector
             return false;
         }
 
-        private static readonly System.Text.RegularExpressions.Regex AnyField = new System.Text.RegularExpressions.Regex("\u0013[^\u0013\u0015]*\u0015");
-        private static readonly System.Text.RegularExpressions.Regex NotText = new System.Text.RegularExpressions.Regex("[\\s\u0001\u0002\u0005\u0007\u0008\u000B\u000C\u00A0]");
-
         /// <summary>
-        /// The document's text as the guard compares it: without fields (numbers, references, equation objects,
-        /// markers), pictures, Word equations, white space and the excluded ranges.
+        /// What the guard needs of a document, read from Word: every field, equation and inline picture and list
+        /// of symbols by its range, and Word's text between consecutive boundaries (extra: more ranges to cut at,
+        /// such as the ranges the operation replaces). The comparison itself is GuardText (no Word; tested).
         /// </summary>
-        internal static string CanonicalText(Word.Document doc, List<int[]> exclude)
+        internal static GuardDoc RecordGuardDoc(Word.Document doc, List<int[]> extra)
         {
-            var ranges = new List<int[]>();
-            if (exclude != null) ranges.AddRange(exclude);
-            try { foreach (Word.OMath m in doc.OMaths) ranges.Add(new[] { m.Range.Start, m.Range.End }); } catch (COMException) { }
-            // Every field by its range (code and result): Range.Text does not always carry the field characters —
-            // a REF \h (a linked reference) comes back as its result alone, which then read as new text.
+            var d = new GuardDoc { End = doc.Content.End };
             try
             {
                 foreach (Word.Field f in doc.Fields)
@@ -383,33 +384,82 @@ namespace MathBlocks.WordConnector
                         var code = f.Code;
                         Word.Range result = null;
                         try { result = f.Result; } catch (COMException) { }
-                        int fieldStart = code.Start - 1;
+                        int fieldStart = Math.Max(0, code.Start - 1);
                         int fieldEnd = Math.Max(code.End, result?.End ?? code.End) + 1;
-                        ranges.Add(new[] { Math.Max(0, fieldStart), fieldEnd });
+                        d.Fields.Add(new GuardField { Start = fieldStart, End = Math.Min(d.End, fieldEnd), Code = code.Text ?? "" });
                     }
                     catch (COMException) { }
                 }
             }
             catch (COMException) { }
-            ranges.Sort((a, b) => a[0].CompareTo(b[0]));
-            var sb = new System.Text.StringBuilder();
-            int pos = 0, end = doc.Content.End;
-            foreach (var r in ranges)
+            try { foreach (Word.OMath m in doc.OMaths) d.Equations.Add(new[] { m.Range.Start, m.Range.End }); } catch (COMException) { }
+            try { foreach (Word.InlineShape s in doc.InlineShapes) d.Equations.Add(new[] { s.Range.Start, s.Range.End }); } catch (COMException) { }
+            // The list of symbols: its hidden marker and the table after the marker's paragraph.
+            foreach (var f in d.Fields)
             {
-                if (r[1] <= pos) continue;
-                if (r[0] > pos) sb.Append(doc.Range(pos, Math.Min(r[0], end)).Text ?? "");
-                pos = Math.Max(pos, r[1]);
+                if (!System.Text.RegularExpressions.Regex.IsMatch(f.Code ?? "", @"^\s*MACROBUTTON\s+MBSymbolList\b")) continue;
+                try
+                {
+                    int after = doc.Range(f.Start, f.Start).Paragraphs.First.Range.End;
+                    var next = doc.Range(after, Math.Min(d.End, after + 1));
+                    int listEnd = next.Tables.Count > 0 ? next.Tables[1].Range.End : after;
+                    d.Lists.Add(new[] { f.Start, listEnd });
+                }
+                catch (COMException) { }
             }
-            if (pos < end) sb.Append(doc.Range(pos, end).Text ?? "");
-            var text = sb.ToString();
-            for (int guard = 0; guard < 50; guard++)
+            var all = new List<int[]>();
+            foreach (var f in d.Fields) all.Add(new[] { f.Start, f.End });
+            all.AddRange(d.Equations);
+            all.AddRange(d.Lists);
+            if (extra != null) all.AddRange(extra);
+            var cuts = GuardText.Boundaries(d.End, all);
+            for (int i = 0; i + 1 < cuts.Count; i++)
             {
-                var next = AnyField.Replace(text, "");
-                if (next == text) break;
-                text = next;
+                if (cuts[i + 1] <= cuts[i]) continue;
+                d.Chunks.Add(new GuardChunk { Start = cuts[i], End = cuts[i + 1], Text = doc.Range(cuts[i], cuts[i + 1]).Text ?? "" });
             }
-            text = text.Replace("\u0013", "").Replace("\u0014", "").Replace("\u0015", "");
-            return NotText.Replace(text, "");
+            return d;
+        }
+
+        /// <summary>The document's text as the guard compares it (GuardText.Canonical over a fresh record).</summary>
+        internal static string CanonicalText(Word.Document doc, List<int[]> exclude) => GuardText.Canonical(RecordGuardDoc(doc, exclude), exclude);
+
+        // Fixtures for the guard's tests: when a folder is set (self-test step), each guarded operation saves its
+        // before and after records there (generic test documents only).
+        internal static string GuardFixtureFolder;
+        private static int _guardFixtureCount;
+        private GuardDoc _guardBeforeDoc;
+
+        internal static Dictionary<string, object> GuardDocJson(GuardDoc d)
+        {
+            var fields = new List<object>();
+            foreach (var f in d.Fields) fields.Add(new Dictionary<string, object> { ["start"] = f.Start, ["end"] = f.End, ["code"] = f.Code });
+            var chunks = new List<object>();
+            foreach (var c in d.Chunks) chunks.Add(new Dictionary<string, object> { ["start"] = c.Start, ["end"] = c.End, ["text"] = c.Text });
+            return new Dictionary<string, object> { ["end"] = d.End, ["fields"] = fields, ["equations"] = d.Equations, ["lists"] = d.Lists, ["chunks"] = chunks };
+        }
+
+        private void SaveGuardFixture(GuardDoc after, string verdict)
+        {
+            if (string.IsNullOrEmpty(GuardFixtureFolder) || _guardBeforeDoc == null || after == null) return;
+            try
+            {
+                System.IO.Directory.CreateDirectory(GuardFixtureFolder);
+                var name = string.Format("guard-{0:000}-{1}.json", ++_guardFixtureCount, System.Text.RegularExpressions.Regex.Replace(_guardLabel ?? "operation", "[^A-Za-z0-9]+", "-").Trim('-').ToLowerInvariant());
+                var json = new System.Web.Script.Serialization.JavaScriptSerializer { MaxJsonLength = int.MaxValue }.Serialize(new Dictionary<string, object>
+                {
+                    ["operation"] = _guardLabel ?? "",
+                    ["exclude"] = _guardExclude,
+                    ["before"] = GuardDocJson(_guardBeforeDoc),
+                    ["after"] = GuardDocJson(after),
+                    ["verdict"] = verdict ?? "unchanged",
+                });
+                System.IO.File.WriteAllText(System.IO.Path.Combine(GuardFixtureFolder, name), json, new System.Text.UTF8Encoding(false));
+            }
+            catch (Exception ex)
+            {
+                Log.Error("text guard: saving a fixture", ex);
+            }
         }
 
         /// <summary>Where the operation's single undo record was found closed (diagnosis: one Ctrl+Z must undo it all).</summary>

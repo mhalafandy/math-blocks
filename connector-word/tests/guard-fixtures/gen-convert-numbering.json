@@ -1,0 +1,199 @@
+{
+ "operation": "Convert numbering (MathType's numbers become MathBlocks numbers)",
+ "source": "generated (tools/make-guard-fixtures.ts) from the field codes of a 0.1.148 self-test run",
+ "expect": "unchanged",
+ "exclude": [],
+ "before": {
+  "end": 213,
+  "fields": [
+   {
+    "start": 49,
+    "end": 108,
+    "code": " REF ZEqnNum100001 \\* Charformat \\! \\* MERGEFORMAT "
+   },
+   {
+    "start": 5,
+    "end": 109,
+    "code": " GOTOBUTTON ZEqnNum100001  \\* MERGEFORMAT "
+   },
+   {
+    "start": 174,
+    "end": 206,
+    "code": " SEQ MTEqn \\h \\* MERGEFORMAT "
+   },
+   {
+    "start": 133,
+    "end": 212,
+    "code": " MACROBUTTON MTPlaceRef \\* MERGEFORMAT "
+   }
+  ],
+  "equations": [
+   [
+    131,
+    132
+   ]
+  ],
+  "lists": [],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 5,
+    "text": "From "
+   },
+   {
+    "start": 5,
+    "end": 49,
+    "text": "\u0013 GOTOBUTTON ZEqnNum100001  \\* MERGEFORMAT \u0014"
+   },
+   {
+    "start": 49,
+    "end": 108,
+    "text": "\u0013 REF ZEqnNum100001 \\* Charformat \\! \\* MERGEFORMAT \u0014(A.1)\u0015"
+   },
+   {
+    "start": 108,
+    "end": 109,
+    "text": "\u0015"
+   },
+   {
+    "start": 109,
+    "end": 131,
+    "text": " the result follows.\r\t"
+   },
+   {
+    "start": 131,
+    "end": 132,
+    "text": "\u0001"
+   },
+   {
+    "start": 132,
+    "end": 133,
+    "text": "\t"
+   },
+   {
+    "start": 133,
+    "end": 174,
+    "text": "\u0013 MACROBUTTON MTPlaceRef \\* MERGEFORMAT \u0014"
+   },
+   {
+    "start": 174,
+    "end": 206,
+    "text": "\u0013 SEQ MTEqn \\h \\* MERGEFORMAT \u0014\u0015"
+   },
+   {
+    "start": 206,
+    "end": 212,
+    "text": "(A.1)\u0015"
+   },
+   {
+    "start": 212,
+    "end": 213,
+    "text": "\r"
+   }
+  ]
+ },
+ "after": {
+  "end": 239,
+  "fields": [
+   {
+    "start": 5,
+    "end": 67,
+    "code": " REF ZEqnNum100001 \\h \\* Charformat \\! \\* MERGEFORMAT "
+   },
+   {
+    "start": 133,
+    "end": 152,
+    "code": " STYLEREF 1 \\s "
+   },
+   {
+    "start": 153,
+    "end": 196,
+    "code": " SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 197,
+    "end": 236,
+    "code": " SEQ MBEq \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 91,
+    "end": 238,
+    "code": " MACROBUTTON MBPlaceRef \\* MERGEFORMAT "
+   }
+  ],
+  "equations": [
+   [
+    89,
+    90
+   ]
+  ],
+  "lists": [],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 5,
+    "text": "From "
+   },
+   {
+    "start": 5,
+    "end": 67,
+    "text": "(A.1)"
+   },
+   {
+    "start": 67,
+    "end": 89,
+    "text": " the result follows.\r\t"
+   },
+   {
+    "start": 89,
+    "end": 90,
+    "text": "\u0001"
+   },
+   {
+    "start": 90,
+    "end": 91,
+    "text": "\t"
+   },
+   {
+    "start": 91,
+    "end": 133,
+    "text": "\u0013 MACROBUTTON MBPlaceRef \\* MERGEFORMAT \u0014("
+   },
+   {
+    "start": 133,
+    "end": 152,
+    "text": "\u0013 STYLEREF 1 \\s \u00141\u0015"
+   },
+   {
+    "start": 152,
+    "end": 153,
+    "text": "."
+   },
+   {
+    "start": 153,
+    "end": 196,
+    "text": "\u0013 SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT \u00141\u0015"
+   },
+   {
+    "start": 196,
+    "end": 197,
+    "text": "."
+   },
+   {
+    "start": 197,
+    "end": 236,
+    "text": "\u0013 SEQ MBEq \\* ARABIC \\* MERGEFORMAT \u00141\u0015"
+   },
+   {
+    "start": 236,
+    "end": 238,
+    "text": ")\u0015"
+   },
+   {
+    "start": 238,
+    "end": 239,
+    "text": "\r"
+   }
+  ]
+ }
+}

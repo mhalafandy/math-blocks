@@ -168,6 +168,9 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     return -1;
   };
   const begin = await smoke("begin");
+  // The text guard's test fixtures: every guarded operation of this run saves its before/after records into
+  // the test folder (guard-fixtures/), generic test documents only (connector-word/tests/guard-fixtures).
+  const guardFixtures = (await smoke("guardFixtures", { on: true }).catch(() => null)) as { folder: string } | null;
   await takeActivations();
   activationLog.length = 0;
   let closedDocs: { closed: number; saved: string[] } | null = null;
@@ -855,7 +858,9 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       await smoke("caretTo", { where: "end" });
       await smoke("paste", { mode: "default" });
       const afterPaste = await defsNow();
-      check("pasting a paragraph with a definition: one more marker (the copy), the original intact", afterPaste.filter((x) => x.tag === "\\define{m}{mass of the body}[kg]").length === 2 && afterPaste.length === defs.length + 1, afterPaste.map((x) => x.tag).join(" | "));
+      // The paragraph may hold more than one definition (here m and v): each is copied once.
+      const inPara = (await defsNow()).filter((x) => x.start >= pm.start && (x.end ?? x.start) <= pm.end).length;
+      check("pasting a paragraph with definitions: one more marker per definition in it (the copies), the originals intact", afterPaste.filter((x) => x.tag === "\\define{m}{mass of the body}[kg]").length === 2 && afterPaste.length === defs.length + inPara, `${inPara} in the paragraph; ` + afterPaste.map((x) => x.tag).join(" | "));
       const checks = (await run.checkDocumentSymbols()).checks;
       check("…and the checks report it as defined twice", checks.some((c) => c.kind === "twice" && c.key === "m"), checks.map((c) => `${c.kind}:${c.key}`).join(", "));
       check("the checks: q is defined but not used", checks.some((c) => c.kind === "unused" && c.key === "q"));
@@ -920,7 +925,10 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
         const pos = Number(/<w:position w:val="(-?\d+)"/.exec(i?.flatOpc ?? "")?.[1] ?? 0);
         return h - Math.max(0, -pos / 2);
       };
-      const refs = [{ number: "(1.1.1)", aboveBaselinePt: above("(1.1.1)") }, { number: "(1.1.2)", aboveBaselinePt: above("(1.1.2)") }, { number: "(1.1.2)", aboveBaselinePt: above("(1.1.2)") }];
+      // The picture's empty top padding (MathType's, at the equation size) is not part of what has to show.
+      const { mathTypePadding } = await import("@mathblocks/math-render");
+      const padTopPt = mathTypePadding((await import("./docStyle")).activeStyle().global.sizePt).top;
+      const refs = ["(1.1.1)", "(1.1.2)", "(1.1.2)"].map((number) => ({ number, aboveBaselinePt: above(number), padTopPt }));
       const res = checkLinks(read.links, read.texts, refs);
       check("PDF: one link per reference", read.links.length === refs.length, `${read.links.length} link(s) for ${refs.length} reference(s); ${pdf.pages} page(s)`);
       res.forEach((r, i) => check(`PDF: reference ${i + 1} → ${r.number} lands on its equation's page`, r.onPage, `link to page ${r.destPage ?? "?"}, equation on page ${r.page ?? "?"}`));
@@ -1586,6 +1594,8 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     });
 
     section = "Visual comparison with MathType (a document you choose; it stays on this PC)";
+    // Your own document: no guard fixtures recorded while it is used (fixtures come from generic documents only).
+    await smoke("guardFixtures", { on: false }).catch(() => undefined);
     await step("mathtype comparison", async () => {
       if (!(await import("./connector")).isDesktop()) return check("comparison with MathType", null, "desktop only");
       const { open } = await import("@tauri-apps/plugin-dialog");
@@ -1631,6 +1641,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
         if (l.length) check(`category “${c.label}”: mean score`, null, `${mean(l)} (${l.length} equation(s); worst ${Math.max(...l.map((r) => r.result!.score))})`);
       }
     });
+    if (guardFixtures) await smoke("guardFixtures", { on: true }).catch(() => undefined);
 
     section = "Saved test documents";
     const a = await step("save A", () => smoke("save", { file: "self-test A.docx" }));
@@ -1659,6 +1670,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
   } finally {
     // Every document the test opened is saved in the test folder and closed (the user's stay open).
     closedDocs = (await smoke("closeTestDocuments").catch(() => null)) as typeof closedDocs;
+    await smoke("guardFixtures", { on: false }).catch(() => undefined);
     await smoke("end").catch(() => undefined);
   }
 

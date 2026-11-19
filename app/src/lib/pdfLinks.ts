@@ -54,7 +54,11 @@ export async function readPdfLinks(pdfjs: typeof Pdfjs, data: Uint8Array): Promi
   return { links, texts, pages: doc.numPages };
 }
 
-/** Where an equation number such as "(1.2)" is printed (pieces of one line joined, as Word splits them). */
+/**
+ * Where an equation number such as "(1.2)" is printed (pieces of one line joined, as Word splits them). A
+ * reference in the text shows the same "(1.2)": the equation's number is the occurrence furthest right (it ends
+ * at the right margin), so that one is taken.
+ */
 export function findNumber(texts: PdfText[], number: string): PdfText | null {
   const want = number.replace(/\s+/g, "");
   const lines = new Map<string, PdfText[]>();
@@ -62,13 +66,15 @@ export function findNumber(texts: PdfText[], number: string): PdfText | null {
     const k = `${t.page}|${Math.round(t.y)}`;
     lines.set(k, [...(lines.get(k) ?? []), t]);
   }
+  let best: PdfText | null = null;
   for (const [, items] of lines) {
     const sorted = [...items].sort((a, b) => a.x - b.x);
     const joined = sorted.map((t) => t.str).join("").replace(/\s+/g, "");
-    const i = joined.lastIndexOf(want);
-    if (i >= 0) return { ...sorted[sorted.length - 1]!, str: want };
+    if (!joined.endsWith(want)) continue;
+    const last = sorted[sorted.length - 1]!;
+    if (!best || last.x > best.x) best = { ...last, str: want };
   }
-  return null;
+  return best;
 }
 
 export interface LinkCheck {
@@ -84,15 +90,17 @@ export interface LinkCheck {
 }
 
 /**
- * For each reference (its equation's number and the equation's height above its baseline, in points): the link
+ * For each reference (its equation's number, the picture's height above its baseline and its empty top padding,
+ * in points): the link
  * that goes to it lands on the equation's page, at or above the equation's top (so the whole equation shows).
  * Links are matched to references in document order.
  */
-export function checkLinks(links: PdfLink[], texts: PdfText[], refs: { number: string; aboveBaselinePt: number }[]): LinkCheck[] {
+export function checkLinks(links: PdfLink[], texts: PdfText[], refs: { number: string; aboveBaselinePt: number; padTopPt?: number }[]): LinkCheck[] {
   return refs.map((r, i) => {
     const n = findNumber(texts, r.number);
     const l = links[i];
-    const equationTop = n ? n.y + r.aboveBaselinePt : null;
+    // The top of what is drawn: the picture's top less its empty top padding.
+    const equationTop = n ? n.y + r.aboveBaselinePt - (r.padTopPt ?? 0) : null;
     return {
       number: r.number,
       page: n?.page ?? null,

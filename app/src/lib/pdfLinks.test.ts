@@ -27,4 +27,17 @@ describe("reference links in the PDF (checks)", () => {
     // The tall second equation's top (640) is above the link's height (610): only the number line would show.
     expect(r[1]).toMatchObject({ onPage: true, topInView: false });
   });
+
+  it("takes the equation's number at the right margin, not a reference to it in the text", () => {
+    const t: PdfText[] = [
+      { page: 1, str: "see (1.1.1) and", x: 72, y: 730 },
+      { page: 2, str: "(1.1.1)", x: 495, y: 295 },
+    ];
+    expect(findNumber(t, "(1.1.1)")).toMatchObject({ page: 2, y: 295 });
+  });
+  it("measures the top of what is drawn (the picture's empty top padding left out)", () => {
+    const t: PdfText[] = [{ page: 2, str: "(1.1.1)", x: 495, y: 295 }];
+    const [r] = checkLinks([{ page: 1, destPage: 2, destY: 342 }], t, [{ number: "(1.1.1)", aboveBaselinePt: 48.4, padTopPt: 2.7 }]);
+    expect(r).toMatchObject({ onPage: true, topInView: true });
+  });
 });

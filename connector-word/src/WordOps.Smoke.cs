@@ -369,6 +369,14 @@ namespace MathBlocks.WordConnector
                     var ok = _app.ActiveDocument.Undo(n);
                     return new Dictionary<string, object> { ["ok"] = ok };
                 }
+                case "guardFixtures":
+                {
+                    // Self-test: every guarded operation from now on saves its before/after records (the guard's
+                    // test fixtures) into the test folder's guard-fixtures; on=false stops.
+                    bool on = Rpc.GetBool(p, "on", true);
+                    GuardFixtureFolder = on ? Path.Combine(SmokeFolder ?? Path.GetTempPath(), "guard-fixtures") : null;
+                    return new Dictionary<string, object> { ["folder"] = GuardFixtureFolder ?? "" };
+                }
                 case "save":
                 {
                     var d = _app.ActiveDocument;
@@ -610,12 +618,13 @@ namespace MathBlocks.WordConnector
             // Start away from the target (top of the document), so the jump is visible.
             d.Range(0, 0).Select();
             _app.ActiveWindow.ScrollIntoView(d.Range(0, 0), true);
+            // Ctrl+click on a REF \h jumps to its bookmark (a REF has no Hyperlink object, and DoClick only follows
+            // GOTOBUTTON / HYPERLINK fields): the same jump is Go To that bookmark, which scrolls it into view.
             string method;
             try
             {
-                var links = field.Result.Hyperlinks;
-                if (links.Count > 0) { links[1].Follow(); method = "hyperlink"; }
-                else { field.DoClick(); method = "field click"; }
+                _app.Selection.GoTo(What: Word.WdGoToItem.wdGoToBookmark, Name: name);
+                method = "go to its bookmark (as Ctrl+click)";
             }
             catch (COMException ex)
             {

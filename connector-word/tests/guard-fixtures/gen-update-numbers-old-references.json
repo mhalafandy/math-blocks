@@ -1,0 +1,274 @@
+{
+ "operation": "Update numbers (older references become links)",
+ "source": "generated (tools/make-guard-fixtures.ts) from the field codes of a 0.1.148 self-test run",
+ "expect": "unchanged",
+ "exclude": [],
+ "before": {
+  "end": 380,
+  "fields": [
+   {
+    "start": 60,
+    "end": 119,
+    "code": " REF _MBEq_1_1_1 \\* Charformat \\! \\* MERGEFORMAT "
+   },
+   {
+    "start": 18,
+    "end": 120,
+    "code": " GOTOBUTTON _MBEq_1_1_1  \\* MERGEFORMAT "
+   },
+   {
+    "start": 168,
+    "end": 226,
+    "code": " REF _MBEqN_1_1_2 \\* Charformat \\! \\* MERGEFORMAT "
+   },
+   {
+    "start": 125,
+    "end": 227,
+    "code": " GOTOBUTTON _MBEqN_1_1_2  \\* MERGEFORMAT "
+   },
+   {
+    "start": 274,
+    "end": 293,
+    "code": " STYLEREF 1 \\s "
+   },
+   {
+    "start": 294,
+    "end": 337,
+    "code": " SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 338,
+    "end": 377,
+    "code": " SEQ MBEq \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 232,
+    "end": 379,
+    "code": " MACROBUTTON MBPlaceRef \\* MERGEFORMAT "
+   }
+  ],
+  "equations": [
+   [
+    230,
+    231
+   ]
+  ],
+  "lists": [],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 18,
+    "text": "Older references: "
+   },
+   {
+    "start": 18,
+    "end": 60,
+    "text": "\u0013 GOTOBUTTON _MBEq_1_1_1  \\* MERGEFORMAT \u0014"
+   },
+   {
+    "start": 60,
+    "end": 119,
+    "text": "\u0013 REF _MBEq_1_1_1 \\* Charformat \\! \\* MERGEFORMAT \u0014(1.1.1)\u0015"
+   },
+   {
+    "start": 119,
+    "end": 120,
+    "text": "\u0015"
+   },
+   {
+    "start": 120,
+    "end": 125,
+    "text": " and "
+   },
+   {
+    "start": 125,
+    "end": 168,
+    "text": "\u0013 GOTOBUTTON _MBEqN_1_1_2  \\* MERGEFORMAT \u0014"
+   },
+   {
+    "start": 168,
+    "end": 226,
+    "text": "\u0013 REF _MBEqN_1_1_2 \\* Charformat \\! \\* MERGEFORMAT \u00141.1.2\u0015"
+   },
+   {
+    "start": 226,
+    "end": 227,
+    "text": "\u0015"
+   },
+   {
+    "start": 227,
+    "end": 230,
+    "text": ".\r\t"
+   },
+   {
+    "start": 230,
+    "end": 231,
+    "text": "\u0001"
+   },
+   {
+    "start": 231,
+    "end": 232,
+    "text": "\t"
+   },
+   {
+    "start": 232,
+    "end": 274,
+    "text": "\u0013 MACROBUTTON MBPlaceRef \\* MERGEFORMAT \u0014("
+   },
+   {
+    "start": 274,
+    "end": 293,
+    "text": "\u0013 STYLEREF 1 \\s \u00141\u0015"
+   },
+   {
+    "start": 293,
+    "end": 294,
+    "text": "."
+   },
+   {
+    "start": 294,
+    "end": 337,
+    "text": "\u0013 SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT \u00141\u0015"
+   },
+   {
+    "start": 337,
+    "end": 338,
+    "text": "."
+   },
+   {
+    "start": 338,
+    "end": 377,
+    "text": "\u0013 SEQ MBEq \\* ARABIC \\* MERGEFORMAT \u00141\u0015"
+   },
+   {
+    "start": 377,
+    "end": 379,
+    "text": ")\u0015"
+   },
+   {
+    "start": 379,
+    "end": 380,
+    "text": "\r"
+   }
+  ]
+ },
+ "after": {
+  "end": 299,
+  "fields": [
+   {
+    "start": 18,
+    "end": 80,
+    "code": " REF _MBEq_1_1_1 \\h \\* Charformat \\! \\* MERGEFORMAT "
+   },
+   {
+    "start": 85,
+    "end": 146,
+    "code": " REF _MBEqN_1_1_2 \\h \\* Charformat \\! \\* MERGEFORMAT "
+   },
+   {
+    "start": 193,
+    "end": 212,
+    "code": " STYLEREF 1 \\s "
+   },
+   {
+    "start": 213,
+    "end": 256,
+    "code": " SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 257,
+    "end": 296,
+    "code": " SEQ MBEq \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 151,
+    "end": 298,
+    "code": " MACROBUTTON MBPlaceRef \\* MERGEFORMAT "
+   }
+  ],
+  "equations": [
+   [
+    149,
+    150
+   ]
+  ],
+  "lists": [],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 18,
+    "text": "Older references: "
+   },
+   {
+    "start": 18,
+    "end": 80,
+    "text": "(1.1.1)"
+   },
+   {
+    "start": 80,
+    "end": 85,
+    "text": " and "
+   },
+   {
+    "start": 85,
+    "end": 146,
+    "text": "1.1.2"
+   },
+   {
+    "start": 146,
+    "end": 149,
+    "text": ".\r\t"
+   },
+   {
+    "start": 149,
+    "end": 150,
+    "text": "\u0001"
+   },
+   {
+    "start": 150,
+    "end": 151,
+    "text": "\t"
+   },
+   {
+    "start": 151,
+    "end": 193,
+    "text": "\u0013 MACROBUTTON MBPlaceRef \\* MERGEFORMAT \u0014("
+   },
+   {
+    "start": 193,
+    "end": 212,
+    "text": "\u0013 STYLEREF 1 \\s \u00141\u0015"
+   },
+   {
+    "start": 212,
+    "end": 213,
+    "text": "."
+   },
+   {
+    "start": 213,
+    "end": 256,
+    "text": "\u0013 SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT \u00141\u0015"
+   },
+   {
+    "start": 256,
+    "end": 257,
+    "text": "."
+   },
+   {
+    "start": 257,
+    "end": 296,
+    "text": "\u0013 SEQ MBEq \\* ARABIC \\* MERGEFORMAT \u00141\u0015"
+   },
+   {
+    "start": 296,
+    "end": 298,
+    "text": ")\u0015"
+   },
+   {
+    "start": 298,
+    "end": 299,
+    "text": "\r"
+   }
+  ]
+ }
+}

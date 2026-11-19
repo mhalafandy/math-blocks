@@ -89,6 +89,15 @@ pnpm install
 - Commits: small and meaningful, imperative mood (`Add OMML writer for matrices`).
 - Architecture-level changes get an entry in `docs/DECISIONS.md` first.
 - Every user-visible change is recorded in `docs/CHANGELOG.md` and `docs/FEATURES.md`.
+- **Anything the add-in writes into Word gets a text-guard fixture before it is published.** A new or changed
+  field, bookmark, hidden marker, table or other structure written by the add-in must come with a fixture in
+  `connector-word/tests/guard-fixtures/` (an operation's before/after record) and pass `dotnet run --project
+  connector-word/tests` in CI: the operation leaves the guarded text unchanged, and a typed word or a deleted space
+  around it is still caught. Generated fixtures: `tools/make-guard-fixtures.ts` (add the new structure there);
+  recorded ones: the self-test saves every guarded operation's records in its folder (`guard-fixtures/`) — copy
+  the relevant ones as `rec-*.json` (generic test documents only). Why: CI has no Word, and in 0.1.141–0.1.145 a
+  new field form (linked references) made the guard undo Convert LaTeX, numbering and MathType conversion
+  without any test noticing.
 
 ## 5. Adding a LaTeX command
 

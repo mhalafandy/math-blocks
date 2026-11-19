@@ -1,0 +1,134 @@
+{
+ "operation": "Update the list of symbols (replaced in place)",
+ "source": "generated (tools/make-guard-fixtures.ts) from the field codes of a 0.1.148 self-test run",
+ "expect": "unchanged",
+ "exclude": [],
+ "before": {
+  "end": 224,
+  "fields": [
+   {
+    "start": 0,
+    "end": 29,
+    "code": " MACROBUTTON MBSymbolList "
+   },
+   {
+    "start": 92,
+    "end": 150,
+    "code": " MACROBUTTON MBDefine \\define{m}{mass of the body}[kg] "
+   },
+   {
+    "start": 165,
+    "end": 222,
+    "code": " MACROBUTTON MBDefine \\define{a}{acceleration}[m/s^2] "
+   }
+  ],
+  "equations": [],
+  "lists": [
+   [
+    0,
+    74
+   ]
+  ],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 29,
+    "text": "\u0013 MACROBUTTON MBSymbolList \u0014\u0015"
+   },
+   {
+    "start": 29,
+    "end": 74,
+    "text": "\rSymbol\r\u0007Meaning\r\u0007Unit\r\u0007\r\u0007m\r\u0007mass of the body\r\u0007kg\r\u0007\r\u0007"
+   },
+   {
+    "start": 74,
+    "end": 92,
+    "text": "The body has mass "
+   },
+   {
+    "start": 92,
+    "end": 150,
+    "text": "\u0013 MACROBUTTON MBDefine \\define{m}{mass of the body}[kg] \u0014\u0015"
+   },
+   {
+    "start": 150,
+    "end": 165,
+    "text": ".\rAcceleration "
+   },
+   {
+    "start": 165,
+    "end": 222,
+    "text": "\u0013 MACROBUTTON MBDefine \\define{a}{acceleration}[m/s^2] \u0014\u0015"
+   },
+   {
+    "start": 222,
+    "end": 224,
+    "text": ".\r"
+   }
+  ]
+ },
+ "after": {
+  "end": 246,
+  "fields": [
+   {
+    "start": 0,
+    "end": 29,
+    "code": " MACROBUTTON MBSymbolList "
+   },
+   {
+    "start": 114,
+    "end": 172,
+    "code": " MACROBUTTON MBDefine \\define{m}{mass of the body}[kg] "
+   },
+   {
+    "start": 187,
+    "end": 244,
+    "code": " MACROBUTTON MBDefine \\define{a}{acceleration}[m/s^2] "
+   }
+  ],
+  "equations": [],
+  "lists": [
+   [
+    0,
+    96
+   ]
+  ],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 29,
+    "text": "\u0013 MACROBUTTON MBSymbolList \u0014\u0015"
+   },
+   {
+    "start": 29,
+    "end": 96,
+    "text": "\rSymbol\r\u0007Meaning\r\u0007Unit\r\u0007\r\u0007m\r\u0007mass of the body\r\u0007kg\r\u0007\r\u0007a\r\u0007acceleration\r\u0007m/s^2\r\u0007\r\u0007"
+   },
+   {
+    "start": 96,
+    "end": 114,
+    "text": "The body has mass "
+   },
+   {
+    "start": 114,
+    "end": 172,
+    "text": "\u0013 MACROBUTTON MBDefine \\define{m}{mass of the body}[kg] \u0014\u0015"
+   },
+   {
+    "start": 172,
+    "end": 187,
+    "text": ".\rAcceleration "
+   },
+   {
+    "start": 187,
+    "end": 244,
+    "text": "\u0013 MACROBUTTON MBDefine \\define{a}{acceleration}[m/s^2] \u0014\u0015"
+   },
+   {
+    "start": 244,
+    "end": 246,
+    "text": ".\r"
+   }
+  ]
+ }
+}

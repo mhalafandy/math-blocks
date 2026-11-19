@@ -23,6 +23,63 @@ recording stays in the add-in and in the self-test, so a recurrence will name it
 order, then MathType parity. Each item below is checked in the browser by `tools/ui-check.ts` (now in CI: 222
 checks) and with screenshots.
 
+### Round after 0.1.148 (your status read: accepted)
+
+#### Your self-test of 0.1.148 (14 Nov, 15:38): 405 checks, 342 passed, 12 failed; object spike 99/99
+
+The text-guard fix worked: Convert LaTeX, Convert numbering and Convert MathType pass again (the 34 failures of
+0.1.142 are gone). The 12 that remain:
+
+- **Reference links — the "top of the tall equation" (your point 3):**
+  - **PDF: in view.** The link to the tall 5-line equation lands at 342.0 pt (PDF points from the bottom); the
+    picture's top is at 343.4 pt, and its top 2.7 pt are empty padding, so the drawn equation starts 1.3 pt
+    *below* where the view starts: the whole equation shows. Both links go to page 2, where both equations are.
+    The two "failures" were the check's: it took the reference "(1.1.1)" in the first sentence (page 1) for the
+    equation's number. **Fixed:** it takes the number at the right margin, and measures the drawn top (the
+    picture's empty top padding left out). So the `_MBEqT_` fix is **not** needed for the PDF.
+  - **Word: not measured.** Following the link did nothing in the test: a `REF \h` has no Hyperlink object, and
+    `Field.DoClick` only follows GOTOBUTTON/HYPERLINK fields, so the selection stayed at the top and the picture
+    was off screen ("Command failed"). **Fixed:** the test now jumps the way Ctrl+click on a `REF \h` does — Go To
+    the bookmark — and then measures whether the picture's top is on screen. The Word result comes with your next
+    run; I apply the `_MBEqT_` fix only if it is out of view.
+- **List of symbols (5 failures, one cause):** the saved "symbols test.docx" has no list at all: the text guard
+  undid "Update the list of symbols", because the table's text (symbols, meanings, units) is new text outside the
+  equations. **Fixed:** the guard leaves out each list of symbols (its hidden marker and the table after it). One of
+  the five was the test's own expectation: the pasted paragraph holds two definitions (m and v), so two copies are
+  right (it expected one).
+- **Print check (1 entry): "Equal by definition", inline, different size and off the baseline.** The crop prints
+  correctly to the eye ("def" over "="), but on your PC the check compares the PDF with MathBlocks' own drawing on
+  the same fonts, so a real difference between the inserted picture and the drawing is possible for this one
+  (`\overset{\text{def}}{=}` inline). Open: I will compare the inserted picture with the drawing for `\text` in
+  an inline stack.
+
+#### 1. The text guard is testable without Word — built
+
+- **The comparison is a pure function** (`connector-word/src/GuardText.cs`, no Word): over a recorded document —
+  every field (begin to end, with its code), Word equation, inline picture and list of symbols by its range, and the
+  text Word gives for each stretch between consecutive boundaries. What is compared: the text outside all those and
+  outside the ranges the operation replaces; white space runs count as one space (so **a deleted space between
+  words is a change** — before, all white space was ignored), white space next to a left-out range is ignored. The
+  add-in's guard is now "record from Word (`RecordGuardDoc`) + this function".
+- **Fixtures** (`connector-word/tests/guard-fixtures/`): before/after records of Convert LaTeX (linked `REF \h`,
+  numbers with STYLEREF/SEQ, an `\mbnumbering` section marker), Update numbers on older references (GOTOBUTTON +
+  REF → `REF \h`), Convert numbering (MathType's MTPlaceRef/SEQ MTEqn → MBPlaceRef), `\define` → hidden MBDefine
+  markers, the list of symbols inserted and updated (MBSymbolList marker + table), and two real changes (a typed
+  word, a deleted space). They are generated (`tools/make-guard-fixtures.ts`) from the field codes your 0.1.148 run
+  wrote, with Word's quirk modelled (a `REF \h` reads as its result alone); generic text only.
+- **CI** (`dotnet run --project connector-word/tests`): each fixture gives its expected verdict; in every passing
+  fixture a typed word and a deleted space are caught; the 0.1.141–0.1.147 comparison **fails** the Convert LaTeX
+  fixture (the regression is caught) and the current one passes it; without leaving the list out, the list fixture
+  fails (0.1.148's bug is caught). CI also checks the generated fixtures are current. All pass here.
+- **Recording from real runs:** the self-test now turns on fixture recording: every guarded operation saves its
+  before/after record into the test folder's `guard-fixtures/` (off while your own MathType-comparison document is
+  used). From your next run I add them as `rec-*.json` — recorded in Word, so they check the recording too.
+
+#### 2. Rule for later rounds — in place
+
+docs/DEVELOPMENT.md §4: anything the add-in writes into Word (fields, bookmarks, markers, tables) gets a guard
+fixture and passes the guard tests in CI before it is published. I follow it from this round on.
+
 ### Round after 0.1.142 (your status read: accepted). Items in your order:
 
 #### 1. Heights always fit the window — built
