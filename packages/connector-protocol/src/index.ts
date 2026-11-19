@@ -313,7 +313,7 @@ export interface AppToConnector {
   };
   /** LaTeX interchange: writes the planned items (one undo step), then updates numbers and references. */
   convertInterchange: {
-    params: DocTarget & { items: (Record<string, unknown> & { id: number; kind: string; start: number; end: number; expect: string })[]; format: Record<string, unknown>; undoLabel: string };
+    params: DocTarget & { items: (Record<string, unknown> & { id: number; kind: string; start: number; end: number; expect: string })[]; format: Record<string, unknown>; undoLabel: string; /** false: a batch before the last (numbers and references are updated by the last). */ updateNumbers?: boolean };
     result: { results: { id: number; ok: boolean; problem: string }[]; done: number; ms: number; numbers: number; references: number; broken?: BrokenReference[]; undoBrokenAt?: string };
   };
   /** The checks of replaceMany alone (before an operation opens its undo record: they read Word's XML, which ends it). */
@@ -362,7 +362,7 @@ export interface AppToConnector {
   /** Opens one undo record and a progress window owned by Word (document blocked). */
   beginOperation: { params: DocTarget & { title: string; total: number; undoLabel: string; exclude?: { start: number; end: number }[]; noGuard?: boolean }; result: { ok: true } };
   operationProgress: { params: { done: number; text?: string }; result: { cancelled: boolean } };
-  endOperation: { params: { done: number }; result: { ms: number; undoBrokenAt?: string; guardFailed?: string; guardRestored?: boolean } };
+  endOperation: { params: { done: number; /** Cancelled: undo the whole operation. */ rollback?: boolean }; result: { ms: number; undoBrokenAt?: string; guardFailed?: string; guardRestored?: boolean; rolledBack?: boolean } };
   retag: { params: DocTarget & { tag: string; newTag: string }; result: { found: number } };
   selectInstance: { params: DocTarget & { tag: string }; result: { found: number } };
   /** The document's MathBlocks registry (Custom XML Part), or null. */
@@ -394,6 +394,8 @@ export interface AppToConnector {
       mathTypeBookmarks: number;
     };
   };
+  /** Paragraphs with LaTeX in footnotes, endnotes, text boxes, headers and footers (Convert LaTeX writes the inline equations there). */
+  scanStories: { params: DocTarget; result: { paragraphs: { story: number; storyName: string; start: number; end: number; text: string; style: string }[] } };
   /** Check document's repair: hides marker fields (one undo step). */
   hideFields: { params: DocTarget & { starts: number[] }; result: { hidden: number } };
   /** Selects a range of the main text and scrolls to it. */

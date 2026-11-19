@@ -29,6 +29,8 @@ export interface InterchangeResult {
   tags: { kind: "inline" | "display"; tag: string; number?: string; bookmark?: string }[];
   /** References to equations that do not exist (after the final Update numbers). */
   broken?: BrokenReference[];
+  /** Cancelled by the user: the conversion was undone (rolledBack: the document is confirmed as before). */
+  cancelled?: { rolledBack: boolean };
   /** The text guard found other text changed and undid the conversion. */
   guardFailed?: string;
   guardRestored?: boolean;
@@ -50,7 +52,18 @@ export async function convertLatexDocument(o: { document?: string; fromWord?: bo
   const scan = (await connector.request("scanInterchange", o.document ? { document: o.document } : {}, 300_000)) as InterchangeScan;
   const { activeStyle } = await import("./docStyle");
   const plan = planInterchange(scan, { frameSubscriptWarning: activeStyle().global.frameSubscriptWarning });
-  const work = plan.equations.filter((e) => !e.invalid).length + plan.markers.length + plan.defines.length + plan.references.length;
+  // Footnotes, endnotes, text boxes, headers and footers: their inline equations, each in its own story.
+  const storyEquations: { story: number; start: number; end: number; expect: string; latex: string; typed: string }[] = [];
+  if (addinSupports("scanStories")) {
+    const ss = await connector.request("scanStories", o.document ? { document: o.document } : {}, 300_000);
+    const byStory = new Map<number, typeof ss.paragraphs>();
+    for (const p of ss.paragraphs) byStory.set(p.story, [...(byStory.get(p.story) ?? []), p]);
+    for (const [story, paras] of byStory) {
+      const sub = planInterchange({ ...scan, paragraphs: paras.map((p) => ({ start: p.start, end: p.end, text: p.text, style: p.style })), bookmarks: [] }, { frameSubscriptWarning: activeStyle().global.frameSubscriptWarning });
+      for (const e of sub.equations) if (e.kind === "inline" && !e.invalid) storyEquations.push({ story, start: e.start, end: e.end, expect: e.expect, latex: e.latex, typed: e.typed });
+    }
+  }
+  const work = plan.equations.filter((e) => !e.invalid).length + plan.markers.length + plan.defines.length + plan.references.length + storyEquations.length;
   if (!work && !plan.issues.length) {
     await tellUser(`No LaTeX found in “${scan.name}” to convert.`, "info");
     return { plan, written: 0, planned: 0, failed: [], equations: 0, buildMs: 0, writeMs: 0, tags: [] };
@@ -85,6 +98,12 @@ export async function convertLatexDocument(o: { document?: string; fromWord?: bo
     what.set(id, `${e.kind === "inline" ? "$" : "$$"}${e.typed.trim().slice(0, 50)}${e.kind === "inline" ? "$" : "$$"}${e.number ? ` ${e.number}` : ""}`);
     if (!o.yes && k % 10 === 0) ui.show({ name: scan.name, plan, stage: "working", progress: `Building the equations… ${k + 1} / ${valid.length}` });
   }
+  for (const e of storyEquations) {
+    const { tag, flatOpc } = await buildObjectInsertion(e.latex, false, undefined, false, { keepParagraph: true, mode: "inline" });
+    items.push({ id: ++id, kind: "inline", story: e.story, start: e.start, end: e.end, expect: e.expect, flatOpc, tag, numbered: false, appendix: false });
+    tagOf.set(id, { kind: "inline", tag });
+    what.set(id, "$" + e.typed.trim().slice(0, 50) + "$ (footnote, text box or header)");
+  }
   for (const m of plan.markers) {
     items.push({ id: ++id, kind: "marker", start: m.start, end: m.end, expect: m.expect, chapter: m.chapter, section: m.section, appendix: m.appendix });
     what.set(id, `\\mbnumbering{${m.value}}`);
@@ -107,24 +126,45 @@ export async function convertLatexDocument(o: { document?: string; fromWord?: bo
   if (!o.yes) ui.show({ name: scan.name, plan, stage: "working", progress: `Writing ${items.length} item(s) into Word…` });
   // The text guard compares everything else: the ranges written here (LaTeX → equations, references,
   // markers) are excluded; highlighted references keep their text.
-  const exclude = items.filter((i) => i.kind !== "highlight").map((i) => ({ start: i.start, end: i.end }));
+  const exclude = items.filter((i) => i.kind !== "highlight" && i.story === undefined).map((i) => ({ start: i.start, end: i.end }));
   await connector.request("beginOperation", { document: scan.fullName, title: "Converting LaTeX", total: items.length, undoLabel: "Convert LaTeX", exclude });
-  let r: { results: { id: number; ok: boolean; problem: string }[]; ms: number; broken?: BrokenReference[] };
+  let r: { results: { id: number; ok: boolean; problem: string }[]; ms: number; broken?: BrokenReference[] } = { results: [], ms: 0 };
   let undoBrokenAt = "";
   let guard: { failed?: string; restored?: boolean } = {};
+  let cancelled = false;
+  let rolledBack = false;
   try {
-    r = await connector.request("convertInterchange", { document: scan.fullName, items, format, undoLabel: "Convert LaTeX" }, 1_800_000);
+    // In batches, last position first (writing moves what comes after): the progress bar moves and Cancel works
+    // between batches; the last call updates numbers and references once. Other stories' items do not move
+    // positions in the main text: they go first.
+    const order = [...items].sort((a, b) => (a.story === undefined ? 1 : 0) - (b.story === undefined ? 1 : 0) || Number(a.story ?? 0) - Number(b.story ?? 0) || b.start - a.start);
+    const BATCH = 40;
+    const t1 = performance.now();
+    for (let i = 0; i < order.length || i === 0; i += BATCH) {
+      const batch = order.slice(i, i + BATCH);
+      const last = i + BATCH >= order.length;
+      const part = await connector.request("convertInterchange", { document: scan.fullName, items: batch, format, undoLabel: "Convert LaTeX", updateNumbers: last }, 1_800_000);
+      r = { results: [...r.results, ...part.results], ms: performance.now() - t1, ...(part.broken ? { broken: part.broken } : r.broken ? { broken: r.broken } : {}) };
+      if (last) break;
+      const pr = await connector.request("operationProgress", { done: Math.min(order.length, i + BATCH), text: `${Math.min(order.length, i + BATCH)} / ${order.length} items` });
+      if (pr.cancelled) {
+        cancelled = true;
+        break;
+      }
+    }
   } finally {
-    const end = await connector.request("endOperation", { done: items.length }).catch(() => ({ ms: 0, undoBrokenAt: "" }) as { ms: number; undoBrokenAt?: string; guardFailed?: string; guardRestored?: boolean });
+    // Cancelled: the whole conversion is undone, so the document is exactly as before.
+    const end = await connector.request("endOperation", { done: items.length, ...(cancelled ? { rollback: true } : {}) }).catch(() => ({ ms: 0, undoBrokenAt: "" }) as { ms: number; undoBrokenAt?: string; guardFailed?: string; guardRestored?: boolean; rolledBack?: boolean });
     undoBrokenAt = end.undoBrokenAt ?? "";
     if (end.guardFailed) guard = { failed: end.guardFailed, restored: !!end.guardRestored };
+    if (cancelled) rolledBack = !!end.rolledBack;
   }
   const failed = r.results.filter((x) => !x.ok).map((x) => ({ what: what.get(x.id) ?? `item ${x.id}`, problem: x.problem }));
   const okIds = new Set(r.results.filter((x) => x.ok).map((x) => x.id));
   const equations = items.filter((i) => (i.kind === "inline" || i.kind === "display") && okIds.has(i.id)).length;
   // In document order (the items' order), not the order Word wrote them in (last first).
   const tags = items.filter((i) => okIds.has(i.id)).map((i) => tagOf.get(i.id)).filter((t): t is NonNullable<typeof t> => !!t);
-  const result: InterchangeResult = { ...(guard.failed ? { guardFailed: guard.failed, guardRestored: !!guard.restored } : {}), plan, written: okIds.size, planned: items.length, failed, equations, buildMs, writeMs: r.ms, tags, ...(r.broken?.length ? { broken: r.broken } : {}), ...(backup ? { backup } : {}), ...(undoBrokenAt ? { undoBrokenAt } : {}) };
+  const result: InterchangeResult = { ...(cancelled ? { cancelled: { rolledBack }, stopped: true } : {}), ...(guard.failed ? { guardFailed: guard.failed, guardRestored: !!guard.restored } : {}), plan, written: okIds.size, planned: items.length, failed, equations, buildMs, writeMs: r.ms, tags, ...(r.broken?.length ? { broken: r.broken } : {}), ...(backup ? { backup } : {}), ...(undoBrokenAt ? { undoBrokenAt } : {}) };
   console.info(`[MathBlocks] Convert LaTeX: ${describeResult(result)}`);
   if (!o.yes) ui.show({ name: scan.name, plan, stage: "result", result });
   else if (o.fromWord) await tellUser(describeResult(result), failed.length ? "error" : "info");
@@ -132,6 +172,7 @@ export async function convertLatexDocument(o: { document?: string; fromWord?: bo
 }
 
 export function describeResult(r: InterchangeResult): string {
+  if (r.cancelled) return r.cancelled.rolledBack ? "Convert LaTeX cancelled: everything it had written was undone; the document is as it was." : "Convert LaTeX cancelled and undone, but the document could not be confirmed as before: check it (Ctrl+Z / Ctrl+Y).";
   const per = r.equations ? Math.round((r.buildMs + r.writeMs) / r.equations) : 0;
   return [
     `${r.equations} equation(s), ${r.plan.counts.references} reference(s), ${r.plan.counts.markers} numbering marker(s) and ${r.plan.counts.defines} symbol definition(s) written (${r.written}/${r.planned} items)`,

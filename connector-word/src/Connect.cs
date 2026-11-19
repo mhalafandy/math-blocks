@@ -185,7 +185,7 @@ namespace MathBlocks.WordConnector
         private static readonly string[] Methods =
         {
             "ping", "insertEquation", "replaceEquation", "readEquation", "documentInfo",
-            "listInstances", "replaceMany", "verifyMany", "scanInterchange", "convertInterchange", "scanNumbering", "convertNumbering", "retag", "selectInstance", "getRegistry", "setRegistry", "getDocumentStyle", "setDocumentStyle", "getDocumentBlocks", "setDocumentBlocks", "listDefinitions", "insertDefinition", "updateDefinition", "writeSymbolList", "listDocuments", "listHeadings", "findTextMentions", "selectRange", "checkFields", "hideFields",
+            "listInstances", "replaceMany", "verifyMany", "scanInterchange", "convertInterchange", "scanNumbering", "convertNumbering", "retag", "selectInstance", "getRegistry", "setRegistry", "getDocumentStyle", "setDocumentStyle", "getDocumentBlocks", "setDocumentBlocks", "listDefinitions", "insertDefinition", "updateDefinition", "writeSymbolList", "listDocuments", "listHeadings", "findTextMentions", "selectRange", "checkFields", "hideFields", "scanStories",
             "listMathTypeParagraphs", "replaceParagraphs", "activateObject",
             "numberEquation", "unnumberEquation", "listNumbered", "insertReference", "updateNumbers",
             "showWordMenu", "selectionInfo", "findLatex", "replaceRanges", "equationToText",
@@ -858,6 +858,7 @@ namespace MathBlocks.WordConnector
                     case "selectRange": result = _ops.SelectRange(p); break;
                     case "checkFields": result = _ops.CheckFields(p); break;
                     case "hideFields": result = _ops.HideFields(p); break;
+                    case "scanStories": result = _ops.ScanStories(p); break;
                     case "setDocumentBlocks": result = _ops.SetDocumentBlocks(p); break;
                     case "setDocumentStyle": result = _ops.SetDocumentStyle(p); break;
                     case "listDocuments": result = _ops.ListDocuments(); break;

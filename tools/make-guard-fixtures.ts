@@ -242,6 +242,11 @@ const checked = (shown: string): Tok[] => [
 ];
 make("gen-check-document-repair", "Repair (Check document): markers hidden, numbers and references updated, pictures redrawn", checked("(1.1.3)"), checked("(1.1.1)").map((x) => (x.k === "f" && x.code.startsWith("GOTOBUTTON") ? refLinked("_MBEq_1_1_2", "(1.1.2)") : x)));
 
+// Convert LaTeX in a footnote: the main text keeps its footnote mark (a special character) and its own text; the
+// equation is written in the footnote's story, which the guard of the main text does not compare.
+const withNote = (inline: Tok): Tok[] => [t("The result holds"), t("\u0002"), t(" for every case, see "), inline, t("."), t(P)];
+make("gen-convert-latex-footnote", "Convert LaTeX with a footnote mark in the main text", withNote(latex("$x$")), withNote(eq));
+
 const dir = new URL("../connector-word/tests/guard-fixtures/", import.meta.url);
 mkdirSync(dir, { recursive: true });
 for (const [name, fx] of Object.entries(fixtures)) writeFileSync(new URL(`${name}.json`, dir), JSON.stringify(fx, null, 1) + "\n");

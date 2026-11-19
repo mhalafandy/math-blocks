@@ -162,6 +162,73 @@ namespace MathBlocks.WordConnector
         /// updates every equation number and reference. Each item's range must still hold the text it
         /// was planned from (else it is skipped and reported). Returns per-item results and the time.
         /// </summary>
+        /// <summary>
+        /// Paragraphs with LaTeX ($) outside the main text: footnotes, endnotes, text boxes, headers and footers. Each
+        /// with its story's index (in OtherStories order) and its position in that story; Convert LaTeX writes the
+        /// inline equations there (numbers, references and markers belong to the main text).
+        /// </summary>
+        public Dictionary<string, object> ScanStories(Dictionary<string, object> p)
+        {
+            var doc = ResolveDocument(p);
+            var list = new List<object>();
+            int idx = -1;
+            foreach (var story in OtherStories(doc))
+            {
+                idx++;
+                string name = StoryName(story);
+                try
+                {
+                    foreach (Word.Paragraph para in story.Paragraphs)
+                    {
+                        var r = para.Range;
+                        var text = r.Text ?? "";
+                        if (text.IndexOf('$') < 0) continue;
+                        var body = text.TrimEnd('\r', '\a', '\n');
+                        list.Add(new Dictionary<string, object> { ["story"] = idx, ["storyName"] = name, ["start"] = r.Start, ["end"] = r.Start + body.Length, ["text"] = body, ["style"] = StyleNameOf(para) });
+                    }
+                }
+                catch (COMException)
+                {
+                }
+            }
+            return new Dictionary<string, object> { ["paragraphs"] = list };
+        }
+
+        /// <summary>An inline equation written in another story (see ScanStories); null when done, else why not.</summary>
+        private string WriteStoryInline(List<Word.Range> stories, Dictionary<string, object> item)
+        {
+            int idx = Rpc.GetInt(item, "story");
+            if (idx < 0 || idx >= stories.Count) return "its footnote, text box or header is gone";
+            var story = stories[idx];
+            int start = Rpc.GetInt(item, "start"), end = Rpc.GetInt(item, "end");
+            var r = story.Duplicate;
+            r.SetRange(start, end);
+            if ((r.Text ?? "") != Rpc.GetString(item, "expect")) return "the text changed since it was checked";
+            var flat = Rpc.GetString(item, "flatOpc");
+            var tag = Rpc.GetString(item, "tag");
+            r.Text = "";
+            // InsertXML over a placeholder character stays inside the paragraph (as InsertInline in the main text).
+            var at = story.Duplicate;
+            at.SetRange(start, start);
+            at.InsertAfter("#");
+            var placeholder = story.Duplicate;
+            placeholder.SetRange(start, start + 1);
+            placeholder.InsertXML(RunsOnly(flat));
+            var near = story.Duplicate;
+            near.SetRange(start, Math.Min(story.End, start + 40));
+            foreach (Word.InlineShape s in near.InlineShapes)
+            {
+                var title = TagOf(s);
+                if (title == tag) break;
+                if (!IsTag(title) && LooksLikeEquation(s))
+                {
+                    SetPictureTag(s, tag);
+                    break;
+                }
+            }
+            return null;
+        }
+
         public Dictionary<string, object> ConvertInterchange(Dictionary<string, object> p)
         {
             var doc = ResolveDocument(p);
@@ -180,6 +247,7 @@ namespace MathBlocks.WordConnector
                 try
                 {
                     _app.ScreenUpdating = false;
+                    List<Word.Range> stories = null;
                     foreach (var item in items)
                     {
                         var kind = Rpc.GetString(item, "kind");
@@ -187,7 +255,12 @@ namespace MathBlocks.WordConnector
                         string problem;
                         try
                         {
-                            problem = WriteInterchangeItem(doc, item, kind, fmt);
+                            if (item.ContainsKey("story"))
+                            {
+                                stories = stories ?? new List<Word.Range>(OtherStories(doc));
+                                problem = kind == "inline" ? WriteStoryInline(stories, item) : "only inline equations are converted outside the main text";
+                            }
+                            else problem = WriteInterchangeItem(doc, item, kind, fmt);
                         }
                         catch (Exception ex)
                         {
@@ -198,7 +271,9 @@ namespace MathBlocks.WordConnector
                         results.Add(new Dictionary<string, object> { ["id"] = id, ["ok"] = problem == null, ["problem"] = problem ?? "" });
                         CheckOperationUndo("after " + kind + " at " + Rpc.GetInt(item, "start"));
                     }
-                    // Numbers first, then references (they show the numbers).
+                    // Numbers first, then references (they show the numbers). Written in batches, only the last updates them.
+                    if (p.ContainsKey("updateNumbers") && !Rpc.GetBool(p, "updateNumbers"))
+                        return new Dictionary<string, object> { ["results"] = results, ["done"] = done, ["ms"] = clock.ElapsedMilliseconds, ["numbers"] = 0, ["references"] = 0, ["broken"] = new List<object>() };
                     var updated = UpdateNumberFields(doc);
                     CheckOperationUndo("after updating numbers and references");
                     Log.Info("convertInterchange in " + doc.Name + ": " + done + "/" + items.Count + " item(s) in " + clock.ElapsedMilliseconds + " ms");

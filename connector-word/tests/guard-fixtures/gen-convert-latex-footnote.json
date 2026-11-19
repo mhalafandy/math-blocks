@@ -1,0 +1,62 @@
+{
+ "operation": "Convert LaTeX with a footnote mark in the main text",
+ "source": "generated (tools/make-guard-fixtures.ts) from the field codes of a 0.1.148 self-test run",
+ "expect": "unchanged",
+ "exclude": [
+  [
+   38,
+   41
+  ]
+ ],
+ "before": {
+  "end": 44,
+  "fields": [],
+  "equations": [],
+  "lists": [],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 38,
+    "text": "The result holds\u0002 for every case, see "
+   },
+   {
+    "start": 38,
+    "end": 41,
+    "text": "$x$"
+   },
+   {
+    "start": 41,
+    "end": 44,
+    "text": ".\r\r"
+   }
+  ]
+ },
+ "after": {
+  "end": 42,
+  "fields": [],
+  "equations": [
+   [
+    38,
+    39
+   ]
+  ],
+  "lists": [],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 38,
+    "text": "The result holds\u0002 for every case, see "
+   },
+   {
+    "start": 38,
+    "end": 39,
+    "text": "\u0001"
+   },
+   {
+    "start": 39,
+    "end": 42,
+    "text": ".\r\r"
+   }
+  ]
+ }
+}

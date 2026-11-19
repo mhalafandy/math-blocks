@@ -157,6 +157,15 @@ namespace MathBlocks.WordConnector
             var ms = _operationClock.ElapsedMilliseconds;
             CheckOperationUndo("end of the operation");
             var broken = _undoBrokenAt ?? "";
+            // Cancelled by the user: the whole operation is undone (its single record), the text checked back.
+            if (Rpc.GetBool(p, "rollback"))
+            {
+                EndOperationCore();
+                bool back = RollBack();
+                _guardDoc = null;
+                Log.Info("operation cancelled and undone: " + (back ? "document as before" : "could not confirm the document is as before"));
+                return new Dictionary<string, object> { ["ms"] = ms, ["undoBrokenAt"] = broken, ["rolledBack"] = back };
+            }
             var guardFailed = GuardCheck();
             EndOperationCore();
             bool restored = false;
@@ -341,6 +350,29 @@ namespace MathBlocks.WordConnector
             if (what == null) return null;
             Log.Error("text guard: " + what);
             return what;
+        }
+
+        /// <summary>Cancel: undoes the operation's record; true when the guarded text is as it was before.</summary>
+        private bool RollBack()
+        {
+            var doc = _guardDoc;
+            if (doc == null)
+            {
+                try { return _app.ActiveDocument.Undo(1); } catch (COMException) { return false; }
+            }
+            try
+            {
+                for (int n = 0; n < 20; n++)
+                {
+                    if (!doc.Undo(1)) break;
+                    if (CanonicalText(doc, null) == _guardBeforeFull) return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("cancel: undoing", ex);
+            }
+            return false;
         }
 
         /// <summary>Undoes until the document's text is what it was before the operation (at most 20 steps).</summary>

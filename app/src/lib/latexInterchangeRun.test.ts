@@ -9,7 +9,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const stixFile = join(dirname(createRequire(import.meta.url).resolve("@fontsource/stix-two-math/package.json", { paths: [join(here, "../../../packages/math-render")] })), "files", "stix-two-math-latin-400-normal.woff");
 vi.stubGlobal("fetch", async () => ({ arrayBuffer: async () => new Uint8Array(readFileSync(stixFile)).buffer }));
 
-const word = vi.hoisted(() => ({ calls: [] as { method: string; params: Record<string, unknown> }[] }));
+const word = vi.hoisted(() => ({ calls: [] as { method: string; params: Record<string, unknown> }[], footnotes: 1, cancel: false }));
 
 vi.mock("./connector", async () => {
   const { interchangeScan } = await import("./interchangeFixture");
@@ -23,7 +23,10 @@ vi.mock("./connector", async () => {
         if (method === "scanInterchange") return interchangeScan();
         if (method === "backupDocument") return { path: "C:\\backups\\t.xml" };
         if (method === "beginOperation") return { ok: true };
-        if (method === "endOperation") return { ms: 1, undoBrokenAt: "" };
+        if (method === "endOperation") return { ms: 1, undoBrokenAt: "", ...(params.rollback ? { rolledBack: true } : {}) };
+        // Footnotes (another story): inline equations only, each paragraph in story 0.
+        if (method === "scanStories") return { paragraphs: Array.from({ length: word.footnotes }, (_, i) => ({ story: 0, storyName: "footnotes", start: 10 + i * 40, end: 10 + i * 40 + 22, text: `A footnote with $a_{${i}}$.`, style: "Footnote Text" })) };
+        if (method === "operationProgress") return { cancelled: word.cancel };
         if (method === "convertInterchange") {
           const items = params.items as { id: number }[];
           return { results: items.map((i) => ({ id: i.id, ok: true, problem: "" })), done: items.length, ms: 42, numbers: 5, references: 4 };
@@ -45,7 +48,11 @@ describe("Convert LaTeX (interchange) — what is sent to Word", () => {
     expect(methods.indexOf("convertInterchange")).toBeLessThan(methods.indexOf("endOperation"));
     expect(methods.filter((m) => m === "convertInterchange")).toHaveLength(1);
     const call = word.calls.find((c) => c.method === "convertInterchange")!;
-    const items = call.params.items as Record<string, unknown>[];
+    // In document order (Word gets them last position first).
+    const items = (call.params.items as Record<string, unknown>[]).filter((i) => i.story === undefined).sort((a, b) => Number(a.id) - Number(b.id));
+    const inFootnotes = (call.params.items as Record<string, unknown>[]).filter((i) => i.story !== undefined);
+    expect(inFootnotes).toEqual([expect.objectContaining({ kind: "inline", story: 0, expect: "$a_{0}$" })]);
+    expect(call.params.updateNumbers).toBe(true);
     const kinds = items.map((i) => i.kind);
     expect(kinds.filter((k) => k === "inline")).toHaveLength(6);
     expect(kinds.filter((k) => k === "display")).toHaveLength(11);
@@ -61,8 +68,28 @@ describe("Convert LaTeX (interchange) — what is sent to Word", () => {
       expect(String(i.flatOpc)).toContain("MathBlocks.Equation");
       expect(String(i.tag)).toMatch(/^mb1\|/);
     }
-    expect(r.equations).toBe(17);
+    expect(r.equations).toBe(18);
     expect(r.failed).toEqual([]);
     expect(r.tags.filter((t) => t.number)).toHaveLength(10);
+  });
+
+  it("writes in batches with progress; Cancel undoes the whole conversion", async () => {
+    word.calls.length = 0;
+    word.footnotes = 60;
+    word.cancel = true;
+    const r = (await convertLatexDocument({ yes: true }))!;
+    const methods = word.calls.map((c) => c.method);
+    expect(methods.filter((m) => m === "convertInterchange")).toHaveLength(1);
+    expect(methods).toContain("operationProgress");
+    const end = word.calls.find((c) => c.method === "endOperation")!;
+    expect(end.params.rollback).toBe(true);
+    expect(r.cancelled).toEqual({ rolledBack: true });
+    word.cancel = false;
+    word.calls.length = 0;
+    await convertLatexDocument({ yes: true });
+    const batches = word.calls.filter((c) => c.method === "convertInterchange");
+    expect(batches.length).toBeGreaterThan(1);
+    expect(batches.map((b) => b.params.updateNumbers)).toEqual([...Array(batches.length - 1).fill(false), true]);
+    word.footnotes = 1;
   });
 });
