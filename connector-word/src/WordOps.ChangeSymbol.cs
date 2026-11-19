@@ -36,11 +36,22 @@ namespace MathBlocks.WordConnector
                 }
                 if (h == null || h.Start <= last) break;
                 last = h.Start;
-                var para = h.Paragraphs.First;
-                int level;
-                try { level = (int)para.OutlineLevel; } catch (COMException) { level = 10; }
-                if (level >= 1 && level <= 9) list.Add(new Dictionary<string, object> { ["start"] = para.Range.Start, ["level"] = level, ["text"] = VisibleContext(para.Range) });
-                r = doc.Range(para.Range.End, para.Range.End);
+                try
+                {
+                    var para = h.Paragraphs.First;
+                    int level;
+                    try { level = (int)para.OutlineLevel; } catch (COMException) { level = 10; }
+                    if (level >= 1 && level <= 9) list.Add(new Dictionary<string, object> { ["start"] = para.Range.Start, ["level"] = level, ["text"] = VisibleContext(para.Range) });
+                    // The last paragraph ends at the end of the text: Word refuses a range there ("Value out of range").
+                    int next = para.Range.End;
+                    if (next >= doc.Content.End) break;
+                    r = doc.Range(next, next);
+                }
+                catch (COMException ex)
+                {
+                    Log.Error("listing headings: stopped at " + last, ex);
+                    break;
+                }
             }
             return new Dictionary<string, object> { ["headings"] = list };
         }
@@ -59,7 +70,7 @@ namespace MathBlocks.WordConnector
             {
                 foreach (Word.Field f in doc.Fields)
                 {
-                    try { skip.Add(new[] { f.Code.Start - 1, Math.Max(f.Code.End, f.Result?.End ?? f.Code.End) + 1 }); } catch (COMException) { }
+                    try { skip.Add(new[] { f.Code.Start - 1, FieldEndOf(doc, f) }); } catch (COMException) { }
                 }
             }
             catch (COMException) { }
@@ -80,11 +91,21 @@ namespace MathBlocks.WordConnector
                     find.MatchWildcards = false;
                     find.Forward = true;
                     find.Wrap = Word.WdFindWrap.wdFindStop;
-                    for (int n = 0; n < 2000 && find.Execute(); n++)
+                    // Find reads "^" as a special character: a literal one is "^^".
+                    find.Text = text.Replace("^", "^^");
+                    try
                     {
-                        if (!inside(r.Start, r.End))
-                            found.Add(new Dictionary<string, object> { ["text"] = text, ["start"] = r.Start, ["end"] = r.End, ["context"] = VisibleContext(r.Paragraphs.First.Range) });
-                        r.Collapse(Word.WdCollapseDirection.wdCollapseEnd);
+                        for (int n = 0; n < 2000 && find.Execute(); n++)
+                        {
+                            if (!inside(r.Start, r.End))
+                                found.Add(new Dictionary<string, object> { ["text"] = text, ["start"] = r.Start, ["end"] = r.End, ["context"] = VisibleContext(r.Paragraphs.First.Range) });
+                            if (r.End >= doc.Content.End) break;
+                            r.Collapse(Word.WdCollapseDirection.wdCollapseEnd);
+                        }
+                    }
+                    catch (COMException ex)
+                    {
+                        Log.Error("finding mentions of " + text, ex);
                     }
                 }
             }

@@ -64,14 +64,8 @@ namespace MathBlocks.WordConnector
                 int before = 0;
                 while (before < starts.Count && starts[before] < start) before++;
                 int end = start;
-                try
-                {
-                    end = f.Result.End + 1;
-                }
-                catch (COMException)
-                {
-                    end = f.Code.End + 1;
-                }
+                try { end = FieldEndOf(doc, f); }
+                catch (COMException) { end = f.Code.End + 1; }
                 var item = new Dictionary<string, object> { ["tag"] = m.Groups[1].Value, ["start"] = start, ["end"] = end, ["equationsBefore"] = before };
                 if (!light)
                 {

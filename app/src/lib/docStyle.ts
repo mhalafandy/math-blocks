@@ -124,6 +124,15 @@ export async function readDocumentStyle(document: string): Promise<MathStyle | n
   return parseStyleXml(r.xml);
 }
 
+async function activeFullName(): Promise<string | undefined> {
+  try {
+    const info = (await (await connection()).request("documentInfo", {})) as { fullName?: string };
+    return info.fullName || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Stores a style in a document (the current one when none is named) and makes it the style in effect.
  * The style it replaces goes into the document's recent history (Ctrl+Z of a restyle returns to it).
@@ -131,7 +140,8 @@ export async function readDocumentStyle(document: string): Promise<MathStyle | n
  */
 export async function saveDocumentStyle(style: MathStyle, document?: string, o: { probe?: string | null } = {}): Promise<void> {
   const cur = useApp.getState().docStyle;
-  const target = document ?? cur?.document;
+  // No document named: the one in front now (the style last read may belong to a document since closed or left).
+  const target = document ?? (await activeFullName()) ?? cur?.document;
   const same = !!cur && (!target || cur.document === target);
   const hash = styleHash(style);
   const prev = same && cur?.stored ? [{ hash: styleHash(cur.style), style: cur.style }] : [];

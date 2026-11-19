@@ -328,7 +328,7 @@ namespace MathBlocks.WordConnector
         // ------------------------------------------------------------------ text guard
 
         private Word.Document _guardDoc;
-        private string _guardBefore, _guardBeforeFull;
+        private string _guardBefore, _guardBeforeFull, _guardBeforeShapes;
         /// <summary>Tests: the next progress step reports Cancel, as if the user pressed it.</summary>
         internal static bool CancelNextProgress;
         private List<int[]> _guardExclude;
@@ -343,6 +343,17 @@ namespace MathBlocks.WordConnector
             return list;
         }
 
+        /// <summary>The position after a field's end mark (see GuardText.FieldEnd).</summary>
+        internal static int FieldEndOf(Word.Document doc, Word.Field f)
+        {
+            var code = f.Code;
+            int rs = code.End, re = code.End;
+            try { var r = f.Result; if (r != null) { rs = r.Start; re = r.End; } } catch (COMException) { }
+            string at = "";
+            try { at = doc.Range(code.End, Math.Min(doc.Content.End, code.End + 2)).Text ?? ""; } catch (COMException) { }
+            return GuardText.FieldEnd(code.End, rs, re, at);
+        }
+
         private void GuardStart(Word.Document doc, List<int[]> exclude)
         {
             try
@@ -352,6 +363,7 @@ namespace MathBlocks.WordConnector
                 _guardBeforeDoc = RecordGuardDoc(doc, _guardExclude);
                 _guardBefore = GuardText.Canonical(_guardBeforeDoc, _guardExclude);
                 _guardBeforeFull = _guardExclude.Count > 0 ? GuardText.Canonical(_guardBeforeDoc, null) : _guardBefore;
+                _guardBeforeShapes = _guardBeforeDoc.Shapes;
             }
             catch (Exception ex)
             {
@@ -393,11 +405,7 @@ namespace MathBlocks.WordConnector
             }
             try
             {
-                for (int n = 0; n < 20; n++)
-                {
-                    if (!doc.Undo(1)) break;
-                    if (CanonicalText(doc, null) == _guardBeforeFull) return true;
-                }
+                return UndoToBefore(doc) > 0;
             }
             catch (Exception ex)
             {
@@ -413,14 +421,11 @@ namespace MathBlocks.WordConnector
             if (doc == null) return false;
             try
             {
-                for (int n = 0; n < 20; n++)
+                int steps = UndoToBefore(doc);
+                if (steps > 0)
                 {
-                    if (!doc.Undo(1)) break;
-                    if (CanonicalText(doc, null) == _guardBeforeFull)
-                    {
-                        Log.Info("text guard: the operation was undone (" + (n + 1) + " step(s))");
-                        return true;
-                    }
+                    Log.Info("text guard: the operation was undone (" + steps + " step(s))");
+                    return true;
                 }
             }
             catch (Exception ex)
@@ -448,7 +453,7 @@ namespace MathBlocks.WordConnector
                         Word.Range result = null;
                         try { result = f.Result; } catch (COMException) { }
                         int fieldStart = Math.Max(0, code.Start - 1);
-                        int fieldEnd = Math.Max(code.End, result?.End ?? code.End) + 1;
+                        int fieldEnd = FieldEndOf(doc, f);
                         d.Fields.Add(new GuardField { Start = fieldStart, End = Math.Min(d.End, fieldEnd), Code = code.Text ?? "" });
                     }
                     catch (COMException) { }
@@ -456,7 +461,19 @@ namespace MathBlocks.WordConnector
             }
             catch (COMException) { }
             try { foreach (Word.OMath m in doc.OMaths) d.Equations.Add(new[] { m.Range.Start, m.Range.End }); } catch (COMException) { }
-            try { foreach (Word.InlineShape s in doc.InlineShapes) d.Equations.Add(new[] { s.Range.Start, s.Range.End }); } catch (COMException) { }
+            var shapes = new System.Text.StringBuilder();
+            try
+            {
+                foreach (Word.InlineShape s in doc.InlineShapes)
+                {
+                    d.Equations.Add(new[] { s.Range.Start, s.Range.End });
+                    string alt = "";
+                    try { alt = s.AlternativeText ?? ""; } catch (COMException) { }
+                    shapes.Append(s.Range.Start).Append(':').Append(alt).Append('\u0001');
+                }
+            }
+            catch (COMException) { }
+            d.Shapes = shapes.ToString();
             // The list of symbols: its hidden marker and the table after the marker's paragraph.
             foreach (var f in d.Fields)
             {
@@ -485,6 +502,28 @@ namespace MathBlocks.WordConnector
         }
 
         /// <summary>The document's text as the guard compares it (GuardText.Canonical over a fresh record).</summary>
+        /// <summary>
+        /// Undoes, one step at a time (at most 20), until the text and the equations are as before the operation.
+        /// If the equations never match, redoes back to the first step where the text did (never past the operation).
+        /// Returns the number of steps undone when the document is as before, else -1.
+        /// </summary>
+        private int UndoToBefore(Word.Document doc)
+        {
+            int firstText = -1, n = 0;
+            for (; n < 20; n++)
+            {
+                if (!doc.Undo(1)) break;
+                var d = RecordGuardDoc(doc, null);
+                bool text = GuardText.Canonical(d, null) == _guardBeforeFull;
+                if (text && firstText < 0) firstText = n + 1;
+                // The equations too: an edited equation leaves the text as it was.
+                if (text && (_guardBeforeShapes == null || d.Shapes == _guardBeforeShapes)) return n + 1;
+            }
+            int undone = n;
+            if (firstText > 0 && undone > firstText) doc.Redo(undone - firstText);
+            return -1;
+        }
+
         internal static string CanonicalText(Word.Document doc, List<int[]> exclude) => GuardText.Canonical(RecordGuardDoc(doc, exclude), exclude);
 
         // Fixtures for the guard's tests: when a folder is set (self-test step), each guarded operation saves its

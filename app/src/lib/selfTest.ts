@@ -515,12 +515,29 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       check("Ctrl+Z removes an inserted equation", !(await snap()).tags.includes(a.tag));
       await smoke("redo", { times: 1 });
       check("Ctrl+Y brings it back, same ID", (await snap()).tags.includes(a.tag));
+      // Read straight from Word: the document index runs a quiet Repair first, which must not add an undo step (checked below).
+      const rawLatexOfTag = async (tag: string) => {
+        const { readEquationXml } = await import("./readEquation");
+        const { serializeLatex } = await import("@mathblocks/math-latex");
+        const i = (await connector.request("listInstances", { includeContent: true }, SLOW)).documents[0]?.instances.find((x) => x.tag === tag);
+        const read = i?.flatOpc ? readEquationXml(i.flatOpc) : null;
+        return read ? serializeLatex(read.root) : null;
+      };
       await edit(a.tag, "a^2+b^2=c^2");
-      check("an edit changes the equation", norm((await latexOfTag(a.tag)) ?? "") === norm("a^2+b^2=c^2"), (await latexOfTag(a.tag)) ?? "not found");
+      const edited = (await rawLatexOfTag(a.tag)) ?? "not found";
+      check("an edit changes the equation", norm(edited) === norm("a^2+b^2=c^2"), edited);
       await smoke("undo", { times: 1 });
-      check("Ctrl+Z restores the equation before the edit", norm((await latexOfTag(a.tag)) ?? "") === norm("a^2+b^2"), (await latexOfTag(a.tag)) ?? "not found");
+      const undone = (await rawLatexOfTag(a.tag)) ?? "not found";
+      check("Ctrl+Z restores the equation before the edit", norm(undone) === norm("a^2+b^2"), undone);
       await smoke("redo", { times: 1 });
-      check("Ctrl+Y redoes the edit", norm((await latexOfTag(a.tag)) ?? "") === norm("a^2+b^2=c^2"), (await latexOfTag(a.tag)) ?? "not found");
+      const redone = (await rawLatexOfTag(a.tag)) ?? "not found";
+      check("Ctrl+Y redoes the edit", norm(redone) === norm("a^2+b^2=c^2"), redone);
+      // Reading the document (list of symbols, Change symbol, Check document all do) adds nothing to undo.
+      await latexOfTag(a.tag);
+      await smoke("undo", { times: 1 });
+      const afterRead = (await rawLatexOfTag(a.tag)) ?? "not found";
+      check("reading the document index adds no undo step (Ctrl+Z after it still undoes the edit)", norm(afterRead) === norm("a^2+b^2"), afterRead);
+      await smoke("redo", { times: 1 });
       await smoke("save", { file: "objects undo test.docx" });
       void docU;
 

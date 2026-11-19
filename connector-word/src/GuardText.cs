@@ -29,6 +29,8 @@ namespace MathBlocks.WordConnector
         public List<int[]> Lists = new List<int[]>();
         /// <summary>The text Word gives for each stretch between consecutive boundaries (every range's start and end).</summary>
         public List<GuardChunk> Chunks = new List<GuardChunk>();
+        /// <summary>Each inline picture's alternative text, in order (what an equation holds; for undoing back to before).</summary>
+        public string Shapes = "";
     }
 
     public sealed class GuardField
@@ -49,6 +51,19 @@ namespace MathBlocks.WordConnector
     {
         private static readonly Regex Space = new Regex("[\\s \u000B\u000C\u0007]+");
         private static readonly Regex Control = new Regex("[\u0001\u0002\u0005\u0008\u0013\u0014\u0015]");
+
+        /// <summary>
+        /// Where a field ends (after its end mark). Word reports the empty result of a field that shows nothing
+        /// (MACROBUTTON markers, SEQ \h) collapsed after the end mark, so "result end + 1" would take the next
+        /// character into the field. <paramref name="atCodeEnd"/>: Word's text of the two characters after the code.
+        /// </summary>
+        public static int FieldEnd(int codeEnd, int resultStart, int resultEnd, string atCodeEnd)
+        {
+            if (resultEnd > resultStart) return Math.Max(codeEnd, resultEnd) + 1;
+            int i = atCodeEnd?.IndexOf('\u0015') ?? -1;
+            if (i >= 0) return codeEnd + i + 1;
+            return Math.Max(codeEnd, resultEnd) + 1;
+        }
 
         /// <summary>
         /// Every position a chunk must start or end at, for these ranges: the recorder reads Word's text between

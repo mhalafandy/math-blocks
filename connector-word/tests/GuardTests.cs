@@ -17,7 +17,7 @@ static class GuardTests
         var dir = Path.Combine(AppContext.BaseDirectory, "guard-fixtures");
         var files = Directory.Exists(dir) ? Directory.GetFiles(dir, "*.json").OrderBy(x => x).ToArray() : new string[0];
         check(files.Length >= 8, "guard: fixtures found (" + files.Length + ")");
-        int passing = 0;
+        int passing = 0, mutated = 0;
         foreach (var file in files)
         {
             var name = Path.GetFileNameWithoutExtension(file);
@@ -33,12 +33,16 @@ static class GuardTests
             if (expect != "unchanged") continue;
             passing++;
             // A real change in the text around: a typed word, then a deleted space between two words.
+            // Recorded documents with no two words side by side (only equations, or "ab $x$ cd") have nothing to mutate.
             var typed = Mutate(after, null, (s, i) => s.Insert(i + 1, "zz "));
-            check(typed != null && GuardText.Difference(GuardText.Canonical(before, exclude), GuardText.Canonical(typed, null)) != null, "guard " + name + ": a typed word is caught");
             var joined = Mutate(after, null, (s, i) => s.Remove(i, 1));
+            if (typed == null && name.StartsWith("rec-")) continue;
+            mutated++;
+            check(typed != null && GuardText.Difference(GuardText.Canonical(before, exclude), GuardText.Canonical(typed, null)) != null, "guard " + name + ": a typed word is caught");
             check(joined != null && GuardText.Difference(GuardText.Canonical(before, exclude), GuardText.Canonical(joined, null)) != null, "guard " + name + ": a deleted space is caught");
         }
         check(passing >= 5, "guard: at least five operations that must pass (" + passing + ")");
+        check(mutated >= 20, "guard: a typed word and a deleted space checked in at least 20 operations (" + mutated + ")");
         // The 0.1.141–0.1.145 regression: the old comparison (fields removed by their field characters in the text)
         // reads a linked reference's number as new text, so Convert LaTeX was undone.
         var conv = files.FirstOrDefault(x => Path.GetFileName(x) == "gen-convert-latex.json");
@@ -53,6 +57,19 @@ static class GuardTests
             check(GuardText.Canonical(b, ex) == GuardText.Canonical(a, null), "guard: the current comparison passes the same operation");
         }
         ListRegression(check);
+        FieldEnds(check);
+    }
+
+    /// <summary>0.1.161: a field that shows nothing (MACROBUTTON, SEQ \h) reports its empty result after its end mark.</summary>
+    public static void FieldEnds(Action<bool, string> check)
+    {
+        // MACROBUTTON at 10: code 11..40, end mark at 40, empty result reported at 41..41, a comma at 41.
+        check(GuardText.FieldEnd(40, 41, 41, "\u0015,") == 41, "field end: an empty result after the end mark does not take the next character");
+        // Separator at 40, empty result at 41, end mark at 41.
+        check(GuardText.FieldEnd(40, 41, 41, "\u0014\u0015") == 42, "field end: an empty result between separator and end mark");
+        // A result 41..45, end mark at 45.
+        check(GuardText.FieldEnd(40, 41, 45, "\u00141") == 46, "field end: a field with a result ends after it");
+        check(GuardText.FieldEnd(40, 40, 40, "") == 41, "field end: unreadable text falls back to after the code");
     }
 
     /// <summary>0.1.148's list-of-symbols failure: without leaving the list out, inserting it reads as new text.</summary>

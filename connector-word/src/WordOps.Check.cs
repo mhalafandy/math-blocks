@@ -63,9 +63,9 @@ namespace MathBlocks.WordConnector
                     try
                     {
                         // The code and the result (if any) are hidden: nothing of the marker prints.
-                        hidden = f.Code.Font.Hidden == -1 && (f.Result == null || f.Result.Text.Length == 0 || f.Result.Font.Hidden == -1);
+                        hidden = f.Code.Font.Hidden == -1 && (f.Result == null || string.IsNullOrEmpty(f.Result.Text) || f.Result.Font.Hidden == -1);
                     }
-                    catch (COMException) { }
+                    catch (Exception) { }
                     markers.Add(new Dictionary<string, object> { ["start"] = start, ["kind"] = mm.Groups[1].Value, ["code"] = mm.Groups[2].Value.Trim(), ["hidden"] = hidden });
                     continue;
                 }
