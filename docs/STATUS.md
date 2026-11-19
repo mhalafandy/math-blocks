@@ -4,7 +4,7 @@ Updated at the end of every round. Public repository: generic content only. Earl
 
 ## Latest round — 0.1.162
 
-**Build:** 0.1.162 (test channel), CI: see the Actions run for this commit. Not promoted: the 0.1.161 self-test had 7 failures.
+**Build:** 0.1.162 (test channel), CI passed (tests, guard fixtures, UI check, Windows build). Not promoted: the 0.1.161 self-test had 7 failures.
 
 **Reports read:** self-test 19:04 (0.1.161: 392 passed, 7 failed), thesis-size 19:28, soak 20:12.
 
