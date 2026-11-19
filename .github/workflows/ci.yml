@@ -183,8 +183,11 @@ jobs:
             --title "Latest test build ($APP_VERSION)" \
             --notes "Automatic build $APP_VERSION of commit ${GITHUB_SHA::7} (test channel). Apps on the stable channel do not install it until it is promoted. First install: docs/DEVELOPMENT.md section 0."
           # Keep the 30 newest test builds, and always the current and previous stable ones.
-          keep=$(for f in latest.json previous.json; do gh release download stable -p "$f" -O - 2>/dev/null | jq -r '.version // empty'; done | sed 's/^/v/')
-          gh release list --limit 300 --json tagName,isPrerelease -q '.[] | select(.isPrerelease) | .tagName' | grep -E '^v0\.' | sort -t. -k3 -n -r | tail -n +31 | while read -r tag; do
+          # (No stable release yet, or nothing to prune, is not an error.)
+          keep=$(for f in latest.json previous.json; do (gh release download stable -p "$f" -O - 2>/dev/null || true) | jq -r '.version // empty' 2>/dev/null || true; done | sed 's/^/v/' || true)
+          old=$(gh release list --limit 300 --json tagName,isPrerelease -q '.[] | select(.isPrerelease) | .tagName' | grep -E '^v0\.' | sort -t. -k3 -n -r | tail -n +31 || true)
+          echo "$old" | while read -r tag; do
+            [ -n "$tag" ] || continue
             if echo "$keep" | grep -qx "$tag"; then continue; fi
             gh release delete "$tag" --cleanup-tag --yes || true
           done
