@@ -111,7 +111,14 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     // Equation numbers are fields: their text is not in the document text above.
     // With the kind of number (MathType's or MathBlocks'): keeping the numbers changes the fields, not their text.
     const numbers = (await connector.request("listNumbered", {}, SLOW).catch(() => ({ equations: [] as { number: string; kind?: string }[] }))).equations.map((e) => `${e.number}${e.kind === "mathtype" ? "·MT" : ""}`).join(" ");
-    return `${s.text}\n§${eqs.sort().join("|")}\n#${numbers}`;
+    // Hidden markers (definitions, sections, the list) and references: fields whose text is not in the document text.
+    const fieldsState = addinSupports("checkFields")
+      ? await connector
+          .request("checkFields", {}, SLOW)
+          .then((f) => [...f.markers.map((m) => `${m.kind}:${m.code}:${m.hidden ? "h" : "v"}`), ...f.references.map((r) => `${r.code}=${r.shown}`)].join("|"))
+          .catch(() => "")
+      : "";
+    return `${s.text}\n§${eqs.sort().join("|")}\n#${numbers}\n@${fieldsState}`;
   };
   /** Word window activations recorded by the add-in (with the MathBlocks request during which each happened). */
   type Activation = { document: string; during: string; ms: number };
@@ -149,7 +156,8 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     }
     check(`${label}: one Ctrl+Z undoes it`, now === before && steps === 1, now === before ? `${steps} Ctrl+Z` : `not restored after ${steps} Ctrl+Z`);
     await smoke("redo", { times: steps });
-    check(`${label}: Ctrl+Y redoes it`, null, (await docState()) === after ? "redone" : "differs from the result after redo");
+    const redone = await docState();
+    check(`${label}: Ctrl+Y redoes it`, redone === after, redone === after ? "redone" : "differs from the result after redo");
     // The checks after it read the document in front: make sure it is still this one (another Word
     // window coming forward during the long test would make them read the wrong document).
     const still = (await smoke("activeName")).name as string;
@@ -1120,6 +1128,52 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const after = await docState();
       check("the app gone mid-operation: what it had written is undone, the document exactly as before", r.wasOpen && !r.open && mid !== before && after === before, `${r.wasOpen ? "operation was open" : "no operation"}; ${mid !== before ? "had written" : "nothing written"}; ${after === before ? "as before" : "differs"}`);
       check("an equation left in the editor comes back after a restart (the draft is saved as you type)", null, "built in since the library: the editor's content is saved every few seconds and restored at start-up");
+    });
+
+    section = "Undo integrity: every operation is one Ctrl+Z, and Ctrl+Y redoes it";
+    await step("undo integrity", async () => {
+      const { interchangeDocx } = await import("./interchangeFixture");
+      const { toBase64 } = await import("./render");
+      const docU = await smoke("openDocx", { file: "undo test 2.docx", base64: toBase64(interchangeDocx([{ style: "Normal", text: "Undo test." }])) });
+      await smoke("caretTo", { where: "end" });
+      let ins = { tag: "", found: 0 };
+      await oneCtrlZ("Insert equation", docU.name, async () => (ins = await insert("a^2+b^2=c^2", true)));
+      await oneCtrlZ("Edit an equation (Update in Word)", docU.name, async () => {
+        const { tag, flatOpc } = await buildInsertion("a^2+b^2=c^2+d", true, profile, ins.tag, "classic");
+        await connector.request("replaceEquation", { tag, flatOpc, undoLabel: "Update equation" }, SLOW);
+      });
+      await oneCtrlZ("Number an equation", docU.name, () => number(ins.tag, "a^2+b^2=c^2+d"));
+      const n = (await connector.request("listNumbered", {}, SLOW)).equations.find((e) => e.tag === ins.tag);
+      await smoke("caretTo", { where: "end" });
+      await smoke("typeText", { text: " See " });
+      if (n) await oneCtrlZ("Insert reference", docU.name, () => connector.request("insertReference", { bookmark: n.bookmark, numberOnly: false }, SLOW));
+      await oneCtrlZ("Unnumber an equation", docU.name, () => unnumber(ins.tag, "a^2+b^2=c^2+d"));
+      await smoke("caretTo", { where: "start" });
+      await oneCtrlZ("Section marker", docU.name, () => connector.request("insertNumberMarker", { chapter: 2, section: 1, restartEquations: true }, SLOW));
+      if (addinSupports("insertDefinition")) {
+        await smoke("caretTo", { where: "end" });
+        await oneCtrlZ("Define symbol", docU.name, () => connector.request("insertDefinition", { tag: "\\define{c}{length of the long side}[m]", where: "cursor" }, SLOW));
+      }
+      const ds = await import("./docStyle");
+      const style = ds.activeStyle();
+      await ds.saveDocumentStyle({ ...style, kinds: { ...style.kinds, label: style.kinds.label === "upright" ? "italic" : "upright" } } as typeof style);
+      const styleRun = await import("./styleRun");
+      await oneCtrlZ("Apply style to document", docU.name, () => styleRun.applyStyleToDocument());
+      await ds.saveDocumentStyle(style);
+      await smoke("resizePicture", { tag: ins.tag, factor: 1.3 }).catch(() => undefined);
+      const cd = await import("./checkDocumentRun");
+      const found = await cd.runCheck();
+      if (found.problems.some((x) => x.repair)) await oneCtrlZ("Repair (Check document)", docU.name, () => cd.repairChosen(found, new Set(found.problems.filter((x) => x.repair).map((x) => x.id))));
+      const { repairDocument } = await import("./repair");
+      await smoke("caretTo", { where: "end" });
+      await smoke("typeText", { text: " " });
+      // Repair equations changes nothing in a sound document: one Ctrl+Z is checked only when it did something.
+      const beforeRepair = await docState();
+      await repairDocument(undefined, { quiet: true });
+      if ((await docState()) !== beforeRepair) {
+        await smoke("undo", { times: 1 });
+        check("Repair equations: one Ctrl+Z undoes it", (await docState()) === beforeRepair, "");
+      } else check("Repair equations on a sound document: nothing to undo", null, "nothing changed");
     });
 
     section = "Reference links: Ctrl+click in Word, a link in the PDF";

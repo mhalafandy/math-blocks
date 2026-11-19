@@ -189,6 +189,18 @@ New self-test section "Round trips and compatibility" on generic documents:
   start-up, uncaught errors included), the Word add-in's log — with document names, paths and LaTeX masked
   (unit test); the open document and unmasked logs only if you tick it. Saved where you choose; nothing is sent.
 
+#### C7. Undo integrity — built (checked by the self-test on your PC)
+
+- **Ctrl+Y is now a real check** for every operation the self-test undoes (it was reported for information only).
+- The state compared before/after now includes the hidden markers (definitions, sections, the list) and the
+  reference fields, so an operation that only touches those is checked too.
+- New section "Undo integrity" for the operations not covered before, each: one Ctrl+Z restores the document
+  exactly, Ctrl+Y redoes it — Insert equation, Edit an equation (Update in Word), Number, Insert reference,
+  Unnumber, Section marker, Define symbol, Apply style to document, Repair (Check document); Repair equations is
+  checked when it changes something. Already covered elsewhere: Convert LaTeX (several), Convert MathType, Convert
+  numbering (three), Update numbers (two), list of symbols, Apply notation kinds, Normalize bold, Change notation,
+  restyle, Conform to style, Change symbol.
+
 #### A1. Your 0.1.149 self-test — waiting for the report
 
 ### Round after 0.1.148 (your status read: accepted)
