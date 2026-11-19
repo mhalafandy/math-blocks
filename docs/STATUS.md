@@ -25,6 +25,8 @@ Updated at the end of every round. Public repository: generic content only. Earl
 - Thesis-size test again (0.1.161's numbers are not usable: Convert LaTeX was undone by the guard bug).
 - Soak test again.
 
+**Decided:** Stable channel stays empty until the first promotion (no fallback to test builds); the owner uses Test meanwhile. plan-optimizer 0.2.0 loads from the owner's account (memory in its private repo); its repo settings were removed here, `.claude/memory/` and `.claude/plan-optimizer/` are ignored.
+
 **Open:**
 - Convert LaTeX on the thesis-size document took 1763 s (1142 ms per equation): look at it with the new timings.
 - Update numbers has no progress bar; `\overrightarrow` width in the editor.
