@@ -25,6 +25,9 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - `connector-protocol`: JSON-RPC protocol v1 between app and connector.
 - GitHub Actions: tests on Linux; Windows build of the installer and connector.
 
+### Added — soak test
+- Ctrl+K "Soak test…": 1000 seeded random operations on two documents, checked against a model every 25.
+
 ### Added — failure handling
 - An operation interrupted by the app closing or crashing is undone in Word (nothing half-written).
 - Report a problem (Ctrl+K): a zip of versions and logs, document content masked unless asked.

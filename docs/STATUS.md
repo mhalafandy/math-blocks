@@ -201,6 +201,18 @@ New self-test section "Round trips and compatibility" on generic documents:
   numbering (three), Update numbers (two), list of symbols, Apply notation kinds, Normalize bold, Change notation,
   restyle, Conform to style, Change symbol.
 
+#### C4. Soak test — built (runs on your PC, optional)
+
+- Ctrl+K "Soak test…": asks for a seed (a new one by default; the same seed repeats the same run exactly), then
+  1000 random operations on two generic documents of its own: insert, edit, delete, copy/paste and cut/paste
+  within a document and into the other one, undo, redo, Convert LaTeX of typed `$…$`, Update numbers, Apply
+  style, Change symbol (and back), save + close + reopen.
+- A model holds what each document's equations must be (their LaTeX, as a multiset, with the undo/redo history);
+  every 25 operations both documents must match it and Check document must be clean (pictures in an older style
+  are allowed while a restyle is pending).
+- On a failure: the seed, the operation, what Word has against the model, and the last 20 operations, in
+  `soak report.txt` in its folder. Unit test: the seeded generator repeats a run exactly.
+
 #### A1. Your 0.1.149 self-test — waiting for the report
 
 ### Round after 0.1.148 (your status read: accepted)

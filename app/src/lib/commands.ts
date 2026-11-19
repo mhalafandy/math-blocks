@@ -150,6 +150,13 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => import("../components/ProblemReportDialog").then((m) => m.openProblemReport()),
     },
     {
+      id: "word.soakTest",
+      title: "Soak test (1000 random, seeded operations, checked every 25; about 30 min)…",
+      group: "Word",
+      keywords: "soak stress random seed long test reliability",
+      run: () => import("./soakTest").then((m) => m.soakTestCommand()),
+    },
+    {
       id: "word.thesisTest",
       title: "Thesis-size test (a generated 300-page document through every operation, timed; 20–40 min)…",
       group: "Word",
