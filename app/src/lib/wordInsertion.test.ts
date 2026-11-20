@@ -162,4 +162,22 @@ describe("Classic insertion as Word receives it", async () => {
     expect(r && serializeLatex(r.root)).toBe("\\frac{a}{b}+\\beta");
     expect(r!.display).toBe(false);
   });
+
+  it("object read-back as Word may hand it back after Ctrl+Z: no ProgID, or a compound file that does not read", async () => {
+    const { buildObjectInsertion } = await import("./equation");
+    const { readEquationXml, describeUnreadable } = await import("./readEquation");
+    const { serializeLatex } = await import("@mathblocks/math-latex");
+    const b = await buildObjectInsertion("x_1+\\gamma", false, "mb1|-|readobject02");
+    const bare = b.flatOpc.replace(/<pkg:part pkg:name="\/word\/media\/[^"]+"[\s\S]*?<\/pkg:part>/, "").replace(/alt="[^"]*"/, 'alt=""');
+    // No ProgID in the XML: the "MathBlocks" stream alone makes it ours.
+    const noProg = bare.replace(/ProgID="[^"]*"/g, 'ProgID="Package"');
+    expect(serializeLatex(readEquationXml(noProg)!.root)).toBe("x_1+\\gamma");
+    // The compound file's header damaged: the source is found in the raw bytes, as the add-in finds the ID.
+    const damaged = bare.replace(/(pkg:contentType="application\/vnd\.openxmlformats-officedocument\.oleObject"[^>]*>\s*<pkg:binaryData>)([^<]*)/, (_m, head: string, data: string) => {
+      const bin = atob(data.replace(/\s+/g, ""));
+      return head + btoa("XXXXXXXX" + bin.slice(8));
+    });
+    expect(serializeLatex(readEquationXml(damaged)!.root)).toBe("x_1+\\gamma");
+    expect(describeUnreadable(damaged)).toContain("does not read");
+  });
 });

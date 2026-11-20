@@ -2,32 +2,33 @@
 
 Updated at the end of every round. Public repository: generic content only. Earlier rounds: `docs/status-archive/`.
 
-## Latest round — 0.1.166
+## Latest round — 0.1.167
 
-**Build:** 0.1.166 (test channel), CI passed. Not promoted: the 0.1.165 self-test had 3 failures.
+**Build:** 0.1.167 (test channel), CI: pending. Not promoted: the 0.1.166 self-test had 2 failures.
 
-**Reports read:** self-test 13:08 (0.1.165: 427 passed, 3 failed; spike 99/0), thesis-size 13:36 (stopped at the list of symbols), soak 14:27 (failed after #75).
+**Reports read:** self-test 16:07 (0.1.166: 437 passed, 2 failed; spike 99/0), thesis-size 17:23 (ran to the end, timeouts from the list of symbols on), soak 21:59 (failed after #75).
 
-**Thesis-size (0.1.165):** Convert LaTeX 1077 s, **695 ms per equation** (1527 equations, 998 references; 0.1.161: 1142 ms). Update numbers 527 s (2380 numbers, 998 references). Insert the list of symbols: Word did not answer `listInstances` within 120 s, and the test stopped there (that was the "crash").
+**Now passing in 0.1.166:** two documents open, every operation (10/10, the progress-window fix worked); "Convert LaTeX right after typing: one Ctrl+Z undoes it" (so typing was not the soak's cause).
+
+**Thesis-size (0.1.166):** Convert LaTeX 1076 s, 694 ms per equation; Update numbers 567 s. From the list of symbols on, every step timed out (writeSymbolList, verifyMany, listInstances, listDefinitions); Save 1828 s; total 9252 s. After one timeout Word keeps working on that request and the next ones wait behind it, so those times are not real. The cause is that every whole-document read reads each equation's XML separately (1527 equations: 4 to 10 minutes per read). **Decision needed, below.**
 
 **Fixed:**
-- Reading the document index (list of symbols and every command that reads first) no longer scans every picture's XML twice. The quiet Repair's dry run checks copies' IDs only. The equations read now has 600 s instead of 120 s.
-- Thesis-size test: a failed step no longer ends the run; the later steps still run and are timed.
-- Two documents open (3 self-test failures, still there in 0.1.165): when the progress window closed, Windows briefly brought the other document forward. Now Windows' own activation goes back to the document's window, and the progress window is hidden before it closes. Last round's fix used Word's Activate, which changed nothing.
-
-**Diagnostics added:**
-- Soak: one Ctrl+Z after Convert LaTeX left the converted equation again (#60/#61). Both times the LaTeX had just been typed. New self-test check "Convert LaTeX right after typing: one Ctrl+Z undoes it" tests whether Word closes the typing's undo step after the conversion's. The soak now also stops if Word reports nothing to undo.
+- After Ctrl+Z of an edit, the equation was there (ID found in its data) but its LaTeX did not read: Word's XML for it had no ProgID, or its data did not read as a compound file. The app now accepts any object with a "MathBlocks" stream, and otherwise finds the source in the raw bytes, as the add-in finds the ID. On failure, the self-test line now says what the XML held. This was the self-test's 2 failures (`Ctrl+Z restores the equation before the edit`, `reading the document index…`).
+- Soak: compares Word with the model right after every Ctrl+Z / Ctrl+Y and names the operation it undid. The 3 soak failures so far all came after an undo, each in a different way.
 
 **Needs your PC:**
-- Self-test of 0.1.166. Clean → I promote it to stable. If "Convert LaTeX right after typing" fails, that's the soak's cause; I'll fix it next.
-- Thesis-size test again (for the list of symbols and the steps after it).
-- Soak test again.
+- Self-test of 0.1.167. Clean → I promote it to stable.
+- Soak test again (it now stops at the exact undo that differs).
+- Thesis-size: not needed until the decision below.
 
-**Open:**
-- Update numbers: 527 s on the thesis (each field updated separately; Word's update-all would also update the user's other fields: needs a decision). No progress bar.
-- `\overrightarrow` width in the editor.
+**Decision needed:** whole-document reads on a thesis.
+- **A (recommended):** the add-in reads the document's XML once per operation and splits it per equation. That's one read instead of 1500, but a larger change (list of symbols, Apply style, Check document, Change symbol, Repair all use it).
+- **B:** commands that only read (list of symbols, Check document, Change symbol's preview) use what Word gives without XML: the ID and LaTeX in the alt text. Smaller and faster, but the style check and verification before writing still read each equation.
+- Also open: Update numbers (567 s, each field separately). Word's update-all is much faster but also updates your other fields (table of contents, dates, cross-references). Use it?
+
+**Open:** Update numbers has no progress bar; `\overrightarrow` width in the editor.
 
 ## Details
 
-- `repairEquations` dry run `identityOnly`: skips the per-picture XML scan (baselines, redraws) and paragraph styles; when it finds copies to fix, the full dry run plans the repair as before.
-- `EndOperation`: `SetActiveWindow(owner)` and `_progress.Hide()` before `Close()`.
+- `objectSource`: no ProgID gate; `rawObjectSource` (JSON with `"tag":"mb1|` in the bytes) when the compound file does not read or the ProgID is MathBlocks'. `describeUnreadable` for the self-test.
+- Soak: undo/redo stack entries carry the operation they undo; `compareNow` after each.

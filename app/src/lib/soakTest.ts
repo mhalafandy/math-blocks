@@ -34,8 +34,9 @@ export type SoakOp = "insert" | "edit" | "delete" | "copyPaste" | "cutPaste" | "
 export interface SoakModel {
   docs: Record<string, string[]>;
   clipboard: string | null;
-  undo: { docs: Record<string, string[]>; doc: string }[];
-  redo: { docs: Record<string, string[]>; doc: string }[];
+  /** `what`: the operation (#n) this step undoes, for the report. */
+  undo: { docs: Record<string, string[]>; doc: string; what?: string }[];
+  redo: { docs: Record<string, string[]>; doc: string; what?: string }[];
 }
 
 const sorted = (xs: string[]) => [...xs].sort();
@@ -68,8 +69,9 @@ export async function runSoak(o: { seed: number; operations: number; batch?: num
         return { tag: i.tag, latex: r ? serializeLatex(r.root) : "?" };
       });
     };
+    let current = "";
     const remember = (doc: string) => {
-      model.undo.push({ docs: JSON.parse(JSON.stringify(model.docs)) as Record<string, string[]>, doc });
+      model.undo.push({ docs: JSON.parse(JSON.stringify(model.docs)) as Record<string, string[]>, doc, what: current });
       model.redo = [];
     };
     // An equation in Word the model does not have: the documents already differ (stop here, not later).
@@ -77,6 +79,12 @@ export async function runSoak(o: { seed: number; operations: number; batch?: num
       const k = list.indexOf(latex);
       if (k < 0) throw new Error(`${doc} has ${latex}, which the model does not: Word and the model differ (${list.join(" | ")})`);
       return k;
+    };
+    // Right after Ctrl+Z / Ctrl+Y: the document compared at once, so a failure names the step (not the next checkpoint).
+    const compareNow = async (name: string) => {
+      const live = sorted((await equationsOf(name)).map((x) => x.latex));
+      const want = sorted(model.docs[name] ?? []);
+      if (JSON.stringify(live) !== JSON.stringify(want)) throw new Error(`after it, ${name} differs from the model\n  in Word: ${live.join(" | ")}\n  model:   ${want.join(" | ")}`);
     };
     const profile = currentProfile();
     let done = 0;
@@ -87,6 +95,7 @@ export async function runSoak(o: { seed: number; operations: number; batch?: num
       const eqs = model.docs[doc]!;
       const op: SoakOp = rnd.pick(eqs.length ? (["insert", "insert", "edit", "delete", "copyPaste", "cutPaste", "pasteOther", "undo", "redo", "convert", "updateNumbers", "applyStyle", "changeSymbol", "saveReopen"] as SoakOp[]) : (["insert", "insert", "convert"] as SoakOp[]));
       const entry = `#${i + 1} ${op} in ${doc}`;
+      current = `#${i + 1} ${op}`;
       try {
         if (op === "insert") {
           const latex = norm(rnd.pick(POOL));
@@ -135,19 +144,21 @@ export async function runSoak(o: { seed: number; operations: number; batch?: num
           const last = model.undo.pop();
           if (!last) continue;
           await smoke("activate", { name: last.doc });
-          model.redo.push({ docs: JSON.parse(JSON.stringify(model.docs)) as Record<string, string[]>, doc: last.doc });
+          model.redo.push({ docs: JSON.parse(JSON.stringify(model.docs)) as Record<string, string[]>, doc: last.doc, what: last.what });
           const u = await smoke("undo", { times: 1 });
           if (u.ok === false) throw new Error(`Word had nothing to undo in ${last.doc}`);
           model.docs = last.docs;
-          log.push(`${entry}: in ${last.doc}`);
+          log.push(`${entry}: in ${last.doc} (undoes ${last.what || "?"})`);
+          await compareNow(last.doc);
         } else if (op === "redo") {
           const next = model.redo.pop();
           if (!next) continue;
           await smoke("activate", { name: next.doc });
-          model.undo.push({ docs: JSON.parse(JSON.stringify(model.docs)) as Record<string, string[]>, doc: next.doc });
+          model.undo.push({ docs: JSON.parse(JSON.stringify(model.docs)) as Record<string, string[]>, doc: next.doc, what: next.what });
           await smoke("redo", { times: 1 });
           model.docs = next.docs;
-          log.push(`${entry}: in ${next.doc}`);
+          log.push(`${entry}: in ${next.doc} (redoes ${next.what || "?"})`);
+          await compareNow(next.doc);
         } else if (op === "convert") {
           const latex = norm(rnd.pick(POOL));
           await smoke("caretTo", { where: "end" });

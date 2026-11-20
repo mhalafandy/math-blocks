@@ -533,7 +533,8 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       let undoneWhat = undone;
       if (norm(undone) !== norm("a^2+b^2")) {
         const sn = await snap();
-        const all = ((await connector.request("listInstances", { includeContent: true }, SLOW)).documents[0]?.instances ?? []).map((x) => `${x.tag}: ${x.flatOpc ? "readable" : "no content"}`);
+        const { describeUnreadable } = await import("./readEquation");
+        const all = ((await connector.request("listInstances", { includeContent: true }, SLOW)).documents[0]?.instances ?? []).map((x) => `${x.tag}: ${x.flatOpc ? describeUnreadable(x.flatOpc) : "no content"}`);
         undoneWhat = `${undone}; IDs ${sn.tags.join(", ") || "none"}; pictures ${sn.pictures}; instances ${all.join(" | ") || "none"}`;
       }
       check("Ctrl+Z restores the equation before the edit", norm(undone) === norm("a^2+b^2"), undoneWhat);
