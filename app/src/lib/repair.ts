@@ -53,12 +53,14 @@ export async function repairDocument(document?: string, o: { quiet?: boolean; fr
   if (!addinSupports("repairEquations")) return null;
   const target = document ? { document } : {};
   await import("./docStyle").then((m) => m.loadDocumentStyle(document)).catch(() => undefined);
-  const dry = await connector.request("repairEquations", { ...target, dryRun: true }, 120_000);
-  const changes = (dry.inlined ?? 0) + (dry.split?.length ?? 0) + (dry.converted ?? 0) + (dry.styled ?? 0) + (dry.lowered ?? 0) + (dry.redraw?.length ?? 0) + dry.renamed.length + dry.wrapped.length + dry.bookmarks;
+  let dry = await connector.request("repairEquations", { ...target, dryRun: true, ...(o.identityOnly ? { identityOnly: true } : {}) }, o.identityOnly ? 600_000 : 120_000);
   // Reading the document (the document index) writes only when copies need their own ID: anything
   // else (baselines, Classic pictures, paragraph styles) waits for Repair or Check document, so a read
   // never adds an undo step in front of the user's last edit.
   if (o.identityOnly && !identityChanges(dry)) return null;
+  // Copies to fix: the full dry run (baselines, redraws) plans the repair as before.
+  if (o.identityOnly) dry = await connector.request("repairEquations", { ...target, dryRun: true }, 600_000);
+  const changes = (dry.inlined ?? 0) + (dry.split?.length ?? 0) + (dry.converted ?? 0) + (dry.styled ?? 0) + (dry.lowered ?? 0) + (dry.redraw?.length ?? 0) + dry.renamed.length + dry.wrapped.length + dry.bookmarks;
   const report: RepairReport = { inlined: 0, split: 0, converted: 0, lowered: 0, toObjects: 0, idRewrites: 0, redrawn: 0, ms: 0, styled: 0, native: dry.native ?? 0, mathType: dry.mathType ?? 0, renamed: 0, wrapped: 0, fromAlt: 0, bookmarks: 0, linkedAdded: 0, unlinked: 0, otherPictures: dry.otherPictures };
   if (changes > 0) {
     report.backup = await backupIfMany(dry.document, changes);

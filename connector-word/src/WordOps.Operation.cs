@@ -25,6 +25,8 @@ namespace MathBlocks.WordConnector
 
         [DllImport("user32.dll")]
         private static extern bool EnableWindow(IntPtr hWnd, bool enable);
+        [DllImport("user32.dll")]
+        private static extern IntPtr SetActiveWindow(IntPtr hWnd);
 
         /// <summary>Saves the whole document (Flat OPC .xml, opens in Word) to %LOCALAPPDATA%\MathBlocks\backups.</summary>
         public Dictionary<string, object> BackupDocument(Dictionary<string, object> p)
@@ -224,6 +226,7 @@ namespace MathBlocks.WordConnector
                 }
                 _operationUndo = false;
             }
+            var ownerWindow = _disabledWindow;
             if (_disabledWindow != IntPtr.Zero)
             {
                 EnableWindow(_disabledWindow, true);
@@ -231,11 +234,14 @@ namespace MathBlocks.WordConnector
             }
             if (_progress != null)
             {
-                // The document's window first: the progress window then closes while not active, and Windows
-                // has no activation to hand to the next window in line (another open document).
-                if (_operationWindow != null)
+                // The document's window takes the activation first (Windows' own, not Word's Activate, which
+                // changes nothing while Word already counts it active): the progress window then goes away
+                // while not active, and Windows has nothing to hand to the next window in line (another
+                // open document, 0.1.164–0.1.165 self-tests).
+                if (ownerWindow != IntPtr.Zero)
                 {
-                    try { _operationWindow.Activate(); } catch (COMException) { }
+                    try { SetActiveWindow(ownerWindow); } catch (Exception) { }
+                    try { _progress.Hide(); } catch (Exception) { }
                 }
                 try
                 {

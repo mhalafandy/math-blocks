@@ -55,6 +55,14 @@ describe("repair equations", () => {
     expect(word.calls.filter((c) => c.method === "repairEquations")).toHaveLength(1);
     expect(r.wrapped).toBe(0);
   });
+
+  it("a read asks for copies' IDs only and writes nothing for baselines or redraws", async () => {
+    word.repair = { renamed: [], wrapped: [], wrappedOk: 5, bookmarks: 0, otherPictures: 0, lowered: 3, redraw: [{ tag: "t", latex: "x", mode: "inline", reason: "picture" }] };
+    expect(await repairDocument(undefined, { quiet: true, identityOnly: true })).toBeNull();
+    const calls = word.calls.filter((c) => c.method === "repairEquations");
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.params).toMatchObject({ dryRun: true, identityOnly: true });
+  });
 });
 
 describe("quiet Repair before a read (document index)", () => {

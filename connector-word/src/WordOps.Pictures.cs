@@ -209,6 +209,9 @@ namespace MathBlocks.WordConnector
             var doc = ResolveDocument(p);
             // Dry run: count what would be repaired (to decide on a backup first), change nothing.
             var dry = Rpc.GetBool(p, "dryRun");
+            // A read (the document index) only needs to know about copies' IDs: the scan that reads every
+            // picture's XML (baselines, redraws) and the paragraph styles are skipped (a thesis: minutes).
+            var identityOnly = dry && Rpc.GetBool(p, "identityOnly");
             var renamed = new List<object>();
             var wrapped = new List<object>();
             var splitReport = new List<object>();
@@ -268,7 +271,7 @@ namespace MathBlocks.WordConnector
                 if (!dry) CheckOperationUndo("repair: number bookmarks");
                 // Numbered equation paragraphs that lost their style (an earlier Convert MathType rewrote
                 // the paragraphs): MTDisplayEquation back, or the numbering's tab stops.
-                styled = RestoreEquationParagraphStyles(doc, dry);
+                styled = identityOnly ? 0 : RestoreEquationParagraphStyles(doc, dry);
                 if (!dry) CheckOperationUndo("repair: paragraph styles");
                 // Every Classic equation: its baseline lowering back from its stored depth; Classic pictures
                 // (the form before embedded objects) and objects holding another ID inside are listed for
@@ -296,7 +299,7 @@ namespace MathBlocks.WordConnector
                         }
                     }
                 }
-                else foreach (var e in AllEquations(doc))
+                else if (!identityOnly) foreach (var e in AllEquations(doc))
                 {
                     if (!e.IsPicture) continue;
                     try

@@ -91,15 +91,16 @@ export async function runThesisTest(scale = 1, progress: (s: string) => void = (
     steps.push({ what: "…the document is exactly as before", ms: 0, ok: afterCancel === before, detail: afterCancel === before ? "identical" : "differs" });
     await time("Convert LaTeX (whole document)", () => convertLatexDocument({ yes: true }), (r) => [!!r && !r.cancelled && !r.guardFailed && r.failed.length === 0, r ? `${r.equations} equations, ${r.plan.counts.references} references; ${r.failed.length} left; ${Math.round((r.buildMs + r.writeMs) / Math.max(1, r.equations))} ms per equation` : ""]);
     await time("Update numbers", () => connector.request("updateNumbers", {}, SLOW), (r) => [!r.guardFailed, `${r.numbers} numbers, ${r.references} references`]);
-    await smoke("caretTo", { where: "start" });
+    await smoke("caretTo", { where: "start" }).catch(() => undefined);
     const sl = await import("./symbolListRun");
     await time("Insert the list of symbols", () => sl.updateSymbolList(), (r) => [r.rows > 0, `${r.rows} rows`]);
     const ds = await import("./docStyle");
     const styleRun = await import("./styleRun");
     const style = ds.activeStyle();
     const changed = { ...style, kinds: { ...style.kinds, label: style.kinds.label === "upright" ? "italic" : "upright" } } as typeof style;
-    await ds.saveDocumentStyle(changed);
-    const beforeStyle = await state();
+    await ds.saveDocumentStyle(changed).catch(() => undefined);
+    // A step that failed above (Word slow) must not end the test: each step below still runs and is timed.
+    const beforeStyle = await state().catch((e: unknown) => `unreadable: ${e instanceof Error ? e.message : String(e)}`);
     await time(
       "Apply style, cancelled at the first progress step",
       async () => {
@@ -111,7 +112,7 @@ export async function runThesisTest(scale = 1, progress: (s: string) => void = (
       },
       (msg) => [/cancel|stopp/i.test(msg), msg.slice(0, 120)],
     );
-    const afterStyleCancel = await state();
+    const afterStyleCancel = await state().catch(() => "unreadable (after)");
     steps.push({ what: "…the drawings are exactly as before", ms: 0, ok: afterStyleCancel === beforeStyle, detail: afterStyleCancel === beforeStyle ? "identical" : "differs" });
     await time("Apply style (every equation drawn again)", () => styleRun.applyStyleToDocument(), (r) => [true, `${r.equations} equations`]);
     const cd = await import("./checkDocumentRun");

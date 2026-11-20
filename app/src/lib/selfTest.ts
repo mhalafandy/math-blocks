@@ -640,6 +640,12 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       check("Update numbers: the numbers (diagnosis)", null, `before ${before0}; with an extra counter at the top (${stale.fields} field added) ${staleNow}; after Update numbers ${await numbersNow()}`);
       const { convertAllLatex } = await import("./wordShortcuts");
       await oneCtrlZ("Convert LaTeX", docU.name, () => convertAllLatex(undefined, { yes: true }));
+      // As in the soak test: text typed, then Convert LaTeX straight away (soak 0.1.162 and 0.1.165: one Ctrl+Z
+      // left the converted equation; Word may close the typing's undo step after the conversion's).
+      await smoke("caretTo", { where: "end" });
+      await smoke("newParagraph");
+      await smoke("typeText", { text: "Typed: $u+v$ here." });
+      await oneCtrlZ("Convert LaTeX right after typing", docU.name, () => convertAllLatex(undefined, { yes: true }));
       // Text guard: a change that also deletes a letter outside the equations is undone automatically.
       const probe = await smoke("guardProbe");
       check("text guard: a change that touches text outside the equations is undone automatically", !!probe.guardFailed && probe.guardRestored === true && probe.textAfter === "Guard probe paragraph.", `deleted "${probe.deleted}"; guard: ${probe.guardFailed ?? "did not notice"}; restored ${probe.guardRestored}; the paragraph reads "${probe.textAfter}"`);

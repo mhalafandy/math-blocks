@@ -327,7 +327,7 @@ export interface AppToConnector {
      * The real run gets the dry run's plan and only writes (reading Word's XML ends the operation's undo
      * record): the baselines to set and the steps with nothing to do.
      */
-    params: DocTarget & { dryRun?: boolean; lowerings?: { tag: string; want: number }[]; skip?: ("inline" | "split" | "convert" | "identify")[] };
+    params: DocTarget & { dryRun?: boolean; /** Dry run for a read: copies' IDs only, no per-picture XML scan. */ identityOnly?: boolean; lowerings?: { tag: string; want: number }[]; skip?: ("inline" | "split" | "convert" | "identify")[] };
     result: {
       document: string;
       /** Baselines to restore (the dry run's plan for the real run). */

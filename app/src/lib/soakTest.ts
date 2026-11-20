@@ -136,7 +136,8 @@ export async function runSoak(o: { seed: number; operations: number; batch?: num
           if (!last) continue;
           await smoke("activate", { name: last.doc });
           model.redo.push({ docs: JSON.parse(JSON.stringify(model.docs)) as Record<string, string[]>, doc: last.doc });
-          await smoke("undo", { times: 1 });
+          const u = await smoke("undo", { times: 1 });
+          if (u.ok === false) throw new Error(`Word had nothing to undo in ${last.doc}`);
           model.docs = last.docs;
           log.push(`${entry}: in ${last.doc}`);
         } else if (op === "redo") {
