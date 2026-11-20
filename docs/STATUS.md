@@ -4,7 +4,7 @@ Updated at the end of every round. Public repository: generic content only. Earl
 
 ## Latest round — 0.1.165
 
-**Build:** 0.1.165 (test channel), CI: pending. Not promoted: the 0.1.164 self-test had 4 failures.
+**Build:** 0.1.165 (test channel), CI passed. Not promoted: the 0.1.164 self-test had 4 failures.
 
 **Reports read:** self-test 01:25 (0.1.164: 438 passed, 4 failed; spike 99/0), soak 11:30 (failed after #75). Thesis-size: very slow, probably crashed, no report.
 
