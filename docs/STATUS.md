@@ -2,38 +2,31 @@
 
 Updated at the end of every round. Public repository: generic content only. Earlier rounds: `docs/status-archive/`.
 
-## Latest round — 0.1.164
+## Latest round — 0.1.165
 
-**Build:** 0.1.164 (test channel), CI passed (0.1.163 was superseded). Not promoted: the 0.1.162 self-test had 3 failures.
+**Build:** 0.1.165 (test channel), CI: pending. Not promoted: the 0.1.164 self-test had 4 failures.
 
-**Reports read:** self-test 22:18 (0.1.162: 432 passed, 3 failed; spike 99/0), thesis-size 22:45, soak 23:31 (failed after #200).
+**Reports read:** self-test 01:25 (0.1.164: 438 passed, 4 failed; spike 99/0), soak 11:30 (failed after #75). Thesis-size: very slow, probably crashed, no report.
 
-**New check "reading the document index adds no undo step": FAILED.** Reading did add one. Fixed (below).
-
-**Thesis-size time per equation: not available.** The zip had only `thesis-size test.docx`, without `thesis-size report.txt`. The document shows numbers and references this time, so Convert LaTeX was not undone.
+**Now passing in 0.1.164:** "Word kept the edit in one undo record", "Ctrl+Z restores the equation before the edit", "reading the document index adds no undo step".
 
 **Fixed:**
-- Reading the document index (list of symbols, Change symbol, Apply style, Check document, Notation…) ran a quiet Repair that could write baselines or redraws: one undo step in front of your last edit. Now it writes only when copies need their own ID.
-- Check document self-test: "The number must be between…" came from Word. The deliberate resize fault now resizes in points (embedded objects refuse their own scale back), and each fault step is named in any error.
-
-**Diagnostics added (cause needs Word):**
-- Objects: "Ctrl+Z restores the equation before the edit" (one Ctrl+Z left the equation "not found"). New check "Word kept the edit in one undo record" says where Word ended the record; on failure the line lists the IDs, pictures and readable equations left.
-- Soak: one Ctrl+Z after Convert LaTeX left the converted equation (model 2 × `x^2+y^2`, Word 3). The soak now stops at a Convert LaTeX whose undo record Word ended early and names where. Apply style no longer adds the hidden Repair step (fix above), which could also shift later undos.
-
-**Added:** 67 recorded guard fixtures from the 0.1.162 self-test (`rec-162-*.json`, generic test documents, all pass; the probe reads as changed). Unit test for the read-only Repair rule.
+- Thesis-size test: the report is written before and after every step. A crash or hang leaves the timings so far and a line naming the step that was running and since when. Before, it was only written at the very end, so nothing came back.
+- Check document: an older reference (GOTOBUTTON around REF) was counted twice ("shows nothing", "shows (1)"). Now it's one problem: "in the earlier form…, showing (1)", repaired by Update numbers. This was the self-test failure "the reference in the earlier form is found".
+- Two documents open: when the progress window closed (Convert LaTeX, Apply style, Restyle), Windows briefly brought the other document forward. The document's window now comes back before the progress window closes.
+- Soak model: Update numbers with nothing to change leaves no undo step in Word, so the model's next Ctrl+Z was off by one (#67/#68). Now that document's history is dropped after Update numbers. A deleted equation the model doesn't have now stops the soak at once instead of removing the wrong one.
 
 **Needs your PC:**
-- Self-test of 0.1.164. Clean → I promote it to stable. Send the lines of "Equation objects" and "Check document" if they fail.
-- Thesis-size test: send `thesis-size report.txt` from its folder (that file has the timings).
+- Self-test of 0.1.165. Clean → I promote it to stable.
+- Thesis-size test again. Send `thesis-size report.txt` even if it stops or Word crashes; it now says how far it got. If Word crashed, also send `%LOCALAPPDATA%\MathBlocks\connector.log`.
 - Soak test again.
 
 **Open:**
-- Edit = more than one undo step (cause unknown until the new check reports where).
-- Convert LaTeX on the thesis-size document: 1142 ms per equation in 0.1.161; waiting for the 0.1.162/0.1.164 timings.
+- Thesis-size: why it is slow / where it crashes (waiting for the report). 0.1.161: Convert LaTeX 1142 ms per equation.
 - Update numbers has no progress bar; `\overrightarrow` width in the editor.
 
 ## Details
 
-- `repairDocument(…, { identityOnly })` returns before writing unless `identityChanges(dry)` > 0 (renamed, wrapped, bookmarks, redraws for "id"). Explicit Repair and Check document are unchanged.
-- `rewriteDocument` returns the operation's `undoBrokenAt`.
-- Smoke `resizePicture`: Width/Height in points, aspect lock off.
+- `thesisReport()` builds the lines; `writeReport` has a 30 s timeout (a hung Word doesn't stop the test from moving on).
+- `CheckFields`: a REF inside the code of the GOTOBUTTON before it is not a separate reference; its text becomes the GOTOBUTTON's.
+- `EndOperation`: `_operationWindow.Activate()` before `_progress.Close()`; afterwards only if another window is active.

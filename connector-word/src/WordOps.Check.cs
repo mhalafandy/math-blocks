@@ -25,6 +25,9 @@ namespace MathBlocks.WordConnector
             var refs = new List<object>();
             var markers = new List<object>();
             var mtFields = new List<object>();
+            // An older reference is GOTOBUTTON with a REF nested in its code: one reference, showing the REF's text.
+            Dictionary<string, object> button = null;
+            int buttonEnd = -1;
             foreach (Word.Field f in doc.Fields)
             {
                 string code;
@@ -53,7 +56,18 @@ namespace MathBlocks.WordConnector
                         if (exists) target = DisplayText(doc.Bookmarks[bm].Range.Text ?? "").Replace("\t", "").Trim();
                     }
                     catch (COMException) { }
-                    refs.Add(new Dictionary<string, object> { ["start"] = start, ["code"] = trimmed, ["bookmark"] = bm, ["shown"] = shown, ["target"] = target, ["exists"] = exists, ["linked"] = rm.Success && Regex.IsMatch(trimmed, @"\\h\b") });
+                    if (rm.Success && button != null && start < buttonEnd)
+                    {
+                        if (string.IsNullOrEmpty((string)button["shown"])) button["shown"] = shown;
+                        continue;
+                    }
+                    var entry = new Dictionary<string, object> { ["start"] = start, ["code"] = trimmed, ["bookmark"] = bm, ["shown"] = shown, ["target"] = target, ["exists"] = exists, ["linked"] = rm.Success && Regex.IsMatch(trimmed, @"\\h\b") };
+                    refs.Add(entry);
+                    if (om.Success)
+                    {
+                        button = entry;
+                        try { buttonEnd = f.Code.End; } catch (COMException) { buttonEnd = -1; }
+                    }
                     continue;
                 }
                 var mm = MarkerCode.Match(code);

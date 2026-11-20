@@ -72,6 +72,12 @@ export async function runSoak(o: { seed: number; operations: number; batch?: num
       model.undo.push({ docs: JSON.parse(JSON.stringify(model.docs)) as Record<string, string[]>, doc });
       model.redo = [];
     };
+    // An equation in Word the model does not have: the documents already differ (stop here, not later).
+    const indexIn = (list: string[], latex: string, doc: string) => {
+      const k = list.indexOf(latex);
+      if (k < 0) throw new Error(`${doc} has ${latex}, which the model does not: Word and the model differ (${list.join(" | ")})`);
+      return k;
+    };
     const profile = currentProfile();
     let done = 0;
     for (let i = 0; i < o.operations; i++) {
@@ -100,12 +106,12 @@ export async function runSoak(o: { seed: number; operations: number; batch?: num
             remember(doc);
             const { flatOpc } = await buildInsertion(latex, true, profile, target.tag, "classic");
             await connector.request("replaceEquation", { tag: target.tag, flatOpc, undoLabel: "Update equation" }, SLOW);
-            eqs.splice(eqs.indexOf(target.latex), 1, latex);
+            eqs.splice(indexIn(eqs, target.latex, doc), 1, latex);
             log.push(`${entry}: ${target.latex} → ${latex}`);
           } else if (op === "delete" || op === "cutPaste") {
             remember(doc);
             await smoke("cut", { tag: target.tag });
-            eqs.splice(eqs.indexOf(target.latex), 1);
+            eqs.splice(indexIn(eqs, target.latex, doc), 1);
             model.clipboard = target.latex;
             if (op === "cutPaste") {
               remember(doc);
@@ -157,8 +163,11 @@ export async function runSoak(o: { seed: number; operations: number; batch?: num
           eqs.push(latex);
           log.push(`${entry}: $${latex}$`);
         } else if (op === "updateNumbers") {
-          remember(doc);
+          // Word keeps no undo step when the numbers were already right, so whether Ctrl+Z would undo this
+          // or the operation before it is unknown: this document's history no longer applies.
           await connector.request("updateNumbers", {}, SLOW);
+          model.undo = model.undo.filter((u) => u.doc !== doc);
+          model.redo = model.redo.filter((u) => u.doc !== doc);
           log.push(entry);
         } else if (op === "applyStyle") {
           const ds = await import("./docStyle");

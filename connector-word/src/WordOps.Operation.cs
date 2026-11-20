@@ -231,6 +231,12 @@ namespace MathBlocks.WordConnector
             }
             if (_progress != null)
             {
+                // The document's window first: the progress window then closes while not active, and Windows
+                // has no activation to hand to the next window in line (another open document).
+                if (_operationWindow != null)
+                {
+                    try { _operationWindow.Activate(); } catch (COMException) { }
+                }
                 try
                 {
                     _progress.Close();
@@ -264,7 +270,10 @@ namespace MathBlocks.WordConnector
             {
                 try
                 {
-                    _operationWindow.Activate();
+                    // Again only if something else came forward meanwhile.
+                    bool same;
+                    try { same = _app.ActiveWindow?.Hwnd == _operationWindow.Hwnd; } catch (Exception) { same = false; } // Word 2010: no Hwnd
+                    if (!same) _operationWindow.Activate();
                 }
                 catch (COMException)
                 {

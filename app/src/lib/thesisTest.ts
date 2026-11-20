@@ -11,7 +11,7 @@ import { useApp } from "./store";
  */
 
 const SLOW = 3_600_000;
-const smoke = (op: string, params: Record<string, unknown> = {}) => connector.request("smoke", { op, ...params }, SLOW);
+const smoke = (op: string, params: Record<string, unknown> = {}, timeout = SLOW) => connector.request("smoke", { op, ...params }, timeout);
 
 export interface ThesisStep {
   what: string;
@@ -34,10 +34,27 @@ async function state(): Promise<string> {
   return `${text}\u0000${eqs.join("\u0001")}\u0000${numbers}`;
 }
 
+/** The report's lines; `running` is the step under way (so a report left by a crash or a hang says where it stopped). */
+export function thesisReport(steps: ThesisStep[], startedAt: Date, totalMs: number, running?: { what: string; since: Date }): string[] {
+  return [
+    `MathBlocks thesis-size test — ${startedAt.toLocaleString()}`,
+    running ? `Not finished: running "${running.what}" since ${running.since.toLocaleTimeString()} (${(totalMs / 1000).toFixed(0)} s so far)` : `Total ${(totalMs / 1000).toFixed(0)} s`,
+    "",
+    ...steps.map((s) => `${s.ok === null ? "INFO" : s.ok ? "PASS" : "FAIL"}  ${s.what}: ${(s.ms / 1000).toFixed(1)} s${s.detail ? `  — ${s.detail}` : ""}`),
+  ];
+}
+
+const writeReport = (lines: string[]) => smoke("writeFile", { file: "thesis-size report.txt", text: lines.join("\r\n") }, 30_000).catch(() => null) as Promise<{ path: string } | null>;
+
 export async function runThesisTest(scale = 1, progress: (s: string) => void = () => undefined): Promise<ThesisStep[]> {
   const steps: ThesisStep[] = [];
+  const startedAt = new Date();
+  const t00 = performance.now();
+  // Written before and after every step: Word crashing or hanging still leaves the timings so far.
+  const save = (running?: string) => writeReport(thesisReport(steps, startedAt, performance.now() - t00, running ? { what: running, since: new Date() } : undefined));
   const time = async <T,>(what: string, run: () => Promise<T>, judge: (r: T) => [boolean | null, string] = () => [true, ""]): Promise<T | null> => {
     progress(what);
+    await save(what);
     const t0 = performance.now();
     try {
       const r = await run();
@@ -47,11 +64,14 @@ export async function runThesisTest(scale = 1, progress: (s: string) => void = (
     } catch (e) {
       steps.push({ what, ms: performance.now() - t0, ok: false, detail: e instanceof Error ? e.message : String(e) });
       return null;
+    } finally {
+      await save();
     }
   };
   const { interchangeDocx, thesisParagraphs } = await import("./interchangeFixture");
   const { toBase64 } = await import("./render");
   await smoke("begin");
+  await save("generate the document");
   try {
     const paras = thesisParagraphs(scale);
     const docx = toBase64(interchangeDocx(paras));
@@ -121,13 +141,8 @@ export async function thesisTestCommand() {
   const { askConfirm } = await import("../components/Dialogs");
   if (!(await askConfirm("Thesis-size test", "Generate a generic document of about 300 pages (1500 equations, 1000 references) and run every whole-document operation on it, timed. It takes a while (about 20–40 minutes) and opens its own document; your documents are not touched.", "Run"))) return;
   const t0 = performance.now();
+  const startedAt = new Date();
   const steps = await runThesisTest(1, (s) => app.notify(`Thesis-size test: ${s}…`));
-  const lines = [
-    `MathBlocks thesis-size test — ${new Date().toLocaleString()}`,
-    `Total ${(Math.round(performance.now() - t0) / 1000).toFixed(0)} s`,
-    "",
-    ...steps.map((s) => `${s.ok === null ? "INFO" : s.ok ? "PASS" : "FAIL"}  ${s.what}: ${(s.ms / 1000).toFixed(1)} s${s.detail ? `  — ${s.detail}` : ""}`),
-  ];
-  const r = (await smoke("writeFile", { file: "thesis-size report.txt", text: lines.join("\r\n") }).catch(() => null)) as { path: string } | null;
+  const r = await writeReport(thesisReport(steps, startedAt, performance.now() - t0));
   app.notify(`Thesis-size test finished: ${steps.filter((s) => s.ok === false).length} problem(s). Report: ${r?.path ?? "(not saved)"}`);
 }

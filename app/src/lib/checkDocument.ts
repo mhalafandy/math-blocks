@@ -173,8 +173,9 @@ export function judgeDocument(input: CheckInput): Problem[] {
 
   for (const r of input.fields.references) {
     if (!r.exists) add({ group: "references", severity: "error", message: `A reference to an equation that is not in the document (${r.bookmark})${r.shown ? `, showing ${r.shown}` : ""}`, start: r.start });
+    // The earlier form first: Update numbers turns it into a link and corrects what it shows, one problem.
+    else if (!r.linked) add({ group: "references", severity: "warning", message: `A reference to ${r.target} in the earlier form (not a link)${bare(r.shown) !== bare(r.target) ? `, showing ${r.shown || "nothing"}` : ""}`, start: r.start, repair: "updateNumbers" });
     else if (bare(r.shown) !== bare(r.target)) add({ group: "references", severity: "error", message: `A reference shows ${r.shown || "nothing"} but its equation is ${r.target}`, start: r.start, repair: "updateNumbers" });
-    else if (!r.linked) add({ group: "references", severity: "warning", message: `A reference to ${r.target} in the earlier form (not a link)`, start: r.start, repair: "updateNumbers" });
   }
 
   const lists = input.fields.markers.filter((m) => m.kind === "MBSymbolList");

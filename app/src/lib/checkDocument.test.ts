@@ -26,6 +26,14 @@ const clean: CheckInput = {
 };
 
 describe("Check document", () => {
+  it("reports an older reference showing an old number once, as the earlier form", () => {
+    const old = { start: 7, code: "GOTOBUTTON _MBEq_2", bookmark: "_MBEq_2", shown: "(1)", target: "(1.2)", exists: true, linked: false };
+    const p = judgeDocument({ ...clean, fields: { ...clean.fields, references: [...clean.fields.references, old] } }).filter((x) => x.group === "references");
+    expect(p).toHaveLength(1);
+    expect(p[0]).toMatchObject({ start: 7, repair: "updateNumbers" });
+    expect(p[0]!.message).toContain("earlier form");
+    expect(p[0]!.message).toContain("showing (1)");
+  });
   it("finds nothing in a clean document", () => {
     expect(judgeDocument(clean)).toEqual([]);
   });
