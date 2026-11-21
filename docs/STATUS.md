@@ -2,41 +2,35 @@
 
 Updated at the end of every round. Public repository: generic content only. Earlier rounds: `docs/status-archive/`.
 
-## Latest round — 0.1.170
+## Latest round — 0.1.172
 
-**Build:** 0.1.170 (test channel), CI passed. Stable stays 0.1.168: the 0.1.169 self-test had 2 failures.
+**Build:** 0.1.172 (test channel), CI: pending. Stable stays 0.1.168: the 0.1.170 self-test had 1 failure (Ctrl+Alt+K is Word's AutoFormat).
 
-**Test-channel update check** ("Could not fetch a valid release JSON"): 0.1.170's `dev-build` release was left a draft, so its manifest was not public. CI now publishes each release explicitly and fails unless `latest.json` downloads; 0.1.171 republishes it.
-
-**Reports read:** self-test 18:32 (0.1.169: 454 passed, 2 failed), thesis-size 19:06, soak 20:56 (failed at #122), connector.log.
-
-**Thesis-size (0.1.169) and the log:** Convert LaTeX 207 ms per equation (writing 204); numbers 72 s (locked). List of symbols 553 s, now passing. The one read of the document's XML takes 8–11 s (37 MB, 1533 pictures), so decision A's read is cheap. The time went into per-equation Word calls: the check before writing took 0.52 s per equation (revision count and content-control search on each lookup), and Apply style's writes 0.66–0.82 s per equation.
+**Reports read:** self-test 22:26 (0.1.170: 467 passed, 1 failed; spike 99 passed), word keys.txt, thesis-size 23:15, soak 22:29 (failed after #350), connector.log.
 
 **Fixed:**
-- Check document's repair + one Ctrl+Z left an equation's EMBED field locked: the locked Update numbers no longer touches embedded objects' fields (they have no result to update; 1500 fewer locks on a thesis).
-- Soak #113 / #673: Apply style replaced the wrong pictures. Each batch is now written from the end of the document backwards, so a write only disturbs what is already done.
-- Speed: within a request, whether the document has tracked changes and its content controls by ID are read once (verify, list, and writes with Track Changes off). Check document reads equations without pages.
-- "Apply notation kinds: Ctrl+Y redoes it": the check now says which equations differ and whether a second read agrees (cause not known yet).
+- Edit shortcut: Ctrl+Alt+K → **Ctrl+Alt+[** (free on your PC; a saved Ctrl+Alt+K moves too). Ribbon tab key tip Q → **K**.
+- "Apply notation kinds: Ctrl+Y redoes it" (0.1.169), cause: replacing one equation left the old picture next to the new one, same ID; each read then gave the copy a new random ID, so the states never matched. The replace now finds the old picture by place and ID and removes any leftover; a self-test check counts the equations.
+- Soak #350: a bug in the soak test, not the product (Ctrl+Z in A put back B's list too in the model).
+- Apply style on the thesis: the equation index no longer computes a page for each equation on documents over 300 equations (314 s per index, twice per Apply style). The list of symbols takes its pages from the definitions.
 
 **Built:**
-- Text guard: each written range must hold exactly the LaTeX written. Fixtures that must fail: range one character too wide (left, right), next to punctuation, two adjacent equations, a numbered line (plus passing ones).
-- **Word shortcuts, new convention** (docs/SHORTCUTS.md): Ctrl+Alt+J inline, Ctrl+Alt+; display, Ctrl+Alt+' Toggle LaTeX, Ctrl+Alt+K edit, Ctrl+Alt+, reference, Ctrl+Alt+/ number. Changeable in Settings → Word shortcuts (Shift bases and function keys refused). Every MathBlocks tab button has its own key tip (Alt, Q, letter).
-- Self-test "Word shortcuts: Word's own keys on this PC": each shortcut checked against Word's assignments (built-in, MathType, other add-ins); the free right-hand Ctrl+Alt keys; full list in `word keys.txt`.
-- Thesis-size report: Convert LaTeX's InsertXML time per equation; log lines for listInstances (pages vs content).
-- docs/CLEANUP-INVENTORY.md: what a new user does not need, with a proposal for each (nothing removed).
+- Self-test: the tab key tip against the key tips Word shows after Alt on your PC (Search box, other add-ins); each shortcut pressed as a keyboard sends it, with your layout and with Arabic (101), restored after.
+- Cleanup (your decisions): spike, bold Greek sheet, font comparison, "Insert test equation", qs1.png removed. **Settings → Advanced → Developer tools** (off): self-test, soak, thesis-size test, benchmark hidden (Ctrl+K, ribbon, Settings); the add-in refuses test requests. "Thesis check" → "Check all chapter files".
+- Log: a write's time split into check / write / after; which Cancel stopped an operation; listInstances pages vs context.
 
 **Needs your PC:**
-- Self-test of 0.1.170 (check the "Word shortcuts" section: any clash, and send `word keys.txt`). Clean → I promote it.
-- Thesis-size test, and the connector.log after it (Convert LaTeX target; Apply style, Check document, Change symbol in time?).
+- Turn on Settings → Advanced → Developer tools first (the self-test is hidden otherwise).
+- Self-test of 0.1.172: "Word shortcuts" (tab key tip, and the Arabic layout lines). Clean → I promote it.
+- Thesis-size test with connector.log. Did you press Cancel in Apply style in 0.1.170? It stopped after 840 of 1533 (the log now says who).
 - Soak test.
 
 **Open:**
-- Convert LaTeX under 0.2 s per equation: not reached (207 ms). The InsertXML breakdown will show whether the equation package size is the lever.
-- The default keys are proposals until the self-test shows they are free on your PC (Ctrl+Alt+K is AutoFormat in some Word versions).
-- Cleanup: your choice per item in docs/CLEANUP-INVENTORY.md.
+- Apply style writes: 450–720 ms per equation, growing during the operation; the new log split shows where.
+- Convert LaTeX: 220 ms per equation (InsertXML 130 of 217); left as is (no cheap win in the breakdown).
 
 ## Details
 
-- `GuardText.WrittenMismatch`; `GuardWritten(start, end, text)`; fixtures carry `writtenText`.
-- `DocFacts` (`FactsOf`): read scope, or a write with Track Changes off and no content controls (`BeginWriteIndex(doc)`).
-- `shortcuts.rs`: `set_word_shortcuts`, `parse` (convention, unit test); app `lib/wordKeys.ts`, prefs `wordKeys`.
+- `WordOps.Replace.cs`: `TaggedPictureAfter`, `RemoveLeftoverOld`. `WordOps.KeyTips.cs`: ribbon key tips (MSAA). `WordOps.Objects.cs`: object helpers (from Spike.cs).
+- `shortcuts.rs`: `probe_word_shortcuts` (scan codes, WM_INPUTLANGCHANGEREQUEST). Prefs `developerTools`; add-in `setDeveloperTools`.
+- listInstances: `pagesUpTo`, `pagesFor`, `context`.

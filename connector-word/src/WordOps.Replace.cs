@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Word = Microsoft.Office.Interop.Word;
 
@@ -27,13 +28,61 @@ namespace MathBlocks.WordConnector
                 int at = eq.Range.Start;
                 var old = eq.Picture;
                 doc.Range(at, at).InsertXML(RunsOnly(flatOpc));
-                old.Delete();
+                // The old picture is found again by place and ID, not through the reference taken before the
+                // insertion: in 0.1.169 that reference no longer pointed at it, the old picture stayed next to the
+                // new one with the same ID ("Apply notation kinds: Ctrl+Y redoes it" failed after the copy got
+                // a random new ID on the next read).
+                var oldNow = TaggedPictureAfter(doc, at, tag);
+                if (oldNow != null) oldNow.Delete();
+                else old.Delete();
                 FinishInserted(doc, flatOpc, at, tag);
+                RemoveLeftoverOld(doc, at, tag);
                 return;
             }
             int start = Math.Max(0, eq.Control.Range.Start - 1);
             ReplaceControl(doc, eq.Control, flatOpc);
             FinishInserted(doc, flatOpc, start, tag);
+        }
+
+        /// <summary>The picture with this ID that starts after <paramref name="at"/> in the same paragraph (the old one).</summary>
+        private static Word.InlineShape TaggedPictureAfter(Word.Document doc, int at, string tag)
+        {
+            try
+            {
+                var para = doc.Range(at, at).Paragraphs[1].Range;
+                foreach (Word.InlineShape s in para.InlineShapes)
+                    if (s.Range.Start > at && TagOf(s) == tag) return s;
+            }
+            catch (COMException)
+            {
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// After a replace exactly one picture with the ID is left in the paragraph: the new one, at
+        /// <paramref name="at"/>. Any other is the old picture that stayed: it is removed (and logged).
+        /// </summary>
+        private static void RemoveLeftoverOld(Word.Document doc, int at, string tag)
+        {
+            try
+            {
+                var para = doc.Range(at, at).Paragraphs[1].Range;
+                var same = new List<Word.InlineShape>();
+                foreach (Word.InlineShape s in para.InlineShapes) if (TagOf(s) == tag) same.Add(s);
+                if (same.Count <= 1) return;
+                var keep = same.Find(s => s.Range.Start == at) ?? same[0];
+                foreach (var s in same)
+                {
+                    if (s == keep || s.Range.Start == keep.Range.Start) continue;
+                    Log.Info("replace: the old picture of " + tag + " was still there at " + s.Range.Start + ": removed");
+                    s.Delete();
+                }
+            }
+            catch (COMException ex)
+            {
+                Log.Info("replace: could not check for a leftover picture of " + tag + ": " + ex.Message);
+            }
         }
 
         /// <summary>

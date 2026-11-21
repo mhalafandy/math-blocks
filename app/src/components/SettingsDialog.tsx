@@ -27,6 +27,8 @@ interface PageDef {
   body: () => ReactNode;
   /** A settings dialog shown as this page: open it when the page shows; its own Close closes the settings. */
   dialog?: { isOpen: () => boolean; open: () => void; close: () => void; subscribe: (f: () => void) => () => void };
+  /** Shown only with developer tools on (Advanced). */
+  developer?: boolean;
 }
 
 function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
@@ -116,16 +118,36 @@ function ConnectionPage() {
           <input type="checkbox" checked={s.confirmWordCommands} onChange={(e) => s.setPrefs({ confirmWordCommands: e.target.checked })} /> ask first
         </label>
       </Field>
-      <Field label="Word self-test" hint="Checks every MathBlocks operation in Word on test documents (your documents are not touched).">
-        <button disabled={!s.connector.connected} onClick={() => void import("../lib/selfTest").then((m) => m.runWordSelfTest())}>Run the Word self-test</button>
+    </section>
+  );
+}
+
+/** Advanced → Developer tools: the tests and measurements for diagnosing a problem; off by default. */
+function AdvancedPage() {
+  const s = useApp();
+  const run = (f: () => Promise<unknown>) => void f();
+  return (
+    <section className="settings-embedded">
+      <h3>Advanced</h3>
+      <Field label="Developer tools" hint="Tests and measurements for diagnosing a problem: the Word self-test, soak test, thesis-size test and benchmark (also in Ctrl+K and on the ribbon). Off, the add-in refuses their test requests.">
+        <label className="check">
+          <input type="checkbox" checked={s.developerTools} onChange={(e) => s.setPrefs({ developerTools: e.target.checked })} /> show developer tools
+        </label>
       </Field>
+      {s.developerTools && (
+        <Field label="Word self-test" hint="Checks every MathBlocks operation in Word on test documents (your documents are not touched).">
+          <button disabled={!s.connector.connected} onClick={() => run(() => import("../lib/selfTest").then((m) => m.runWordSelfTest()))}>Run the Word self-test</button>{" "}
+          <button disabled={!s.connector.connected} onClick={() => run(() => import("../lib/soakTest").then((m) => m.soakTestCommand()))}>Soak test…</button>{" "}
+          <button disabled={!s.connector.connected} onClick={() => run(() => import("../lib/thesisTest").then((m) => m.thesisTestCommand()))}>Thesis-size test…</button>
+        </Field>
+      )}
     </section>
   );
 }
 
 /**
  * Word shortcuts: Ctrl+Alt + a key under the right hand for the most frequent commands (lib/wordKeys.ts). Every
- * other command has a key tip on the MathBlocks tab (Alt, Q, then its letter). The self-test lists Word's own
+ * other command has a key tip on the MathBlocks tab (Alt, K, then its letter). The self-test lists Word's own
  * assignments on this PC and reports a clash.
  */
 function WordKeysPage() {
@@ -219,8 +241,9 @@ const PAGES: PageDef[] = [
   { id: "wordKeys", label: "Word shortcuts", keys: "word shortcuts keyboard keys ctrl alt inline display toggle latex reference number edit", body: () => <WordKeysPage /> },
   { id: "backups", label: "Backups", keys: "backup copy restore folder", body: () => <BackupsPage /> },
   { id: "symbollist", label: "List of symbols", keys: "symbols nomenclature list define table sort groups columns", body: () => <SymbolListPage /> },
-  { id: "benchmark", label: "Benchmark", keys: "benchmark speed timing keystrokes mathtype comparison", body: () => <BenchmarkPage /> },
+  { id: "benchmark", label: "Benchmark", keys: "benchmark speed timing keystrokes mathtype comparison", body: () => <BenchmarkPage />, developer: true },
   { id: "updates", label: "Updates", keys: "update version", body: () => <UpdatesPage /> },
+  { id: "advanced", label: "Advanced", keys: "advanced developer tools self-test soak thesis-size test benchmark diagnose", body: () => <AdvancedPage /> },
   { id: "recognition", label: "Screenshot to LaTeX", keys: "screenshot picture recognition api key ocr image", body: () => <RecognitionDialog />, dialog: { isOpen: () => useRecognition.getState().open, open: () => useRecognition.getState().set({ open: true }), close: () => useRecognition.getState().set({ open: false }), subscribe: (f) => useRecognition.subscribe(f) } },
 ];
 
@@ -229,7 +252,9 @@ const SIZE_KEY = "mathblocks.settings.size";
 export function SettingsDialog() {
   const { open, page, set } = useSettings();
   const [query, setQuery] = useState("");
-  const def = PAGES.find((p) => p.id === page) ?? PAGES[0]!;
+  const developer = useApp((s) => s.developerTools);
+  const pages = PAGES.filter((p) => !p.developer || developer);
+  const def = pages.find((p) => p.id === page) ?? pages[0]!;
   // Closing the settings closes every page's dialog state too (none is left to show on its own later).
   const close = () => {
     for (const p of PAGES) if (p.dialog?.isOpen()) p.dialog.close();
@@ -285,9 +310,10 @@ export function SettingsDialog() {
   }, [open]);
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return PAGES;
-    return PAGES.filter((p) => q.split(/\s+/).every((w) => `${p.label} ${p.keys}`.toLowerCase().includes(w)));
-  }, [query]);
+    if (!q) return pages;
+    return pages.filter((p) => q.split(/\s+/).every((w) => `${p.label} ${p.keys}`.toLowerCase().includes(w)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, developer]);
   if (!open) return null;
   return (
     <div className="modal-backdrop settings-backdrop" onMouseDown={close}>

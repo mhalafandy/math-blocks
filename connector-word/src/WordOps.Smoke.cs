@@ -1,3 +1,7 @@
+using System.Xml.Linq;
+using System.Text.RegularExpressions;
+using System.Text;
+using System.IO.Compression;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -545,7 +549,7 @@ namespace MathBlocks.WordConnector
                     return new Dictionary<string, object> { ["path"] = path };
                 }
                 default:
-                    return SpikeOp(op, p);
+                    return SmokeHelper(op, p);
             }
         }
 
@@ -902,5 +906,377 @@ namespace MathBlocks.WordConnector
             }
             return found;
         }
-}
+
+        /// <summary>The range of an equation (picture, object, wrapper) with this ID.</summary>
+        private static Word.Range RangeOf(Word.Document d, string tag, int preferNotAt = -1)
+        {
+            var eqs = FindByTag(d, tag);
+            var ranges = eqs.Select(e => e.Range).ToList();
+            if (ranges.Count == 0) throw new RpcException(Rpc.NotFound, "No equation or object " + tag);
+            if (preferNotAt >= 0) foreach (var r in ranges) if (r.Start != preferNotAt) return r;
+            return ranges.OrderBy(r => r.Start).First();
+        }
+
+        /// <summary>A MathBlocks object as Word holds it: kind, frame, lowering, data, what follows it.</summary>
+        private Dictionary<string, object> ObjectInfo(Word.Document d, Word.InlineShape s)
+        {
+            var xml = s.Range.WordOpenXML;
+            var r = new Dictionary<string, object>
+            {
+                ["kind"] = s.Type.ToString(),
+                ["progId"] = ProgIdOf(s),
+                ["alt"] = AltOf(s) ?? "",
+                ["tag"] = EquationIdentity.AltTag(AltOf(s)),
+                ["widthPt"] = (double)s.Width,
+                ["heightPt"] = (double)s.Height,
+                ["positionPt"] = LoweringOf(s) ?? 9999999,
+                ["start"] = s.Range.Start,
+                ["after"] = s.Range.End,
+                ["objectElement"] = xml.Contains("<w:object"),
+                ["oleObject"] = xml.Contains("<o:OLEObject"),
+                ["vml"] = xml.Contains("<v:imagedata"),
+                ["drawingml"] = xml.Contains("<pic:pic"),
+                ["emf"] = xml.Contains("image/x-emf"),
+                ["wmf"] = xml.Contains("image/x-wmf"),
+                ["png"] = xml.Contains("image/png"),
+            };
+            var m = OleEmbedding.Match(xml);
+            r["embedding"] = m.Success ? Regex.Replace(m.Groups[1].Value, "\\s+", "") : null;
+            var next = d.Range(s.Range.End, Math.Min(s.Range.End + 1, d.Content.End));
+            r["nextText"] = next.Text ?? "";
+            r["nextPositionPt"] = (double)next.Font.Position;
+            return r;
+        }
+
+        /// <summary>More self-test operations (moved from the object spike file), called from Smoke.</summary>
+        private Dictionary<string, object> SmokeHelper(string op, Dictionary<string, object> p)
+        {
+            var d = _app.ActiveDocument;
+            switch (op)
+            {
+                case "redo":
+                    return new Dictionary<string, object> { ["ok"] = d.Redo(Math.Max(1, Rpc.GetInt(p, "times"))) };
+                case "typingProbe":
+                {
+                    // Which way of resetting the caret's formatting does Word honour for typed text?
+                    // For each strategy: caret after the equation (end of its paragraph), apply it, type
+                    // one character, read its lowering, undo.
+                    var tag = Rpc.GetString(p, "tag");
+                    var results = new Dictionary<string, object>();
+                    foreach (var strategy in new[] { "none", "position0", "toggle", "reset", "resetToggle" })
+                    {
+                        try
+                        {
+                            var r0 = RangeOf(d, tag);
+                            var sel = _app.Selection;
+                            sel.SetRange(r0.End, r0.End);
+                            switch (strategy)
+                            {
+                                case "position0": sel.Font.Position = 0; break;
+                                case "toggle": sel.Font.Position = 1; sel.Font.Position = 0; break;
+                                case "reset": sel.Font.Reset(); break;
+                                case "resetToggle": sel.Font.Reset(); sel.Font.Position = 1; sel.Font.Position = 0; break;
+                            }
+                            sel.TypeText("x");
+                            var typed = d.Range(sel.Start - 1, sel.Start);
+                            results[strategy] = (double)typed.Font.Position;
+                            d.Undo(1);
+                        }
+                        catch (Exception ex)
+                        {
+                            results[strategy] = ex.GetType().Name + ": " + ex.Message;
+                        }
+                    }
+                    return results;
+                }
+                case "refResults":
+                {
+                    // What every REF field pointing at this bookmark shows (nested ones included).
+                    var name = Rpc.GetString(p, "bookmark");
+                    var list = new List<object>();
+                    foreach (Word.Field f in d.Fields)
+                    {
+                        try
+                        {
+                            var code = f.Code.Text ?? "";
+                            // The REF field itself (GOTOBUTTON's code contains it too, but shows no result of its own).
+                            // Exactly this bookmark (ZEqnNum1 is not ZEqnNum1N).
+                            var t = code.Trim();
+                            if (t.StartsWith("REF ", StringComparison.Ordinal) && t.Substring(4).TrimStart().Split(' ')[0] == name) list.Add((f.Result.Text ?? "").Trim());
+                        }
+                        catch (Exception)
+                        {
+                        }
+                    }
+                    return new Dictionary<string, object> { ["results"] = list };
+                }
+                case "makeEquationParagraph":
+                {
+                    // A numbered display equation laid out as MathType does: tab, equation, tab, number,
+                    // with a centre tab stop at the middle of the text column and a right one at its end.
+                    var flat = Rpc.GetString(p, "flatOpc");
+                    var number = p.TryGetValue("number", out var nv) && nv is string ns ? ns : "";
+                    var end = d.Content.End - 1;
+                    var at = d.Range(end, end);
+                    at.InsertParagraphAfter();
+                    int start = d.Content.End - 1;
+                    d.Range(start, start).InsertXML(RunsOnly(flat));
+                    var para = d.Range(start, start).Paragraphs[1];
+                    var ps = para.Range.Sections[1].PageSetup;
+                    float width = ps.PageWidth - ps.LeftMargin - ps.RightMargin - para.LeftIndent - para.RightIndent;
+                    para.Alignment = Word.WdParagraphAlignment.wdAlignParagraphLeft;
+                    para.TabStops.ClearAll();
+                    // withoutTabs: the state an earlier Convert MathType left (no style, no tab stops).
+                    if (!Rpc.GetBool(p, "withoutTabs"))
+                    {
+                        para.TabStops.Add(width / 2, Word.WdTabAlignment.wdAlignTabCenter);
+                        para.TabStops.Add(width, Word.WdTabAlignment.wdAlignTabRight);
+                    }
+                    d.Range(para.Range.Start, para.Range.Start).InsertBefore("\t");
+                    if (Rpc.GetBool(p, "numberField"))
+                    {
+                        // A number field as MathBlocks writes it: ( SEQ MBEq ).
+                        var endAt = para.Range.End - 1;
+                        d.Range(endAt, endAt).InsertAfter("\t()");
+                        var inside = d.Range(para.Range.End - 2, para.Range.End - 2);
+                        d.Fields.Add(inside, Word.WdFieldType.wdFieldEmpty, "SEQ MBEq \\* ARABIC", false).Update();
+                    }
+                    else d.Range(para.Range.End - 1, para.Range.End - 1).InsertAfter("\t" + number);
+                    return new Dictionary<string, object> { ["start"] = para.Range.Start };
+                }
+                case "openDocx":
+                {
+                    // A test document the app generated (base64): saved in the test folder, then opened.
+                    var path = System.IO.Path.Combine(SmokeFolder ?? System.IO.Path.GetTempPath(), Rpc.GetString(p, "file"));
+                    System.IO.File.WriteAllBytes(path, Convert.FromBase64String(Rpc.GetString(p, "base64")));
+                    var opened = _app.Documents.Open(path, AddToRecentFiles: false);
+                    opened.Activate();
+                    return new Dictionary<string, object> { ["name"] = opened.Name, ["fullName"] = opened.FullName };
+                }
+                case "bookmarkPara":
+                {
+                    // Where a bookmark's paragraph starts (to measure the number's position there).
+                    var name = Rpc.GetString(p, "bookmark");
+                    bool hidden = d.Bookmarks.ShowHidden;
+                    d.Bookmarks.ShowHidden = true;
+                    try
+                    {
+                        if (!d.Bookmarks.Exists(name)) return new Dictionary<string, object> { ["exists"] = false };
+                        return new Dictionary<string, object> { ["exists"] = true, ["start"] = d.Bookmarks[name].Range.Paragraphs[1].Range.Start };
+                    }
+                    finally
+                    {
+                        d.Bookmarks.ShowHidden = hidden;
+                    }
+                }
+                case "deleteBookmarkPara":
+                {
+                    // Deletes the paragraph of a numbered equation (what a user does when an equation goes).
+                    var name = Rpc.GetString(p, "bookmark");
+                    bool hidden = d.Bookmarks.ShowHidden;
+                    d.Bookmarks.ShowHidden = true;
+                    try
+                    {
+                        if (!d.Bookmarks.Exists(name)) return new Dictionary<string, object> { ["deleted"] = false };
+                        d.Bookmarks[name].Range.Paragraphs[1].Range.Delete();
+                        return new Dictionary<string, object> { ["deleted"] = true };
+                    }
+                    finally
+                    {
+                        d.Bookmarks.ShowHidden = hidden;
+                    }
+                }
+                case "numberDebug":
+                {
+                    // How the first number fields read: Word's code text (field marks made visible) and what is shown.
+                    var list = new List<object>();
+                    foreach (Word.Field f in d.Fields)
+                    {
+                        string code;
+                        try { code = f.Code.Text ?? ""; } catch (Exception) { continue; }
+                        if (!code.Contains("PlaceRef")) continue;
+                        string vis(string s) => s.Replace("\u0013", "{").Replace("\u0014", "|").Replace("\u0015", "}");
+                        string result = "";
+                        try { result = f.Result?.Text ?? ""; } catch (Exception) { }
+                        list.Add(new Dictionary<string, object> { ["code"] = vis(code), ["result"] = vis(result), ["shows"] = ButtonDisplay(f) });
+                        if (list.Count >= 3) break;
+                    }
+                    return new Dictionary<string, object> { ["fields"] = list };
+                }
+                case "guardProbe":
+                {
+                    // A whole-document change that also deletes a letter outside the equations: the text guard must
+                    // notice and undo it.
+                    // A plain paragraph of its own (outside the operation), then an operation that deletes one of
+                    // its letters: the guard must notice and undo it, leaving the paragraph as it was.
+                    const string probeText = "Guard probe paragraph.";
+                    d.Content.InsertParagraphAfter();
+                    int at = d.Content.End - 1;
+                    d.Range(at, at).InsertAfter(probeText);
+                    var r = InOneUndo("Text guard probe", () =>
+                    {
+                        d.Range(at, at + 1).Delete();
+                        return new Dictionary<string, object> { ["deleted"] = probeText.Substring(0, 1) };
+                    }, null, d);
+                    r["textAfter"] = (d.Range(at, at + probeText.Length).Text ?? "");
+                    return r;
+                }
+                case "keyAssignments":
+                {
+                    // Self-test: Word's key assignments on this PC (built-in, Normal.dotm, MathType and other add-ins'
+                    // templates), for every Ctrl / Alt / Shift combination over letters, digits and punctuation, so the
+                    // Word shortcuts can be checked against them (Application.FindKey).
+                    var keys = new List<(int code, string name)>();
+                    for (char c = 'A'; c <= 'Z'; c++) keys.Add((c, c.ToString()));
+                    for (char c = '0'; c <= '9'; c++) keys.Add((c, c.ToString()));
+                    foreach (var kv in new[] { (186, ";"), (187, "="), (188, ","), (189, "-"), (190, "."), (191, "/"), (192, "`"), (219, "["), (220, "\\"), (221, "]"), (222, "'") }) keys.Add(kv);
+                    var mods = new[] { (512, "Ctrl"), (1024, "Alt"), (512 | 1024, "Ctrl+Alt"), (512 | 256, "Ctrl+Shift"), (1024 | 256, "Alt+Shift"), (512 | 1024 | 256, "Ctrl+Alt+Shift") };
+                    var list = new List<object>();
+                    foreach (var m in mods)
+                        foreach (var k in keys)
+                        {
+                            try
+                            {
+                                var kb = _app.FindKey[m.Item1 | k.code];
+                                var cmd = kb?.Command ?? "";
+                                if (string.IsNullOrEmpty(cmd)) continue;
+                                string cat;
+                                try { cat = kb.KeyCategory.ToString(); } catch (COMException) { cat = ""; }
+                                if (cat == "wdKeyCategoryNil" || cat == "wdKeyCategoryDisable") continue;
+                                list.Add(new Dictionary<string, object> { ["keys"] = m.Item2 + "+" + k.name, ["code"] = m.Item1 | k.code, ["command"] = cmd, ["category"] = cat });
+                            }
+                            catch (Exception) { }
+                        }
+                    return new Dictionary<string, object> { ["assigned"] = list };
+                }
+                case "ribbonKeyTips":
+                    // Self-test: the key tips after Alt on this PC (tabs, Search box), for the tab key tip's clash check.
+                    return new Dictionary<string, object> { ["keytips"] = RibbonKeyTips() };
+                case "interruptedLock":
+                {
+                    // Self-test: as if Word stopped in the middle of Update numbers (locked method): the first
+                    // equation number field locked and the marker left, recording `kept` as the fields locked before.
+                    // kept "clear" removes the marker and unlocks that field again.
+                    var kept = Rpc.GetString(p, "kept");
+                    Word.Field first = null;
+                    foreach (Word.Field f in d.Fields) { if ((f.Code.Text ?? "").Contains("SEQ MBEq")) { first = f; break; } }
+                    if (kept == "clear")
+                    {
+                        if (first != null) first.Locked = false;
+                        try { d.Variables[LockMarker].Delete(); } catch (COMException) { }
+                        return new Dictionary<string, object> { ["ok"] = true };
+                    }
+                    if (first != null) first.Locked = true;
+                    d.Variables.Add(LockMarker, kept);
+                    return new Dictionary<string, object> { ["locked"] = first != null };
+                }
+                case "staleNumbers":
+                {
+                    // Equation numbers out of date (as after moving equations), so Update numbers has work.
+                    // An equation counter at the top that the numbers after it have not counted yet (as after
+                    // pasting a numbered equation): every number after it is out of date until Update numbers.
+                    int count = d.Fields.Count;
+                    d.Range(0, 0).InsertParagraphBefore();
+                    var top = d.Range(0, 0);
+                    var fld = d.Fields.Add(top, Word.WdFieldType.wdFieldEmpty, "SEQ MBEq \\* ARABIC", false);
+                    return new Dictionary<string, object> { ["fields"] = d.Fields.Count - count };
+                }
+                case "undoProbe":
+                {
+                    // Which call ends a custom undo record (Repair must be one Ctrl+Z): each runs alone inside
+                    // a fresh record; "kept" means Word was still recording afterwards. Nothing is changed.
+                    var eq = One(d, Rpc.GetString(p, "tag"));
+                    var shape = eq.Picture;
+                    var probes = new List<KeyValuePair<string, Action>>
+                    {
+                        new KeyValuePair<string, Action>("find equations", () => AllEquations(d)),
+                        new KeyValuePair<string, Action>("alt text", () => AltOf(shape)),
+                        new KeyValuePair<string, Action>("object data ID", () => ObjectDataTag(shape)),
+                        new KeyValuePair<string, Action>("equation range WordOpenXML", () => { var x = eq.Range.WordOpenXML; }),
+                        new KeyValuePair<string, Action>("picture range WordOpenXML", () => { var x = shape.Range.WordOpenXML; }),
+                        new KeyValuePair<string, Action>("paragraph WordOpenXML", () => { var x = eq.Range.Paragraphs[1].Range.WordOpenXML; }),
+                        new KeyValuePair<string, Action>("range XML (Word 2003)", () => { var x = eq.Range.get_XML(); }),
+                        new KeyValuePair<string, Action>("stored depth", () => DepthOf(shape)),
+                        new KeyValuePair<string, Action>("lowering", () => LoweringOf(shape)),
+                        new KeyValuePair<string, Action>("inspect for write", () => Inspect(d, eq)),
+                        new KeyValuePair<string, Action>("font position read", () => { var x = eq.Range.Font.Position; }),
+                        new KeyValuePair<string, Action>("font position set (same value)", () => { var r = shape.Range; var v = r.Font.Position; if (v != 9999999) r.Font.Position = v; }),
+                        new KeyValuePair<string, Action>("screen updating off/on", () => { var su = _app.ScreenUpdating; _app.ScreenUpdating = false; _app.ScreenUpdating = su; }),
+                        new KeyValuePair<string, Action>("window events", () => System.Windows.Forms.Application.DoEvents()),
+                    };
+                    var result = new Dictionary<string, object>();
+                    var undo = _app.UndoRecord;
+                    foreach (var pr in probes)
+                    {
+                        string state;
+                        try
+                        {
+                            if (undo.IsRecordingCustomRecord) undo.EndCustomRecord();
+                            undo.StartCustomRecord("MathBlocks undo probe");
+                            pr.Value();
+                            state = undo.IsRecordingCustomRecord ? "kept" : "ENDS THE RECORD";
+                        }
+                        catch (Exception ex)
+                        {
+                            state = "error: " + ex.Message;
+                        }
+                        finally
+                        {
+                            try { if (undo.IsRecordingCustomRecord) undo.EndCustomRecord(); } catch (Exception) { }
+                        }
+                        result[pr.Key] = state;
+                    }
+                    return result;
+                }
+                case "paraInfo":
+                {
+                    // A paragraph's properties and layout: style, alignment, tab stops; where its first
+                    // equation's centre and its number's end fall against the text column.
+                    var pos = Rpc.GetInt(p, "pos");
+                    var para = d.Range(pos, pos).Paragraphs[1];
+                    var pr = para.Range;
+                    var r = new Dictionary<string, object>();
+                    try { r["style"] = ((Word.Style)para.get_Style()).NameLocal; } catch (Exception) { r["style"] = ""; }
+                    r["alignment"] = para.Alignment.ToString();
+                    var tabs = new List<object>();
+                    foreach (Word.TabStop t in para.TabStops) if (t.CustomTab) tabs.Add(Math.Round(t.Position, 1) + " " + t.Alignment);
+                    r["tabs"] = tabs;
+                    r["text"] = (pr.Text ?? "").Replace("\u0001", "[eq]");
+                    var ps = pr.Sections[1].PageSetup;
+                    double left = ps.LeftMargin + para.LeftIndent, right = ps.PageWidth - ps.RightMargin - para.RightIndent;
+                    r["textLeft"] = left;
+                    r["textRight"] = right;
+                    r["textCenter"] = (left + right) / 2;
+                    Word.InlineShape eq = null;
+                    foreach (Word.InlineShape s in pr.InlineShapes) { eq = s; break; }
+                    if (eq != null)
+                    {
+                        r["equationKind"] = ProgIdOf(eq) ?? eq.Type.ToString();
+                        var x = Convert.ToDouble(eq.Range.Information[Word.WdInformation.wdHorizontalPositionRelativeToPage]);
+                        r["equationCenter"] = x + eq.Width / 2;
+                    }
+                    // The paragraph mark sits right after the number: its position is the number's end.
+                    var mark = d.Range(pr.End - 1, pr.End - 1);
+                    r["numberEnd"] = Convert.ToDouble(mark.Information[Word.WdInformation.wdHorizontalPositionRelativeToPage]);
+                    return r;
+                }
+                case "bookmarkText":
+                {
+                    var name = Rpc.GetString(p, "bookmark");
+                    bool hidden = d.Bookmarks.ShowHidden;
+                    d.Bookmarks.ShowHidden = true;
+                    try
+                    {
+                        return new Dictionary<string, object> { ["exists"] = d.Bookmarks.Exists(name), ["text"] = d.Bookmarks.Exists(name) ? d.Bookmarks[name].Range.Text ?? "" : "" };
+                    }
+                    finally
+                    {
+                        d.Bookmarks.ShowHidden = hidden;
+                    }
+                }
+                default:
+                    throw new RpcException(Rpc.InvalidParams, "Unknown self-test operation " + op);
+            }
+        }
+    }
 }

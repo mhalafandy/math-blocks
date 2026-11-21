@@ -77,6 +77,11 @@ export async function runSoak(o: { seed: number; operations: number; batch?: num
       });
     };
     let current = "";
+    // Undo/redo put back one document's equations (0.1.170 soak #350: Ctrl+Z in A restored B's list too).
+    const restore = (snap: { docs: Record<string, string[]>; text: Record<string, string[]>; doc: string }) => {
+      model.docs[snap.doc] = snap.docs[snap.doc] ?? [];
+      model.text[snap.doc] = snap.text[snap.doc] ?? [];
+    };
     const remember = (doc: string) => {
       model.undo.push({ ...state(), doc, what: current });
       model.redo = [];
@@ -154,8 +159,8 @@ export async function runSoak(o: { seed: number; operations: number; batch?: num
           model.redo.push({ ...state(), doc: last.doc, what: last.what });
           const u = await smoke("undo", { times: 1 });
           if (u.ok === false) throw new Error(`Word had nothing to undo in ${last.doc}`);
-          model.docs = last.docs;
-          model.text = last.text;
+          // Word's Ctrl+Z undoes only that document: the other one keeps what happened to it since.
+          restore(last);
           log.push(`${entry}: in ${last.doc} (undoes ${last.what || "?"})`);
           await compareNow(last.doc);
         } else if (op === "redo") {
@@ -164,8 +169,7 @@ export async function runSoak(o: { seed: number; operations: number; batch?: num
           await smoke("activate", { name: next.doc });
           model.undo.push({ ...state(), doc: next.doc, what: next.what });
           await smoke("redo", { times: 1 });
-          model.docs = next.docs;
-          model.text = next.text;
+          restore(next);
           log.push(`${entry}: in ${next.doc} (redoes ${next.what || "?"})`);
           await compareNow(next.doc);
         } else if (op === "convert") {

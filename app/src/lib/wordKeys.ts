@@ -21,7 +21,7 @@ export const DEFAULT_WORD_KEYS: Record<WordKeyName, string> = {
   inline: "Ctrl+Alt+J",
   display: "Ctrl+Alt+;",
   latex: "Ctrl+Alt+'",
-  edit: "Ctrl+Alt+K",
+  edit: "Ctrl+Alt+[",
   reference: "Ctrl+Alt+,",
   number: "Ctrl+Alt+/",
 };
@@ -58,6 +58,16 @@ export function wordKeyCode(keys: string): number | null {
   if (special[k] !== undefined) return code | special[k];
   if (/^[A-Z0-9]$/.test(k)) return code | k.charCodeAt(0);
   return null;
+}
+
+/** The MathBlocks ribbon tab's key tip (Alt, K): Microsoft 365's Search box has Alt, Q. Keep in step with Ribbon.xml. */
+export const TAB_KEYTIP = "K";
+
+/** Earlier defaults that a saved set still carries move to the current ones (Ctrl+Alt+K is Word's AutoFormat). */
+export function migrateWordKeys(keys: Record<string, string>): Record<string, string> {
+  const out = { ...keys };
+  if (out.edit === "Ctrl+Alt+K") out.edit = DEFAULT_WORD_KEYS.edit;
+  return out;
 }
 
 /** Sends the set to the shell (system-wide registration); returns the ones it could not register. */

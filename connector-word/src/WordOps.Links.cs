@@ -52,10 +52,18 @@ namespace MathBlocks.WordConnector
             // pages=false: numbers and positions, no page or context (Check document: laying out a thesis for the
             // page of each of 1500 equations is slow).
             var pages = !p.ContainsKey("pages") || Rpc.GetBool(p, "pages");
+            // Context (the paragraph's text) is asked for on its own; by default it comes with pages.
+            var context = p.ContainsKey("context") ? Rpc.GetBool(p, "context") : pages;
+            // pagesUpTo: pages only for a document with at most that many equations (a page for each of 1500
+            // took 314 s on the thesis-size document, 0.1.170); pagesFor: pages for just these equations.
+            int pagesUpTo = p.TryGetValue("pagesUpTo", out var pu) && pu != null ? Convert.ToInt32(pu) : int.MaxValue;
+            var pagesFor = new HashSet<string>();
+            if (p.TryGetValue("pagesFor", out var pf) && pf is IEnumerable pfl && !(pf is string)) foreach (var x in pfl) if (x is string xs) pagesFor.Add(xs);
             var docs = new List<object>();
             bool screen = _app.ScreenUpdating;
             var total = System.Diagnostics.Stopwatch.StartNew();
             long itemMs = 0, contentMs = 0;
+            PageMs = 0; ContextMs = 0;
             int count = 0;
             try
             {
@@ -64,14 +72,16 @@ namespace MathBlocks.WordConnector
                 {
                     Dedupe(doc);
                     var items = new List<object>();
-                    foreach (var eq in AllEquations(doc))
+                    var all = AllEquations(doc);
+                    bool docPages = pages && all.Count <= pagesUpTo;
+                    foreach (var eq in all)
                     {
                         var tag = eq.Tag;
                         if (blockFilter != null && tag.Split('|')[1] != blockFilter) continue;
                         var t0 = total.ElapsedMilliseconds;
                         var item = light
                             ? new Dictionary<string, object> { ["tag"] = tag, ["page"] = 0, ["context"] = "" }
-                            : NumberedItem(tag, eq, pages);
+                            : NumberedItem(tag, eq, docPages || pagesFor.Contains(tag), context);
                         itemMs += total.ElapsedMilliseconds - t0;
                         count++;
                         // Positions are per story: given for the main text; elsewhere the story is named instead.
@@ -90,15 +100,23 @@ namespace MathBlocks.WordConnector
             {
                 _app.ScreenUpdating = screen;
             }
-            if (count > 50) Log.Info("listInstances: " + count + " equation(s) in " + total.ElapsedMilliseconds + " ms (number, page and context " + itemMs + " ms" + (light ? ", light" : pages ? "" : ", no pages") + "; content " + contentMs + " ms)");
+            if (count > 50) Log.Info("listInstances: " + count + " equation(s) in " + total.ElapsedMilliseconds + " ms (number, page and context " + itemMs + " ms: pages " + PageMs + ", context " + ContextMs + (light ? ", light" : pages ? "" : ", no pages") + (pagesFor.Count > 0 ? ", pages for " + pagesFor.Count : "") + "; content " + contentMs + " ms)");
             return new Dictionary<string, object> { ["documents"] = docs };
         }
 
         /// <summary>A listed equation with its page, context, number and the number's bookmark (references link to it).</summary>
-        private static Dictionary<string, object> NumberedItem(string tag, Eq eq, bool pages = true)
+        private static long PageMs, ContextMs;
+
+        private static Dictionary<string, object> NumberedItem(string tag, Eq eq, bool pages = true, bool? context = null)
         {
             var n = NumberInfo(eq);
-            var item = new Dictionary<string, object> { ["tag"] = tag, ["page"] = pages ? PageOf(eq) : 0, ["context"] = pages ? ContextOf(eq) : "", ["number"] = n?["number"] };
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var page = pages ? PageOf(eq) : 0;
+            PageMs += sw.ElapsedMilliseconds;
+            sw.Restart();
+            var ctx = (context ?? pages) ? ContextOf(eq) : "";
+            ContextMs += sw.ElapsedMilliseconds;
+            var item = new Dictionary<string, object> { ["tag"] = tag, ["page"] = page, ["context"] = ctx, ["number"] = n?["number"] };
             if (n?["bookmark"] is string bm && bm.Length > 0) item["bookmark"] = bm;
             return item;
         }
@@ -176,6 +194,8 @@ namespace MathBlocks.WordConnector
             }
             if (ownUndo) undo.StartCustomRecord(undoLabel);
             var clock = System.Diagnostics.Stopwatch.StartNew();
+            // Where a write's time goes (thesis-size: 450-720 ms per equation, growing during the operation).
+            long verifyMs = 0, writeMs = 0, afterMs = 0;
             try
             {
                 foreach (var o in ordered)
@@ -184,6 +204,7 @@ namespace MathBlocks.WordConnector
                     var tag = Rpc.GetString(item, "tag");
                     var flatOpc = Rpc.GetString(item, "flatOpc");
                     Eq target;
+                    var v0 = clock.ElapsedMilliseconds;
                     try
                     {
                         // One clean equation with this ID, unchanged since it was read; otherwise it is left alone.
@@ -195,6 +216,7 @@ namespace MathBlocks.WordConnector
                         else refused.Add(new Dictionary<string, object> { ["tag"] = tag, ["reason"] = ex.Message });
                         continue;
                     }
+                    verifyMs += clock.ElapsedMilliseconds - v0;
                     if (verifyOnly)
                     {
                         replaced++;
@@ -202,10 +224,14 @@ namespace MathBlocks.WordConnector
                     }
                     CheckOperationUndo("before replacing " + tag);
                     ForgetTag(tag);
+                    var w0 = clock.ElapsedMilliseconds;
                     ReplaceEquationContent(doc, target, flatOpc, tag);
+                    writeMs += clock.ElapsedMilliseconds - w0;
+                    var a0 = clock.ElapsedMilliseconds;
                     ForgetTag(tag);
                     CheckOperationUndo("after replacing " + tag);
                     foreach (var c in FindByTag(doc, tag)) if (!c.IsPicture) Secure(c.Control);
+                    afterMs += clock.ElapsedMilliseconds - a0;
                     replaced++;
                 }
             }
@@ -217,7 +243,7 @@ namespace MathBlocks.WordConnector
             {
                 if (ownUndo) undo.EndCustomRecord();
             }
-            Log.Info("replaceMany in " + doc.Name + ": " + replaced + " replaced, " + missing.Count + " missing, " + refused.Count + " refused, " + clock.ElapsedMilliseconds + " ms (" + (clock.ElapsedMilliseconds / Math.Max(1, replaced)) + " ms each)");
+            Log.Info("replaceMany in " + doc.Name + ": " + replaced + " replaced, " + missing.Count + " missing, " + refused.Count + " refused, " + clock.ElapsedMilliseconds + " ms (" + (clock.ElapsedMilliseconds / Math.Max(1, replaced)) + " ms each; check " + verifyMs + ", write " + writeMs + ", after " + afterMs + ")");
             return new Dictionary<string, object> { ["replaced"] = replaced, ["missing"] = missing, ["refused"] = refused };
         }
 

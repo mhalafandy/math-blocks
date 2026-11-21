@@ -179,7 +179,10 @@ namespace MathBlocks.WordConnector
             // Tests: "Cancel" pressed at this progress step (smoke cancelNextProgress).
             bool testCancel = CancelNextProgress;
             CancelNextProgress = false;
-            return new Dictionary<string, object> { ["cancelled"] = testCancel || (_progress != null && _progress.Cancelled) };
+            bool pressed = _progress != null && _progress.Cancelled;
+            // Who stopped it (0.1.170 thesis-size: Apply style stopped after 840 equations, cause not in the log).
+            if (testCancel || pressed) Log.Info("operation cancel at " + done + ": " + (testCancel ? "test (cancelNextProgress)" : "Cancel pressed in the progress window"));
+            return new Dictionary<string, object> { ["cancelled"] = testCancel || pressed };
         }
 
         /// <summary>Closes the undo record and the progress window; logs the time per equation.</summary>

@@ -122,11 +122,10 @@ const WORD: [string, string][] = [
   ["Ctrl+Alt+J", "New inline equation at the cursor (changeable in Settings → Word shortcuts)"],
   ["Ctrl+Alt+;", "New display equation at the cursor"],
   ["Ctrl+Alt+'", "Toggle LaTeX: equation(s) at the cursor or selected ↔ LaTeX text"],
-  ["Ctrl+Alt+K", "Edit the equation at the cursor (or start a new one there)"],
+  ["Ctrl+Alt+[", "Edit the equation at the cursor (or start a new one there)"],
   ["Ctrl+Alt+,", "Insert a reference to an equation"],
   ["Ctrl+Alt+/", "Number / un-number the equation at the cursor"],
-  ["Alt, Q, then a letter", "Every other command: the MathBlocks tab's key tips"],
-  ["Alt, Q, then a letter", "MathBlocks ribbon buttons"],
+  ["Alt, K, then a letter", "Every other command: the MathBlocks tab's key tips"],
   ["Enter / Esc (floating editor)", "Apply / cancel (Ctrl+Enter applies a display equation)"],
 ];
 

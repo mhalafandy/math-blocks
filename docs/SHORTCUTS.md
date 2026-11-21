@@ -21,21 +21,22 @@ They work while Word is in front (registered by the MathBlocks app).
 | Ctrl+Alt+J | New inline equation at the cursor |
 | Ctrl+Alt+; | New display equation at the cursor |
 | Ctrl+Alt+' | Toggle LaTeX: the equation(s) at the cursor or in the selection ↔ their LaTeX text |
-| Ctrl+Alt+K | Edit the equation at the cursor (or a new one there) |
+| Ctrl+Alt+[ | Edit the equation at the cursor (or a new one there) |
 | Ctrl+Alt+, | Insert a reference to a numbered equation |
 | Ctrl+Alt+/ | Number / un-number the equation at the cursor |
 
-## Key tips on the MathBlocks tab (Alt, Q, then the letter)
+## Key tips on the MathBlocks tab (Alt, K, then the letter)
+
+The tab is Alt, K (Microsoft 365's Search box has Alt, Q). The self-test checks it against the key tips Word shows on your PC.
 
 | Letter | Button | Letter | Button |
 |---|---|---|---|
 | O | Open MathBlocks | B | Convert numbering |
-| T | Insert test equation | C | Convert MathType equations |
-| K | Show linked equations | L | Convert LaTeX |
-| I | Connection status | X | Toggle LaTeX |
-| N | Number equation | D | Check document |
-| R | Insert reference | P | Repair equations |
-| U | Update numbers | W | Document style |
-| M | Section marker | H | Check style |
-| Y | List of symbols | A | Apply style |
-| ZT | Word self-test | ZS | Object spike test |
+| K | Show linked equations | C | Convert MathType equations |
+| I | Connection status | L | Convert LaTeX |
+| N | Number equation | X | Toggle LaTeX |
+| R | Insert reference | D | Check document |
+| U | Update numbers | P | Repair equations |
+| M | Section marker | W | Document style |
+| Y | List of symbols | H | Check style |
+| ZT | Word self-test (developer tools on) | A | Apply style |

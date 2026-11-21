@@ -91,8 +91,10 @@ export async function buildDocumentIndex(): Promise<DocumentIndex> {
   // with no copies to fix, reading writes nothing (no undo step).
   await import("./repair").then((m) => m.repairDocument(undefined, { quiet: true, identityOnly: true })).catch((e: unknown) => console.warn("repair", e));
   await import("./docStyle").then((m) => m.loadDocumentStyle()).catch(() => undefined);
-  // Every equation's content: about 4 minutes on a 1500-equation thesis (0.1.165 thesis-size test).
-  const r = await connector.request("listInstances", { includeContent: true }, 600_000);
+  // Every equation's content. Pages only on a document of up to 300 equations: a page for each of 1533 took
+  // 314 s on the thesis-size document (0.1.170), twice per Apply style. The list of symbols takes its pages from
+  // the definitions, not from here.
+  const r = await connector.request("listInstances", { includeContent: true, pagesUpTo: 300, context: true }, 600_000);
   const doc = r.documents[0];
   if (!doc) throw new Error("No document is open in Word");
   const equations: IndexedEquation[] = [];

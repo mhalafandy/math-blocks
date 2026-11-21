@@ -38,9 +38,9 @@ Setup: download from the [Latest test build](https://github.com/mhalafandy/math-
 | # | Test | How | Result |
 |---|---|---|---|
 | B1 | Connector loads | Start Word: a **MathBlocks** ribbon tab appears | |
-| B2 | Self-test without the app | MathBlocks tab → **Insert test equation**: the quadratic formula appears as a native equation | |
+| B2 | Self-test without the app | (Removed in 0.1.172: the "Insert test equation" button is gone; B7 checks insertion.) | |
 | B3 | Display/inline behaviour | Run B2 once in an empty paragraph and once in the middle of a sentence. Describe what happens (extra empty paragraph? equation inline?) | |
-| B4 | Undo | After B2, press Ctrl+Z once: the whole insertion disappears in **one** step; the Undo list shows "Insert test equation" | |
+| B4 | Undo | After B7, press Ctrl+Z once: the whole insertion disappears in **one** step | |
 | B5 | App starts | Install and start MathBlocks: the window opens, the status bar shows "Word not connected" or "Word connected" | |
 | B6 | Connection | With Word open, within ~2 s the app's status bar shows **Word connected (Word 16.0.xxxx)** | |
 | B7 | Send to Word | Pick "Rotation matrix" in the app, press **Send to Word** (or Ctrl+Enter): it appears at Word's cursor | |
@@ -73,7 +73,7 @@ Restart Word once after updating (new ribbon button).
 | N3 | Update | Add an equation with a new symbol, press **List of symbols** again → **Update list in Word**: the new symbol appears, all descriptions (and their formatting) are still there; one Ctrl+Z undoes it | |
 | N4 | Definition check | Symbols tab → Index Word document: try the filters "Used before defined" / "Not defined by an equation" | |
 | N5 | Dependencies | Double-click an equation that uses a symbol defined earlier (e.g. v = …): the Symbols tab shows "This equation uses … from (2.3)" and Go to works | |
-| N6 | Thesis check | Ctrl+K → "Thesis check…" → Add chapter files… (copies of 2–3 converted chapters) → Check all chapters: equation counts per chapter; any notation / definition differences listed with chapters; then "List of symbols for the whole thesis…" with the cursor in another document | |
+| N6 | Check all chapter files | Ctrl+K → "Check all chapter files…" → Add chapter files… (copies of 2–3 converted chapters) → Check all chapters: equation counts per chapter; any notation / definition differences listed with chapters; then "List of symbols for the whole thesis…" with the cursor in another document | |
 | N7 | Derivation | Type T = ½mv², press Ctrl+Shift+Enter: a second aligned line "= ½mv²" appears; edit it, press Ctrl+Shift+Enter again | |
 
 ## Part M — Recognition, snippets, consistency (build 0.1.43+)

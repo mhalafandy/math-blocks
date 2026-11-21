@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkWordKeys, DEFAULT_WORD_KEYS, wordKeyCode } from "./wordKeys";
+import { checkWordKeys, DEFAULT_WORD_KEYS, migrateWordKeys, wordKeyCode } from "./wordKeys";
 
 describe("Word shortcuts", () => {
   it("the defaults follow the convention: Ctrl+Alt and a key under the right hand, all different", () => {
@@ -21,5 +21,10 @@ describe("Word shortcuts", () => {
     expect(wordKeyCode("Ctrl+Alt+'")).toBe(512 | 1024 | 222);
     expect(wordKeyCode("Ctrl+Alt+,")).toBe(512 | 1024 | 188);
     expect(wordKeyCode("Ctrl+Alt+/")).toBe(512 | 1024 | 191);
+  });
+  it("moves the old edit default off Word's AutoFormat (Ctrl+Alt+K), keeps a chosen key", () => {
+    expect(migrateWordKeys({ edit: "Ctrl+Alt+K" }).edit).toBe(DEFAULT_WORD_KEYS.edit);
+    expect(migrateWordKeys({ edit: "Ctrl+Alt+]" }).edit).toBe("Ctrl+Alt+]");
+    expect(DEFAULT_WORD_KEYS.edit).not.toBe("Ctrl+Alt+K");
   });
 });

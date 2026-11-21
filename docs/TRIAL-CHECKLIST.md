@@ -12,7 +12,7 @@ repository is public: files you send are only looked at locally and never commit
 | # | Do | Expected |
 |---|---|---|
 | 0.1 | Install the latest test build; start Word, then MathBlocks. | The MathBlocks tab is in Word; the app's status bar says Word is connected. |
-| 0.2 | Run the Word self-test (MathBlocks tab → Run Word self-test); don't click in Word while it runs. | "0 failed". If not, send the zip and stop here. |
+| 0.2 | Turn on Settings → Advanced → Developer tools, then run the Word self-test (MathBlocks tab → Run Word self-test); don't click in Word while it runs. | "0 failed". If not, send the zip and stop here. |
 | 0.3 | Copy the chapter to a new file and open the copy. | — |
 
 ## 1. Converting the chapter (30 minutes)

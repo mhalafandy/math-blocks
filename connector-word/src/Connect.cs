@@ -192,7 +192,7 @@ namespace MathBlocks.WordConnector
             "numberEquation", "unnumberEquation", "listNumbered", "insertReference", "updateNumbers",
             "showWordMenu", "selectionInfo", "findLatex", "replaceRanges", "equationToText", "equationsToText",
             "backupDocument", "beginOperation", "operationProgress", "endOperation", "repairEquations",
-            "insertNumberMarker", "markerBefore", "upgradeNumbering", "textWidth", "confirm", "showMessage", "smoke",
+            "insertNumberMarker", "markerBefore", "upgradeNumbering", "textWidth", "confirm", "showMessage", "smoke", "setDeveloperTools",
         };
 
         // ------------------------------------------------------------ ribbon
@@ -220,25 +220,6 @@ namespace MathBlocks.WordConnector
             catch (Exception ex)
             {
                 Log.Error("OnOpenApp failed", ex);
-            }
-        }
-
-        public void OnInsertSample(IRibbonControl control)
-        {
-            try
-            {
-                var result = _ops.InsertEquation(new Dictionary<string, object>
-                {
-                    ["flatOpc"] = ReadResource("MathBlocks.WordConnector.SampleEquation.xml"),
-                    ["tag"] = "mb1|-|SampleTest01",
-                    ["undoLabel"] = "Insert test equation",
-                });
-                Log.Info("sample inserted, controls with sample tag: " + result["found"]);
-            }
-            catch (Exception ex)
-            {
-                Log.Error("OnInsertSample failed", ex);
-                MessageBox.Show(ex.Message, "MathBlocks", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
@@ -306,7 +287,16 @@ namespace MathBlocks.WordConnector
         public void OnRepairEquations(IRibbonControl control) => RunAppCommand("repair");
         public void OnCheckDocument(IRibbonControl control) => RunAppCommand("checkDocument");
         public void OnSelfTest(IRibbonControl control) => RunAppCommand("selfTest");
-        public void OnSelfTestSpike(IRibbonControl control) => RunAppCommand("selfTestSpike");
+
+        /// <summary>Developer tools (the app's Settings → Advanced): the self-test button and test requests.</summary>
+        internal static bool DeveloperTools;
+
+        private IRibbonUI _ribbon;
+
+        public void OnRibbonLoad(IRibbonUI ui) => _ribbon = ui;
+
+        /// <summary>The self-test button shows only with developer tools on.</summary>
+        public bool GetDeveloperVisible(IRibbonControl control) => DeveloperTools;
         public void OnListOfSymbols(IRibbonControl control) => RunAppCommand("listOfSymbols");
         public void OnNumberEquation(IRibbonControl control) => RunAppCommand("numberEquation");
         public void OnSectionMarker(IRibbonControl control) => RunAppCommand("sectionMarker");
@@ -884,7 +874,16 @@ namespace MathBlocks.WordConnector
                     case "replaceRanges": result = _ops.ReplaceRanges(p); break;
                     case "equationToText": result = _ops.EquationToText(p); break;
                     case "equationsToText": result = _ops.EquationsToText(p); break;
-                    case "smoke": result = _ops.Smoke(p); break;
+                    case "smoke":
+                        // Test requests (self-test, soak, thesis-size, benchmark) only with developer tools on.
+                        if (!DeveloperTools) throw new RpcException(Rpc.Forbidden, "Developer tools are off (MathBlocks: Settings → Advanced → Developer tools).");
+                        result = _ops.Smoke(p);
+                        break;
+                    case "setDeveloperTools":
+                        DeveloperTools = Rpc.GetBool(p, "on");
+                        try { _ribbon?.InvalidateControl("mbSelfTest"); } catch (Exception) { }
+                        result = new Dictionary<string, object> { ["on"] = DeveloperTools };
+                        break;
                     case "showWordMenu":
                     {
                         // The floating editor's Word-menu button: for an equation object, the MathBlocks equation

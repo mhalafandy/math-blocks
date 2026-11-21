@@ -20,13 +20,15 @@ export interface Command {
   group: "Insert" | "View" | "Word" | "Edit";
   keywords?: string;
   shortcut?: string;
+  /** Only with developer tools on (Settings → Advanced). */
+  developer?: boolean;
   run: () => void | Promise<void>;
 }
 
 export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: () => void; focusLatex: () => void }): Command[] {
   const app = useApp.getState();
   const prefix = kindSnippetPrefix();
-  return [
+  const all: Command[] = [
     // Every block ("Insert block: Kinetic energy"), then Save as block.
     ...allBlocks().map((b): Command => ({
       id: `block.${b.id}`,
@@ -81,7 +83,7 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => import("../components/TemplateDialog").then((m) => m.openTemplate(useApp.getState().latex, useApp.getState().display)),
     },
     { id: "word.convertLatex", title: "Convert all LaTeX in the Word document to equations", group: "Word", keywords: "latex dollar tex import overleaf convert", run: () => import("./wordShortcuts").then((m) => m.convertAllLatex()) },
-    { id: "word.editAtCursor", title: "Edit the equation at Word's cursor", group: "Word", shortcut: "Ctrl+Alt+K (in Word)", keywords: "edit new insert floating", run: () => import("./wordShortcuts").then((m) => m.editAtCursor()) },
+    { id: "word.editAtCursor", title: "Edit the equation at Word's cursor", group: "Word", shortcut: "Ctrl+Alt+[ (in Word)", keywords: "edit new insert floating", run: () => import("./wordShortcuts").then((m) => m.editAtCursor()) },
     { id: "word.toggleLatex", title: "Toggle LaTeX: equation(s) at Word's cursor or selection ↔ LaTeX text", group: "Word", shortcut: "Ctrl+Alt+' (in Word)", keywords: "latex text linear toggle source", run: () => import("./wordShortcuts").then((m) => m.toggleLatexAtCursor()) },
     {
       id: "notation.settings",
@@ -151,6 +153,7 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
     },
     {
       id: "word.soakTest",
+      developer: true,
       title: "Soak test (1000 random, seeded operations, checked every 25; about 30 min)…",
       group: "Word",
       keywords: "soak stress random seed long test reliability",
@@ -158,6 +161,7 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
     },
     {
       id: "word.thesisTest",
+      developer: true,
       title: "Thesis-size test (a generated 300-page document through every operation, timed; 20–40 min)…",
       group: "Word",
       keywords: "benchmark thesis large document speed performance test cancel big",
@@ -256,17 +260,11 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
     },
     {
       id: "word.selfTest",
+      developer: true,
       title: "Run Word self-test (inserts, opens, numbers, pastes, moves, undoes in test documents; writes a report)",
       group: "Word",
       keywords: "self test smoke check verify report word paste drag undo baseline",
-      run: () => import("./selfTest").then((m) => void m.runWordSelfTest({ spike: false })),
-    },
-    {
-      id: "word.selfTestSpike",
-      title: "Run Word self-test with the embedded-object spike (test documents only)",
-      group: "Word",
-      keywords: "self test spike ole object embedded mathtype frame",
-      run: () => import("./selfTest").then((m) => void m.runWordSelfTest({ spike: true })),
+      run: () => import("./selfTest").then((m) => void m.runWordSelfTest()),
     },
     {
       id: "app.accents",
@@ -274,20 +272,6 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       group: "View",
       keywords: "accents harpoon arrow hat bar dot stroke gap barb angle length adaptive mathtype settings",
       run: () => import("../components/AccentsDialog").then((m) => m.openAccents()),
-    },
-    {
-      id: "app.boldGreekSheet",
-      title: "Bold Greek comparison sheet (bold upright and italic Greek next to bold Latin, on this PC's fonts)",
-      group: "View",
-      keywords: "bold greek symbol embolden stroke weight boldsymbol mathbf omega sheet compare",
-      run: () => import("../components/BoldGreekSheet").then((m) => m.openBoldGreekSheet()),
-    },
-    {
-      id: "app.fontCompare",
-      title: "Compare symbol fonts on this PC (STIX / thinned / MT Extra)…",
-      group: "View",
-      keywords: "font fallback stix mt extra mathtype symbols weight compare classic",
-      run: () => import("../components/FontCompareDialog").then((m) => m.openFontCompare()),
     },
     {
       id: "app.backups",
@@ -311,8 +295,8 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => import("../components/NormalizeBoldDialog").then((m) => m.openNormalizeBold()),
     },
     {
-      id: "word.thesis",
-      title: "Thesis check: notation, definitions and linked equations across all chapter files…",
+      id: "word.checkChapters",
+      title: "Check all chapter files: notation, definitions and linked equations across the files of a thesis, book or report…",
       group: "Word",
       keywords: "thesis chapters files book consistency nomenclature closed documents project",
       run: () => import("../components/ThesisDialog").then((m) => m.openThesis()),
@@ -359,4 +343,6 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
     { id: "view.theme.system", title: "Theme: follow system", group: "View", run: () => app.setPrefs({ theme: "system" }) },
     { id: "edit.display", title: "Toggle display / inline equation", group: "Edit", run: () => app.setDisplay(!useApp.getState().display) },
   ];
+  // Developer tools (Settings → Advanced): the tests are hidden unless switched on.
+  return all.filter((c) => !c.developer || app.developerTools);
 }

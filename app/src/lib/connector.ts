@@ -148,6 +148,8 @@ class ConnectorClient {
         const params = msg.params as ConnectorToApp["hello"]["params"];
         app.setConnector({ connected: true, hostVersion: `Word ${params.hostBuild}`, methods: params.methods });
         void checkAddinVersion(params);
+        // Developer tools (Settings → Advanced): the add-in shows its self-test button and accepts test requests.
+        if (params.methods?.includes("setDeveloperTools")) void this.request("setDeveloperTools", { on: useApp.getState().developerTools }).catch(() => undefined);
         // The style of the document in front (drawings, previews, the editor).
         void import("./docStyle").then((m) => m.loadDocumentStyle()).catch(() => undefined);
         if (isRequest(msg)) this.reply(msg.id, { appVersion: APP_VERSION, protocolVersion: PROTOCOL_VERSION });
@@ -190,8 +192,10 @@ class ConnectorClient {
         else if (params.command === "numberEquation") void import("./numbering").then((m) => m.toggleNumberFromRibbon(params, true));
         else if (params.command === "repair") void import("./repair").then((m) => m.repairDocument(params.document, { fromWord: true }));
         else if (params.command === "toggleLatex") void import("./wordShortcuts").then((m) => m.toggleLatexAtCursor());
-        else if (params.command === "selfTest") void import("./selfTest").then((m) => m.runWordSelfTest({ spike: false }));
-        else if (params.command === "selfTestSpike") void import("./selfTest").then((m) => m.runWordSelfTest({ spike: true }));
+        else if (params.command === "selfTest") {
+          // The ribbon's self-test button shows only with developer tools on.
+          if (useApp.getState().developerTools) void import("./selfTest").then((m) => m.runWordSelfTest());
+        }
         else {
           // These show a dialog of the app (conversion report, list of symbols; the reference picker for an older add-in).
           void bringToFront();
@@ -216,6 +220,11 @@ class ConnectorClient {
 }
 
 export const connector = new ConnectorClient();
+
+// Switching developer tools on or off tells the add-in at once (its self-test button, its test requests).
+useApp.subscribe((s, prev) => {
+  if (s.developerTools !== prev.developerTools && s.connector.connected && addinSupports("setDeveloperTools")) void connector.request("setDeveloperTools", { on: s.developerTools }).catch(() => undefined);
+});
 
 /** Opens an equation from Word for editing: main window (double-click) or floating editor (panel). */
 export async function activateEquation(params: ConnectorToApp["equationActivated"]["params"]) {
@@ -278,11 +287,7 @@ export async function activateEquation(params: ConnectorToApp["equationActivated
       }
     }
     app.setLatex(latex, "external");
-    if (params.spike) {
-      // Embedded-object spike: shown, not edited (Update would not find it yet).
-      app.setEditing(null);
-      app.notify(`Spike: the MathBlocks object (${params.tag}) opened from Word — read-only; editing objects is not built yet.`);
-    } else app.setEditing({ tag: params.tag, adopted: !!params.adopted, fingerprint: params.fingerprint, opened: latex });
+    app.setEditing({ tag: params.tag, adopted: !!params.adopted, fingerprint: params.fingerprint, opened: latex });
   } else {
     const ed = useApp.getState().editing;
     if (ed) app.setEditing({ ...ed, fingerprint: params.fingerprint, opened: useApp.getState().latex });

@@ -113,9 +113,9 @@ export async function buildPictureInsertion(
   };
 }
 
-// ------------------------------------------------------------------ embedded object (spike)
+// ------------------------------------------------------------------ embedded object
 
-/** Class of the MathBlocks embedded object (spike; not registered on the PC). */
+/** Class of the MathBlocks embedded object (not registered on the PC). */
 export const MB_OBJECT_CLSID = "{B1E5A2C4-6D3F-4E8A-9C21-7F4D0A6B3E15}";
 export const MB_OBJECT_PROGID = "MathBlocks.Equation.1";
 
@@ -199,7 +199,7 @@ export async function readObjectData(base64: string | null | undefined): Promise
 }
 
 /**
- * The MathType control object for the spike: a synthetic Equation.DSMT4 object (a²+b²=c², built by
+ * The MathType control object for the self-test: a synthetic Equation.DSMT4 object (a²+b²=c², built by
  * @mathblocks/mathtype from generic MTEF — no user content), with our own drawing of it as its cached
  * picture (an EMF without the MathBlocks source, so it is never taken for a MathBlocks equation).
  */

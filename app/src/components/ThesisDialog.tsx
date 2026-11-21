@@ -10,7 +10,7 @@ import { useLibrary } from "../lib/library/useLibrary";
 import { useApp } from "../lib/store";
 
 /**
- * Thesis check: the chapter files (one .docx per chapter) are read from disk — open in Word or
+ * Check all chapter files: the chapter files (one .docx per chapter) are read from disk — open in Word or
  * not — and checked together: notation, definitions, linked copies; plus one list of symbols.
  */
 export const useThesis = create<{ open: boolean; set: (o: boolean) => void }>((set) => ({ open: false, set: (open) => set({ open }) }));
@@ -67,7 +67,7 @@ export function ThesisDialog() {
   const pathOf = (e: ChapterEquation) => chapters.find((c) => c.name === e.chapter)?.path ?? "";
 
   return (
-    <Modal title="Thesis check (all chapters)" onClose={close} width={860}>
+    <Modal title="Check all chapter files" onClose={close} width={860}>
       <div className="form thesis">
         <p className="hint">Add the chapter files of your thesis (one Word file per chapter). They are read as last saved, whether open in Word or not; nothing is changed.</p>
         <ul className="thesis-chapters">

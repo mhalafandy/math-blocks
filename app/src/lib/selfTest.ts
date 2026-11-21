@@ -59,7 +59,7 @@ export const MANUAL_CHECKS = [
   "Add-in loaded mid-session: with a document with equations open, untick MathBlocks in File → Options → Add-ins → COM Add-ins, then tick it again (Word stays open): double-click and right-click on an equation in that open document work straight away.",
 ];
 
-export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }): Promise<string | null> {
+export async function runWordSelfTest(): Promise<string | null> {
   const app = useApp.getState();
   if (!app.connector.connected) {
     app.notify("Word is not connected. Start Word with the MathBlocks add-in.", "error");
@@ -525,6 +525,39 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       check("Word's Ctrl+Alt keys on this PC", null, assigned.filter((x) => /^Ctrl\+Alt\+[^+]+$/.test(x.keys)).map((x) => `${x.keys} ${x.command}`).join("; "));
       check("keys of macros and add-ins (MathType and others)", null, assigned.filter((x) => x.category !== "wdKeyCategoryCommand").map((x) => `${x.keys} ${x.command}`).join("; ") || "none");
       await smoke("writeFile", { file: "word keys.txt", text: assigned.map((x) => `${x.keys}\t${x.command}\t${x.category.replace("wdKeyCategory", "")}`).join("\r\n") });
+      // The MathBlocks tab's key tip against the ones Word's ribbon shows after Alt on this PC (tabs, Search box,
+      // other add-ins): equal, or one the start of the other, makes Alt, letter ambiguous.
+      const { TAB_KEYTIP } = await import("./wordKeys");
+      const tips = ((await smoke("ribbonKeyTips").catch(() => ({ keytips: [] }))) as { keytips: { keytip?: string; name?: string; error?: string }[] }).keytips;
+      const others = tips.filter((t) => t.keytip && !/mathblocks/i.test(t.name ?? ""));
+      if (!others.length) check(`ribbon key tip Alt, ${TAB_KEYTIP} is free`, null, `could not read the ribbon's key tips (${tips.find((t) => t.error)?.error ?? "none found"})`);
+      else {
+        const clash = others.filter((t) => { const a = t.keytip!.toUpperCase(); return a === TAB_KEYTIP || a.startsWith(TAB_KEYTIP) || TAB_KEYTIP.startsWith(a); });
+        check(`ribbon key tip Alt, ${TAB_KEYTIP} is free`, !clash.length, clash.length ? `taken: ${clash.map((t) => `${t.keytip} ${t.name}`).join("; ")}` : "free");
+        const ours = tips.find((t) => /mathblocks/i.test(t.name ?? ""));
+        check("…the MathBlocks tab shows it", ours ? ours.keytip?.toUpperCase() === TAB_KEYTIP : null, ours ? `Alt, ${ours.keytip}` : "the tab was not in the list");
+        check("key tips after Alt on this PC", null, others.map((t) => `${t.keytip} ${t.name}`).join("; "));
+      }
+      // Each shortcut pressed in Word as a keyboard sends it (physical keys), with the current layout and with
+      // Arabic (101) active in Word: the punctuation keys must still fire (nothing is run; the layout is put back).
+      const { isDesktop } = await import("./connector");
+      if (isDesktop()) {
+        const { invoke } = await import("@tauri-apps/api/core");
+        const set = Object.entries(mine).filter(([, k]) => !!k);
+        for (const [layout, label] of [["", "the current layout"], ["00000401", "Arabic (101) layout"]] as const) {
+          const r = await invoke<{ layout: string; hits: { name: string; keys: string; fired: boolean }[] }>("probe_word_shortcuts", { shortcuts: set, layout }).catch((e: unknown) => String(e));
+          if (typeof r === "string") {
+            check(`shortcuts fire with ${label}`, null, `could not press them: ${r}`);
+            continue;
+          }
+          const isArabic = r.layout.toUpperCase() === "0401";
+          if (layout && !isArabic) {
+            check(`shortcuts fire with ${label}`, null, `Word did not take the layout (it reports ${r.layout})`);
+            continue;
+          }
+          for (const h of r.hits) check(`${h.keys} fires with ${label} (${WORD_KEY_LABELS[h.name as keyof typeof WORD_KEY_LABELS] ?? h.name})`, h.fired, h.fired ? `fired (layout ${r.layout})` : `did not fire (layout ${r.layout})`);
+        }
+      }
     });
 
     section = "Toggle LaTeX: equation ↔ its LaTeX text";
@@ -704,7 +737,11 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       // Only its own equation: the bold spread and the transpose above are left for the next two checks.
       const older = index.equations.filter((e) => e.latex.includes("overrightharpoon"));
       await oneCtrlZ("Apply notation kinds", docU.name, () => rewriteDocument(index, older, (l) => applyKindRules(l, SUGGESTED_KIND_RULES).latex, "Apply notation kinds"));
-      const kinded = (await buildDocumentIndex()).equations.map((e) => e.latex).find((l) => l.includes("\\pvec{v}"));
+      const afterKinds = await buildDocumentIndex();
+      // 0.1.169: the replaced picture stayed next to its new version (one equation more, same ID): the cause of
+      // "Ctrl+Y redoes it" failing (the copy got a new random ID on each read).
+      check("Apply notation kinds: as many equations as before (the old picture is gone)", afterKinds.equations.length === index.equations.length, `${index.equations.length} → ${afterKinds.equations.length}`);
+      const kinded = afterKinds.equations.map((e) => e.latex).find((l) => l.includes("\\pvec{v}"));
       check("Apply notation kinds: the older forms became kinds", !!kinded && /\\vectrix\{F\}\^\{\\T\}/.test(kinded) && /\\cmat\{v\}_\{?f\}?/.test(kinded) && /\\bvec\{f\}_\{?1\}?/.test(kinded), kinded ?? "no equation with \\pvec{v}");
       index = await buildDocumentIndex();
       await oneCtrlZ("Normalize bold", docU.name, () => rewriteDocument(index, index.equations.filter((e) => bolded(e.latex) !== e.latex), bolded, "Normalize bold"));
@@ -1533,7 +1570,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     await step("bold greek", async () => {
       const mr = await import("@mathblocks/math-render");
       const { loadFonts, classicStyle } = await import("./render");
-      const { boldGreekStems } = await import("../components/BoldGreekSheet");
+      const { boldGreekStems } = await import("./boldGreekStems");
       const fonts = await loadFonts();
       const st = boldGreekStems(fonts);
       if (!fonts.symbol) check("bold Greek: the Symbol font was not found (drawn from Times New Roman Bold instead)", null);
@@ -2088,21 +2125,6 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     const b = await step("save B", () => smoke("save", { file: "self-test B.docx" }));
     check("test documents saved", !!a && !!b, [a?.path, b?.path].filter(Boolean).join(" ; "));
 
-    // ------------------------------------------------------------ embedded-object spike (test documents only)
-    if (o.spike) {
-      const { runObjectSpike } = await import("./selfTestSpike");
-      await runObjectSpike({
-        smoke,
-        check,
-        setSection: (x) => (section = x),
-        step,
-        insertPicture: (latex, display) => insert(latex, display),
-        insertPackage: async (flatOpc, tag, display) => connector.request("insertEquation", { flatOpc, tag, display, undoLabel: "Insert equation" }, SLOW),
-        insertReference: (bookmark) => connector.request("insertReference", { bookmark, numberOnly: false }, SLOW),
-      }).catch((e) => {
-        check("the spike stopped early", false, `in "${section}": ${e instanceof Error ? e.message : String(e)}`);
-      });
-    }
   } catch (e) {
     // Whatever stops the run, the report is still written with everything checked so far.
     check("the self-test stopped early", false, `in "${section}": ${e instanceof Error ? e.message : String(e)}`);
@@ -2115,14 +2137,11 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
 
   const fails = checks.filter((c) => c.status === "FAIL").length;
   const count = (list: Check[]) => `${list.length} checks: ${list.filter((c) => c.status === "PASS").length} passed, ${list.filter((c) => c.status === "FAIL").length} failed, ${list.filter((c) => c.status === "INFO").length} for information`;
-  const main = checks.filter((c) => !c.section.startsWith("Spike"));
-  const spike = checks.filter((c) => c.section.startsWith("Spike"));
   lines.push(
     `MathBlocks Word self-test — ${new Date().toLocaleString()}`,
     `MathBlocks app ${appVersion}; Word add-in ${begin.addin ?? "unknown (older add-in)"}`,
     `Word ${begin.word}; look ${useApp.getState().look}; equation size ${useApp.getState().equationSizePt} pt; Word's smart cut and paste ${begin.smartCutPaste ? "on (turned off during the test, restored after)" : "off"}`,
-    `Current design (pictures): ${count(main)}`,
-    ...(spike.length ? [`Embedded-object spike: ${count(spike)}`] : []),
+    `Checks: ${count(checks)}`,
     // The stable channel: a build is promoted only after a self-test of that exact build with no failure.
     fails === 0 && appVersion === begin.addin
       ? `Stable channel: build ${appVersion} passed — it can be promoted (Promote to stable, version ${appVersion})`
@@ -2138,8 +2157,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     }
     lines.push(`${c.status}  ${c.name}${c.detail ? `  — ${c.detail}` : ""}`);
   }
-  const { SPIKE_MANUAL_CHECKS } = await import("./selfTestSpike");
-  lines.push("", "== Manual checks (Word's object model cannot do these)", ...MANUAL_CHECKS.map((m) => `[ ]  ${m}`), ...(o.spike ? SPIKE_MANUAL_CHECKS.map((m) => `[ ]  ${m}`) : []));
+  lines.push("", "== Manual checks (Word's object model cannot do these)", ...MANUAL_CHECKS.map((m) => `[ ]  ${m}`));
   const report = lines.join("\n") + "\n";
   const written = await smoke("writeReport", { text: report, show: true }).catch(() => null);
   if (!written) {

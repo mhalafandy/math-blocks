@@ -90,8 +90,6 @@ export interface HelloParams {
  */
 export interface EquationActivatedParams {
   tag: string;
-  /** Embedded-object spike: opened read-only (editing objects is not built). */
-  spike?: boolean;
   /** true when the connector just wrapped a native Word equation. */
   adopted?: boolean;
   /** Full WordprocessingML (Flat OPC) of the content control's range. */
@@ -274,7 +272,7 @@ export interface AppToConnector {
   /** MathBlocks equations per document; copies sharing a tag get new instance ids first. */
   listInstances: {
     /** light: no page numbers / context (they make Word lay out the document). */
-    params: DocTarget & { all?: boolean; blockId?: string; includeContent?: boolean; light?: boolean; /** false: numbers and positions without page or context. */ pages?: boolean };
+    params: DocTarget & { all?: boolean; blockId?: string; includeContent?: boolean; light?: boolean; /** false: numbers and positions without page or context. */ pages?: boolean; /** Pages only when the document has at most this many equations. */ pagesUpTo?: number; /** Pages for just these tags. */ pagesFor?: string[]; /** The paragraph's text (default: with pages). */ context?: boolean };
     result: { documents: DocumentInstances[] };
   };
   /** Replaces several equations (by tag) in one undo step. */
@@ -463,6 +461,8 @@ export interface AppToConnector {
   confirm: { params: { title: string; text: string; ok?: string; offerDontAsk?: boolean }; result: { ok: boolean; dontAsk: boolean } };
   /** A result in Word's status bar, or a problem in a message over Word. */
   showMessage: { params: { text: string; kind?: "info" | "error" }; result: { ok: true } };
+  /** Developer tools (Settings → Advanced): the ribbon's self-test button and the test requests (smoke). */
+  setDeveloperTools: { params: { on: boolean }; result: { on: boolean } };
   /** Replaces ranges (still holding `expect`) by Flat OPC or text, one undo step. */
   replaceRanges: {
     params: DocTarget & { items: { start: number; end: number; expect?: string; flatOpc?: string; text?: string }[]; undoLabel: string };

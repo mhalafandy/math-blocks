@@ -28,6 +28,7 @@
 
   <ItemGroup>
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="Accessibility" />
     <Reference Include="System.Web.Extensions" />
     <!-- Self-test spike: writes a temporary .docx (ZipArchive). -->
     <Reference Include="System.IO.Compression" />
@@ -38,7 +39,6 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Ribbon.xml" LogicalName="MathBlocks.WordConnector.Ribbon.xml" />
-    <EmbeddedResource Include="SampleEquation.xml" LogicalName="MathBlocks.WordConnector.SampleEquation.xml" />
   </ItemGroup>
 
   <!-- Embed interop types instead of shipping/depending on the interop DLL. -->

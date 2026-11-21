@@ -38,6 +38,16 @@ namespace MathBlocks.WordConnector
         string GetCustomUI([In, MarshalAs(UnmanagedType.BStr)] string ribbonId);
     }
 
+    [ComImport, Guid("000C03A7-0000-0000-C000-000000000046"), TypeLibType(4160)]
+    public interface IRibbonUI
+    {
+        [DispId(1)]
+        void Invalidate();
+
+        [DispId(2)]
+        void InvalidateControl([In, MarshalAs(UnmanagedType.BStr)] string controlId);
+    }
+
     [ComImport, Guid("000C0395-0000-0000-C000-000000000046"), TypeLibType(4160)]
     public interface IRibbonControl
     {

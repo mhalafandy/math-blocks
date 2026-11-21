@@ -1,6 +1,12 @@
 # Cleanup inventory (0.1.170)
 
-Everything in the app and the add-in that a new user does not need. **Inventory only: nothing is removed yet.**
+Everything in the app and the add-in that a new user does not need.
+
+**Done in 0.1.172** (the owner's decisions): every **remove** below is removed; every **dev** item is behind
+Settings → Advanced → Developer tools (off by default: hidden in Ctrl+K, on the ribbon and in Settings, and the
+add-in refuses `smoke` requests); **keep** items stay. "Thesis check" is now "Check all chapter files"
+(`word.checkChapters`). The self-test helpers of `WordOps.Spike.cs` are in `WordOps.Smoke.cs`, the object
+helpers the product uses in `WordOps.Objects.cs`.
 Proposal per item: **remove**, **dev** (hide behind a developer switch: Settings → Updates → "Developer tools",
 off by default, which also unlocks the add-in's test requests), or **keep**.
 

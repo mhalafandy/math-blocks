@@ -14,7 +14,7 @@ pub const DEFAULTS: &[(&str, &str)] = &[
     ("inline", "Ctrl+Alt+J"),     // new inline equation at the cursor
     ("display", "Ctrl+Alt+;"),    // new display equation at the cursor
     ("latex", "Ctrl+Alt+'"),      // Toggle LaTeX
-    ("edit", "Ctrl+Alt+K"),       // edit the equation at the cursor (or a new one) in the floating editor
+    ("edit", "Ctrl+Alt+["),       // edit (Ctrl+Alt+K is Word's AutoFormat) the equation at the cursor (or a new one) in the floating editor
     ("reference", "Ctrl+Alt+,"),  // insert a reference to a numbered equation
     ("number", "Ctrl+Alt+/"),     // number / un-number the equation at the cursor
 ];
@@ -80,13 +80,25 @@ pub fn parse(keys: &str) -> Option<Shortcut> {
     Some(Shortcut::new(Some(m), key_code(key)?))
 }
 
+/// While the self-test probes the shortcuts: the names that fired (nothing is run).
+static PROBE: std::sync::Mutex<Option<Vec<String>>> = std::sync::Mutex::new(None);
+
 fn register_one(app: &AppHandle, name: &str, keys: &str) -> Result<(), String> {
     let shortcut = parse(keys).ok_or_else(|| format!("{name}: \"{keys}\" is not a Ctrl+Alt (or Ctrl / Alt) + key shortcut"))?;
     let name = name.to_string();
     let label = name.clone();
     app.global_shortcut()
         .on_shortcut(shortcut, move |app, _s, event| {
-            if event.state() != ShortcutState::Pressed || !word_is_active() {
+            if event.state() != ShortcutState::Pressed {
+                return;
+            }
+            if let Ok(mut p) = PROBE.lock() {
+                if let Some(hits) = p.as_mut() {
+                    hits.push(name.clone());
+                    return;
+                }
+            }
+            if !word_is_active() {
                 return;
             }
             if let Some(main) = app.get_webview_window("main") {
@@ -121,6 +133,146 @@ pub fn set_word_shortcuts(app: AppHandle, shortcuts: Vec<(String, String)>) -> V
     failed
 }
 
+/// One shortcut pressed during the probe.
+#[derive(serde::Serialize)]
+pub struct ProbeHit {
+    name: String,
+    keys: String,
+    fired: bool,
+}
+
+#[derive(serde::Serialize)]
+pub struct ProbeResult {
+    /// The keyboard layout Word had while the keys were pressed (e.g. "0401" Arabic), as Windows reports it.
+    layout: String,
+    hits: Vec<ProbeHit>,
+}
+
+/// Physical key (scan code, set 1) of a shortcut's key, as a keyboard sends it: the layout then decides which
+/// virtual key it is, as when the user presses it.
+fn scan_code(k: &str) -> Option<u16> {
+    let up = k.to_ascii_uppercase();
+    let row = |s: &str, first: u16| s.find(up.as_str()).map(|i| first + i as u16);
+    if up.len() != 1 {
+        return None;
+    }
+    row("QWERTYUIOP", 0x10)
+        .or_else(|| row("ASDFGHJKL", 0x1E))
+        .or_else(|| row("ZXCVBNM", 0x2C))
+        .or_else(|| row("123456789", 0x02))
+        .or(match up.as_str() {
+            "0" => Some(0x0B),
+            "-" => Some(0x0C),
+            "=" => Some(0x0D),
+            "[" => Some(0x1A),
+            "]" => Some(0x1B),
+            ";" => Some(0x27),
+            "'" => Some(0x28),
+            "\\" => Some(0x2B),
+            "," => Some(0x33),
+            "." => Some(0x34),
+            "/" => Some(0x35),
+            _ => None,
+        })
+}
+
+#[cfg(windows)]
+fn probe_blocking(shortcuts: Vec<(String, String)>, layout: String) -> Result<ProbeResult, String> {
+    use std::{thread::sleep, time::Duration};
+    use windows_sys::Win32::UI::Input::KeyboardAndMouse::*;
+    use windows_sys::Win32::UI::WindowsAndMessaging::*;
+    let wide = |s: &str| s.encode_utf16().chain(std::iter::once(0)).collect::<Vec<u16>>();
+    unsafe {
+        let word = FindWindowW(wide("OpusApp").as_ptr(), std::ptr::null());
+        if word.is_null() {
+            return Err("Word's window was not found".into());
+        }
+        let before_fg = GetForegroundWindow();
+        SetForegroundWindow(word);
+        sleep(Duration::from_millis(400));
+        if GetForegroundWindow() != word {
+            return Err("Word could not be brought to the front".into());
+        }
+        let thread = GetWindowThreadProcessId(word, std::ptr::null_mut());
+        let before_hkl = GetKeyboardLayout(thread);
+        let mut loaded = std::ptr::null_mut();
+        let mut unload = false;
+        if !layout.is_empty() {
+            let n = GetKeyboardLayoutList(0, std::ptr::null_mut());
+            let mut list = vec![std::ptr::null_mut(); n.max(0) as usize];
+            GetKeyboardLayoutList(n, list.as_mut_ptr());
+            loaded = LoadKeyboardLayoutW(wide(&layout).as_ptr(), KLF_NOTELLSHELL);
+            if loaded.is_null() {
+                return Err(format!("keyboard layout {layout} could not be loaded"));
+            }
+            unload = !list.contains(&loaded);
+            PostMessageW(word, WM_INPUTLANGCHANGEREQUEST, 0, loaded as isize);
+            sleep(Duration::from_millis(500));
+        }
+        let now = GetKeyboardLayout(thread);
+        let active = format!("{:04X}", (now as usize) & 0xFFFF);
+        let key = |sc: u16, up: bool| INPUT {
+            r#type: INPUT_KEYBOARD,
+            Anonymous: INPUT_0 { ki: KEYBDINPUT { wVk: 0, wScan: sc, dwFlags: KEYEVENTF_SCANCODE | if up { KEYEVENTF_KEYUP } else { 0 }, time: 0, dwExtraInfo: 0 } },
+        };
+        *PROBE.lock().map_err(|e| e.to_string())? = Some(Vec::new());
+        let mut hits = Vec::new();
+        for (name, keys) in shortcuts {
+            let parts: Vec<&str> = keys.split('+').map(|p| p.trim()).collect();
+            let Some((k, mods)) = parts.split_last() else { continue };
+            let Some(sc) = scan_code(k) else {
+                hits.push(ProbeHit { name, keys, fired: false });
+                continue;
+            };
+            let mut seq = Vec::new();
+            let mods: Vec<u16> = mods
+                .iter()
+                .filter_map(|m| match m.to_ascii_lowercase().as_str() {
+                    "ctrl" | "control" => Some(0x1D),
+                    "alt" => Some(0x38),
+                    _ => None,
+                })
+                .collect();
+            for m in &mods {
+                seq.push(key(*m, false));
+            }
+            seq.push(key(sc, false));
+            seq.push(key(sc, true));
+            for m in mods.iter().rev() {
+                seq.push(key(*m, true));
+            }
+            SendInput(seq.len() as u32, seq.as_ptr(), std::mem::size_of::<INPUT>() as i32);
+            sleep(Duration::from_millis(300));
+            let fired = PROBE.lock().map(|mut p| p.as_mut().map(|v| std::mem::take(v).contains(&name)).unwrap_or(false)).unwrap_or(false);
+            hits.push(ProbeHit { name, keys, fired });
+        }
+        *PROBE.lock().map_err(|e| e.to_string())? = None;
+        if !layout.is_empty() {
+            PostMessageW(word, WM_INPUTLANGCHANGEREQUEST, 0, before_hkl as isize);
+            sleep(Duration::from_millis(400));
+            if unload {
+                UnloadKeyboardLayout(loaded);
+            }
+        }
+        if !before_fg.is_null() {
+            SetForegroundWindow(before_fg);
+        }
+        Ok(ProbeResult { layout: active, hits })
+    }
+}
+
+#[cfg(not(windows))]
+fn probe_blocking(_shortcuts: Vec<(String, String)>, _layout: String) -> Result<ProbeResult, String> {
+    Err("only on Windows".into())
+}
+
+/// Self-test: presses each shortcut in Word (by physical key, with `layout` active in Word, e.g. "00000401"
+/// Arabic (101); empty: the current one) and reports which fired. Nothing is run; the layout is put back.
+#[tauri::command]
+pub async fn probe_word_shortcuts(shortcuts: Vec<(String, String)>, layout: String) -> Result<ProbeResult, String> {
+    tauri::async_runtime::spawn_blocking(move || probe_blocking(shortcuts, layout)).await.map_err(|e| e.to_string())?
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -136,6 +288,11 @@ mod tests {
         assert!(parse("Ctrl+Alt+F5").is_none());
         for (_, k) in DEFAULTS {
             assert!(parse(k).is_some(), "{k}");
+            assert!(scan_code(k.rsplit('+').next().unwrap()).is_some(), "{k}");
         }
+        assert_eq!(scan_code(";"), Some(0x27));
+        assert_eq!(scan_code("J"), Some(0x24));
+        assert_eq!(scan_code("["), Some(0x1A));
+        assert_eq!(scan_code("0"), Some(0x0B));
     }
 }

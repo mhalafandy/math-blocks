@@ -46,7 +46,6 @@ import { NotationDialog } from "./components/NotationDialog";
 import { NomenclatureDialog } from "./components/NomenclatureDialog";
 import { ThesisDialog } from "./components/ThesisDialog";
 import { NormalizeBoldDialog } from "./components/NormalizeBoldDialog";
-import { FontCompareDialog } from "./components/FontCompareDialog";
 import { NumberMarkerDialog } from "./components/NumberMarkerDialog";
 import { InterchangeDialog } from "./components/InterchangeDialog";
 import { BrokenReferencesDialog } from "./components/BrokenReferencesDialog";
@@ -54,7 +53,6 @@ import { NumberingDialog } from "./components/NumberingDialog";
 import { KindsReviewDialog } from "./components/KindsReviewDialog";
 import { DocumentStyleDialog } from "./components/DocumentStyleDialog";
 import { CheckStyleDialog } from "./components/CheckStyleDialog";
-import { BoldGreekSheet } from "./components/BoldGreekSheet";
 import { AccentsDialog } from "./components/AccentsDialog";
 import { sendToWord } from "./lib/sendToWord";
 import { ConversionReport } from "./components/ConversionReport";
@@ -394,7 +392,6 @@ export function App() {
       <NomenclatureDialog />
       <ThesisDialog />
       <NormalizeBoldDialog />
-      <FontCompareDialog />
       <NumberMarkerDialog />
       <InterchangeDialog />
       <BrokenReferencesDialog />
@@ -402,7 +399,6 @@ export function App() {
       <KindsReviewDialog />
       <DocumentStyleDialog />
       <CheckStyleDialog />
-      <BoldGreekSheet />
       <AccentsDialog />
       <SettingsDialog />
       <ShortcutsDialog />
