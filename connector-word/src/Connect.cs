@@ -186,7 +186,7 @@ namespace MathBlocks.WordConnector
         private static readonly string[] Methods =
         {
             "ping", "insertEquation", "replaceEquation", "readEquation", "documentInfo",
-            "listInstances", "replaceMany", "verifyMany", "scanInterchange", "convertInterchange", "scanNumbering", "convertNumbering", "retag", "selectInstance", "getRegistry", "setRegistry", "getDocumentStyle", "setDocumentStyle", "getDocumentBlocks", "setDocumentBlocks", "listDefinitions", "insertDefinition", "updateDefinition", "writeSymbolList", "listDocuments", "listHeadings", "findTextMentions", "selectRange", "checkFields", "hideFields", "scanStories",
+            "listInstances", "replaceMany", "verifyMany", "scanInterchange", "convertInterchange", "scanNumbering", "convertNumbering", "retag", "selectInstance", "getRegistry", "setRegistry", "getDocumentStyle", "setDocumentStyle", "getDocumentBlocks", "setDocumentBlocks", "listDefinitions", "insertDefinition", "updateDefinition", "writeSymbolList", "listDocuments", "listHeadings", "findTextMentions", "selectRange", "checkFields", "hideFields", "unlockFields", "scanStories",
             "listMathTypeParagraphs", "replaceParagraphs", "activateObject",
             "numberEquation", "unnumberEquation", "listNumbered", "insertReference", "updateNumbers",
             "showWordMenu", "selectionInfo", "findLatex", "replaceRanges", "equationToText",
@@ -818,6 +818,8 @@ namespace MathBlocks.WordConnector
             string reply;
             // Window activations during this request are attributed to it (see WordOps.Activations).
             _ops.CurrentRequest = method == "smoke" && p.TryGetValue("op", out var sop) ? "smoke " + sop : method;
+            // Requests that only read: one read of the document's XML and one index of its pictures (WordOps.ReadScope).
+            WordOps.BeginReadScope(method, p);
             try
             {
                 object result;
@@ -858,6 +860,7 @@ namespace MathBlocks.WordConnector
                     case "findTextMentions": result = _ops.FindTextMentions(p); break;
                     case "selectRange": result = _ops.SelectRange(p); break;
                     case "checkFields": result = _ops.CheckFields(p); break;
+                    case "unlockFields": result = _ops.UnlockFields(p); break;
                     case "hideFields": result = _ops.HideFields(p); break;
                     case "scanStories": result = _ops.ScanStories(p); break;
                     case "setDocumentBlocks": result = _ops.SetDocumentBlocks(p); break;

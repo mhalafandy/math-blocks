@@ -516,11 +516,15 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       await smoke("redo", { times: 1 });
       check("Ctrl+Y brings it back, same ID", (await snap()).tags.includes(a.tag));
       // Read straight from Word: the document index runs a quiet Repair first, which must not add an undo step (checked below).
+      // What the same read saw when it found nothing (0.1.167: a second read a moment later found the equation).
+      let lastMiss = "";
       const rawLatexOfTag = async (tag: string) => {
-        const { readEquationXml } = await import("./readEquation");
+        const { readEquationXml, describeUnreadable } = await import("./readEquation");
         const { serializeLatex } = await import("@mathblocks/math-latex");
-        const i = (await connector.request("listInstances", { includeContent: true }, SLOW)).documents[0]?.instances.find((x) => x.tag === tag);
+        const docs = (await connector.request("listInstances", { includeContent: true }, SLOW)).documents;
+        const i = docs[0]?.instances.find((x) => x.tag === tag);
         const read = i?.flatOpc ? readEquationXml(i.flatOpc) : null;
+        if (!read) lastMiss = `${docs.length} document(s), first ${docs[0]?.name ?? "-"} with ${docs[0]?.instances.length ?? 0} equation(s) (${docs[0]?.instances.map((x) => x.tag).join(", ") || "none"}); ${!i ? "this ID not listed" : !i.flatOpc ? "listed without content" : describeUnreadable(i.flatOpc)}`;
         return read ? serializeLatex(read.root) : null;
       };
       const editOp = await edit(a.tag, "a^2+b^2=c^2");
@@ -535,7 +539,7 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
         const sn = await snap();
         const { describeUnreadable } = await import("./readEquation");
         const all = ((await connector.request("listInstances", { includeContent: true }, SLOW)).documents[0]?.instances ?? []).map((x) => `${x.tag}: ${x.flatOpc ? describeUnreadable(x.flatOpc) : "no content"}`);
-        undoneWhat = `${undone}; IDs ${sn.tags.join(", ") || "none"}; pictures ${sn.pictures}; instances ${all.join(" | ") || "none"}`;
+        undoneWhat = `${undone}; that read: ${lastMiss}; a moment later: IDs ${sn.tags.join(", ") || "none"}; pictures ${sn.pictures}; instances ${all.join(" | ") || "none"}`;
       }
       check("Ctrl+Z restores the equation before the edit", norm(undone) === norm("a^2+b^2"), undoneWhat);
       await smoke("redo", { times: 1 });
@@ -544,9 +548,23 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       // Reading the document (list of symbols, Change symbol, Check document all do) adds nothing to undo.
       await latexOfTag(a.tag);
       await smoke("undo", { times: 1 });
-      const afterRead = (await rawLatexOfTag(a.tag)) ?? "not found";
+      const afterRead = (await rawLatexOfTag(a.tag)) ?? `not found (${lastMiss})`;
       check("reading the document index adds no undo step (Ctrl+Z after it still undoes the edit)", norm(afterRead) === norm("a^2+b^2"), afterRead);
       await smoke("redo", { times: 1 });
+      // The restored equation in Word itself (not only read by the app): it opens, renders and edits.
+      // (After its own Ctrl+Z, at the end: a new edit replaces what Ctrl+Y would redo.)
+      await smoke("undo", { times: 1 });
+      {
+        const o = await smoke("open", { tag: a.tag, via: "menu" });
+        const got = o.flatOpc ? latexOf(o.flatOpc) : null;
+        check("the restored equation opens (menu → Edit) as itself", o.tag === a.tag && !o.problem && got === norm("a^2+b^2"), `tag ${o.tag}${o.problem ? `, problem: ${o.problem}` : ""}, LaTeX ${got}`);
+        const pi = await smoke("pictureInfo", { tag: a.tag });
+        check("…it renders (an object with a picture, its size and lowering)", pi.isPicture === true && Number(pi.widthPt) > 0 && Number(pi.heightPt) > 0 && (pi.emf || pi.vml || pi.drawingml || pi.png), `kind ${pi.kind}, ${pi.widthPt}×${pi.heightPt} pt, lowered ${pi.positionPt} pt, EMF ${pi.emf}`);
+        const again = await edit(a.tag, "a^2+b^2+d^2");
+        const reEdited = (await rawLatexOfTag(a.tag)) ?? `not found (${lastMiss})`;
+        check("…it can be edited again", norm(reEdited) === norm("a^2+b^2+d^2") && !again.undoBrokenAt, reEdited);
+        await smoke("undo", { times: 1 });
+      }
       await smoke("save", { file: "objects undo test.docx" });
       void docU;
 
@@ -638,6 +656,17 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       const stale = await smoke("staleNumbers");
       const staleNow = await numbersNow();
       await oneCtrlZ("Update numbers", docU.name, () => connector.request("updateNumbers", {}, SLOW));
+      // The other way (measured against it on the thesis-size document): every other field locked, Word's update
+      // of all fields, the locks restored. Same numbers; nothing left locked; one Ctrl+Z.
+      {
+        const viaEach = await numbersNow();
+        const r2 = await connector.request("updateNumbers", { method: "locked" }, SLOW);
+        check("Update numbers (others locked, all updated): the same numbers as field by field", (await numbersNow()) === viaEach, `${r2.numbers} numbers, ${r2.references} references in ${r2.ms ?? "?"} ms; ${await numbersNow()}`);
+        const cf = await connector.request("checkFields", {});
+        check("…no field left locked, no marker left", !cf.updateInterrupted && (cf.lockedFields?.length ?? 0) === 0, cf.updateInterrupted ? "marker left" : `${cf.lockedFields?.length ?? 0} locked`);
+        await smoke("staleNumbers");
+        await oneCtrlZ("Update numbers (others locked)", docU.name, () => connector.request("updateNumbers", { method: "locked" }, SLOW));
+      }
       check("Update numbers: the numbers (diagnosis)", null, `before ${before0}; with an extra counter at the top (${stale.fields} field added) ${staleNow}; after Update numbers ${await numbersNow()}`);
       const { convertAllLatex } = await import("./wordShortcuts");
       await oneCtrlZ("Convert LaTeX", docU.name, () => convertAllLatex(undefined, { yes: true }));

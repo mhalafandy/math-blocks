@@ -274,10 +274,12 @@ namespace MathBlocks.WordConnector
                     // Numbers first, then references (they show the numbers). Written in batches, only the last updates them.
                     if (p.ContainsKey("updateNumbers") && !Rpc.GetBool(p, "updateNumbers"))
                         return new Dictionary<string, object> { ["results"] = results, ["done"] = done, ["ms"] = clock.ElapsedMilliseconds, ["numbers"] = 0, ["references"] = 0, ["broken"] = new List<object>() };
-                    var updated = UpdateNumberFields(doc);
+                    var numbersClock = System.Diagnostics.Stopwatch.StartNew();
+                    var updated = Rpc.GetOptString(p, "numbersMethod") == "locked" ? UpdateNumberFieldsLocked(doc) : UpdateNumberFields(doc);
+                    var numbersMs = numbersClock.ElapsedMilliseconds;
                     CheckOperationUndo("after updating numbers and references");
                     Log.Info("convertInterchange in " + doc.Name + ": " + done + "/" + items.Count + " item(s) in " + clock.ElapsedMilliseconds + " ms");
-                    return new Dictionary<string, object> { ["results"] = results, ["done"] = done, ["ms"] = clock.ElapsedMilliseconds, ["numbers"] = updated["numbers"], ["references"] = updated["references"], ["broken"] = updated["broken"] };
+                    return new Dictionary<string, object> { ["results"] = results, ["done"] = done, ["ms"] = clock.ElapsedMilliseconds, ["numbers"] = updated["numbers"], ["references"] = updated["references"], ["broken"] = updated["broken"], ["numbersMs"] = numbersMs };
                 }
                 finally
                 {

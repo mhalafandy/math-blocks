@@ -425,7 +425,7 @@ All notable changes are recorded here. Format: [Keep a Changelog](https://keepac
 - Notation: \hat{s}_1, \hat{\mathbf{s}}_1, \mathbf{\hat{s}}_1 → \bvec{s}_1 (unit vectors of a frame);
   a frame with a subscript is reported (only I and J are dyadics, \dyadic{J}_{c}). Hughes preset: the
   dyadic is a bold capital with a single arrow (as the frames).
-- Insert section marker (ribbon → Section marker, Ctrl+K): prefilled with the chapter (or appendix) of
+- Insert section marker (ribbon → Section marker, or Ctrl+K → "Insert section marker"): prefilled with the chapter (or appendix) of
   the marker before the cursor and the next section number; numbers are updated after it.
 - Update numbers lists references to equations that no longer exist, each with the text around it
   (ribbon: a Word message; app: a list), instead of leaving Word's "Error! Reference source not found".

@@ -141,6 +141,8 @@ namespace MathBlocks.WordConnector
             bool verified = Rpc.GetBool(p, "verified");
             // Inside a document-wide operation the operation's undo record covers every batch.
             var ownUndo = !verifyOnly && !undo.IsRecordingCustomRecord;
+            // Every equation is looked up once: one index of the pictures by ID instead of a walk per lookup.
+            if (!verifyOnly) BeginWriteIndex();
             if (ownUndo) undo.StartCustomRecord(undoLabel);
             var clock = System.Diagnostics.Stopwatch.StartNew();
             try
@@ -168,7 +170,9 @@ namespace MathBlocks.WordConnector
                         continue;
                     }
                     CheckOperationUndo("before replacing " + tag);
+                    ForgetTag(tag);
                     ReplaceEquationContent(doc, target, flatOpc, tag);
+                    ForgetTag(tag);
                     CheckOperationUndo("after replacing " + tag);
                     foreach (var c in FindByTag(doc, tag)) if (!c.IsPicture) Secure(c.Control);
                     replaced++;

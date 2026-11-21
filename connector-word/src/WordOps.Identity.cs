@@ -62,7 +62,7 @@ namespace MathBlocks.WordConnector
             {
                 // A pasted picture's XML may lack the EMF (Word re-encodes some pastes); its alt text still
                 // identifies it and gives its LaTeX.
-                var src = PictureSource(eq.Picture.Range.WordOpenXML) ?? AltSourceOf(eq.Picture);
+                var src = PictureSource(ShapeXml(eq.Picture)) ?? AltSourceOf(eq.Picture);
                 if (src != null) c.PictureSources.Add(src);
                 else c.OtherPictures++;
                 try
@@ -78,7 +78,7 @@ namespace MathBlocks.WordConnector
             var r = cc.Range;
             foreach (Word.InlineShape s in r.InlineShapes)
             {
-                var src = PictureSource(s.Range.WordOpenXML);
+                var src = PictureSource(ShapeXml(s));
                 if (src != null) c.PictureSources.Add(src);
                 else c.OtherPictures++;
             }
@@ -295,7 +295,7 @@ namespace MathBlocks.WordConnector
         {
             try
             {
-                return DepthOfXml(s.Range.WordOpenXML);
+                return DepthOfXml(ShapeXml(s));
             }
             catch (Exception)
             {
@@ -575,7 +575,7 @@ namespace MathBlocks.WordConnector
                 foreach (var s in shapes)
                 {
                     if (InsideMathBlocksControl(s.Range)) continue;
-                    if (PictureSource(s.Range.WordOpenXML) == null) continue;
+                    if (PictureSource(ShapeXml(s)) == null) continue;
                     WrapRange(doc, s.Range, first ? tag : null);
                     first = false;
                 }

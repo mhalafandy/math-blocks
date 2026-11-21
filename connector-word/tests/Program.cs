@@ -117,6 +117,67 @@ static class Program
         }
     }
 
+    /// <summary>A .docx as Word's flat package (what Range.WordOpenXML gives): every part inline.</summary>
+    static string FlatOpc(string docx)
+    {
+        var sb = new System.Text.StringBuilder("<?xml version=\"1.0\" standalone=\"yes\"?><pkg:package xmlns:pkg=\"http://schemas.microsoft.com/office/2006/xmlPackage\">");
+        using (var zip = System.IO.Compression.ZipFile.OpenRead(docx))
+            foreach (var e in zip.Entries)
+            {
+                if (e.FullName == "[Content_Types].xml") continue;
+                using (var ms = new System.IO.MemoryStream())
+                {
+                    e.Open().CopyTo(ms);
+                    var bytes = ms.ToArray();
+                    var name = "/" + e.FullName;
+                    if (name.EndsWith(".xml") || name.EndsWith(".rels"))
+                    {
+                        var xml = Regex.Replace(System.Text.Encoding.UTF8.GetString(bytes).TrimStart('\uFEFF'), "^<\\?xml[^>]*\\?>", "");
+                        sb.Append("<pkg:part pkg:name=\"").Append(name).Append("\" pkg:contentType=\"application/xml\"><pkg:xmlData>").Append(xml).Append("</pkg:xmlData></pkg:part>");
+                    }
+                    else sb.Append("<pkg:part pkg:name=\"").Append(name).Append("\" pkg:contentType=\"").Append(name.EndsWith(".emf") ? "image/x-emf" : name.EndsWith(".bin") ? "application/vnd.openxmlformats-officedocument.oleObject" : "application/octet-stream").Append("\" pkg:compression=\"store\"><pkg:binaryData>").Append(Convert.ToBase64String(bytes)).Append("</pkg:binaryData></pkg:part>");
+                }
+            }
+        return sb.Append("</pkg:package>").ToString();
+    }
+
+    /// <summary>One read of the document's XML, split per equation (DocXml): each picture's package reads as its own Range.WordOpenXML did.</summary>
+    static void DocXmlSplit()
+    {
+        var dir = System.IO.Path.Combine(AppContext.BaseDirectory, "../../../out");
+        var docx = System.IO.Path.Combine(dir, "classic-insertions.docx");
+        if (System.IO.File.Exists(docx))
+        {
+            var expected = System.IO.File.ReadAllLines(System.IO.Path.Combine(dir, "classic-insertions.expected.txt")).Where(l => l.Length > 0).Select(l => l.Split('\t')).ToList();
+            var dx = DocXml.Parse(FlatOpc(docx));
+            Check(dx.Pictures == expected.Count && dx.Served == expected.Count, "document XML split: every picture found and served (" + dx.Pictures + "/" + dx.Served + ")");
+            foreach (var e in expected)
+            {
+                var pkg = dx.PackageFor(e[0]);
+                Check(pkg != null && EquationIdentity.FirstLatex(PictureXml.Source(pkg)) == e[1], "document XML split " + e[1] + ": its package gives the LaTeX (hidden source in its EMF)");
+                Check(pkg != null && PictureXml.Identify(null, "edited", pkg, out var how) == e[0] && how == "source", "document XML split " + e[1] + ": recognised from its own package");
+                Check(pkg != null && pkg.Contains("<w:r") && pkg.Contains("<v:shape") && !pkg.Contains("xmlns:p1"), "document XML split " + e[1] + ": Word's prefixes kept (w:, v:)");
+            }
+        }
+        else Console.WriteLine("skip  document XML split: classic-insertions.docx missing (run pnpm test first)");
+        // Objects: the ID in the object's own data when the alt text has none; an ID on two pictures is not served.
+        string Data(string tag) => Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes("....MathBlocks....{\"tag\":\"" + tag + "\",\"latex\":\"x\"}...."));
+        string Obj(string rid, string alt) => "<w:r><w:object><v:shape id=\"s" + rid + "\" alt=\"" + alt + "\"/><o:OLEObject Type=\"Embed\" ProgID=\"MathBlocks.Equation.1\" r:id=\"" + rid + "\"/></w:object></w:r>";
+        var flat = "<pkg:package xmlns:pkg=\"http://schemas.microsoft.com/office/2006/xmlPackage\">" +
+            "<pkg:part pkg:name=\"/word/document.xml\"><pkg:xmlData><w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:v=\"urn:schemas-microsoft-com:vml\" xmlns:o=\"urn:schemas-microsoft-com:office:office\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><w:body><w:p>" +
+            Obj("rId1", "") + Obj("rId2", "MathBlocks inline (mb1|-|twinTwinTwin): y") + Obj("rId3", "MathBlocks inline (mb1|-|twinTwinTwin): y") + "<w:r><w:t>text</w:t></w:r></w:p></w:body></w:document></pkg:xmlData></pkg:part>" +
+            "<pkg:part pkg:name=\"/word/_rels/document.xml.rels\"><pkg:xmlData><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">" +
+            "<Relationship Id=\"rId1\" Type=\"oleObject\" Target=\"embeddings/oleObject1.bin\"/><Relationship Id=\"rId2\" Type=\"oleObject\" Target=\"embeddings/oleObject2.bin\"/><Relationship Id=\"rId3\" Type=\"oleObject\" Target=\"embeddings/oleObject3.bin\"/></Relationships></pkg:xmlData></pkg:part>" +
+            "<pkg:part pkg:name=\"/word/embeddings/oleObject1.bin\" pkg:contentType=\"application/vnd.openxmlformats-officedocument.oleObject\"><pkg:binaryData>" + Data("mb1|-|dataOnlyData") + "</pkg:binaryData></pkg:part>" +
+            "<pkg:part pkg:name=\"/word/embeddings/oleObject2.bin\" pkg:contentType=\"application/vnd.openxmlformats-officedocument.oleObject\"><pkg:binaryData>" + Data("mb1|-|twinTwinTwin") + "</pkg:binaryData></pkg:part>" +
+            "<pkg:part pkg:name=\"/word/embeddings/oleObject3.bin\" pkg:contentType=\"application/vnd.openxmlformats-officedocument.oleObject\"><pkg:binaryData>" + Data("mb1|-|twinTwinTwin") + "</pkg:binaryData></pkg:part></pkg:package>";
+        var o = DocXml.Parse(flat);
+        var only = o.PackageFor("mb1|-|dataOnlyData");
+        Check(o.Pictures == 3, "document XML split: three objects found");
+        Check(only != null && only.Contains("oleObject1.bin") && !only.Contains("oleObject2.bin") && Regex.IsMatch(only, "<pkg:part [^>]*pkg:contentType=\"application/vnd\\.openxmlformats-officedocument\\.oleObject\"[^>]*>\\s*<pkg:binaryData>"), "document XML split: an object known only by the ID in its data, with its own data part only");
+        Check(o.PackageFor("mb1|-|twinTwinTwin") == null, "document XML split: an ID on two pictures is not served (the caller reads Word)");
+    }
+
     static int Main()
     {
         var cases = new (string label, NumberFields.NumberFormat f, bool appendix, string display, string[] mustCodes)[]
@@ -205,6 +266,7 @@ static class Program
         Check(EquationIdentity.ResolvePictureTag(null, "edited", "{\"tag\":\"mb1|-|s1\"}", out var from2) == "mb1|-|s1" && from2 == "source", "identity: alt text edited → the hidden source");
         Check(EquationIdentity.ResolvePictureTag("Figure 3", "MathBlocks inline (mb1|-|a1): f", null, out _) == "mb1|-|a1", "identity: a title that is not an ID is ignored");
         ReadBack();
+        DocXmlSplit();
         GuardTests.Run(Check);
         // Replacing in place: the new equation's package brings no paragraph properties.
         var pkg = "<pkg:package><w:document><w:body><w:p><w:pPr><w:pStyle w:val=\"X\"/><w:jc w:val=\"center\"/></w:pPr><w:r><w:t>x</w:t></w:r></w:p></w:body></w:document></pkg:package>";

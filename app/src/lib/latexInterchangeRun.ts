@@ -7,6 +7,7 @@ import type { BrokenReference } from "@mathblocks/connector-protocol";
 import { addinSupports, bringToFront, connector } from "./connector";
 import { backupIfMany } from "./docOps";
 import { describePlan, planInterchange, type InterchangePlan, type InterchangeScan } from "./latexInterchange";
+import { NUMBER_UPDATE_METHOD } from "./numbering";
 import { useApp } from "./store";
 
 export interface InterchangeResult {
@@ -21,6 +22,8 @@ export interface InterchangeResult {
   /** Time building the equations in the app, and writing them in Word (ms). */
   buildMs: number;
   writeMs: number;
+  /** Of writeMs: Word updating the numbers and references at the end. */
+  numbersMs?: number;
   backup?: string;
   /** Where Word closed the single undo record early (diagnosis); absent when intact. */
   undoBrokenAt?: string;
@@ -130,6 +133,7 @@ export async function convertLatexDocument(o: { document?: string; fromWord?: bo
   await connector.request("beginOperation", { document: scan.fullName, title: "Converting LaTeX", total: items.length, undoLabel: "Convert LaTeX", exclude });
   let r: { results: { id: number; ok: boolean; problem: string }[]; ms: number; broken?: BrokenReference[] } = { results: [], ms: 0 };
   let undoBrokenAt = "";
+  let numbersMs: number | undefined;
   let guard: { failed?: string; restored?: boolean } = {};
   let cancelled = false;
   let rolledBack = false;
@@ -143,7 +147,8 @@ export async function convertLatexDocument(o: { document?: string; fromWord?: bo
     for (let i = 0; i < order.length || i === 0; i += BATCH) {
       const batch = order.slice(i, i + BATCH);
       const last = i + BATCH >= order.length;
-      const part = await connector.request("convertInterchange", { document: scan.fullName, items: batch, format, undoLabel: "Convert LaTeX", updateNumbers: last }, 1_800_000);
+      const part = await connector.request("convertInterchange", { document: scan.fullName, items: batch, format, undoLabel: "Convert LaTeX", updateNumbers: last, numbersMethod: NUMBER_UPDATE_METHOD }, 1_800_000);
+      if (typeof part.numbersMs === "number") numbersMs = part.numbersMs;
       r = { results: [...r.results, ...part.results], ms: performance.now() - t1, ...(part.broken ? { broken: part.broken } : r.broken ? { broken: r.broken } : {}) };
       if (last) break;
       const pr = await connector.request("operationProgress", { done: Math.min(order.length, i + BATCH), text: `${Math.min(order.length, i + BATCH)} / ${order.length} items` });
@@ -164,7 +169,7 @@ export async function convertLatexDocument(o: { document?: string; fromWord?: bo
   const equations = items.filter((i) => (i.kind === "inline" || i.kind === "display") && okIds.has(i.id)).length;
   // In document order (the items' order), not the order Word wrote them in (last first).
   const tags = items.filter((i) => okIds.has(i.id)).map((i) => tagOf.get(i.id)).filter((t): t is NonNullable<typeof t> => !!t);
-  const result: InterchangeResult = { ...(cancelled ? { cancelled: { rolledBack }, stopped: true } : {}), ...(guard.failed ? { guardFailed: guard.failed, guardRestored: !!guard.restored } : {}), plan, written: okIds.size, planned: items.length, failed, equations, buildMs, writeMs: r.ms, tags, ...(r.broken?.length ? { broken: r.broken } : {}), ...(backup ? { backup } : {}), ...(undoBrokenAt ? { undoBrokenAt } : {}) };
+  const result: InterchangeResult = { ...(cancelled ? { cancelled: { rolledBack }, stopped: true } : {}), ...(guard.failed ? { guardFailed: guard.failed, guardRestored: !!guard.restored } : {}), plan, written: okIds.size, planned: items.length, failed, equations, buildMs, writeMs: r.ms, ...(numbersMs !== undefined ? { numbersMs } : {}), tags, ...(r.broken?.length ? { broken: r.broken } : {}), ...(backup ? { backup } : {}), ...(undoBrokenAt ? { undoBrokenAt } : {}) };
   console.info(`[MathBlocks] Convert LaTeX: ${describeResult(result)}`);
   if (!o.yes) ui.show({ name: scan.name, plan, stage: "result", result });
   else if (o.fromWord) await tellUser(describeResult(result), failed.length ? "error" : "info");
@@ -173,10 +178,11 @@ export async function convertLatexDocument(o: { document?: string; fromWord?: bo
 
 export function describeResult(r: InterchangeResult): string {
   if (r.cancelled) return r.cancelled.rolledBack ? "Convert LaTeX cancelled: everything it had written was undone; the document is as it was." : "Convert LaTeX cancelled and undone, but the document could not be confirmed as before: check it (Ctrl+Z / Ctrl+Y).";
-  const per = r.equations ? Math.round((r.buildMs + r.writeMs) / r.equations) : 0;
+  // Per equation without the number update at the end (timed on its own).
+  const per = r.equations ? Math.round((r.buildMs + r.writeMs - (r.numbersMs ?? 0)) / r.equations) : 0;
   return [
     `${r.equations} equation(s), ${r.plan.counts.references} reference(s), ${r.plan.counts.markers} numbering marker(s) and ${r.plan.counts.defines} symbol definition(s) written (${r.written}/${r.planned} items)`,
-    `in ${((r.buildMs + r.writeMs) / 1000).toFixed(1)} s (${per} ms per equation: building ${Math.round(r.buildMs)} ms, writing in Word ${Math.round(r.writeMs)} ms)`,
+    `in ${((r.buildMs + r.writeMs) / 1000).toFixed(1)} s (${per} ms per equation: building ${Math.round(r.buildMs)} ms, writing in Word ${Math.round(r.writeMs - (r.numbersMs ?? 0))} ms${r.numbersMs !== undefined ? `; numbers and references updated in ${(r.numbersMs / 1000).toFixed(1)} s` : ""})`,
     r.failed.length ? `${r.failed.length} item(s) left as they were` : "",
     r.backup ? `backup: ${r.backup.split(/[\\/]/).pop()}` : "",
     "One Ctrl+Z in Word undoes it.",

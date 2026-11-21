@@ -328,7 +328,7 @@ namespace MathBlocks.WordConnector
                         if (IsTag(TagOf(s)) && !InsideMathBlocksControl(s.Range))
                         {
                             tag = TagOf(s);
-                            if (includeContent) flatOpc = s.Range.WordOpenXML;
+                            if (includeContent) flatOpc = ShapeXml(s);
                             break;
                         }
                     }
@@ -462,7 +462,6 @@ namespace MathBlocks.WordConnector
             int start = at.Start;
             doc.Range(start, start).InsertAfter("#");
             var placeholder = doc.Range(start, start + 1);
-            int before = doc.Paragraphs.Count;
             placeholder.InsertXML(package);
             try
             {
@@ -581,23 +580,35 @@ namespace MathBlocks.WordConnector
         public Dictionary<string, object> UpdateNumbers(Dictionary<string, object> p)
         {
             var doc = ResolveDocument(p);
-            return InOneUndo("Update equation numbers", () =>
+            var method = Rpc.GetOptString(p, "method") ?? "each";
+            bool ownWindow = OpenRequestProgress(doc, "Updating equation numbers", 0);
+            try
             {
-                bool screen = _app.ScreenUpdating;
-                try
+                return InOneUndo("Update equation numbers", () =>
                 {
-                    _app.ScreenUpdating = false;
-                    // References written by older versions become links first (one Ctrl+Z with the update).
-                    int linked = LinkReferences(doc);
-                    var r = UpdateNumberFields(doc);
-                    r["linked"] = linked;
-                    return r;
-                }
-                finally
-                {
-                    _app.ScreenUpdating = screen;
-                }
-            }, null, doc);
+                    bool screen = _app.ScreenUpdating;
+                    try
+                    {
+                        _app.ScreenUpdating = false;
+                        // References written by older versions become links first (one Ctrl+Z with the update).
+                        int linked = LinkReferences(doc);
+                        var clock = System.Diagnostics.Stopwatch.StartNew();
+                        var r = method == "locked" ? UpdateNumberFieldsLocked(doc, ReportProgress) : UpdateNumberFields(doc, ReportProgress);
+                        r["linked"] = linked;
+                        r["method"] = method;
+                        r["ms"] = clock.ElapsedMilliseconds;
+                        return r;
+                    }
+                    finally
+                    {
+                        _app.ScreenUpdating = screen;
+                    }
+                }, null, doc);
+            }
+            finally
+            {
+                if (ownWindow) CloseRequestProgress();
+            }
         }
 
         private static readonly System.Text.RegularExpressions.Regex OldButtonRef = new System.Text.RegularExpressions.Regex(@"^\s*GOTOBUTTON\s+(_MBEqN?_\S+)", System.Text.RegularExpressions.RegexOptions.Compiled);
@@ -655,25 +666,126 @@ namespace MathBlocks.WordConnector
             return changed;
         }
 
-        private static Dictionary<string, object> UpdateNumberFields(Word.Document doc)
+        private enum FieldRole { Other, Number, Reference }
+
+        /// <summary>What a field is to Update numbers: one of our numbers (or a counter they use), a reference to one, or someone else's.</summary>
+        private static FieldRole RoleOf(Word.Field f)
+        {
+            string code;
+            try { code = f.Code?.Text ?? ""; } catch (COMException) { return FieldRole.Other; }
+            if (code.Contains("SEQ MBEq") || code.Contains("SEQ MTEqn") || code.Contains("MBPlaceRef") || code.Contains("SEQ MBChap") || code.Contains("SEQ MBSec") || (code.Contains("STYLEREF") && code.Contains("\\s") && HasNumberField(f.Code.Paragraphs[1].Range)))
+                return FieldRole.Number;
+            if (code.Contains("REF " + BookmarkPrefix) || code.Contains("REF _MBEqN_") || code.Contains("REF " + MathTypeBookmarkPrefix) || code.Contains("GOTOBUTTON " + BookmarkPrefix)) return FieldRole.Reference;
+            return FieldRole.Other;
+        }
+
+        /// <summary>Document variable present while Update numbers has other fields locked (left behind only if Word stopped).</summary>
+        internal const string LockMarker = "MathBlocks.UpdateNumbersLocked";
+
+        /// <summary>
+        /// Update numbers as one update of all fields: every other field locked, Word's update of all fields
+        /// (numbers first, then references, so they show the new numbers), then each field's lock as it was —
+        /// in a step that always runs, also after an error. A marker in the document says the fields are locked
+        /// meanwhile; Check document reports it if Word stopped in between.
+        /// </summary>
+        private static Dictionary<string, object> UpdateNumberFieldsLocked(Word.Document doc, Action<int, int, string> progress = null)
+        {
+            var fields = new List<(Word.Field f, FieldRole role, bool wasLocked)>();
+            foreach (Word.Field f in doc.Fields)
+            {
+                bool locked;
+                try { locked = f.Locked; } catch (COMException) { continue; }
+                fields.Add((f, RoleOf(f), locked));
+            }
+            int numbers = fields.Count(x => x.role == FieldRole.Number), references = fields.Count(x => x.role == FieldRole.Reference);
+            var refs = fields.Where(x => x.role == FieldRole.Reference).Select(x => x.f).ToList();
+            // The fields that were locked before (their place in the document's fields): kept locked by a repair.
+            var kept = string.Join(",", fields.Select((x, i) => x.wasLocked ? (i + 1).ToString() : null).Where(x => x != null));
+            try { doc.Variables.Add(LockMarker, kept.Length > 0 ? kept : "-"); } catch (COMException) { }
+            try
+            {
+                foreach (var pass in new[] { FieldRole.Number, FieldRole.Reference })
+                {
+                    progress?.Invoke(pass == FieldRole.Number ? 0 : 1, 2, pass == FieldRole.Number ? "Updating " + numbers + " numbers…" : "Updating " + references + " references…");
+                    foreach (var x in fields)
+                    {
+                        try { x.f.Locked = x.role != pass; } catch (COMException) { }
+                    }
+                    try { doc.Fields.Update(); } catch (COMException ex) { Log.Error("update numbers (all fields, " + pass + ")", ex); }
+                }
+            }
+            finally
+            {
+                foreach (var x in fields)
+                {
+                    try { x.f.Locked = x.wasLocked; } catch (COMException) { }
+                }
+                try { doc.Variables[LockMarker].Delete(); } catch (COMException) { }
+                progress?.Invoke(2, 2, "Done");
+            }
+            return FinishNumberUpdate(doc, numbers, references, refs);
+        }
+
+        private static Dictionary<string, object> UpdateNumberFields(Word.Document doc, Action<int, int, string> progress = null)
         {
             int numbers = 0, references = 0;
             var refs = new List<Word.Field>();
-            foreach (Word.Field f in doc.Fields)
+            var all = new List<(Word.Field f, FieldRole role)>();
+            foreach (Word.Field f in doc.Fields) all.Add((f, RoleOf(f)));
+            int total = all.Count(x => x.role != FieldRole.Other), done = 0;
+            foreach (var x in all)
             {
-                string code;
-                try { code = f.Code?.Text ?? ""; } catch (COMException) { continue; }
-                if (code.Contains("SEQ MBEq") || code.Contains("SEQ MTEqn") || code.Contains("MBPlaceRef") || code.Contains("SEQ MBChap") || code.Contains("SEQ MBSec") || (code.Contains("STYLEREF") && code.Contains("\\s") && HasNumberField(f.Code.Paragraphs[1].Range)))
+                if (x.role == FieldRole.Number)
                 {
-                    try { f.Update(); numbers++; } catch (COMException) { }
+                    try { x.f.Update(); numbers++; } catch (COMException) { }
+                    if (++done % 50 == 0) progress?.Invoke(done, total, done + " / " + total + " numbers and references");
                 }
-                else if (code.Contains("REF " + BookmarkPrefix) || code.Contains("REF _MBEqN_") || code.Contains("REF " + MathTypeBookmarkPrefix) || code.Contains("GOTOBUTTON " + BookmarkPrefix)) refs.Add(f);
+                else if (x.role == FieldRole.Reference) refs.Add(x.f);
             }
             // References last, so they show the new numbers.
             foreach (var f in refs)
             {
                 try { f.Update(); references++; } catch (COMException) { }
+                if (++done % 50 == 0) progress?.Invoke(done, total, done + " / " + total + " numbers and references");
             }
+            return FinishNumberUpdate(doc, numbers, references, refs);
+        }
+
+        /// <summary>
+        /// Check document's repair after Word stopped in the middle of Update numbers: the fields it locked are
+        /// unlocked (those locked before it, listed in the marker, stay locked) and the marker goes.
+        /// </summary>
+        public Dictionary<string, object> UnlockFields(Dictionary<string, object> p)
+        {
+            var doc = ResolveDocument(p);
+            string marker = null;
+            try { marker = doc.Variables[LockMarker].Value; } catch (COMException) { }
+            if (marker == null) return new Dictionary<string, object> { ["unlocked"] = 0 };
+            var kept = new HashSet<int>(marker.Split(',').Select(x => int.TryParse(x, out var n) ? n : -1));
+            return InOneUndo("Unlock fields", () =>
+            {
+                int unlocked = 0, i = 0;
+                foreach (Word.Field f in doc.Fields)
+                {
+                    i++;
+                    try
+                    {
+                        if (f.Locked && !kept.Contains(i))
+                        {
+                            f.Locked = false;
+                            unlocked++;
+                        }
+                    }
+                    catch (COMException) { }
+                }
+                try { doc.Variables[LockMarker].Delete(); } catch (COMException) { }
+                return new Dictionary<string, object> { ["unlocked"] = unlocked };
+            }, null, doc);
+        }
+
+        /// <summary>After either update: the references whose equation is gone, listed.</summary>
+        private static Dictionary<string, object> FinishNumberUpdate(Word.Document doc, int numbers, int references, List<Word.Field> refs)
+        {
             // References to equations that are gone (Word would show "Error! Reference source not found"):
             // listed with the text around them, so none goes unnoticed.
             var broken = new List<object>();

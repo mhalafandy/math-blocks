@@ -51,7 +51,7 @@ namespace MathBlocks.WordConnector
             }
             try
             {
-                var m = Regex.Match(s.Range.WordOpenXML, "ProgID=\"([^\"]+)\"");
+                var m = Regex.Match(ShapeXml(s), "ProgID=\"([^\"]+)\"");
                 if (m.Success) return m.Groups[1].Value;
             }
             catch (Exception)
@@ -132,7 +132,7 @@ namespace MathBlocks.WordConnector
         {
             try
             {
-                return ObjectDataTagXml(s.Range.WordOpenXML);
+                return ObjectDataTagXml(ShapeXml(s));
             }
             catch (Exception)
             {
@@ -162,7 +162,7 @@ namespace MathBlocks.WordConnector
         {
             try
             {
-                var m = OleEmbedding.Match(s.Range.WordOpenXML);
+                var m = OleEmbedding.Match(ShapeXml(s));
                 if (!m.Success) return false;
                 var bytes = Convert.FromBase64String(Regex.Replace(m.Groups[1].Value, "\\s+", ""));
                 return Encoding.ASCII.GetString(bytes).Contains("\"tag\":\"" + tag + "\"");

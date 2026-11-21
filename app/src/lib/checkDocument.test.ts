@@ -34,6 +34,15 @@ describe("Check document", () => {
     expect(p[0]!.message).toContain("earlier form");
     expect(p[0]!.message).toContain("showing (1)");
   });
+  it("fields left locked: an interrupted Update numbers is an error with the unlock repair; a locked field otherwise a warning", () => {
+    const lockedFields = [{ start: 30, code: "DATE \\@ yyyy" }];
+    const stopped = judgeDocument({ ...clean, fields: { ...clean.fields, lockedFields, updateInterrupted: true } });
+    expect(stopped.find((x) => x.message.includes("stopped before it finished"))).toMatchObject({ severity: "error", repair: "unlockFields", start: 30 });
+    expect(repairPlan(stopped, new Set(stopped.map((x) => x.id))).unlockFields).toBe(true);
+    const mine = judgeDocument({ ...clean, fields: { ...clean.fields, lockedFields } });
+    expect(mine.find((x) => x.message.includes("is locked"))).toMatchObject({ severity: "warning", start: 30 });
+    expect(mine.find((x) => x.message.includes("is locked"))!.repair).toBeUndefined();
+  });
   it("finds nothing in a clean document", () => {
     expect(judgeDocument(clean)).toEqual([]);
   });
@@ -95,7 +104,7 @@ describe("Check document", () => {
   });
   it("turns the chosen problems into one repair", () => {
     const p = judgeDocument({ ...clean, equations: [{ tag: "b", facts: pic("x", { styleHash: "OLD" }) }], fields: { ...clean.fields, markers: [{ start: 1, kind: "MBEquationSection", code: "1.1", hidden: false }] } });
-    expect(repairPlan(p, new Set(p.map((x) => x.id)))).toEqual({ redraw: [{ tag: "b", latex: "x" }], hide: [1], updateNumbers: false });
+    expect(repairPlan(p, new Set(p.map((x) => x.id)))).toEqual({ redraw: [{ tag: "b", latex: "x" }], hide: [1], updateNumbers: false, unlockFields: false });
   });
   it("reads a picture's facts from its XML", () => {
     const xml = `<w:r><w:pict><v:shape id="x" alt="MathBlocks inline (mb1|-|abc): v_{0}^{2}" style="width:21.50pt;height:15.00pt"/></w:pict></w:r>`;

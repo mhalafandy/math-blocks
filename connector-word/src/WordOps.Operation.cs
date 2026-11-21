@@ -226,33 +226,7 @@ namespace MathBlocks.WordConnector
                 }
                 _operationUndo = false;
             }
-            var ownerWindow = _disabledWindow;
-            if (_disabledWindow != IntPtr.Zero)
-            {
-                EnableWindow(_disabledWindow, true);
-                _disabledWindow = IntPtr.Zero;
-            }
-            if (_progress != null)
-            {
-                // The document's window takes the activation first (Windows' own, not Word's Activate, which
-                // changes nothing while Word already counts it active): the progress window then goes away
-                // while not active, and Windows has nothing to hand to the next window in line (another
-                // open document, 0.1.164–0.1.165 self-tests).
-                if (ownerWindow != IntPtr.Zero)
-                {
-                    try { SetActiveWindow(ownerWindow); } catch (Exception) { }
-                    try { _progress.Hide(); } catch (Exception) { }
-                }
-                try
-                {
-                    _progress.Close();
-                    _progress.Dispose();
-                }
-                catch (ObjectDisposedException)
-                {
-                }
-                _progress = null;
-            }
+            CloseProgressWindow();
             try
             {
                 _app.System.Cursor = Word.WdCursorType.wdCursorNormal;
@@ -289,6 +263,70 @@ namespace MathBlocks.WordConnector
             }
             _operationClock.Stop();
         }
+
+        /// <summary>The progress window goes; the document's window gets the activation back first.</summary>
+        private void CloseProgressWindow()
+        {
+            var ownerWindow = _disabledWindow;
+            if (_disabledWindow != IntPtr.Zero)
+            {
+                EnableWindow(_disabledWindow, true);
+                _disabledWindow = IntPtr.Zero;
+            }
+            if (_progress != null)
+            {
+                // The document's window takes the activation first (Windows' own, not Word's Activate, which
+                // changes nothing while Word already counts it active): the progress window then goes away
+                // while not active, and Windows has nothing to hand to the next window in line (another
+                // open document, 0.1.164–0.1.165 self-tests).
+                if (ownerWindow != IntPtr.Zero)
+                {
+                    try { SetActiveWindow(ownerWindow); } catch (Exception) { }
+                    try { _progress.Hide(); } catch (Exception) { }
+                }
+                try
+                {
+                    _progress.Close();
+                    _progress.Dispose();
+                }
+                catch (ObjectDisposedException)
+                {
+                }
+                _progress = null;
+            }
+        }
+
+        /// <summary>
+        /// A progress window for one long request that is not an operation of the app's (Update numbers): shown
+        /// only when none is open; true when this call opened it (and must close it).
+        /// </summary>
+        internal bool OpenRequestProgress(Word.Document doc, string title, int total)
+        {
+            if (_progress != null) return false;
+            IntPtr owner = IntPtr.Zero;
+            try { owner = new IntPtr(doc.ActiveWindow.Hwnd); } catch (Exception) { }
+            _progress = new ProgressForm(title, total);
+            if (owner != IntPtr.Zero)
+            {
+                _progress.Show(new Owner(owner));
+                EnableWindow(owner, false);
+                _disabledWindow = owner;
+            }
+            else _progress.Show();
+            Application.DoEvents();
+            return true;
+        }
+
+        /// <summary>Progress of a long request (the window of the operation or of the request, if any).</summary>
+        internal void ReportProgress(int done, int total, string text)
+        {
+            if (_progress == null || _progress.IsDisposed) return;
+            _progress.SetTotal(total);
+            _progress.SetDone(done, text);
+            Application.DoEvents();
+        }
+
+        internal void CloseRequestProgress() => CloseProgressWindow();
 
         private Word.Window _operationWindow;
         private bool? _operationScreen;
@@ -608,12 +646,11 @@ namespace MathBlocks.WordConnector
             private readonly ProgressBar _bar = new ProgressBar { Dock = DockStyle.Top, Height = 18 };
             private readonly Label _label = new Label { Dock = DockStyle.Top, Height = 34, TextAlign = ContentAlignment.MiddleLeft };
             private readonly Button _cancel = new Button { Text = "Cancel", Width = 90, Anchor = AnchorStyles.Right | AnchorStyles.Bottom };
-            private readonly int _total;
+            private int _total => _bar.Maximum;
             public bool Cancelled { get; private set; }
 
             public ProgressForm(string title, int total)
             {
-                _total = Math.Max(1, total);
                 Text = title;
                 FormBorderStyle = FormBorderStyle.FixedDialog;
                 ControlBox = false;
@@ -622,7 +659,7 @@ namespace MathBlocks.WordConnector
                 ClientSize = new Size(380, 104);
                 Padding = new Padding(14);
                 Font = SystemFonts.MessageBoxFont;
-                _bar.Maximum = _total;
+                _bar.Maximum = Math.Max(1, total);
                 _label.Text = "Starting… Please do not click into the document.";
                 _cancel.Location = new Point(ClientSize.Width - 14 - _cancel.Width, ClientSize.Height - 12 - _cancel.Height);
                 _cancel.Click += (s, e) =>
@@ -634,6 +671,12 @@ namespace MathBlocks.WordConnector
                 Controls.Add(_bar);
                 Controls.Add(_label);
                 Controls.Add(_cancel);
+            }
+
+            public void SetTotal(int total)
+            {
+                if (total <= 0 || total == _bar.Maximum) return;
+                _bar.Maximum = total;
             }
 
             public void SetDone(int done, string text)

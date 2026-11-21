@@ -47,7 +47,7 @@ namespace MathBlocks.WordConnector
 
         public Word.Range Paragraph => Range.Paragraphs[1].Range;
 
-        public string Xml => Range.WordOpenXML;
+        public string Xml => IsPicture ? WordOps.ShapeXml(Picture) : Range.WordOpenXML;
 
         /// <summary>Where it is: "main", "footnotes", "endnotes", "textbox", "header", "footer", "comments".</summary>
         public string Story => WordOps.StoryName(Range);
@@ -117,6 +117,7 @@ namespace MathBlocks.WordConnector
         /// <summary>Writes the ID to every place that can hold it: the alt text (always) and the title (where Word supports it).</summary>
         internal static void SetPictureTag(Word.InlineShape s, string tag, string mode = null, string latex = null)
         {
+            InvalidateReadScope(EquationIdentity.ResolvePictureTag(RawTitleOf(s), AltOf(s), null, out _), tag);
             var alt = AltOf(s);
             var want = EquationIdentity.AltWithTag(alt, tag, mode, latex);
             try
@@ -296,7 +297,9 @@ namespace MathBlocks.WordConnector
         internal static List<Eq> FindByTag(Word.Document doc, string tag)
         {
             var list = new List<Eq>();
-            foreach (Word.InlineShape s in doc.InlineShapes)
+            var scoped = ScopedPicturesWithTag(doc, tag);
+            if (scoped != null) foreach (var s in scoped) list.Add(new Eq(s));
+            else foreach (Word.InlineShape s in doc.InlineShapes)
                 if (TagOf(s) == tag && !InsideMathBlocksControl(s.Range)) list.Add(new Eq(s));
             foreach (Word.ContentControl cc in doc.SelectContentControlsByTag(tag)) list.Add(new Eq(cc));
             var found = WithoutTrackedDeletions(doc, list).OrderBy(e => SafeStart(e)).ToList();
@@ -331,7 +334,7 @@ namespace MathBlocks.WordConnector
                 }
                 return known;
             }
-            var source = PictureSource(s.Range.WordOpenXML);
+            var source = PictureSource(ShapeXml(s));
             if (source == null) return null;
             var tag = SourceTag(source);
             var why = "restored from its hidden source";
@@ -567,7 +570,7 @@ namespace MathBlocks.WordConnector
                     foreach (Word.InlineShape s in probe.InlineShapes)
                     {
                         if (InsideMathBlocksControl(s.Range)) continue;
-                        if (!IsTag(TagOf(s)) && !LooksLikeEquation(s) && PictureSource(s.Range.WordOpenXML) == null) continue;
+                        if (!IsTag(TagOf(s)) && !LooksLikeEquation(s) && PictureSource(ShapeXml(s)) == null) continue;
                         var tag = EnsurePictureTag(s);
                         if (tag != null) return new Eq(s);
                     }
@@ -636,7 +639,7 @@ namespace MathBlocks.WordConnector
                     try
                     {
                         // Paste diagnosis: what a pasted picture kept (title, alt text, hidden source, format).
-                        var xml = s.Range.WordOpenXML;
+                        var xml = ShapeXml(s);
                         Log.Info("  near the selection: picture title \"" + (tag ?? "") + "\", alt " + (LooksLikeEquation(s) ? "MathBlocks" : "other") + ", source " + (PictureSource(xml) != null ? (SourceTag(PictureSource(xml)) != null ? "with ID" : "without ID") : "none") + ", VML " + xml.Contains("<v:imagedata") + ", DrawingML " + xml.Contains("<pic:pic") + ", EMF " + xml.Contains("image/x-emf") + ", PNG " + xml.Contains("image/png") + ", in wrapper " + InsideMathBlocksControl(s.Range));
                     }
                     catch (COMException)

@@ -33,10 +33,15 @@ export type SoakOp = "insert" | "edit" | "delete" | "copyPaste" | "cutPaste" | "
 /** The model: each document's equations as a sorted list of LaTeX, and the undo/redo history of that. */
 export interface SoakModel {
   docs: Record<string, string[]>;
+  /**
+   * LaTeX still typed as text in each document: Ctrl+Z of a Convert LaTeX puts its text back, and the next
+   * Convert LaTeX converts that too (the cause of the soak failures in 0.1.162, 0.1.165 and 0.1.167).
+   */
+  text: Record<string, string[]>;
   clipboard: string | null;
   /** `what`: the operation (#n) this step undoes, for the report. */
-  undo: { docs: Record<string, string[]>; doc: string; what?: string }[];
-  redo: { docs: Record<string, string[]>; doc: string; what?: string }[];
+  undo: { docs: Record<string, string[]>; text: Record<string, string[]>; doc: string; what?: string }[];
+  redo: { docs: Record<string, string[]>; text: Record<string, string[]>; doc: string; what?: string }[];
 }
 
 const sorted = (xs: string[]) => [...xs].sort();
@@ -53,13 +58,15 @@ export async function runSoak(o: { seed: number; operations: number; batch?: num
   const { readEquationXml } = await import("./readEquation");
   const norm = (l: string) => serializeLatex(parseLatex(l).root);
   await smoke("begin");
-  const model: SoakModel = { docs: {}, clipboard: null, undo: [], redo: [] };
+  const model: SoakModel = { docs: {}, text: {}, clipboard: null, undo: [], redo: [] };
+  const state = () => JSON.parse(JSON.stringify({ docs: model.docs, text: model.text })) as { docs: Record<string, string[]>; text: Record<string, string[]> };
   const names: string[] = [];
   try {
     for (const f of ["soak A.docx", "soak B.docx"]) {
       const d = await smoke("openDocx", { file: f, base64: toBase64(interchangeDocx([{ style: "Normal", text: `Soak test document ${f}.` }])) });
       names.push(d.name as string);
       model.docs[d.name as string] = [];
+      model.text[d.name as string] = [];
     }
     const equationsOf = async (name: string) => {
       await smoke("activate", { name });
@@ -71,7 +78,7 @@ export async function runSoak(o: { seed: number; operations: number; batch?: num
     };
     let current = "";
     const remember = (doc: string) => {
-      model.undo.push({ docs: JSON.parse(JSON.stringify(model.docs)) as Record<string, string[]>, doc, what: current });
+      model.undo.push({ ...state(), doc, what: current });
       model.redo = [];
     };
     // An equation in Word the model does not have: the documents already differ (stop here, not later).
@@ -144,19 +151,21 @@ export async function runSoak(o: { seed: number; operations: number; batch?: num
           const last = model.undo.pop();
           if (!last) continue;
           await smoke("activate", { name: last.doc });
-          model.redo.push({ docs: JSON.parse(JSON.stringify(model.docs)) as Record<string, string[]>, doc: last.doc, what: last.what });
+          model.redo.push({ ...state(), doc: last.doc, what: last.what });
           const u = await smoke("undo", { times: 1 });
           if (u.ok === false) throw new Error(`Word had nothing to undo in ${last.doc}`);
           model.docs = last.docs;
+          model.text = last.text;
           log.push(`${entry}: in ${last.doc} (undoes ${last.what || "?"})`);
           await compareNow(last.doc);
         } else if (op === "redo") {
           const next = model.redo.pop();
           if (!next) continue;
           await smoke("activate", { name: next.doc });
-          model.undo.push({ docs: JSON.parse(JSON.stringify(model.docs)) as Record<string, string[]>, doc: next.doc, what: next.what });
+          model.undo.push({ ...state(), doc: next.doc, what: next.what });
           await smoke("redo", { times: 1 });
           model.docs = next.docs;
+          model.text = next.text;
           log.push(`${entry}: in ${next.doc} (redoes ${next.what || "?"})`);
           await compareNow(next.doc);
         } else if (op === "convert") {
@@ -167,13 +176,18 @@ export async function runSoak(o: { seed: number; operations: number; batch?: num
           // Typing is not a MathBlocks operation: the history before it no longer applies.
           model.undo = [];
           model.redo = [];
+          (model.text[doc] ??= []).push(latex);
           const { convertLatexDocument } = await import("./latexInterchangeRun");
           remember(doc);
           const conv = await convertLatexDocument({ yes: true });
           // One Ctrl+Z must undo it: a record Word ended early is the failure, named where it ended.
           if (conv?.undoBrokenAt) throw new Error(`Convert LaTeX took more than one undo step (Word ended its record ${conv.undoBrokenAt})`);
-          eqs.push(latex);
-          log.push(`${entry}: $${latex}$`);
+          // Everything typed as LaTeX in this document is converted, also text an earlier Ctrl+Z put back.
+          const typed = model.text[doc]!;
+          if (conv && conv.equations !== typed.length) throw new Error(`Convert LaTeX converted ${conv.equations} equation(s); the document had ${typed.length} typed (${typed.join(" | ")})`);
+          eqs.push(...typed);
+          model.text[doc] = [];
+          log.push(`${entry}: $${latex}$${typed.length > 1 ? ` (and ${typed.length - 1} put back by Ctrl+Z)` : ""}`);
         } else if (op === "updateNumbers") {
           // Word keeps no undo step when the numbers were already right, so whether Ctrl+Z would undo this
           // or the operation before it is unknown: this document's history no longer applies.
@@ -209,7 +223,9 @@ export async function runSoak(o: { seed: number; operations: number; batch?: num
           const re = await smoke("reopen", { file });
           if (re.name !== doc) {
             model.docs[re.name as string] = model.docs[doc]!;
+            model.text[re.name as string] = model.text[doc] ?? [];
             delete model.docs[doc];
+            delete model.text[doc];
             names[names.indexOf(doc)] = re.name as string;
           }
           // A reopened document has no undo history.

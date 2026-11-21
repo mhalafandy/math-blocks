@@ -67,7 +67,7 @@ export async function repairChosen(check: CheckResult, chosen: Set<string>): Pro
     const mode = form.facts.mode;
     items.push({ tag: r.tag, flatOpc: (await buildInsertion(r.latex, mode === "display", profile, r.tag, form.facts.kind === "native" ? "native" : "classic", mode !== "inline")).flatOpc, ...(form.flatOpc ? { previous: form.flatOpc } : {}) });
   }
-  if (!items.length && !plan.hide.length && !plan.updateNumbers) return { redrawn: 0, hidden: 0, numbersUpdated: false, cancelled: false };
+  if (!items.length && !plan.hide.length && !plan.updateNumbers && !plan.unlockFields) return { redrawn: 0, hidden: 0, numbersUpdated: false, cancelled: false };
   let hidden = 0;
   const op = await replaceInDocument({
     document: check.document,
@@ -78,6 +78,7 @@ export async function repairChosen(check: CheckResult, chosen: Set<string>): Pro
     // All inside the operation's single undo record: markers hidden first (by position), then numbers and
     // references updated (which can move positions), then the equations drawn again (by ID).
     prepare: async () => {
+      if (plan.unlockFields && addinSupports("unlockFields")) await connector.request("unlockFields", { document: check.document });
       if (plan.hide.length) hidden = (await connector.request("hideFields", { document: check.document, starts: plan.hide })).hidden;
       if (plan.updateNumbers) await connector.request("updateNumbers", { document: check.document }, SLOW);
       return items;

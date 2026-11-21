@@ -313,8 +313,8 @@ export interface AppToConnector {
   };
   /** LaTeX interchange: writes the planned items (one undo step), then updates numbers and references. */
   convertInterchange: {
-    params: DocTarget & { items: (Record<string, unknown> & { id: number; kind: string; start: number; end: number; expect: string })[]; format: Record<string, unknown>; undoLabel: string; /** false: a batch before the last (numbers and references are updated by the last). */ updateNumbers?: boolean };
-    result: { results: { id: number; ok: boolean; problem: string }[]; done: number; ms: number; numbers: number; references: number; broken?: BrokenReference[]; undoBrokenAt?: string };
+    params: DocTarget & { items: (Record<string, unknown> & { id: number; kind: string; start: number; end: number; expect: string })[]; format: Record<string, unknown>; undoLabel: string; /** false: a batch before the last (numbers and references are updated by the last). */ updateNumbers?: boolean; numbersMethod?: "each" | "locked" };
+    result: { results: { id: number; ok: boolean; problem: string }[]; done: number; ms: number; numbers: number; references: number; broken?: BrokenReference[]; undoBrokenAt?: string; numbersMs?: number };
   };
   /** The checks of replaceMany alone (before an operation opens its undo record: they read Word's XML, which ends it). */
   verifyMany: { params: DocTarget & { items: { tag: string; flatOpc: string; expect?: string }[]; undoLabel: string }; result: { replaced: number; missing: string[]; refused?: { tag: string; reason: string }[] } };
@@ -384,6 +384,10 @@ export interface AppToConnector {
   /** Plain-text mentions outside equations and fields (Change symbol lists them with Go to). */
   findTextMentions: { params: DocTarget & { texts: { text: string; wholeWord?: boolean; matchCase?: boolean }[] }; result: { mentions: { text: string; start: number; end: number; context: string }[] } };
   /** Check document: references (shown vs target number), hidden markers, MathType leftovers. */
+  unlockFields: {
+    params: DocTarget;
+    result: { unlocked: number };
+  };
   checkFields: {
     params: DocTarget;
     result: {
@@ -392,6 +396,10 @@ export interface AppToConnector {
       mathTypeFields: { start: number; code: string }[];
       mathTypeObjects: { start: number }[];
       mathTypeBookmarks: number;
+      /** Locked fields (Word does not update them), at most 50. */
+      lockedFields?: { start: number; code: string }[];
+      /** Update numbers stopped while it had the other fields locked (its marker is still in the document). */
+      updateInterrupted?: boolean;
     };
   };
   /** Paragraphs with LaTeX in footnotes, endnotes, text boxes, headers and footers (Convert LaTeX writes the inline equations there). */
@@ -423,7 +431,11 @@ export interface AppToConnector {
   insertNumberMarker: { params: { chapter: number; section: number; appendix?: boolean; restartEquations?: boolean }; result: { ok: true } };
   /** Rebuilds MathBlocks numbers and references as single fields (bookmark names kept). */
   upgradeNumbering: { params: DocTarget & NumberFormat; result: { numbers: number; references: number } };
-  updateNumbers: { params: DocTarget; result: { numbers: number; references: number; broken?: BrokenReference[]; undoBrokenAt?: string; guardFailed?: string; guardRestored?: boolean } };
+  /**
+   * method "each" (default): each of our fields updated on its own; "locked": every other field locked, Word's
+   * update of all fields (numbers, then references), the locks restored in a step that always runs.
+   */
+  updateNumbers: { params: DocTarget & { method?: "each" | "locked" }; result: { numbers: number; references: number; broken?: BrokenReference[]; undoBrokenAt?: string; guardFailed?: string; guardRestored?: boolean; method?: string; ms?: number } };
   /** The numbering marker nearest before the cursor (for "Insert section marker"). */
   markerBefore: { params: Record<string, never>; result: { chapter?: number; section?: number; appendix?: boolean; none?: boolean } };
   /** Text width (pt) of the paragraph holding the equation (tag) or the cursor: page minus margins, gutter, indents. */

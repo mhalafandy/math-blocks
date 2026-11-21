@@ -89,8 +89,10 @@ export async function runThesisTest(scale = 1, progress: (s: string) => void = (
     );
     const afterCancel = await state();
     steps.push({ what: "…the document is exactly as before", ms: 0, ok: afterCancel === before, detail: afterCancel === before ? "identical" : "differs" });
-    await time("Convert LaTeX (whole document)", () => convertLatexDocument({ yes: true }), (r) => [!!r && !r.cancelled && !r.guardFailed && r.failed.length === 0, r ? `${r.equations} equations, ${r.plan.counts.references} references; ${r.failed.length} left; ${Math.round((r.buildMs + r.writeMs) / Math.max(1, r.equations))} ms per equation` : ""]);
-    await time("Update numbers", () => connector.request("updateNumbers", {}, SLOW), (r) => [!r.guardFailed, `${r.numbers} numbers, ${r.references} references`]);
+    await time("Convert LaTeX (whole document)", () => convertLatexDocument({ yes: true }), (r) => [!!r && !r.cancelled && !r.guardFailed && r.failed.length === 0, r ? `${r.equations} equations, ${r.plan.counts.references} references; ${r.failed.length} left; ${Math.round((r.buildMs + r.writeMs - (r.numbersMs ?? 0)) / Math.max(1, r.equations))} ms per equation (building ${Math.round(r.buildMs / Math.max(1, r.equations))}, writing ${Math.round((r.writeMs - (r.numbersMs ?? 0)) / Math.max(1, r.equations))}); numbers and references at the end ${((r.numbersMs ?? 0) / 1000).toFixed(0)} s` : ""]);
+    // Both ways of Update numbers on the same document (the faster safe one becomes the default).
+    await time("Update numbers (each field on its own)", () => connector.request("updateNumbers", { method: "each" }, SLOW), (r) => [!r.guardFailed, `${r.numbers} numbers, ${r.references} references; fields ${((r.ms ?? 0) / 1000).toFixed(1)} s`]);
+    await time("Update numbers (others locked, Word updates all)", () => connector.request("updateNumbers", { method: "locked" }, SLOW), (r) => [!r.guardFailed, `${r.numbers} numbers, ${r.references} references; fields ${((r.ms ?? 0) / 1000).toFixed(1)} s`]);
     await smoke("caretTo", { where: "start" }).catch(() => undefined);
     const sl = await import("./symbolListRun");
     await time("Insert the list of symbols", () => sl.updateSymbolList(), (r) => [r.rows > 0, `${r.rows} rows`]);

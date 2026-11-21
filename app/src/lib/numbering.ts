@@ -4,6 +4,12 @@ import { serializeLatex } from "@mathblocks/math-latex";
 import { readEquationXml as readOmml } from "./readEquation";
 import { addinSupports, connector } from "./connector";
 import { buildInsertion, currentProfile } from "./equation";
+
+/**
+ * How Update numbers updates the fields: "each" (ours one by one) or "locked" (every other field locked, Word
+ * updates all, locks restored). Both are timed on the thesis-size document; the faster safe one is the default.
+ */
+export const NUMBER_UPDATE_METHOD: "each" | "locked" = "each";
 import { useApp, type NumberStyle } from "./store";
 
 /**
@@ -40,7 +46,7 @@ export async function updateNumbers() {
   if (!useApp.getState().connector.connected) return notify("Word is not connected.", "error");
   if (!requireAddin("updateNumbers")) return;
   try {
-    const r = await connector.request("updateNumbers", {}, SLOW);
+    const r = await connector.request("updateNumbers", { method: NUMBER_UPDATE_METHOD }, SLOW);
     if (r.guardFailed) {
       const { guardMessage } = await import("./docOps");
       return notify(guardMessage("Update numbers", r.guardFailed, !!r.guardRestored), "error");

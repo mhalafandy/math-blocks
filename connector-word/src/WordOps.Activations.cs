@@ -28,6 +28,7 @@ namespace MathBlocks.WordConnector
             _lastRequest = CurrentRequest;
             _lastRequestEnd = _activationClock.ElapsedMilliseconds;
             CurrentRequest = null;
+            EndReadScope();
         }
         private readonly List<Dictionary<string, object>> _activations = new List<Dictionary<string, object>>();
         private readonly Stopwatch _activationClock = Stopwatch.StartNew();

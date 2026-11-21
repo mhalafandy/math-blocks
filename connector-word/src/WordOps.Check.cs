@@ -97,7 +97,24 @@ namespace MathBlocks.WordConnector
                     if (b.Name.StartsWith("ZEqnNum", StringComparison.Ordinal)) mtBookmarks++;
             }
             catch (COMException) { }
-            return new Dictionary<string, object> { ["references"] = refs, ["markers"] = markers, ["mathTypeFields"] = mtFields, ["mathTypeObjects"] = mtObjects, ["mathTypeBookmarks"] = mtBookmarks };
+            // Fields left locked (Word does not update them): Update numbers locks the others while it runs.
+            var locked = new List<object>();
+            try
+            {
+                foreach (Word.Field f in doc.Fields)
+                {
+                    try
+                    {
+                        if (!f.Locked) continue;
+                        if (locked.Count < 50) locked.Add(new Dictionary<string, object> { ["start"] = f.Code.Start - 1, ["code"] = (f.Code.Text ?? "").Trim() });
+                    }
+                    catch (COMException) { }
+                }
+            }
+            catch (COMException) { }
+            bool interrupted = false;
+            try { interrupted = doc.Variables[LockMarker].Value != null; } catch (COMException) { }
+            return new Dictionary<string, object> { ["references"] = refs, ["markers"] = markers, ["mathTypeFields"] = mtFields, ["mathTypeObjects"] = mtObjects, ["mathTypeBookmarks"] = mtBookmarks, ["lockedFields"] = locked, ["updateInterrupted"] = interrupted };
         }
 
         /// <summary>Repair: hides the marker fields at these positions (code and result), in one undo step.</summary>

@@ -55,7 +55,7 @@ namespace MathBlocks.WordConnector
                         Log.Info("a pasted MathBlocks picture is floating (" + wrap + "); putting it back in line");
                         var inline = sh.ConvertToInlineShape();
                         Log.Info("a floating MathBlocks picture was put back in line with the text");
-                        how = MathBlocksData(inline.Range.WordOpenXML, out _) ?? "alt";
+                        how = MathBlocksData(ShapeXml(inline), out _) ?? "alt";
                         return inline;
                     }
                 }
@@ -75,7 +75,7 @@ namespace MathBlocks.WordConnector
                 foreach (Word.InlineShape s in range.InlineShapes)
                 {
                     if (InsideMathBlocksControl(s.Range)) continue;
-                    var xml = s.Range.WordOpenXML;
+                    var xml = ShapeXml(s);
                     how = MathBlocksData(xml, out _);
                     if (how != null)
                     {
@@ -153,7 +153,7 @@ namespace MathBlocks.WordConnector
             if (c.PictureSources.Count != 1 || EquationIdentity.Problem(c) != null) return false;
             Word.InlineShape picture = null;
             foreach (Word.InlineShape s in r.InlineShapes)
-                if (PictureSource(s.Range.WordOpenXML) != null) { picture = s; break; }
+                if (PictureSource(ShapeXml(s)) != null) { picture = s; break; }
             if (picture == null) return false;
             if (dry) return true;
             var tag = cc.Tag;
@@ -251,7 +251,7 @@ namespace MathBlocks.WordConnector
                         ok++;
                         continue;
                     }
-                    var how = MathBlocksData(s.Range.WordOpenXML, out _);
+                    var how = MathBlocksData(ShapeXml(s), out _);
                     if (how == null)
                     {
                         plainPictures++;
@@ -305,7 +305,7 @@ namespace MathBlocks.WordConnector
                     try
                     {
                         // One read of the picture's XML for everything below.
-                        var xml = e.Picture.Range.WordOpenXML;
+                        var xml = ShapeXml(e.Picture);
                         PictureXml.Data(xml, out var json);
                         var depth = DepthOfXml(xml);
                         if (depth != null)

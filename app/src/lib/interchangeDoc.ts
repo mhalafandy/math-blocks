@@ -178,7 +178,7 @@ The body rotates with angular velocity $\\pvec{\\omega}$. \\define{\\pvec{\\omeg
 
 ### Keeping numbers right afterwards
 
-- **Insert section marker** (MathBlocks ribbon → Section marker, or Ctrl+K): for a section added later.
+- **Insert section marker** (MathBlocks ribbon → Section marker, or the command palette: Ctrl+K → "Insert section marker"): for a section added later.
   Put the cursor right after the new section heading; the marker is prefilled with the chapter (or
   appendix) of the marker before it and the next section number. Update numbers then renumbers the
   equations after it.
@@ -188,7 +188,7 @@ The body rotates with angular velocity $\\pvec{\\omega}$. \\define{\\pvec{\\omeg
 ### Pasting into a document with MathType equations
 
 A document can have one numbering scheme only. If it still contains MathType's equation numbers and
-chapter/section breaks, run **Convert numbering** (MathBlocks ribbon → Convert numbering, or Ctrl+K)
+chapter/section breaks, run **Convert numbering** (MathBlocks ribbon → Convert numbering, or the command palette: Ctrl+K → "Convert MathType numbering")
 before Convert LaTeX — Convert LaTeX refuses to add numbers until then, because new numbers would not
 continue MathType's. Convert numbering turns MathType's breaks into MathBlocks markers and its numbers
 into MathBlocks numbers, keeping each number's bookmark so every existing reference stays on its

@@ -11,7 +11,7 @@ import { parseDefineTag } from "./symbolList";
  * in an older style. Each problem says where it is (to go to it) and whether a safe repair exists.
  */
 
-export type Repair = "redraw" | "hide" | "updateNumbers";
+export type Repair = "redraw" | "hide" | "updateNumbers" | "unlockFields";
 
 export interface Problem {
   id: string;
@@ -91,6 +91,8 @@ export interface CheckInput {
     mathTypeFields: { start: number; code: string }[];
     mathTypeObjects: { start: number }[];
     mathTypeBookmarks: number;
+    lockedFields?: { start: number; code: string }[];
+    updateInterrupted?: boolean;
   };
   /** The document style's fingerprint now. */
   styleHash: string;
@@ -178,6 +180,13 @@ export function judgeDocument(input: CheckInput): Problem[] {
     else if (bare(r.shown) !== bare(r.target)) add({ group: "references", severity: "error", message: `A reference shows ${r.shown || "nothing"} but its equation is ${r.target}`, start: r.start, repair: "updateNumbers" });
   }
 
+  // Update numbers locks the other fields while it runs and always unlocks them; a marker left behind means
+  // Word stopped in between.
+  const locked = input.fields.lockedFields ?? [];
+  if (input.fields.updateInterrupted)
+    add({ group: "numbering", severity: "error", message: `Update numbers was stopped before it finished: ${locked.length} field(s) are still locked, so Word does not update them`, ...(locked[0] ? { start: locked[0].start } : {}), repair: "unlockFields" });
+  else for (const f of locked) add({ group: "numbering", severity: "warning", message: `A field is locked (${f.code.slice(0, 40)}): Word does not update it`, start: f.start });
+
   const lists = input.fields.markers.filter((m) => m.kind === "MBSymbolList");
   if (lists.length > 1) add({ group: "markers", severity: "warning", message: `${lists.length} lists of symbols (markers): only the first is updated`, start: lists[1]!.start });
   const defineSeen = new Map<string, number>();
@@ -199,15 +208,17 @@ export function judgeDocument(input: CheckInput): Problem[] {
 }
 
 /** The repairs chosen, as the work they need: equations to draw again, markers to hide, whether to update numbers. */
-export function repairPlan(problems: Problem[], chosen: Set<string>): { redraw: { tag: string; latex: string }[]; hide: number[]; updateNumbers: boolean } {
+export function repairPlan(problems: Problem[], chosen: Set<string>): { redraw: { tag: string; latex: string }[]; hide: number[]; updateNumbers: boolean; unlockFields: boolean } {
   const redraw = new Map<string, string>();
   const hide = new Set<number>();
   let updateNumbers = false;
+  let unlockFields = false;
   for (const p of problems) {
     if (!chosen.has(p.id) || !p.repair) continue;
     if (p.repair === "redraw" && p.tag && p.latex) redraw.set(p.tag, p.latex);
     if (p.repair === "hide" && p.start !== undefined) hide.add(p.start);
     if (p.repair === "updateNumbers") updateNumbers = true;
+    if (p.repair === "unlockFields") unlockFields = true;
   }
-  return { redraw: [...redraw].map(([tag, latex]) => ({ tag, latex })), hide: [...hide], updateNumbers };
+  return { redraw: [...redraw].map(([tag, latex]) => ({ tag, latex })), hide: [...hide], updateNumbers, unlockFields };
 }
