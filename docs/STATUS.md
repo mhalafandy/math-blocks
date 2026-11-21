@@ -4,7 +4,7 @@ Updated at the end of every round. Public repository: generic content only. Earl
 
 ## Latest round — 0.1.172
 
-**Build:** 0.1.172 (test channel), CI: pending. Stable stays 0.1.168: the 0.1.170 self-test had 1 failure (Ctrl+Alt+K is Word's AutoFormat).
+**Build:** 0.1.172 (test channel), CI passed. Stable stays 0.1.168: the 0.1.170 self-test had 1 failure (Ctrl+Alt+K is Word's AutoFormat).
 
 **Reports read:** self-test 22:26 (0.1.170: 467 passed, 1 failed; spike 99 passed), word keys.txt, thesis-size 23:15, soak 22:29 (failed after #350), connector.log.
 
