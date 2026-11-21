@@ -137,7 +137,28 @@ namespace MathBlocks.WordConnector
                 TagScope[key] = index;
             }
             // Not indexed (or forgotten after a write): the caller walks the document.
-            return index.TryGetValue(tag, out var found) ? found : null;
+            if (!index.TryGetValue(tag, out var found)) return null;
+            // A write earlier in the request can make Word recreate the pictures it held (Apply style left an
+            // equation twice, soak 0.1.168 #673): each must still be there and still carry this ID, else the
+            // document is walked.
+            foreach (var s in found)
+            {
+                try
+                {
+                    if (TagOf(s) != tag || s.Range.Start < 0) return Forget(index, tag);
+                }
+                catch (Exception)
+                {
+                    return Forget(index, tag);
+                }
+            }
+            return found;
+        }
+
+        private static List<Word.InlineShape> Forget(Dictionary<string, List<Word.InlineShape>> index, string tag)
+        {
+            index.Remove(tag);
+            return null;
         }
     }
 }

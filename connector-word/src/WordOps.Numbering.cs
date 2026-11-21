@@ -107,7 +107,8 @@ namespace MathBlocks.WordConnector
                 cc = FindByTag(doc, tag)[0];
                 para = cc.Range.Paragraphs[1];
                 para.Range.Fields.Update();
-                UpdateNumberFields(doc);
+                // Only the numbers from this equation on, and references to them (not every field of a thesis).
+                UpdateNumbersFrom(doc, para.Range.Start);
                 return new Dictionary<string, object> { ["bookmark"] = name, ["number"] = NumberTextOf(para.Range) };
             }
             catch (COMException ex)
@@ -131,10 +132,11 @@ namespace MathBlocks.WordConnector
             undo.StartCustomRecord("Remove equation number");
             try
             {
+                int from = SafeStart(found[0]);
                 RemoveNumber(doc, found[0]);
                 ReplaceEquationContent(doc, FindByTag(doc, tag)[0], flatOpc, tag);
                 foreach (var cc in FindByTag(doc, tag)) if (!cc.IsPicture) Secure(cc.Control);
-                UpdateNumberFields(doc);
+                UpdateNumbersFrom(doc, Math.Max(0, from - 1));
             }
             finally
             {
@@ -515,7 +517,7 @@ namespace MathBlocks.WordConnector
                 // The cursor goes after the marker, so what is typed or inserted next belongs to the new section.
                 int after = at + (doc.Content.End - length);
                 sel.SetRange(after, after);
-                UpdateNumberFields(doc);
+                UpdateNumbersFrom(doc, at);
             }
             finally
             {
@@ -565,7 +567,7 @@ namespace MathBlocks.WordConnector
                 }
                 // Older references (GOTOBUTTON around REF, or a REF without the link switch): one linked REF each.
                 references += LinkReferences(doc);
-                UpdateNumberFields(doc);
+                UpdateAllNumbers(doc);
             }
             finally
             {
@@ -580,7 +582,7 @@ namespace MathBlocks.WordConnector
         public Dictionary<string, object> UpdateNumbers(Dictionary<string, object> p)
         {
             var doc = ResolveDocument(p);
-            var method = Rpc.GetOptString(p, "method") ?? "each";
+            var method = Rpc.GetOptString(p, "method") ?? "locked";
             bool ownWindow = OpenRequestProgress(doc, "Updating equation numbers", 0);
             try
             {
@@ -682,11 +684,21 @@ namespace MathBlocks.WordConnector
         /// <summary>Document variable present while Update numbers has other fields locked (left behind only if Word stopped).</summary>
         internal const string LockMarker = "MathBlocks.UpdateNumbersLocked";
 
+        /// <summary>A field as the marker records it: where its code starts and a hash of the code.</summary>
+        private static string FieldId(Word.Field f)
+        {
+            var code = (f.Code.Text ?? "").Trim();
+            uint h = 2166136261;
+            foreach (var ch in code) { h ^= ch; h *= 16777619; }
+            return (f.Code.Start).ToString() + ":" + h.ToString("x8");
+        }
+
         /// <summary>
         /// Update numbers as one update of all fields: every other field locked, Word's update of all fields
         /// (numbers first, then references, so they show the new numbers), then each field's lock as it was —
-        /// in a step that always runs, also after an error. A marker in the document says the fields are locked
-        /// meanwhile; Check document reports it if Word stopped in between.
+        /// in a step that always runs, also after an error. A marker in the document records the fields that were
+        /// locked before (where each starts and a hash of its code); Check document reports a marker left behind
+        /// if Word stopped in between. No marker written, nothing locked: field by field instead.
         /// </summary>
         private static Dictionary<string, object> UpdateNumberFieldsLocked(Word.Document doc, Action<int, int, string> progress = null)
         {
@@ -699,9 +711,35 @@ namespace MathBlocks.WordConnector
             }
             int numbers = fields.Count(x => x.role == FieldRole.Number), references = fields.Count(x => x.role == FieldRole.Reference);
             var refs = fields.Where(x => x.role == FieldRole.Reference).Select(x => x.f).ToList();
-            // The fields that were locked before (their place in the document's fields): kept locked by a repair.
-            var kept = string.Join(",", fields.Select((x, i) => x.wasLocked ? (i + 1).ToString() : null).Where(x => x != null));
-            try { doc.Variables.Add(LockMarker, kept.Length > 0 ? kept : "-"); } catch (COMException) { }
+            string kept;
+            try
+            {
+                kept = string.Join(";", fields.Where(x => x.wasLocked).Select(x => FieldId(x.f)));
+            }
+            catch (COMException ex)
+            {
+                Log.Error("update numbers: the locked fields could not be recorded; field by field instead", ex);
+                return UpdateNumberFields(doc, progress);
+            }
+            // The marker must be there before anything is locked: read back, else field by field.
+            bool marked = false;
+            try
+            {
+                doc.Variables.Add(LockMarker, kept.Length > 0 ? kept : "-");
+                marked = doc.Variables[LockMarker].Value == (kept.Length > 0 ? kept : "-");
+            }
+            catch (COMException ex)
+            {
+                Log.Error("update numbers: the marker could not be written", ex);
+            }
+            if (!marked)
+            {
+                try { doc.Variables[LockMarker].Delete(); } catch (COMException) { }
+                Log.Info("update numbers: no marker in the document, so no field is locked; field by field instead");
+                var each = UpdateNumberFields(doc, progress);
+                each["fallback"] = "no marker";
+                return each;
+            }
             try
             {
                 foreach (var pass in new[] { FieldRole.Number, FieldRole.Reference })
@@ -724,6 +762,57 @@ namespace MathBlocks.WordConnector
                 progress?.Invoke(2, 2, "Done");
             }
             return FinishNumberUpdate(doc, numbers, references, refs);
+        }
+
+        /// <summary>Every number and reference brought up to date the default way (others locked, Word updates all).</summary>
+        internal static Dictionary<string, object> UpdateAllNumbers(Word.Document doc) => UpdateNumberFieldsLocked(doc);
+
+        /// <summary>
+        /// Only what numbering one equation can change: the numbers from a position on (earlier ones count the
+        /// same as before) and the references to equations from there on — field by field, few on a thesis when
+        /// the equation is near the end.
+        /// </summary>
+        internal static Dictionary<string, object> UpdateNumbersFrom(Word.Document doc, int from)
+        {
+            int numbers = 0, references = 0;
+            var refs = new List<Word.Field>();
+            foreach (Word.Field f in doc.Fields)
+            {
+                var role = RoleOf(f);
+                if (role == FieldRole.Other) continue;
+                int at;
+                try { at = f.Code.Start; } catch (COMException) { continue; }
+                if (role == FieldRole.Number)
+                {
+                    if (at < from) continue;
+                    try { f.Update(); numbers++; } catch (COMException) { }
+                }
+                else refs.Add(f);
+            }
+            var used = new List<Word.Field>();
+            bool hidden = doc.Bookmarks.ShowHidden;
+            doc.Bookmarks.ShowHidden = true;
+            try
+            {
+                foreach (var f in refs)
+                {
+                    try
+                    {
+                        var m = System.Text.RegularExpressions.Regex.Match((f.Code.Text ?? "").Trim(), @"^(?:REF|GOTOBUTTON)\s+(\S+)");
+                        // A reference whose equation is gone is listed below; one at or after the change is updated.
+                        if (m.Success && doc.Bookmarks.Exists(m.Groups[1].Value) && doc.Bookmarks[m.Groups[1].Value].Range.Start < from) continue;
+                        f.Update();
+                        references++;
+                        used.Add(f);
+                    }
+                    catch (COMException) { }
+                }
+            }
+            finally
+            {
+                doc.Bookmarks.ShowHidden = hidden;
+            }
+            return FinishNumberUpdate(doc, numbers, references, used);
         }
 
         private static Dictionary<string, object> UpdateNumberFields(Word.Document doc, Action<int, int, string> progress = null)
@@ -753,7 +842,9 @@ namespace MathBlocks.WordConnector
 
         /// <summary>
         /// Check document's repair after Word stopped in the middle of Update numbers: the fields it locked are
-        /// unlocked (those locked before it, listed in the marker, stay locked) and the marker goes.
+        /// unlocked; those locked before it (recorded by where each starts and a hash of its code) stay locked.
+        /// If the document changed since, so that a recorded field is not found as recorded, nothing is changed
+        /// and the reason is given (unlock by hand: select the field, Ctrl+Shift+F11).
         /// </summary>
         public Dictionary<string, object> UnlockFields(Dictionary<string, object> p)
         {
@@ -761,22 +852,25 @@ namespace MathBlocks.WordConnector
             string marker = null;
             try { marker = doc.Variables[LockMarker].Value; } catch (COMException) { }
             if (marker == null) return new Dictionary<string, object> { ["unlocked"] = 0 };
-            var kept = new HashSet<int>(marker.Split(',').Select(x => int.TryParse(x, out var n) ? n : -1));
+            var kept = new HashSet<string>(marker == "-" ? new string[0] : marker.Split(';'), StringComparer.Ordinal);
+            var locked = new List<(Word.Field f, string id)>();
+            foreach (Word.Field f in doc.Fields)
+            {
+                try { if (f.Locked) locked.Add((f, FieldId(f))); } catch (COMException) { }
+            }
+            var missing = kept.Where(k => !locked.Any(x => x.id == k)).ToList();
+            if (missing.Count > 0)
+            {
+                Log.Info("unlock fields refused: " + missing.Count + " field(s) locked before Update numbers are not where they were");
+                return new Dictionary<string, object> { ["unlocked"] = 0, ["refused"] = missing.Count + " field(s) that were locked before Update numbers are no longer where they were (the document changed since). Nothing was unlocked: unlock the fields by hand (select, Ctrl+Shift+F11)." };
+            }
             return InOneUndo("Unlock fields", () =>
             {
-                int unlocked = 0, i = 0;
-                foreach (Word.Field f in doc.Fields)
+                int unlocked = 0;
+                foreach (var x in locked)
                 {
-                    i++;
-                    try
-                    {
-                        if (f.Locked && !kept.Contains(i))
-                        {
-                            f.Locked = false;
-                            unlocked++;
-                        }
-                    }
-                    catch (COMException) { }
+                    if (kept.Contains(x.id)) continue;
+                    try { x.f.Locked = false; unlocked++; } catch (COMException) { }
                 }
                 try { doc.Variables[LockMarker].Delete(); } catch (COMException) { }
                 return new Dictionary<string, object> { ["unlocked"] = unlocked };

@@ -60,14 +60,28 @@ describe("LaTeX in Word", () => {
     expect(ws.wrapLatex("x", true)).toBe("$$x$$");
   });
 
-  it("Ctrl+Alt+L on an equation turns it into its LaTeX", async () => {
+  it("Toggle LaTeX on an equation turns it into its LaTeX (one guarded step)", async () => {
     const tag = "mb1|-|abcdefghijkl";
     word.selection = { tag, flatOpc: buildNativeInsertion("\\frac{a}{b}", true, TUNED_PROFILE, tag).flatOpc, number: null };
     await ws.toggleLatexAtCursor();
-    expect(word.calls.at(-1)).toMatchObject({ method: "equationToText", params: { tag, text: "$$\\frac{a}{b}$$" } });
+    expect(word.calls.at(-1)).toMatchObject({ method: "equationsToText", params: { items: [{ tag, text: "$$\\frac{a}{b}$$" }] } });
   });
 
-  it("Ctrl+Alt+L on LaTeX text turns it into an equation", async () => {
+  it("Toggle LaTeX back: the equation keeps the ID it had and is drawn numbered next to its number", async () => {
+    word.selection = { text: "$$a+b$$", start: 4, end: 11, textTag: "mb1|-|keepthisid01", numbered: true };
+    await ws.toggleLatexAtCursor();
+    const call = word.calls.at(-1)!;
+    expect(call.method).toBe("replaceRanges");
+    const item = (call.params.items as { flatOpc: string }[])[0]!;
+    expect(item.flatOpc).toContain("keepthisid01");
+  });
+
+  it("counts the LaTeX spans of a selection", () => {
+    expect(ws.countLatexSpans("a $x$ and $$y$$ and \\(z\\) and \\[w\\]")).toBe(4);
+    expect(ws.countLatexSpans("$x^2+1$")).toBe(1);
+  });
+
+  it("Toggle LaTeX on LaTeX text turns it into an equation", async () => {
     word.selection = { text: "$x^2+1$", start: 10, end: 17 };
     await ws.toggleLatexAtCursor();
     const call = word.calls.at(-1)!;

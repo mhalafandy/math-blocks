@@ -386,7 +386,8 @@ export interface AppToConnector {
   /** Check document: references (shown vs target number), hidden markers, MathType leftovers. */
   unlockFields: {
     params: DocTarget;
-    result: { unlocked: number };
+    /** refused: the fields locked before are not where the marker recorded them (nothing changed). */
+    result: { unlocked: number; refused?: string };
   };
   checkFields: {
     params: DocTarget;
@@ -443,7 +444,15 @@ export interface AppToConnector {
   /** What is at the cursor: a MathBlocks equation, selected text, or a LaTeX span around it. */
   selectionInfo: {
     params: Record<string, never>;
-    result: { document: string; rect: ScreenRect | null; tag?: string; flatOpc?: string; number?: NumberInfo | null; text?: string; start?: number; end?: number; fingerprint?: string; problem?: string };
+    result: {
+      document: string; rect: ScreenRect | null; tag?: string; flatOpc?: string; number?: NumberInfo | null; text?: string; start?: number; end?: number; fingerprint?: string; problem?: string;
+      /** A selection holding several MathBlocks equations: their IDs (Toggle LaTeX on all of them). */
+      selectedTags?: string[];
+      /** LaTeX text that was an equation (Toggle LaTeX): the ID it had, kept in a bookmark around the text. */
+      textTag?: string;
+      /** The LaTeX text's paragraph has an equation number. */
+      numbered?: boolean;
+    };
   };
   /** LaTeX spans ($…$, $$…$$, \(…\), \[…\]) in the document text. */
   findLatex: {
@@ -461,6 +470,8 @@ export interface AppToConnector {
   };
   /** Turns a MathBlocks equation into plain text (its LaTeX), selected. */
   equationToText: { params: DocTarget & { tag: string; text: string }; result: { ok: true } };
+  /** Toggle LaTeX: equations become their LaTeX text, one undo step, under the text guard; number fields stay. */
+  equationsToText: { params: DocTarget & { items: { tag: string; text: string }[] }; result: { ok: true; count: number; guardFailed?: string; guardRestored?: boolean } };
   /** The floating editor's Word-menu button: the MathBlocks equation menu for an equation object (by ID), else Word's text menu. */
   showWordMenu: { params: { tag?: string }; result: { ok: true; menu?: "mathblocks" | "word" } };
   documentInfo: { params: Record<string, never>; result: DocumentInfoResult };

@@ -275,7 +275,7 @@ namespace MathBlocks.WordConnector
                     if (p.ContainsKey("updateNumbers") && !Rpc.GetBool(p, "updateNumbers"))
                         return new Dictionary<string, object> { ["results"] = results, ["done"] = done, ["ms"] = clock.ElapsedMilliseconds, ["numbers"] = 0, ["references"] = 0, ["broken"] = new List<object>() };
                     var numbersClock = System.Diagnostics.Stopwatch.StartNew();
-                    var updated = Rpc.GetOptString(p, "numbersMethod") == "locked" ? UpdateNumberFieldsLocked(doc) : UpdateNumberFields(doc);
+                    var updated = Rpc.GetOptString(p, "numbersMethod") == "each" ? UpdateNumberFields(doc) : UpdateNumberFieldsLocked(doc);
                     var numbersMs = numbersClock.ElapsedMilliseconds;
                     CheckOperationUndo("after updating numbers and references");
                     Log.Info("convertInterchange in " + doc.Name + ": " + done + "/" + items.Count + " item(s) in " + clock.ElapsedMilliseconds + " ms");

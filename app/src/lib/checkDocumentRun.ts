@@ -3,6 +3,7 @@ import { mathTypePadding, renderSvg } from "@mathblocks/math-render";
 import { addinSupports, connector } from "./connector";
 import { activeStyle, activeStyleHash, loadDocumentStyle } from "./docStyle";
 import { replaceInDocument, type ReplaceItem } from "./docOps";
+import { useApp } from "./store";
 import { buildInsertion, currentProfile } from "./equation";
 import { classicStyle, loadFonts } from "./render";
 import { equationFacts, judgeDocument, repairPlan, type EquationFacts, type Problem } from "./checkDocument";
@@ -78,7 +79,10 @@ export async function repairChosen(check: CheckResult, chosen: Set<string>): Pro
     // All inside the operation's single undo record: markers hidden first (by position), then numbers and
     // references updated (which can move positions), then the equations drawn again (by ID).
     prepare: async () => {
-      if (plan.unlockFields && addinSupports("unlockFields")) await connector.request("unlockFields", { document: check.document });
+      if (plan.unlockFields && addinSupports("unlockFields")) {
+        const u = await connector.request("unlockFields", { document: check.document });
+        if (u.refused) useApp.getState().notify(u.refused, "error");
+      }
       if (plan.hide.length) hidden = (await connector.request("hideFields", { document: check.document, starts: plan.hide })).hidden;
       if (plan.updateNumbers) await connector.request("updateNumbers", { document: check.document }, SLOW);
       return items;

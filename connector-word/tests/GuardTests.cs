@@ -28,7 +28,9 @@ static class GuardTests
             var exclude = Ranges(root.GetProperty("exclude"));
             var before = Doc(root.GetProperty("before"));
             var after = Doc(root.GetProperty("after"));
-            var verdict = GuardText.Difference(GuardText.Canonical(before, exclude), GuardText.Canonical(after, null));
+            // Text the operation wrote on purpose (Toggle LaTeX), left out afterwards as the replaced ranges are before.
+            var written = root.TryGetProperty("written", out var wr) ? Ranges(wr) : null;
+            var verdict = GuardText.Difference(GuardText.Canonical(before, exclude), GuardText.Canonical(after, written));
             check((verdict == null) == (expect == "unchanged"), "guard " + name + " (" + op + "): " + expect + (verdict != null ? " — " + verdict : ""));
             if (expect != "unchanged") continue;
             passing++;

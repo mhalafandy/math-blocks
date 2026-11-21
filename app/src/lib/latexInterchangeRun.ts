@@ -142,7 +142,7 @@ export async function convertLatexDocument(o: { document?: string; fromWord?: bo
     // between batches; the last call updates numbers and references once. Other stories' items do not move
     // positions in the main text: they go first.
     const order = [...items].sort((a, b) => (a.story === undefined ? 1 : 0) - (b.story === undefined ? 1 : 0) || Number(a.story ?? 0) - Number(b.story ?? 0) || b.start - a.start);
-    const BATCH = 40;
+    const BATCH = 80;
     const t1 = performance.now();
     for (let i = 0; i < order.length || i === 0; i += BATCH) {
       const batch = order.slice(i, i + BATCH);

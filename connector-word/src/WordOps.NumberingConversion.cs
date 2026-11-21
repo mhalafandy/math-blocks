@@ -205,9 +205,9 @@ namespace MathBlocks.WordConnector
                         }
                         CheckOperationUndo("after " + kind + " at " + start);
                     }
-                    UpdateNumberFields(doc);
+                    UpdateAllNumbers(doc);
                     var refs = ConvertMathTypeReferences(doc, aliases, problems);
-                    var updated = UpdateNumberFields(doc);
+                    var updated = UpdateAllNumbers(doc);
                     // Every converted reference must show what its equation's number shows; then MathType's
                     // bookmarks are no longer needed (else they stay, and the mismatches are reported).
                     var refMismatches = VerifyReferences(doc, refs);

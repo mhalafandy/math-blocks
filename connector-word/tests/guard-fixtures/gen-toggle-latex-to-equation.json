@@ -1,0 +1,214 @@
+{
+ "operation": "Toggle LaTeX: the LaTeX text becomes the equation again (number, bookmark, references kept)",
+ "source": "generated (tools/make-guard-fixtures.ts) from the field codes of a 0.1.148 self-test run",
+ "expect": "unchanged",
+ "exclude": [
+  [
+   84,
+   99
+  ]
+ ],
+ "before": {
+  "end": 261,
+  "fields": [
+   {
+    "start": 3,
+    "end": 65,
+    "code": " REF _MBEq_1_1_1 \\h \\* Charformat \\! \\* MERGEFORMAT "
+   },
+   {
+    "start": 142,
+    "end": 161,
+    "code": " STYLEREF 1 \\s "
+   },
+   {
+    "start": 162,
+    "end": 205,
+    "code": " SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 206,
+    "end": 245,
+    "code": " SEQ MBEq \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 100,
+    "end": 247,
+    "code": " MACROBUTTON MBPlaceRef \\* MERGEFORMAT "
+   }
+  ],
+  "equations": [],
+  "lists": [],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 3,
+    "text": "By "
+   },
+   {
+    "start": 3,
+    "end": 65,
+    "text": "(1.1.1)"
+   },
+   {
+    "start": 65,
+    "end": 84,
+    "text": " the sides agree.\r\t"
+   },
+   {
+    "start": 84,
+    "end": 99,
+    "text": "\\[a^2+b^2=c^2\\]"
+   },
+   {
+    "start": 99,
+    "end": 100,
+    "text": "\t"
+   },
+   {
+    "start": 100,
+    "end": 142,
+    "text": "\u0013 MACROBUTTON MBPlaceRef \\* MERGEFORMAT \u0014("
+   },
+   {
+    "start": 142,
+    "end": 161,
+    "text": "\u0013 STYLEREF 1 \\s \u00141\u0015"
+   },
+   {
+    "start": 161,
+    "end": 162,
+    "text": "."
+   },
+   {
+    "start": 162,
+    "end": 205,
+    "text": "\u0013 SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT \u00141\u0015"
+   },
+   {
+    "start": 205,
+    "end": 206,
+    "text": "."
+   },
+   {
+    "start": 206,
+    "end": 245,
+    "text": "\u0013 SEQ MBEq \\* ARABIC \\* MERGEFORMAT \u00141\u0015"
+   },
+   {
+    "start": 245,
+    "end": 247,
+    "text": ")\u0015"
+   },
+   {
+    "start": 247,
+    "end": 261,
+    "text": "\rText after.\r\r"
+   }
+  ]
+ },
+ "after": {
+  "end": 247,
+  "fields": [
+   {
+    "start": 3,
+    "end": 65,
+    "code": " REF _MBEq_1_1_1 \\h \\* Charformat \\! \\* MERGEFORMAT "
+   },
+   {
+    "start": 128,
+    "end": 147,
+    "code": " STYLEREF 1 \\s "
+   },
+   {
+    "start": 148,
+    "end": 191,
+    "code": " SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 192,
+    "end": 231,
+    "code": " SEQ MBEq \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 86,
+    "end": 233,
+    "code": " MACROBUTTON MBPlaceRef \\* MERGEFORMAT "
+   }
+  ],
+  "equations": [
+   [
+    84,
+    85
+   ]
+  ],
+  "lists": [],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 3,
+    "text": "By "
+   },
+   {
+    "start": 3,
+    "end": 65,
+    "text": "(1.1.1)"
+   },
+   {
+    "start": 65,
+    "end": 84,
+    "text": " the sides agree.\r\t"
+   },
+   {
+    "start": 84,
+    "end": 85,
+    "text": "\u0001"
+   },
+   {
+    "start": 85,
+    "end": 86,
+    "text": "\t"
+   },
+   {
+    "start": 86,
+    "end": 128,
+    "text": "\u0013 MACROBUTTON MBPlaceRef \\* MERGEFORMAT \u0014("
+   },
+   {
+    "start": 128,
+    "end": 147,
+    "text": "\u0013 STYLEREF 1 \\s \u00141\u0015"
+   },
+   {
+    "start": 147,
+    "end": 148,
+    "text": "."
+   },
+   {
+    "start": 148,
+    "end": 191,
+    "text": "\u0013 SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT \u00141\u0015"
+   },
+   {
+    "start": 191,
+    "end": 192,
+    "text": "."
+   },
+   {
+    "start": 192,
+    "end": 231,
+    "text": "\u0013 SEQ MBEq \\* ARABIC \\* MERGEFORMAT \u00141\u0015"
+   },
+   {
+    "start": 231,
+    "end": 233,
+    "text": ")\u0015"
+   },
+   {
+    "start": 233,
+    "end": 247,
+    "text": "\rText after.\r\r"
+   }
+  ]
+ }
+}

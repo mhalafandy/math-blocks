@@ -41,6 +41,7 @@ namespace MathBlocks.WordConnector
             {
                 _app = (Word.Application)application;
                 _ops = new WordOps(_app);
+                _ops.RestorePaginationAfterStop();
                 _ops.IdleChecks = IdleChecks;
                 _ops.ObjectMenuHook = ObjectMenuForTest;
                 _ops.RightClickHook = RightClickForTest;
@@ -189,7 +190,7 @@ namespace MathBlocks.WordConnector
             "listInstances", "replaceMany", "verifyMany", "scanInterchange", "convertInterchange", "scanNumbering", "convertNumbering", "retag", "selectInstance", "getRegistry", "setRegistry", "getDocumentStyle", "setDocumentStyle", "getDocumentBlocks", "setDocumentBlocks", "listDefinitions", "insertDefinition", "updateDefinition", "writeSymbolList", "listDocuments", "listHeadings", "findTextMentions", "selectRange", "checkFields", "hideFields", "unlockFields", "scanStories",
             "listMathTypeParagraphs", "replaceParagraphs", "activateObject",
             "numberEquation", "unnumberEquation", "listNumbered", "insertReference", "updateNumbers",
-            "showWordMenu", "selectionInfo", "findLatex", "replaceRanges", "equationToText",
+            "showWordMenu", "selectionInfo", "findLatex", "replaceRanges", "equationToText", "equationsToText",
             "backupDocument", "beginOperation", "operationProgress", "endOperation", "repairEquations",
             "insertNumberMarker", "markerBefore", "upgradeNumbering", "textWidth", "confirm", "showMessage", "smoke",
         };
@@ -286,6 +287,8 @@ namespace MathBlocks.WordConnector
 
         public void OnConvertMathType(IRibbonControl control) => RunAppCommand("convertMathType");
         public void OnConvertLatex(IRibbonControl control) => RunAppCommand("convertLatex");
+        /// <summary>Ribbon "Toggle LaTeX" (Ctrl+Alt+Shift+L): the equation(s) at the cursor or in the selection ↔ their LaTeX text.</summary>
+        public void OnToggleLatex(IRibbonControl control) => RunAppCommand("toggleLatex");
         /// <summary>Ribbon "Insert reference": handled in Word (picker over Word), the app is not needed.</summary>
         public void OnInsertReference(IRibbonControl control)
         {
@@ -880,6 +883,7 @@ namespace MathBlocks.WordConnector
                     case "findLatex": result = _ops.FindLatex(p); break;
                     case "replaceRanges": result = _ops.ReplaceRanges(p); break;
                     case "equationToText": result = _ops.EquationToText(p); break;
+                    case "equationsToText": result = _ops.EquationsToText(p); break;
                     case "smoke": result = _ops.Smoke(p); break;
                     case "showWordMenu":
                     {

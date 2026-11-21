@@ -421,6 +421,24 @@ namespace MathBlocks.WordConnector
                     r["textAfter"] = (d.Range(at, at + probeText.Length).Text ?? "");
                     return r;
                 }
+                case "interruptedLock":
+                {
+                    // Self-test: as if Word stopped in the middle of Update numbers (locked method): the first
+                    // equation number field locked and the marker left, recording `kept` as the fields locked before.
+                    // kept "clear" removes the marker and unlocks that field again.
+                    var kept = Rpc.GetString(p, "kept");
+                    Word.Field first = null;
+                    foreach (Word.Field f in d.Fields) { if ((f.Code.Text ?? "").Contains("SEQ MBEq")) { first = f; break; } }
+                    if (kept == "clear")
+                    {
+                        if (first != null) first.Locked = false;
+                        try { d.Variables[LockMarker].Delete(); } catch (COMException) { }
+                        return new Dictionary<string, object> { ["ok"] = true };
+                    }
+                    if (first != null) first.Locked = true;
+                    d.Variables.Add(LockMarker, kept);
+                    return new Dictionary<string, object> { ["locked"] = first != null };
+                }
                 case "staleNumbers":
                 {
                     // Equation numbers out of date (as after moving equations), so Update numbers has work.

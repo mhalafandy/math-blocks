@@ -286,7 +286,7 @@ namespace MathBlocks.WordConnector
                             }
                         }
                     }
-                    UpdateNumberFields(doc);
+                    UpdateAllNumbers(doc);
                     return new Dictionary<string, object> { ["ok"] = true, ["replaced"] = replaced, ["rows"] = rows.Count, ["equations"] = equations };
                 }
                 finally

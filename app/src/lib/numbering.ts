@@ -7,9 +7,10 @@ import { buildInsertion, currentProfile } from "./equation";
 
 /**
  * How Update numbers updates the fields: "each" (ours one by one) or "locked" (every other field locked, Word
- * updates all, locks restored). Both are timed on the thesis-size document; the faster safe one is the default.
+ * updates all, locks restored). Timed on the thesis-size document (2380 numbers, 998 references): field by
+ * field 547 s, locked 69 s.
  */
-export const NUMBER_UPDATE_METHOD: "each" | "locked" = "each";
+export const NUMBER_UPDATE_METHOD: "each" | "locked" = "locked"; // thesis-size 0.1.168: 69 s against 547 s
 import { useApp, type NumberStyle } from "./store";
 
 /**

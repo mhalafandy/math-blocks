@@ -13,15 +13,17 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 
 type Tok =
-  | { k: "t"; text: string }
+  | { k: "t"; text: string; written?: boolean }
   | { k: "latex"; text: string }
-  | { k: "eq" }
+  | { k: "eq"; replaced?: boolean }
   | { k: "f"; code: string; result: Tok[]; linked?: boolean }
   | { k: "table"; rows: string[][]; list?: boolean };
 
 const t = (text: string): Tok => ({ k: "t", text });
 const latex = (text: string): Tok => ({ k: "latex", text });
 const eq: Tok = { k: "eq" };
+/** An equation the operation replaces (Toggle LaTeX: it becomes its LaTeX text): excluded like LaTeX being converted. */
+const eqReplaced: Tok = { k: "eq", replaced: true };
 const f = (code: string, result: Tok[] = [], linked = false): Tok => ({ k: "f", code, result, linked });
 const P = "\r";
 
@@ -34,19 +36,24 @@ interface GuardDoc {
 }
 
 /** Lays the tokens out at Word character positions and records the document as the add-in does. */
-function record(toks: Tok[]): { doc: GuardDoc; exclude: [number, number][] } {
+function record(toks: Tok[]): { doc: GuardDoc; exclude: [number, number][]; written: [number, number][] } {
   // One entry per position: the text Range.Text gives for it ("" when Word leaves it out).
   const chars: string[] = [];
   const fields: GuardDoc["fields"] = [];
   const equations: [number, number][] = [];
   const lists: [number, number][] = [];
   const exclude: [number, number][] = [];
+  const written: [number, number][] = [];
   const put = (s: string, visible = true) => {
     for (const c of s) chars.push(visible ? c : "");
   };
   const lay = (ts: Tok[], hidden: boolean) => {
     for (const x of ts) {
-      if (x.k === "t") put(x.text, !hidden);
+      if (x.k === "t") {
+        const s = chars.length;
+        put(x.text, !hidden);
+        if (x.written) written.push([s, chars.length]);
+      }
       else if (x.k === "latex") {
         const s = chars.length;
         put(x.text, !hidden);
@@ -55,6 +62,7 @@ function record(toks: Tok[]): { doc: GuardDoc; exclude: [number, number][] } {
         const s = chars.length;
         put("\u0001", !hidden);
         equations.push([s, chars.length]);
+        if (x.replaced) exclude.push([s, chars.length]);
       } else if (x.k === "f") {
         const s = chars.length;
         // A linked REF (\h) reads as its result alone; other fields with their codes and field characters.
@@ -87,14 +95,14 @@ function record(toks: Tok[]): { doc: GuardDoc; exclude: [number, number][] } {
   chars.push("\r"); // the document's last paragraph mark
   const end = chars.length;
   const cuts = new Set<number>([0, end]);
-  for (const r of [...fields.map((x) => [x.start, x.end] as [number, number]), ...equations, ...lists, ...exclude]) {
+  for (const r of [...fields.map((x) => [x.start, x.end] as [number, number]), ...equations, ...lists, ...exclude, ...written]) {
     cuts.add(r[0]);
     cuts.add(r[1]);
   }
   const sorted = [...cuts].sort((a, b) => a - b);
   const chunks: GuardDoc["chunks"] = [];
   for (let i = 0; i + 1 < sorted.length; i++) chunks.push({ start: sorted[i]!, end: sorted[i + 1]!, text: chars.slice(sorted[i], sorted[i + 1]).join("") });
-  return { doc: { end, fields, equations, lists, chunks }, exclude };
+  return { doc: { end, fields, equations, lists, chunks }, exclude, written };
 }
 
 // The field codes the add-in writes (copied from a real run).
@@ -112,6 +120,8 @@ interface Fixture {
   source: string;
   expect: "unchanged" | "changed";
   exclude: [number, number][];
+  /** Text the operation writes on purpose (positions after it). */
+  written?: [number, number][];
   before: GuardDoc;
   after: GuardDoc;
 }
@@ -119,7 +129,7 @@ const fixtures: Record<string, Fixture> = {};
 const make = (name: string, operation: string, before: Tok[], after: Tok[], expect: Fixture["expect"] = "unchanged") => {
   const b = record(before);
   const a = record(after);
-  fixtures[name] = { operation, source: "generated (tools/make-guard-fixtures.ts) from the field codes of a 0.1.148 self-test run", expect, exclude: b.exclude, before: b.doc, after: a.doc };
+  fixtures[name] = { operation, source: "generated (tools/make-guard-fixtures.ts) from the field codes of a 0.1.148 self-test run", expect, exclude: b.exclude, ...(a.written.length ? { written: a.written } : {}), before: b.doc, after: a.doc };
 };
 
 // Convert LaTeX: inline and display equations, \eqref/\ref (linked references), a section marker, a number.
@@ -245,6 +255,15 @@ make("gen-check-document-repair", "Repair (Check document): markers hidden, numb
 // Convert LaTeX in a footnote: the main text keeps its footnote mark (a special character) and its own text; the
 // equation is written in the footnote's story, which the guard of the main text does not compare.
 const withNote = (inline: Tok): Tok[] => [t("The result holds"), t("\u0002"), t(" for every case, see "), inline, t("."), t(P)];
+// Toggle LaTeX (0.1.169): a numbered display equation becomes its LaTeX text and back. The number field (and its
+// bookmark) stays in the paragraph, a reference elsewhere keeps showing it; the LaTeX text carries a bookmark of
+// its own (invisible in the text) so the equation comes back with its ID.
+/** LaTeX text the operation writes in place of an equation. */
+const latexWritten = (text: string): Tok => ({ k: "t", text, written: true });
+const toggled = (middle: Tok): Tok[] => [t("By "), refLinked("_MBEq_1_1_1", "(1.1.1)"), t(" the sides agree."), t(P), t("\t"), middle, t("\t"), number("(1.1.1)"), t(P), t("Text after."), t(P)];
+make("gen-toggle-equation-to-latex", "Toggle LaTeX: a numbered equation becomes its LaTeX text (number, bookmark, references kept)", toggled(eqReplaced), toggled(latexWritten("\\[a^2+b^2=c^2\\]")));
+make("gen-toggle-latex-to-equation", "Toggle LaTeX: the LaTeX text becomes the equation again (number, bookmark, references kept)", toggled(latex("\\[a^2+b^2=c^2\\]")), toggled(eq));
+make("gen-toggle-text-edited", "Toggle LaTeX that also changed the text after it (must be caught)", toggled(eqReplaced), toggled(latexWritten("\\[a^2+b^2=c^2\\]")).map((x) => (x.k === "t" && x.text === "Text after." ? t("Text afer.") : x)), "changed");
 make("gen-convert-latex-footnote", "Convert LaTeX with a footnote mark in the main text", withNote(latex("$x$")), withNote(eq));
 
 const dir = new URL("../connector-word/tests/guard-fixtures/", import.meta.url);

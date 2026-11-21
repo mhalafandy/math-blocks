@@ -498,6 +498,37 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       await smoke("save", { file: "object menu test.docx" });
     });
 
+    section = "Toggle LaTeX: equation ↔ its LaTeX text";
+    await step("toggle LaTeX", async () => {
+      const { toggleLatexAtCursor } = await import("./wordShortcuts");
+      await smoke("newDocument");
+      await smoke("typeText", { text: "Toggle test: " });
+      const t = await insert("a^2+b^2=c^2", true);
+      const n = await number(t.tag, "a^2+b^2=c^2");
+      const numberOf = async () => (await connector.request("listNumbered", {}, SLOW)).equations.find((e) => e.tag === t.tag)?.number ?? null;
+      const before = await numberOf();
+      // To text: the equation selected (as a click selects it), the shortcut's command.
+      await connector.request("selectInstance", { tag: t.tag });
+      await toggleLatexAtCursor();
+      const asText = await snap();
+      check("the equation becomes its LaTeX text", !asText.tags.includes(t.tag) && asText.plain.includes("a^2+b^2=c^2"), asText.plain.trim().slice(0, 120));
+      const bm = await smoke("bookmarkText", { bookmark: n.bookmark });
+      check("…its number field and bookmark stay", bm.exists && String(bm.text).replace(/\s/g, "") === String(before ?? "").replace(/\s/g, ""), bm.exists ? `bookmark ${n.bookmark} shows "${bm.text}" (was ${before})` : "bookmark gone");
+      await smoke("undo", { times: 1 });
+      check("…one Ctrl+Z brings the equation back", (await snap()).tags.includes(t.tag));
+      await smoke("redo", { times: 1 });
+      // Back: the LaTeX text is selected after the toggle; the same command turns it into the equation again.
+      await toggleLatexAtCursor();
+      const back = await snap();
+      check("back: the equation returns with the ID it had", back.tags.includes(t.tag), back.tags.join(", ") || "no equation");
+      const after = await numberOf();
+      check("…still numbered, with the same number", after !== null && after === before, `${after} (was ${before})`);
+      await smoke("undo", { times: 1 });
+      check("…one Ctrl+Z returns the LaTeX text", !(await snap()).tags.includes(t.tag));
+      await smoke("redo", { times: 1 });
+      await smoke("save", { file: "toggle latex test.docx" });
+    });
+
     section = "Equation objects: tracked changes, undo/redo, class registration, PDF";
     await step("objects end to end", async () => {
       const { buildDocumentIndex, rewriteDocument } = await import("./symbolIndex");
@@ -664,6 +695,21 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
         check("Update numbers (others locked, all updated): the same numbers as field by field", (await numbersNow()) === viaEach, `${r2.numbers} numbers, ${r2.references} references in ${r2.ms ?? "?"} ms; ${await numbersNow()}`);
         const cf = await connector.request("checkFields", {});
         check("…no field left locked, no marker left", !cf.updateInterrupted && (cf.lockedFields?.length ?? 0) === 0, cf.updateInterrupted ? "marker left" : `${cf.lockedFields?.length ?? 0} locked`);
+        // Word stopped in between (simulated): Check document reports it; its repair unlocks what Update numbers
+        // locked; with a record that no longer matches the document it refuses and changes nothing.
+        const cdl = await import("./checkDocumentRun");
+        await smoke("interruptedLock", { kept: "-" });
+        const stopped = await cdl.runCheck();
+        const lockP = stopped.problems.find((x) => x.repair === "unlockFields");
+        check("Update numbers stopped in between: Check document reports the locked fields (repair: unlock)", !!lockP, stopped.problems.map((x) => x.message).join(" | ") || "nothing reported");
+        if (lockP) await cdl.repairChosen(stopped, new Set([lockP.id]));
+        const afterUnlock = await connector.request("checkFields", {});
+        check("…the repair unlocks them and removes the marker", !afterUnlock.updateInterrupted && (afterUnlock.lockedFields?.length ?? 0) === 0, `${afterUnlock.lockedFields?.length ?? 0} locked, marker ${afterUnlock.updateInterrupted ? "left" : "gone"}`);
+        await smoke("interruptedLock", { kept: "999999:deadbeef" });
+        const u = await connector.request("unlockFields", {});
+        const stillLocked = await connector.request("checkFields", {});
+        check("…a record that no longer matches the document: the repair refuses and changes nothing", !!u.refused && u.unlocked === 0 && !!stillLocked.updateInterrupted && (stillLocked.lockedFields?.length ?? 0) === 1, u.refused ?? `unlocked ${u.unlocked}`);
+        await smoke("interruptedLock", { kept: "clear" });
         await smoke("staleNumbers");
         await oneCtrlZ("Update numbers (others locked)", docU.name, () => connector.request("updateNumbers", { method: "locked" }, SLOW));
       }

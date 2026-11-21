@@ -8,7 +8,7 @@ import { readEquationXml } from "./readEquation";
 import { useApp } from "./store";
 
 /**
- * Working from Word with the keyboard: Ctrl+Alt+M edit/new equation at the cursor, Ctrl+Alt+L
+ * Working from Word with the keyboard: Ctrl+Alt+M edit/new equation at the cursor, Ctrl+Alt+Shift+L
  * equation ↔ LaTeX, Ctrl+Alt+R reference, Ctrl+Alt+N number. Also: convert all LaTeX in a
  * document into MathBlocks equations.
  */
@@ -43,7 +43,12 @@ export function unwrapLatex(text: string): { latex: string; display: boolean } {
   return { latex: t, display: false };
 }
 
-/** The LaTeX text an equation becomes (Ctrl+Alt+L). */
+/** How many LaTeX spans ($…$, $$…$$, \(…\), \[…\]) a text holds. */
+export function countLatexSpans(text: string): number {
+  return (text.match(/\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\)|\$[^$]+\$/g) ?? []).length;
+}
+
+/** The LaTeX text an equation becomes (Toggle LaTeX). */
 export function wrapLatex(latex: string, display: boolean) {
   const d = "$";
   return display ? `${d}${d}${latex}${d}${d}` : `${d}${latex}${d}`;
@@ -72,22 +77,55 @@ export async function editAtCursor() {
   }
 }
 
-/** Ctrl+Alt+L: a MathBlocks equation becomes its LaTeX text; LaTeX text becomes an equation. */
+/** The keyboard shortcut of Toggle LaTeX in Word (free in Word and MathType: Word's Ctrl+Alt+L inserts a LISTNUM field, MathType's Alt+\ toggles TeX). */
+export const TOGGLE_LATEX_KEYS = "Ctrl+Alt+Shift+L";
+
+/**
+ * Toggle LaTeX (ribbon button, Ctrl+Alt+Shift+L): the MathBlocks equation at the cursor, or every one in the selection,
+ * becomes its LaTeX text; LaTeX text at the cursor or selected becomes the equation again, with the ID it had and
+ * drawn numbered when its paragraph has a number. The number field, its bookmark and the references stay. One Ctrl+Z.
+ */
 export async function toggleLatexAtCursor() {
   if (!ready("selectionInfo")) return;
   try {
     const s = await connector.request("selectionInfo", {});
+    const many = s.selectedTags && s.selectedTags.length > 1 ? s.selectedTags : null;
+    if ((many || (s.tag && s.flatOpc)) && addinSupports("equationsToText")) {
+      const tags = many ?? [s.tag!];
+      const content = new Map<string, { flatOpc?: string; numbered: boolean }>();
+      if (many) {
+        const inst = (await connector.request("listInstances", { document: s.document, includeContent: true }, 600_000)).documents[0]?.instances ?? [];
+        for (const i of inst) content.set(i.tag, { flatOpc: i.flatOpc ?? undefined, numbered: !!i.number });
+      } else content.set(s.tag!, { flatOpc: s.flatOpc, numbered: !!s.number });
+      const items: { tag: string; text: string }[] = [];
+      for (const tag of tags) {
+        const c = content.get(tag);
+        const read = c?.flatOpc ? readEquationXml(c.flatOpc) : null;
+        if (!read) return notify(`Could not read the equation ${tag}; nothing was changed.`, "error");
+        items.push({ tag, text: wrapLatex(serializeLatex(read.root), read.display || read.numbered === true || c!.numbered) });
+      }
+      const r = await connector.request("equationsToText", { document: s.document, items });
+      if (r.guardFailed) return notify(`Toggle LaTeX was undone: ${r.guardFailed}`, "error");
+      return notify(items.length === 1 ? `Equation turned into LaTeX. Edit it, then press ${TOGGLE_LATEX_KEYS} again.` : `${items.length} equations turned into LaTeX.`);
+    }
     if (s.tag && s.flatOpc) {
       const read = readEquationXml(s.flatOpc);
       if (!read) return notify("Could not read that equation.", "error");
       const text = wrapLatex(serializeLatex(read.root), read.display || !!s.number);
       await connector.request("equationToText", { document: s.document, tag: s.tag, text });
-      return notify("Equation turned into LaTeX. Edit it, then press Ctrl+Alt+L again.");
+      return notify(`Equation turned into LaTeX. Edit it, then press ${TOGGLE_LATEX_KEYS} again.`);
+    }
+    // Several LaTeX spans selected: each becomes an equation (as Convert LaTeX on the selection).
+    if (s.text && s.start !== undefined && s.end !== undefined && countLatexSpans(s.text) > 1) {
+      await convertAllLatex(s.document, { fromWord: true, selectionOnly: true });
+      return;
     }
     if (s.text && s.start !== undefined && s.end !== undefined) {
       const { latex, display } = unwrapLatex(s.text);
       if (parseLatex(latex).diagnostics.some((d) => d.severity === "error")) return notify("That LaTeX has errors; fix it first.", "error");
-      const { flatOpc } = await buildInsertion(latex, display, currentProfile(), undefined, undefined, display);
+      // Back with the ID it had as an equation, and drawn as a numbered equation next to its number.
+      const numbered = !!s.numbered && display;
+      const { flatOpc } = await buildInsertion(latex, numbered ? false : display, currentProfile(), s.textTag, undefined, display);
       await connector.request("replaceRanges", { document: s.document, items: [{ start: s.start, end: s.end, expect: s.text, flatOpc }], undoLabel: "LaTeX to equation" });
       return notify("LaTeX turned into a MathBlocks equation");
     }

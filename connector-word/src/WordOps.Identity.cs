@@ -41,7 +41,18 @@ namespace MathBlocks.WordConnector
         internal static string PictureXmlForApp(Eq eq)
         {
             var xml = eq.Xml;
-            if (!eq.IsPicture || PictureXml.Data(xml, out _) != null) return xml;
+            if (!eq.IsPicture) return xml;
+            // Right after Ctrl+Z Word can hand back an equation's XML before it has finished putting it back (the
+            // 0.1.166–0.1.167 self-tests: a read a moment later was complete). Read again, letting Word settle,
+            // before falling back; the user may open or edit the equation straight after the undo.
+            for (int attempt = 1; attempt <= 4 && PictureXml.Data(xml, out _) == null && ObjectDataTagXml(xml) == null; attempt++)
+            {
+                Log.Info("picture " + eq.Tag + ": its XML has no MathBlocks data yet, reading again (" + attempt + ")");
+                try { System.Windows.Forms.Application.DoEvents(); } catch (Exception) { }
+                System.Threading.Thread.Sleep(60 * attempt);
+                try { xml = eq.Picture.Range.WordOpenXML; } catch (COMException) { break; }
+            }
+            if (PictureXml.Data(xml, out _) != null || ObjectDataTagXml(xml) != null) return xml;
             var alt = AltSourceOf(eq.Picture);
             if (alt == null) return xml;
             Log.Info("picture " + eq.Tag + ": its XML has no MathBlocks data (VML " + xml.Contains("<v:imagedata") + ", DrawingML " + xml.Contains("<pic:pic") + ", EMF " + xml.Contains("image/x-emf") + ", PNG " + xml.Contains("image/png") + ", " + xml.Length + " chars) — read from its alt text");

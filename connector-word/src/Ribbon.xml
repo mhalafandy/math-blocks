@@ -42,8 +42,11 @@
                   screentip="Turn this document's MathType equations into native, editable MathBlocks equations (one undo step)"
                   onAction="OnConvertMathType" />
           <button id="mbConvertLatex" keytip="L" label="Convert LaTeX" size="large" imageMso="EquationInsertGallery"
-                  screentip="Turn LaTeX written in the text ($…$, $$…$$, \(…\), \[…\]) into MathBlocks equations: the selection when there is one, otherwise the whole document (one undo step). Ctrl+Alt+L converts just the one at the cursor."
+                  screentip="Turn LaTeX written in the text ($…$, $$…$$, \(…\), \[…\]) into MathBlocks equations: the selection when there is one, otherwise the whole document (one undo step). Toggle LaTeX (Ctrl+Alt+Shift+L) converts just the one at the cursor, and back."
                   onAction="OnConvertLatex" />
+          <button id="mbToggleLatex" keytip="X" label="Toggle LaTeX" imageMso="EquationLinearFormat"
+                  screentip="The equation at the cursor, or every one in the selection, becomes its LaTeX text; LaTeX text at the cursor or selected becomes the equation again (same ID, still numbered). The number, its bookmark and references stay. One undo step. Ctrl+Alt+Shift+L."
+                  onAction="OnToggleLatex" />
           <button id="mbCheckDocument" keytip="D" label="Check document" imageMso="ReviewSpellingAndGrammar"
                   screentip="One report of what could be wrong: equations whose LaTeX or picture is off, pictures in an older style, numbers out of order, references that point nowhere or show a wrong number, markers that print, MathType leftovers. Go to each one; the safe repairs run together (one undo step)."
                   onAction="OnCheckDocument" />

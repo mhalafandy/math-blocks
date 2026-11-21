@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Word = Microsoft.Office.Interop.Word;
@@ -33,6 +34,23 @@ namespace MathBlocks.WordConnector
             var doc = ActiveDocument();
             var sel = _app.Selection;
             var result = new Dictionary<string, object> { ["document"] = doc.FullName, ["rect"] = RectOf(sel.Range) };
+            // Toggle LaTeX on a selection: the MathBlocks equations in it (document order).
+            if (sel.Start != sel.End)
+            {
+                var tags = new List<object>();
+                try
+                {
+                    foreach (Word.InlineShape s in sel.Range.InlineShapes)
+                    {
+                        var t = TagOf(s);
+                        if (IsTag(t) && !tags.Contains(t)) tags.Add(t);
+                    }
+                    foreach (Word.ContentControl c in sel.Range.ContentControls)
+                        if (IsTag(c.Tag) && !tags.Contains(c.Tag)) tags.Add(c.Tag);
+                }
+                catch (COMException) { }
+                if (tags.Count > 1) result["selectedTags"] = tags;
+            }
             // A titled picture, a picture recognised by its alt text / source, or a wrapper (native).
             var cc = EquationAt(doc, sel.Range);
             if (cc == null)
@@ -69,6 +87,7 @@ namespace MathBlocks.WordConnector
                 result["text"] = sel.Range.Text ?? "";
                 result["start"] = sel.Start;
                 result["end"] = sel.End;
+                AddLatexTextContext(doc, result);
                 return result;
             }
             var para = sel.Range.Paragraphs[1].Range;
@@ -80,9 +99,60 @@ namespace MathBlocks.WordConnector
                 result["text"] = m.Value;
                 result["start"] = para.Start + m.Index;
                 result["end"] = para.Start + m.Index + m.Length;
+                AddLatexTextContext(doc, result);
                 break;
             }
             return result;
+        }
+
+        /// <summary>Bookmark around the LaTeX text an equation became (Toggle LaTeX): its ID comes back with it.</summary>
+        internal const string LatexTextPrefix = "_MBTx_";
+
+        internal static string LatexTextBookmark(string tag)
+        {
+            var parts = (tag ?? "").Split('|');
+            if (parts.Length != 3) return null;
+            return LatexTextPrefix + (parts[1] == "-" ? "0" : parts[1]) + "_" + parts[2];
+        }
+
+        private static string TagOfLatexTextBookmark(string name)
+        {
+            if (name == null || !name.StartsWith(LatexTextPrefix, StringComparison.Ordinal)) return null;
+            var rest = name.Substring(LatexTextPrefix.Length).Split('_');
+            if (rest.Length != 2) return null;
+            return "mb1|" + (rest[0] == "0" ? "-" : rest[0]) + "|" + rest[1];
+        }
+
+        /// <summary>LaTeX text at the cursor (Toggle LaTeX back): the ID it had as an equation, and whether its paragraph is numbered.</summary>
+        private void AddLatexTextContext(Word.Document doc, Dictionary<string, object> result)
+        {
+            try
+            {
+                int start = Convert.ToInt32(result["start"]), end = Convert.ToInt32(result["end"]);
+                var r = doc.Range(start, end);
+                bool hidden = doc.Bookmarks.ShowHidden;
+                doc.Bookmarks.ShowHidden = true;
+                try
+                {
+                    foreach (Word.Bookmark b in doc.Bookmarks)
+                    {
+                        if (!b.Name.StartsWith(LatexTextPrefix, StringComparison.Ordinal)) continue;
+                        if (b.Range.Start <= start && b.Range.End >= end || b.Range.Start >= start && b.Range.End <= end)
+                        {
+                            var t = TagOfLatexTextBookmark(b.Name);
+                            if (t != null) { result["textTag"] = t; break; }
+                        }
+                    }
+                }
+                finally
+                {
+                    doc.Bookmarks.ShowHidden = hidden;
+                }
+                result["numbered"] = HasNumberField(r.Paragraphs[1].Range);
+            }
+            catch (COMException)
+            {
+            }
         }
 
         private static Regex LatexSpans => LatexText.Spans;
@@ -253,6 +323,78 @@ namespace MathBlocks.WordConnector
             }
             Log.Info("replaceRanges: " + replaced + " replaced, " + skipped + " skipped");
             return new Dictionary<string, object> { ["replaced"] = replaced, ["skipped"] = skipped };
+        }
+
+        /// <summary>
+        /// Toggle LaTeX: MathBlocks equations become their LaTeX text, one undo step, under the text guard (only the
+        /// equations change; the LaTeX written is left out of the comparison). The paragraph, its number field,
+        /// bookmark and the references to it stay; a bookmark around each text keeps the equation's ID for the
+        /// way back.
+        /// </summary>
+        public Dictionary<string, object> EquationsToText(Dictionary<string, object> p)
+        {
+            var doc = ResolveDocument(p);
+            var items = new List<(string tag, string text, Eq eq)>();
+            if (p.TryGetValue("items", out var raw) && raw is System.Collections.IEnumerable list)
+                foreach (var o in list)
+                {
+                    if (!(o is Dictionary<string, object> d)) continue;
+                    var tag = Rpc.GetString(d, "tag");
+                    var found = FindByTag(doc, tag);
+                    if (found.Count == 0) continue;
+                    items.Add((tag, Rpc.GetString(d, "text"), found[0]));
+                }
+            if (items.Count == 0) throw new RpcException(Rpc.NotFound, "The equation is no longer in the document.");
+            var ordered = items.OrderByDescending(x => SafeStart(x.eq)).ToList();
+            var exclude = ordered.Select(x => new[] { x.eq.Range.Start, x.eq.Range.End }).ToList();
+            var names = new List<string>();
+            var r0 = InOneUndo(ordered.Count == 1 ? "Equation to LaTeX" : "Equations to LaTeX", () =>
+            {
+                int first = -1;
+                foreach (var x in ordered)
+                {
+                    int at;
+                    var cc = x.eq;
+                    if (cc.IsPicture)
+                    {
+                        at = cc.Before;
+                        cc.Range.Delete();
+                    }
+                    else
+                    {
+                        cc.Control.LockContents = false;
+                        cc.Control.LockContentControl = false;
+                        at = Math.Max(0, cc.Control.Range.Start - 1);
+                        cc.Control.Delete(true);
+                    }
+                    RemoveEmptyMath(doc, at);
+                    doc.Range(at, at).InsertAfter(x.text);
+                    var name = LatexTextBookmark(x.tag);
+                    if (name != null)
+                    {
+                        if (doc.Bookmarks.Exists(name)) doc.Bookmarks[name].Delete();
+                        doc.Bookmarks.Add(name, doc.Range(at, at + x.text.Length));
+                        names.Add(name);
+                    }
+                    first = at;
+                }
+                // The text written, where it ended up (each later item moved the ones after it).
+                bool hidden = doc.Bookmarks.ShowHidden;
+                doc.Bookmarks.ShowHidden = true;
+                try
+                {
+                    foreach (var n in names)
+                        if (doc.Bookmarks.Exists(n)) GuardWritten(doc.Bookmarks[n].Range.Start, doc.Bookmarks[n].Range.End);
+                }
+                finally
+                {
+                    doc.Bookmarks.ShowHidden = hidden;
+                }
+                // One equation: its LaTeX selected, to edit and toggle back with the same shortcut.
+                if (ordered.Count == 1 && first >= 0) doc.Range(first, first + ordered[0].text.Length).Select();
+                return new Dictionary<string, object> { ["ok"] = true, ["count"] = ordered.Count };
+            }, exclude, doc);
+            return r0;
         }
 
         /// <summary>Replaces a MathBlocks equation by plain text (e.g. its LaTeX), one undo step.</summary>

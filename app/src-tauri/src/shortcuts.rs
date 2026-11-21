@@ -4,12 +4,13 @@
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
-/// (key, name) pairs, all with Ctrl+Alt.
-const SHORTCUTS: &[(Code, &str)] = &[
-    (Code::KeyM, "edit"),      // edit the equation at the cursor (or a new one) in the floating editor
-    (Code::KeyL, "latex"),     // equation ↔ LaTeX text at the cursor
-    (Code::KeyR, "reference"), // insert a reference to a numbered equation
-    (Code::KeyN, "number"),    // number / un-number the equation at the cursor
+/// (key, with Shift, name): all with Ctrl+Alt.
+const SHORTCUTS: &[(Code, bool, &str)] = &[
+    (Code::KeyM, false, "edit"),      // edit the equation at the cursor (or a new one) in the floating editor
+    // Toggle LaTeX: Ctrl+Alt+Shift+L (Word's Ctrl+Alt+L inserts a LISTNUM field; MathType's toggle is Alt+\).
+    (Code::KeyL, true, "latex"),
+    (Code::KeyR, false, "reference"), // insert a reference to a numbered equation
+    (Code::KeyN, false, "number"),    // number / un-number the equation at the cursor
 ];
 
 #[cfg(windows)]
@@ -34,8 +35,9 @@ fn word_is_active() -> bool {
 
 pub fn register(app: &AppHandle) {
     let gs = app.global_shortcut();
-    for (code, name) in SHORTCUTS {
-        let shortcut = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), *code);
+    for (code, shift, name) in SHORTCUTS {
+        let mods = if *shift { Modifiers::CONTROL | Modifiers::ALT | Modifiers::SHIFT } else { Modifiers::CONTROL | Modifiers::ALT };
+        let shortcut = Shortcut::new(Some(mods), *code);
         let name = name.to_string();
         let result = gs.on_shortcut(shortcut, move |app, _s, event| {
             if event.state() != ShortcutState::Pressed || !word_is_active() {

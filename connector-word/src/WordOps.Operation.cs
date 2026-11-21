@@ -140,6 +140,7 @@ namespace MathBlocks.WordConnector
             catch (COMException)
             {
             }
+            PausePagination();
             // One busy pointer for the whole operation (Word otherwise switches it on and off with every
             // change, which looks like flickering).
             try
@@ -246,6 +247,7 @@ namespace MathBlocks.WordConnector
                 }
                 _operationScreen = null;
             }
+            ResumePagination();
             if (_operationWindow != null)
             {
                 try
@@ -328,6 +330,58 @@ namespace MathBlocks.WordConnector
 
         internal void CloseRequestProgress() => CloseProgressWindow();
 
+        // ------------------------------------------------------------------ background pagination
+
+        /// <summary>
+        /// Word repaginates a long document in the background after every change; an operation that writes
+        /// hundreds of equations turns that off and back on at its end. It is a Word-wide option: a file says it
+        /// is off meanwhile, so the next start of the add-in turns it back on if Word stopped in between.
+        /// </summary>
+        private bool? _operationPagination;
+
+        private static string PaginationFlag => System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MathBlocks", "pagination-paused");
+
+        private void PausePagination()
+        {
+            if (_operationPagination != null) return;
+            try
+            {
+                if (!_app.Options.Pagination) return;
+                System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(PaginationFlag));
+                System.IO.File.WriteAllText(PaginationFlag, "on");
+                _app.Options.Pagination = false;
+                _operationPagination = true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("pausing background pagination", ex);
+            }
+        }
+
+        private void ResumePagination()
+        {
+            if (_operationPagination == null) return;
+            try { _app.Options.Pagination = true; } catch (Exception ex) { Log.Error("resuming background pagination", ex); }
+            _operationPagination = null;
+            try { System.IO.File.Delete(PaginationFlag); } catch (Exception) { }
+        }
+
+        /// <summary>At start: background pagination back on if an operation was stopped while it was off.</summary>
+        internal void RestorePaginationAfterStop()
+        {
+            try
+            {
+                if (!System.IO.File.Exists(PaginationFlag)) return;
+                _app.Options.Pagination = true;
+                System.IO.File.Delete(PaginationFlag);
+                Log.Info("background pagination turned back on (an operation had stopped while it was off)");
+            }
+            catch (Exception ex)
+            {
+                Log.Error("restoring background pagination", ex);
+            }
+        }
+
         private Word.Window _operationWindow;
         private bool? _operationScreen;
 
@@ -385,6 +439,19 @@ namespace MathBlocks.WordConnector
         /// <summary>Tests: the next progress step reports Cancel, as if the user pressed it.</summary>
         internal static bool CancelNextProgress;
         private List<int[]> _guardExclude;
+
+        /// <summary>
+        /// Text the operation itself writes (Toggle LaTeX: an equation's LaTeX), as ranges in the document after it:
+        /// left out of the comparison afterwards, as the replaced ranges are before.
+        /// </summary>
+        private List<int[]> _guardWritten;
+
+        /// <summary>An operation wrote this text on purpose (positions after the operation).</summary>
+        internal void GuardWritten(int start, int end)
+        {
+            if (_guardDoc == null || end <= start) return;
+            (_guardWritten ?? (_guardWritten = new List<int[]>())).Add(new[] { start, end });
+        }
         private string _guardLabel;
 
         private static List<int[]> ExcludeOf(Dictionary<string, object> p)
@@ -413,6 +480,7 @@ namespace MathBlocks.WordConnector
             {
                 _guardDoc = doc;
                 _guardExclude = exclude ?? new List<int[]>();
+                _guardWritten = null;
                 _guardBeforeDoc = RecordGuardDoc(doc, _guardExclude);
                 _guardBefore = GuardText.Canonical(_guardBeforeDoc, _guardExclude);
                 _guardBeforeFull = _guardExclude.Count > 0 ? GuardText.Canonical(_guardBeforeDoc, null) : _guardBefore;
@@ -433,8 +501,8 @@ namespace MathBlocks.WordConnector
             GuardDoc afterDoc;
             try
             {
-                afterDoc = RecordGuardDoc(_guardDoc, null);
-                after = GuardText.Canonical(afterDoc, null);
+                afterDoc = RecordGuardDoc(_guardDoc, _guardWritten);
+                after = GuardText.Canonical(afterDoc, _guardWritten);
             }
             catch (Exception ex)
             {
@@ -605,6 +673,7 @@ namespace MathBlocks.WordConnector
                 {
                     ["operation"] = _guardLabel ?? "",
                     ["exclude"] = _guardExclude,
+                    ["written"] = _guardWritten ?? new List<int[]>(),
                     ["before"] = GuardDocJson(_guardBeforeDoc),
                     ["after"] = GuardDocJson(after),
                     ["verdict"] = verdict ?? "unchanged",
