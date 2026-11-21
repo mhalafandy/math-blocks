@@ -37,6 +37,49 @@ namespace MathBlocks.WordConnector
         {
             XmlScope = null;
             TagScope = null;
+            FactsScope = null;
+            WriteFactsDoc = null;
+        }
+
+        /// <summary>
+        /// Per document, for a request that only reads: whether it has tracked changes and its content controls by
+        /// ID. Each lookup asked Word for both (the revision count, a search of every control), about half a second
+        /// per equation on the thesis-size document (0.1.169 log: verify 0.52 s per equation with the XML read once).
+        /// </summary>
+        internal sealed class DocFacts
+        {
+            public bool NoRevisions;
+            public int Controls;
+            public Dictionary<string, List<Word.ContentControl>> ControlsByTag = new Dictionary<string, List<Word.ContentControl>>(StringComparer.Ordinal);
+        }
+
+        internal static Dictionary<string, DocFacts> FactsScope;
+
+        /// <summary>The request's facts about the document; null outside a request that only reads.</summary>
+        internal static DocFacts FactsOf(Word.Document doc)
+        {
+            if (XmlScope == null && (WriteFactsDoc == null || !string.Equals(WriteFactsDoc, doc.FullName, StringComparison.OrdinalIgnoreCase))) return null;
+            if (FactsScope == null) FactsScope = new Dictionary<string, DocFacts>(StringComparer.OrdinalIgnoreCase);
+            var key = doc.FullName;
+            if (FactsScope.TryGetValue(key, out var f)) return f;
+            f = new DocFacts();
+            try { f.NoRevisions = doc.Revisions.Count == 0; } catch (Exception) { f.NoRevisions = false; }
+            try
+            {
+                foreach (Word.ContentControl cc in doc.ContentControls)
+                {
+                    f.Controls++;
+                    var t = cc.Tag ?? "";
+                    if (!f.ControlsByTag.TryGetValue(t, out var list)) f.ControlsByTag[t] = list = new List<Word.ContentControl>();
+                    list.Add(cc);
+                }
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+            FactsScope[key] = f;
+            return f;
         }
 
         /// <summary>
@@ -46,6 +89,8 @@ namespace MathBlocks.WordConnector
         internal static void InvalidateReadScope(string oldTag = null, string newTag = null)
         {
             XmlScope?.Clear();
+            // An ID written in a write that may use the facts changes neither revisions nor content controls.
+            if (WriteFactsDoc == null) FactsScope = null;
             if (TagScope == null) return;
             if (oldTag == null && newTag == null)
             {
@@ -67,10 +112,16 @@ namespace MathBlocks.WordConnector
         /// A write that looks up every equation once (Apply style's replacements): the picture index without the
         /// XML read; each replaced ID is forgotten as it is written.
         /// </summary>
-        internal static void BeginWriteIndex()
+        internal static void BeginWriteIndex(Word.Document doc)
         {
             if (TagScope == null) TagScope = new Dictionary<string, Dictionary<string, List<Word.InlineShape>>>(StringComparer.OrdinalIgnoreCase);
+            // Writing pictures with Track Changes off adds no revisions, and a document without content controls gets
+            // none: the facts hold for the whole write (Apply style: 0.7 s per equation on the thesis, 0.1.169 log).
+            try { WriteFactsDoc = !doc.TrackRevisions && doc.ContentControls.Count == 0 ? doc.FullName : null; } catch (Exception) { WriteFactsDoc = null; }
         }
+
+        /// <summary>The document a write may use the facts for (see BeginWriteIndex).</summary>
+        internal static string WriteFactsDoc;
 
         /// <summary>A picture's XML: from the request's one read of the document where it can be told apart, else Word's.</summary>
         internal static string ShapeXml(Word.InlineShape s)

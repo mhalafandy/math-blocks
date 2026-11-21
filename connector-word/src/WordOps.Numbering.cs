@@ -457,6 +457,9 @@ namespace MathBlocks.WordConnector
         /// paragraph Word can add a paragraph mark before the inserted runs (self-test: a reference
         /// typed after "See " landed on a new line); that mark is removed.
         /// </summary>
+        /// <summary>Time Word spent in InsertXML since the last reset (Convert LaTeX's breakdown).</summary>
+        internal static long InsertXmlMs;
+
         internal static void InsertInline(Word.Document doc, Word.Range at, string package)
         {
             // InsertXML over a placeholder character stays inside the paragraph (at an empty point at a
@@ -464,7 +467,9 @@ namespace MathBlocks.WordConnector
             int start = at.Start;
             doc.Range(start, start).InsertAfter("#");
             var placeholder = doc.Range(start, start + 1);
+            var insertClock = System.Diagnostics.Stopwatch.StartNew();
             placeholder.InsertXML(package);
+            InsertXmlMs += insertClock.ElapsedMilliseconds;
             try
             {
                 // The placeholder was a character in the paragraph: a paragraph mark now at its place was
@@ -681,6 +686,12 @@ namespace MathBlocks.WordConnector
             return FieldRole.Other;
         }
 
+        private static bool IsEmbed(Word.Field f)
+        {
+            try { return f.Type == Word.WdFieldType.wdFieldEmbed || (f.Code.Text ?? "").TrimStart().StartsWith("EMBED", StringComparison.Ordinal); }
+            catch (COMException) { return false; }
+        }
+
         /// <summary>Document variable present while Update numbers has other fields locked (left behind only if Word stopped).</summary>
         internal const string LockMarker = "MathBlocks.UpdateNumbersLocked";
 
@@ -707,7 +718,12 @@ namespace MathBlocks.WordConnector
             {
                 bool locked;
                 try { locked = f.Locked; } catch (COMException) { continue; }
-                fields.Add((f, RoleOf(f), locked));
+                var role = RoleOf(f);
+                // Embedded objects (every equation object is an EMBED field) have no result to update and are left
+                // alone: Word's Ctrl+Z did not always give one its lock state back after Check document's repair
+                // had also redrawn it (0.1.169 self-test), and a thesis has 1500 of them.
+                if (role == FieldRole.Other && IsEmbed(f)) continue;
+                fields.Add((f, role, locked));
             }
             int numbers = fields.Count(x => x.role == FieldRole.Number), references = fields.Count(x => x.role == FieldRole.Reference);
             var refs = fields.Where(x => x.role == FieldRole.Reference).Select(x => x.f).ToList();

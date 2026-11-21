@@ -157,7 +157,17 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
     check(`${label}: one Ctrl+Z undoes it`, now === before && steps === 1, now === before ? `${steps} Ctrl+Z` : `not restored after ${steps} Ctrl+Z`);
     await smoke("redo", { times: steps });
     const redone = await docState();
-    check(`${label}: Ctrl+Y redoes it`, redone === after, redone === after ? "redone" : "differs from the result after redo");
+    // What differs (0.1.169: "Apply notation kinds" redo differed, which part was not said), and whether a second
+    // read a moment later agrees (Word still settling after Ctrl+Y).
+    let redoDetail = "redone";
+    if (redone !== after) {
+      const a1 = after.split(/\n|\|/), r1 = redone.split(/\n|\|/);
+      const diff = r1.filter((x) => !a1.includes(x)).map((x) => `now ${x.slice(0, 80)}`).concat(a1.filter((x) => !r1.includes(x)).map((x) => `was ${x.slice(0, 80)}`));
+      await new Promise((r) => setTimeout(r, 400));
+      const again = await docState();
+      redoDetail = `differs: ${diff.slice(0, 4).join(" | ") || "(text or order)"}; a moment later ${again === after ? "it matches" : "still differs"}`;
+    }
+    check(`${label}: Ctrl+Y redoes it`, redone === after, redoDetail);
     // The checks after it read the document in front: make sure it is still this one (another Word
     // window coming forward during the long test would make them read the wrong document).
     const still = (await smoke("activeName")).name as string;
@@ -496,6 +506,25 @@ export async function runWordSelfTest(o: { spike?: boolean } = { spike: true }):
       useApp.getState().setEditing(null);
       void docO;
       await smoke("save", { file: "object menu test.docx" });
+    });
+
+    section = "Word shortcuts: Word's own keys on this PC";
+    await step("word shortcuts", async () => {
+      const { DEFAULT_WORD_KEYS, WORD_KEY_LABELS, wordKeyCode } = await import("./wordKeys");
+      const assigned = ((await smoke("keyAssignments")) as { assigned: { keys: string; code: number; command: string; category: string }[] }).assigned;
+      const mine = { ...DEFAULT_WORD_KEYS, ...useApp.getState().wordKeys } as Record<string, string>;
+      for (const [name, keys] of Object.entries(mine)) {
+        if (!keys) continue;
+        const code = wordKeyCode(keys);
+        const hit = assigned.find((x) => x.code === code);
+        check(`${WORD_KEY_LABELS[name as keyof typeof WORD_KEY_LABELS] ?? name}: ${keys} is free in Word`, !hit, hit ? `Word uses it for ${hit.command} (${hit.category.replace("wdKeyCategory", "")})` : "free");
+      }
+      const right = [..."YUIOPHJKLNM", ";", "'", ",", ".", "/", "[", "]", "\\"];
+      const free = right.filter((k) => !assigned.some((x) => x.keys === `Ctrl+Alt+${k}`));
+      check("free Ctrl+Alt keys under the right hand", null, free.map((k) => `Ctrl+Alt+${k}`).join("  ") || "none");
+      check("Word's Ctrl+Alt keys on this PC", null, assigned.filter((x) => /^Ctrl\+Alt\+[^+]+$/.test(x.keys)).map((x) => `${x.keys} ${x.command}`).join("; "));
+      check("keys of macros and add-ins (MathType and others)", null, assigned.filter((x) => x.category !== "wdKeyCategoryCommand").map((x) => `${x.keys} ${x.command}`).join("; ") || "none");
+      await smoke("writeFile", { file: "word keys.txt", text: assigned.map((x) => `${x.keys}\t${x.command}\t${x.category.replace("wdKeyCategory", "")}`).join("\r\n") });
     });
 
     section = "Toggle LaTeX: equation ↔ its LaTeX text";

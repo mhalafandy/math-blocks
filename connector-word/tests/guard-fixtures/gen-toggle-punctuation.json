@@ -1,0 +1,71 @@
+{
+ "operation": "Toggle LaTeX next to punctuation",
+ "source": "generated (tools/make-guard-fixtures.ts) from the field codes of a 0.1.148 self-test run",
+ "expect": "unchanged",
+ "exclude": [
+  [
+   14,
+   15
+  ]
+ ],
+ "written": [
+  [
+   14,
+   19
+  ]
+ ],
+ "writtenText": [
+  "$a=b$"
+ ],
+ "before": {
+  "end": 19,
+  "fields": [],
+  "equations": [
+   [
+    14,
+    15
+   ]
+  ],
+  "lists": [],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 14,
+    "text": "It holds (see "
+   },
+   {
+    "start": 14,
+    "end": 15,
+    "text": "\u0001"
+   },
+   {
+    "start": 15,
+    "end": 19,
+    "text": ").\r\r"
+   }
+  ]
+ },
+ "after": {
+  "end": 23,
+  "fields": [],
+  "equations": [],
+  "lists": [],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 14,
+    "text": "It holds (see "
+   },
+   {
+    "start": 14,
+    "end": 19,
+    "text": "$a=b$"
+   },
+   {
+    "start": 19,
+    "end": 23,
+    "text": ").\r\r"
+   }
+  ]
+ }
+}

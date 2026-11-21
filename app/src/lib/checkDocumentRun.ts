@@ -30,7 +30,7 @@ export async function runCheck(): Promise<CheckResult> {
   const t0 = performance.now();
   await loadDocumentStyle();
   const [inst, numbered, fields] = await Promise.all([
-    connector.request("listInstances", { includeContent: true }, SLOW),
+    connector.request("listInstances", { includeContent: true, pages: false }, SLOW),
     connector.request("listNumbered", {}, SLOW),
     connector.request("checkFields", {}, SLOW),
   ]);

@@ -2,34 +2,39 @@
 
 Updated at the end of every round. Public repository: generic content only. Earlier rounds: `docs/status-archive/`.
 
-## Latest round — 0.1.169
+## Latest round — 0.1.170
 
-**Build:** 0.1.169 (test channel), CI passed. **Stable: 0.1.168 promoted** (self-test 21 Nov 04:44: 441 passed, 0 failed).
+**Build:** 0.1.170 (test channel), CI: pending. Stable stays 0.1.168: the 0.1.169 self-test had 2 failures.
 
-**Reports read:** self-test 04:20 (0.1.168: clean), thesis-size 13:50, soak 04:50 (failed after #675).
+**Reports read:** self-test 18:32 (0.1.169: 454 passed, 2 failed), thesis-size 19:06, soak 20:56 (failed at #122), connector.log.
 
-**Thesis-size (0.1.168):** Convert LaTeX 206 ms per equation (building 3, writing 203), plus 532 s of numbers at the end. Update numbers: field by field 547 s, locked 69 s. **Default is now locked** (Update numbers, Convert LaTeX's update, list of symbols, numbering conversion). List of symbols timed out (1003 s, mostly its field-by-field number update); the steps after it queued behind it.
+**Thesis-size (0.1.169) and the log:** Convert LaTeX 207 ms per equation (writing 204); numbers 72 s (locked). List of symbols 553 s, now passing. The one read of the document's XML takes 8–11 s (37 MB, 1533 pictures), so decision A's read is cheap. The time went into per-equation Word calls: the check before writing took 0.52 s per equation (revision count and content-control search on each lookup), and Apply style's writes 0.66–0.82 s per equation.
 
-**Fixed / built:**
-- Soak #673: Apply style left an equation twice. The picture index kept Word objects that an earlier write had replaced; each is now checked against its ID before use, else the document is walked.
-- Undo of an edit: when an equation's XML has no MathBlocks data yet (right after Ctrl+Z), the add-in reads it again, letting Word settle, before giving up. This applies to list, open, edit and selection reads.
-- Update numbers (locked): the marker records each field locked before by its position and a hash of its code. The Unlock repair refuses, changes nothing and says why if they don't match. No marker written, nothing locked: field by field instead. Still one Ctrl+Z (self-test).
-- Numbering, unnumbering one equation, section marker: only the numbers from that point on and the references to them are updated.
-- Operations pause Word's background pagination and always restore it; a file restores it at the next start if Word stopped. Convert LaTeX writes in batches of 80.
-- **Toggle LaTeX:** ribbon button (Convert group) and **Ctrl+Alt+Shift+L** (Word's Ctrl+Alt+L inserts a LISTNUM field; MathType's is Alt+\). On the equation at the cursor or every equation in the selection, and back. The number field, its bookmark and references stay; the equation comes back with its ID (a bookmark around the text) and numbered. One Ctrl+Z, under the text guard. Guard fixtures and CI first: `gen-toggle-*` (the guard now leaves text an operation writes on purpose out of the comparison).
+**Fixed:**
+- Check document's repair + one Ctrl+Z left an equation's EMBED field locked: the locked Update numbers no longer touches embedded objects' fields (they have no result to update; 1500 fewer locks on a thesis).
+- Soak #113 / #673: Apply style replaced the wrong pictures. Each batch is now written from the end of the document backwards, so a write only disturbs what is already done.
+- Speed: within a request, whether the document has tracked changes and its content controls by ID are read once (verify, list, and writes with Track Changes off). Check document reads equations without pages.
+- "Apply notation kinds: Ctrl+Y redoes it": the check now says which equations differ and whether a second read agrees (cause not known yet).
+
+**Built:**
+- Text guard: each written range must hold exactly the LaTeX written. Fixtures that must fail: range one character too wide (left, right), next to punctuation, two adjacent equations, a numbered line (plus passing ones).
+- **Word shortcuts, new convention** (docs/SHORTCUTS.md): Ctrl+Alt+J inline, Ctrl+Alt+; display, Ctrl+Alt+' Toggle LaTeX, Ctrl+Alt+K edit, Ctrl+Alt+, reference, Ctrl+Alt+/ number. Changeable in Settings → Word shortcuts (Shift bases and function keys refused). Every MathBlocks tab button has its own key tip (Alt, Q, letter).
+- Self-test "Word shortcuts: Word's own keys on this PC": each shortcut checked against Word's assignments (built-in, MathType, other add-ins); the free right-hand Ctrl+Alt keys; full list in `word keys.txt`.
+- Thesis-size report: Convert LaTeX's InsertXML time per equation; log lines for listInstances (pages vs content).
+- docs/CLEANUP-INVENTORY.md: what a new user does not need, with a proposal for each (nothing removed).
 
 **Needs your PC:**
-- Self-test of 0.1.169 (new section "Toggle LaTeX"; new checks for an interrupted Update numbers). Clean → I promote it.
-- Thesis-size test: Convert LaTeX against the 0.2 s target (pagination paused, locked numbers), and the steps after the list of symbols.
-- Soak test again.
+- Self-test of 0.1.170 (check the "Word shortcuts" section: any clash, and send `word keys.txt`). Clean → I promote it.
+- Thesis-size test, and the connector.log after it (Convert LaTeX target; Apply style, Check document, Change symbol in time?).
+- Soak test.
 
 **Open:**
-- Convert LaTeX under 0.2 s per equation: 206 ms in 0.1.168, not measured yet with this round's changes.
-- The other Word shortcuts also clash with Word: Ctrl+Alt+M (comment), Ctrl+Alt+R (®), Ctrl+Alt+N (Draft view). Move them to Ctrl+Alt+Shift too?
-- `\overrightarrow` width in the editor.
+- Convert LaTeX under 0.2 s per equation: not reached (207 ms). The InsertXML breakdown will show whether the equation package size is the lever.
+- The default keys are proposals until the self-test shows they are free on your PC (Ctrl+Alt+K is AutoFormat in some Word versions).
+- Cleanup: your choice per item in docs/CLEANUP-INVENTORY.md.
 
 ## Details
 
-- `ScopedPicturesWithTag` checks `TagOf` and the range of each indexed picture. `PictureXmlForApp` retries up to 4 times when the XML has neither data nor an object ID.
-- `UpdateNumberFieldsLocked`: marker value `start:fnv` per field locked before (`-` if none), read back before locking. `UpdateNumbersFrom(doc, from)`. `UpdateAllNumbers` = locked.
-- `EquationsToText` (`InOneUndo` with the equations excluded, `GuardWritten` for the text; bookmark `_MBTx_<block|0>_<instance>`); `selectionInfo` gives `selectedTags`, `textTag`, `numbered`.
+- `GuardText.WrittenMismatch`; `GuardWritten(start, end, text)`; fixtures carry `writtenText`.
+- `DocFacts` (`FactsOf`): read scope, or a write with Track Changes off and no content controls (`BeginWriteIndex(doc)`).
+- `shortcuts.rs`: `set_word_shortcuts`, `parse` (convention, unit test); app `lib/wordKeys.ts`, prefs `wordKeys`.

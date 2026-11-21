@@ -239,6 +239,7 @@ namespace MathBlocks.WordConnector
             items.Sort((a, b) => Rpc.GetInt(b, "start").CompareTo(Rpc.GetInt(a, "start")));
             var label = p.TryGetValue("undoLabel", out var u) && u is string us ? us : "Convert LaTeX";
             var clock = Stopwatch.StartNew();
+            long xml0 = InsertXmlMs;
             return InOneUndo(label, () =>
             {
                 var results = new List<object>();
@@ -273,13 +274,14 @@ namespace MathBlocks.WordConnector
                     }
                     // Numbers first, then references (they show the numbers). Written in batches, only the last updates them.
                     if (p.ContainsKey("updateNumbers") && !Rpc.GetBool(p, "updateNumbers"))
-                        return new Dictionary<string, object> { ["results"] = results, ["done"] = done, ["ms"] = clock.ElapsedMilliseconds, ["numbers"] = 0, ["references"] = 0, ["broken"] = new List<object>() };
+                        return new Dictionary<string, object> { ["results"] = results, ["done"] = done, ["ms"] = clock.ElapsedMilliseconds, ["numbers"] = 0, ["references"] = 0, ["broken"] = new List<object>(), ["insertXmlMs"] = InsertXmlMs - xml0 };
+                    var insertXmlMs = InsertXmlMs - xml0;
                     var numbersClock = System.Diagnostics.Stopwatch.StartNew();
                     var updated = Rpc.GetOptString(p, "numbersMethod") == "each" ? UpdateNumberFields(doc) : UpdateNumberFieldsLocked(doc);
                     var numbersMs = numbersClock.ElapsedMilliseconds;
                     CheckOperationUndo("after updating numbers and references");
                     Log.Info("convertInterchange in " + doc.Name + ": " + done + "/" + items.Count + " item(s) in " + clock.ElapsedMilliseconds + " ms");
-                    return new Dictionary<string, object> { ["results"] = results, ["done"] = done, ["ms"] = clock.ElapsedMilliseconds, ["numbers"] = updated["numbers"], ["references"] = updated["references"], ["broken"] = updated["broken"], ["numbersMs"] = numbersMs };
+                    return new Dictionary<string, object> { ["results"] = results, ["done"] = done, ["ms"] = clock.ElapsedMilliseconds, ["numbers"] = updated["numbers"], ["references"] = updated["references"], ["broken"] = updated["broken"], ["numbersMs"] = numbersMs, ["insertXmlMs"] = insertXmlMs };
                 }
                 finally
                 {

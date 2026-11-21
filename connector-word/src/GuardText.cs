@@ -134,6 +134,41 @@ namespace MathBlocks.WordConnector
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Text an operation wrote on purpose (left out of the comparison): each range must hold exactly the text the
+        /// operation says it wrote, and nothing else, so a range reported too wide cannot hide a change next to it.
+        /// Null when every range holds its text; else what is wrong.
+        /// </summary>
+        public static string WrittenMismatch(GuardDoc after, IList<int[]> written, IList<string> texts)
+        {
+            if (written == null || written.Count == 0) return null;
+            if (texts == null || texts.Count != written.Count) return "the text written was not reported with its ranges";
+            var chunks = new List<GuardChunk>(after.Chunks);
+            chunks.Sort((a, b) => a.Start.CompareTo(b.Start));
+            for (int i = 0; i < written.Count; i++)
+            {
+                int s = written[i][0], e = written[i][1];
+                var sb = new StringBuilder();
+                bool covered = true;
+                int pos = s;
+                foreach (var c in chunks)
+                {
+                    if (c.End <= s || c.Start >= e) continue;
+                    // The range must be made of whole chunks (it is a boundary of the record).
+                    if (c.Start < s || c.End > e || c.Start != pos) { covered = false; break; }
+                    sb.Append(c.Text ?? "");
+                    pos = c.End;
+                }
+                if (pos != e) covered = false;
+                var got = sb.ToString();
+                if (!covered || got != texts[i])
+                    return "the text written at " + s + " is not exactly what the operation wrote (holds \u201c" + Short(got) + "\u201d, wrote \u201c" + Short(texts[i] ?? "") + "\u201d)";
+            }
+            return null;
+        }
+
+        private static string Short(string s) => s.Length <= 60 ? s : s.Substring(0, 57) + "…";
+
         /// <summary>Null when the guarded text is unchanged; else where it differs (for the message and the log).</summary>
         public static string Difference(string before, string after)
         {

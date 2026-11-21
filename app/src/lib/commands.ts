@@ -81,8 +81,8 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => import("../components/TemplateDialog").then((m) => m.openTemplate(useApp.getState().latex, useApp.getState().display)),
     },
     { id: "word.convertLatex", title: "Convert all LaTeX in the Word document to equations", group: "Word", keywords: "latex dollar tex import overleaf convert", run: () => import("./wordShortcuts").then((m) => m.convertAllLatex()) },
-    { id: "word.editAtCursor", title: "Edit the equation at Word's cursor", group: "Word", shortcut: "Ctrl+Alt+M (in Word)", keywords: "edit new insert floating", run: () => import("./wordShortcuts").then((m) => m.editAtCursor()) },
-    { id: "word.toggleLatex", title: "Toggle LaTeX: equation(s) at Word's cursor or selection ↔ LaTeX text", group: "Word", shortcut: "Ctrl+Alt+Shift+L (in Word)", keywords: "latex text linear toggle source", run: () => import("./wordShortcuts").then((m) => m.toggleLatexAtCursor()) },
+    { id: "word.editAtCursor", title: "Edit the equation at Word's cursor", group: "Word", shortcut: "Ctrl+Alt+K (in Word)", keywords: "edit new insert floating", run: () => import("./wordShortcuts").then((m) => m.editAtCursor()) },
+    { id: "word.toggleLatex", title: "Toggle LaTeX: equation(s) at Word's cursor or selection ↔ LaTeX text", group: "Word", shortcut: "Ctrl+Alt+' (in Word)", keywords: "latex text linear toggle source", run: () => import("./wordShortcuts").then((m) => m.toggleLatexAtCursor()) },
     {
       id: "notation.settings",
       title: "Notation settings: kinds and their styles, new kinds…",

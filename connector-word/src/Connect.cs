@@ -287,7 +287,7 @@ namespace MathBlocks.WordConnector
 
         public void OnConvertMathType(IRibbonControl control) => RunAppCommand("convertMathType");
         public void OnConvertLatex(IRibbonControl control) => RunAppCommand("convertLatex");
-        /// <summary>Ribbon "Toggle LaTeX" (Ctrl+Alt+Shift+L): the equation(s) at the cursor or in the selection ↔ their LaTeX text.</summary>
+        /// <summary>Ribbon "Toggle LaTeX" (Ctrl+Alt+' by default): the equation(s) at the cursor or in the selection ↔ their LaTeX text.</summary>
         public void OnToggleLatex(IRibbonControl control) => RunAppCommand("toggleLatex");
         /// <summary>Ribbon "Insert reference": handled in Word (picker over Word), the app is not needed.</summary>
         public void OnInsertReference(IRibbonControl control)

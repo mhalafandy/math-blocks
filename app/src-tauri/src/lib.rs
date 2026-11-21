@@ -30,6 +30,7 @@ pub fn run() {
         .manage(updates::UpdateState::default())
         .invoke_handler(tauri::generate_handler![
             app_version,
+            shortcuts::set_word_shortcuts,
             updates::update_check,
             updates::update_download,
             updates::update_install,

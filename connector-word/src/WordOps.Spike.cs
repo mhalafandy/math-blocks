@@ -421,6 +421,34 @@ namespace MathBlocks.WordConnector
                     r["textAfter"] = (d.Range(at, at + probeText.Length).Text ?? "");
                     return r;
                 }
+                case "keyAssignments":
+                {
+                    // Self-test: Word's key assignments on this PC (built-in, Normal.dotm, MathType and other add-ins'
+                    // templates), for every Ctrl / Alt / Shift combination over letters, digits and punctuation, so the
+                    // Word shortcuts can be checked against them (Application.FindKey).
+                    var keys = new List<(int code, string name)>();
+                    for (char c = 'A'; c <= 'Z'; c++) keys.Add((c, c.ToString()));
+                    for (char c = '0'; c <= '9'; c++) keys.Add((c, c.ToString()));
+                    foreach (var kv in new[] { (186, ";"), (187, "="), (188, ","), (189, "-"), (190, "."), (191, "/"), (192, "`"), (219, "["), (220, "\\"), (221, "]"), (222, "'") }) keys.Add(kv);
+                    var mods = new[] { (512, "Ctrl"), (1024, "Alt"), (512 | 1024, "Ctrl+Alt"), (512 | 256, "Ctrl+Shift"), (1024 | 256, "Alt+Shift"), (512 | 1024 | 256, "Ctrl+Alt+Shift") };
+                    var list = new List<object>();
+                    foreach (var m in mods)
+                        foreach (var k in keys)
+                        {
+                            try
+                            {
+                                var kb = _app.FindKey[m.Item1 | k.code];
+                                var cmd = kb?.Command ?? "";
+                                if (string.IsNullOrEmpty(cmd)) continue;
+                                string cat;
+                                try { cat = kb.KeyCategory.ToString(); } catch (COMException) { cat = ""; }
+                                if (cat == "wdKeyCategoryNil" || cat == "wdKeyCategoryDisable") continue;
+                                list.Add(new Dictionary<string, object> { ["keys"] = m.Item2 + "+" + k.name, ["code"] = m.Item1 | k.code, ["command"] = cmd, ["category"] = cat });
+                            }
+                            catch (Exception) { }
+                        }
+                    return new Dictionary<string, object> { ["assigned"] = list };
+                }
                 case "interruptedLock":
                 {
                     // Self-test: as if Word stopped in the middle of Update numbers (locked method): the first

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { DEFAULT_WORD_KEYS } from "./wordKeys";
 import { DEFAULT_PROFILE, registerCustomKinds, type BoldScope, type CustomKind, type KindStyle, type MathStyle, type NotationProfile, type StylePreset } from "@mathblocks/math-core";
 import { DEFAULT_ACCENTS, type AccentRules } from "@mathblocks/math-render";
 import { DEFAULT_FAVORITES, setNotationRules, syncMyNotation, type Convention, type TransposeForm, type VectorStyle as SpacecraftVector } from "./palette";
@@ -39,6 +40,8 @@ export interface NumberStyle {
 
 interface Prefs {
   theme: Theme;
+  /** Word keyboard shortcuts by command (see lib/wordKeys.ts); "" switches one off. */
+  wordKeys: Record<string, string>;
   leftWidth: number;
   rightWidth: number;
   leftOpen: boolean;
@@ -176,6 +179,7 @@ const PREFS_KEY = "mathblocks.prefs.v3";
 
 const DEFAULT_PREFS: Prefs = {
   theme: "system",
+  wordKeys: { ...DEFAULT_WORD_KEYS },
   leftWidth: 250,
   rightWidth: 360,
   leftOpen: true,

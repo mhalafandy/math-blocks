@@ -8,8 +8,8 @@ import { readEquationXml } from "./readEquation";
 import { useApp } from "./store";
 
 /**
- * Working from Word with the keyboard: Ctrl+Alt+M edit/new equation at the cursor, Ctrl+Alt+Shift+L
- * equation ↔ LaTeX, Ctrl+Alt+R reference, Ctrl+Alt+N number. Also: convert all LaTeX in a
+ * Working from Word with the keyboard (keys in Settings, defaults in lib/wordKeys.ts): new inline / display equation,
+ * edit the equation at the cursor, Toggle LaTeX, reference, number. Also: convert all LaTeX in a
  * document into MathBlocks equations.
  */
 
@@ -54,14 +54,14 @@ export function wrapLatex(latex: string, display: boolean) {
   return display ? `${d}${d}${latex}${d}${d}` : `${d}${latex}${d}`;
 }
 
-/** Ctrl+Alt+M: the equation at the cursor in the floating editor, or a new one there. */
-export async function editAtCursor() {
+/** The equation at the cursor in the floating editor, or a new one there; `newOnly`: always a new one, inline or display. */
+export async function editAtCursor(newOnly?: { display: boolean }) {
   if (!ready("selectionInfo")) return;
   try {
     await import("./docStyle").then((m) => m.loadDocumentStyle()).catch(() => undefined);
     const s = await connector.request("selectionInfo", {});
     const rect = s.rect ?? { left: 200, top: 200, width: 0, height: 0 };
-    if (s.tag && (s.flatOpc || s.problem)) return activateEquation({ tag: s.tag, flatOpc: s.flatOpc ?? "", number: s.number ?? null, panel: rect, fingerprint: s.fingerprint, problem: s.problem });
+    if (!newOnly && s.tag && (s.flatOpc || s.problem)) return activateEquation({ tag: s.tag, flatOpc: s.flatOpc ?? "", number: s.number ?? null, panel: rect, fingerprint: s.fingerprint, problem: s.problem });
     // A new equation at the cursor (selected LaTeX becomes its content).
     const app = useApp.getState();
     const { useLibrary } = await import("./library/useLibrary");
@@ -69,7 +69,8 @@ export async function editAtCursor() {
     app.setEditing(null);
     const src = s.text ? unwrapLatex(s.text) : null;
     app.setLatex(src?.latex ?? "", "external");
-    if (src) app.setDisplay(src.display);
+    if (newOnly) app.setDisplay(newOnly.display);
+    else if (src) app.setDisplay(src.display);
     const { openPanel } = await import("./panel");
     await openPanel(rect);
   } catch (e) {
@@ -77,11 +78,11 @@ export async function editAtCursor() {
   }
 }
 
-/** The keyboard shortcut of Toggle LaTeX in Word (free in Word and MathType: Word's Ctrl+Alt+L inserts a LISTNUM field, MathType's Alt+\ toggles TeX). */
-export const TOGGLE_LATEX_KEYS = "Ctrl+Alt+Shift+L";
+/** The keyboard shortcut of Toggle LaTeX in Word, as set in Settings. */
+const toggleKeys = () => useApp.getState().wordKeys.latex || "the Toggle LaTeX button";
 
 /**
- * Toggle LaTeX (ribbon button, Ctrl+Alt+Shift+L): the MathBlocks equation at the cursor, or every one in the selection,
+ * Toggle LaTeX (ribbon button, its shortcut in Settings): the MathBlocks equation at the cursor, or every one in the selection,
  * becomes its LaTeX text; LaTeX text at the cursor or selected becomes the equation again, with the ID it had and
  * drawn numbered when its paragraph has a number. The number field, its bookmark and the references stay. One Ctrl+Z.
  */
@@ -106,14 +107,14 @@ export async function toggleLatexAtCursor() {
       }
       const r = await connector.request("equationsToText", { document: s.document, items });
       if (r.guardFailed) return notify(`Toggle LaTeX was undone: ${r.guardFailed}`, "error");
-      return notify(items.length === 1 ? `Equation turned into LaTeX. Edit it, then press ${TOGGLE_LATEX_KEYS} again.` : `${items.length} equations turned into LaTeX.`);
+      return notify(items.length === 1 ? `Equation turned into LaTeX. Edit it, then press ${toggleKeys()} again.` : `${items.length} equations turned into LaTeX.`);
     }
     if (s.tag && s.flatOpc) {
       const read = readEquationXml(s.flatOpc);
       if (!read) return notify("Could not read that equation.", "error");
       const text = wrapLatex(serializeLatex(read.root), read.display || !!s.number);
       await connector.request("equationToText", { document: s.document, tag: s.tag, text });
-      return notify(`Equation turned into LaTeX. Edit it, then press ${TOGGLE_LATEX_KEYS} again.`);
+      return notify(`Equation turned into LaTeX. Edit it, then press ${toggleKeys()} again.`);
     }
     // Several LaTeX spans selected: each becomes an equation (as Convert LaTeX on the selection).
     if (s.text && s.start !== undefined && s.end !== undefined && countLatexSpans(s.text) > 1) {
@@ -135,7 +136,7 @@ export async function toggleLatexAtCursor() {
   }
 }
 
-/** Ctrl+Alt+N: numbers (or un-numbers) the equation at the cursor. */
+/** Numbers (or un-numbers) the equation at the cursor (its shortcut in Settings). */
 export async function numberAtCursor() {
   if (!ready("selectionInfo")) return;
   try {
@@ -220,6 +221,21 @@ export async function initWordShortcuts() {
   started = true;
   const { listen } = await import("@tauri-apps/api/event");
   await listen("shortcut://edit", () => void editAtCursor());
+  await listen("shortcut://inline", () => void editAtCursor({ display: false }));
+  await listen("shortcut://display", () => void editAtCursor({ display: true }));
+  // The set from Settings replaces the shell's defaults (and again whenever it changes).
+  const { applyWordKeys } = await import("./wordKeys");
+  let last = "";
+  const send = (keys: Record<string, string>) => {
+    const k = JSON.stringify(keys);
+    if (k === last) return;
+    last = k;
+    void applyWordKeys(keys).then((failed) => {
+      if (failed.length) notify(`Some Word shortcuts could not be registered: ${failed.join("; ")}`, "error");
+    });
+  };
+  send(useApp.getState().wordKeys);
+  useApp.subscribe((st) => send(st.wordKeys));
   await listen("shortcut://latex", () => void toggleLatexAtCursor());
   await listen("shortcut://number", () => void numberAtCursor());
   await listen("shortcut://reference", async () => {

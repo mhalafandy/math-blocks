@@ -334,6 +334,7 @@ namespace MathBlocks.WordConnector
         public Dictionary<string, object> EquationsToText(Dictionary<string, object> p)
         {
             var doc = ResolveDocument(p);
+            var textOf = new Dictionary<string, string>(StringComparer.Ordinal);
             var items = new List<(string tag, string text, Eq eq)>();
             if (p.TryGetValue("items", out var raw) && raw is System.Collections.IEnumerable list)
                 foreach (var o in list)
@@ -375,6 +376,7 @@ namespace MathBlocks.WordConnector
                         if (doc.Bookmarks.Exists(name)) doc.Bookmarks[name].Delete();
                         doc.Bookmarks.Add(name, doc.Range(at, at + x.text.Length));
                         names.Add(name);
+                        textOf[name] = x.text;
                     }
                     first = at;
                 }
@@ -384,7 +386,7 @@ namespace MathBlocks.WordConnector
                 try
                 {
                     foreach (var n in names)
-                        if (doc.Bookmarks.Exists(n)) GuardWritten(doc.Bookmarks[n].Range.Start, doc.Bookmarks[n].Range.End);
+                        if (doc.Bookmarks.Exists(n)) GuardWritten(doc.Bookmarks[n].Range.Start, doc.Bookmarks[n].Range.End, textOf[n]);
                 }
                 finally
                 {

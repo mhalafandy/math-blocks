@@ -11,6 +11,7 @@ import { AccentsDialog, useAccents } from "./AccentsDialog";
 import { NotationSettings, useNotationSettings } from "./NotationSettings";
 import { SnippetsDialog, useSnippets } from "./SnippetsDialog";
 import { RecognitionDialog, useRecognition } from "./RecognitionDialog";
+import { checkWordKeys, DEFAULT_WORD_KEYS, WORD_KEY_LABELS, type WordKeyName } from "../lib/wordKeys";
 import { DocumentStyleDialog, openDocumentStyleHere, useDocumentStyle } from "./DocumentStyleDialog";
 
 /**
@@ -122,6 +123,35 @@ function ConnectionPage() {
   );
 }
 
+/**
+ * Word shortcuts: Ctrl+Alt + a key under the right hand for the most frequent commands (lib/wordKeys.ts). Every
+ * other command has a key tip on the MathBlocks tab (Alt, Q, then its letter). The self-test lists Word's own
+ * assignments on this PC and reports a clash.
+ */
+function WordKeysPage() {
+  const s = useApp();
+  const keys = { ...DEFAULT_WORD_KEYS, ...s.wordKeys };
+  const set = (name: WordKeyName, v: string) => s.setPrefs({ wordKeys: { ...keys, [name]: v } });
+  return (
+    <section className="settings-embedded">
+      <h3>Word shortcuts</h3>
+      <p className="hint">Ctrl+Alt and a key under the right hand. Not with Shift (Alt+Shift and Ctrl+Shift switch the input language), no function keys. Empty switches one off. Other commands: Alt, Q, then the letter shown on the MathBlocks tab.</p>
+      {(Object.keys(WORD_KEY_LABELS) as WordKeyName[]).map((name) => {
+        const problem = checkWordKeys(keys[name] ?? "");
+        const twin = (Object.keys(keys) as WordKeyName[]).find((o) => o !== name && keys[o] && keys[o]!.toLowerCase() === (keys[name] ?? "").toLowerCase());
+        return (
+          <Field key={name} label={WORD_KEY_LABELS[name]} hint={problem ?? (twin ? `Also used for: ${WORD_KEY_LABELS[twin]}` : undefined)}>
+            <input type="text" value={keys[name] ?? ""} spellCheck={false} style={{ width: "10em" }} aria-invalid={!!problem || !!twin} onChange={(e) => set(name, e.target.value)} />
+          </Field>
+        );
+      })}
+      <Field label="">
+        <button onClick={() => s.setPrefs({ wordKeys: { ...DEFAULT_WORD_KEYS } })}>Reset to the default set</button>
+      </Field>
+    </section>
+  );
+}
+
 function BackupsPage() {
   const s = useApp();
   return (
@@ -186,6 +216,7 @@ const PAGES: PageDef[] = [
   { id: "palette", label: "Palette", keys: "palette symbols favourites quick access recent location top right", body: () => <PalettePage /> },
   { id: "editor", label: "Editor behaviour", keys: "editor space slot backspace double space command palette prefix zoom suggestions document forms autocomplete", body: () => <EditorPage /> },
   { id: "connection", label: "Word connection and add-in", keys: "word add-in connection confirm self-test", body: () => <ConnectionPage /> },
+  { id: "wordKeys", label: "Word shortcuts", keys: "word shortcuts keyboard keys ctrl alt inline display toggle latex reference number edit", body: () => <WordKeysPage /> },
   { id: "backups", label: "Backups", keys: "backup copy restore folder", body: () => <BackupsPage /> },
   { id: "symbollist", label: "List of symbols", keys: "symbols nomenclature list define table sort groups columns", body: () => <SymbolListPage /> },
   { id: "benchmark", label: "Benchmark", keys: "benchmark speed timing keystrokes mathtype comparison", body: () => <BenchmarkPage /> },

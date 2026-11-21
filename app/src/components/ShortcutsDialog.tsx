@@ -119,10 +119,13 @@ const APP: [string, string][] = [
 const WORD: [string, string][] = [
   ["Right-click an equation", "Floating editor next to it (Word's menu: the ☰ button in the floating editor)"],
   ["Double-click an equation", "Edit in the MathBlocks window"],
-  ["Ctrl+Alt+M", "Edit the equation at the cursor (or start a new one there)"],
-  ["Ctrl+Alt+Shift+L", "Toggle LaTeX: equation(s) at the cursor or selected ↔ LaTeX text"],
-  ["Ctrl+Alt+N", "Number / un-number the equation at the cursor"],
-  ["Ctrl+Alt+R", "Insert a reference to an equation"],
+  ["Ctrl+Alt+J", "New inline equation at the cursor (changeable in Settings → Word shortcuts)"],
+  ["Ctrl+Alt+;", "New display equation at the cursor"],
+  ["Ctrl+Alt+'", "Toggle LaTeX: equation(s) at the cursor or selected ↔ LaTeX text"],
+  ["Ctrl+Alt+K", "Edit the equation at the cursor (or start a new one there)"],
+  ["Ctrl+Alt+,", "Insert a reference to an equation"],
+  ["Ctrl+Alt+/", "Number / un-number the equation at the cursor"],
+  ["Alt, Q, then a letter", "Every other command: the MathBlocks tab's key tips"],
   ["Alt, Q, then a letter", "MathBlocks ribbon buttons"],
   ["Enter / Esc (floating editor)", "Apply / cancel (Ctrl+Enter applies a display equation)"],
 ];

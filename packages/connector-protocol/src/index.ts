@@ -274,7 +274,7 @@ export interface AppToConnector {
   /** MathBlocks equations per document; copies sharing a tag get new instance ids first. */
   listInstances: {
     /** light: no page numbers / context (they make Word lay out the document). */
-    params: DocTarget & { all?: boolean; blockId?: string; includeContent?: boolean; light?: boolean };
+    params: DocTarget & { all?: boolean; blockId?: string; includeContent?: boolean; light?: boolean; /** false: numbers and positions without page or context. */ pages?: boolean };
     result: { documents: DocumentInstances[] };
   };
   /** Replaces several equations (by tag) in one undo step. */
@@ -314,7 +314,7 @@ export interface AppToConnector {
   /** LaTeX interchange: writes the planned items (one undo step), then updates numbers and references. */
   convertInterchange: {
     params: DocTarget & { items: (Record<string, unknown> & { id: number; kind: string; start: number; end: number; expect: string })[]; format: Record<string, unknown>; undoLabel: string; /** false: a batch before the last (numbers and references are updated by the last). */ updateNumbers?: boolean; numbersMethod?: "each" | "locked" };
-    result: { results: { id: number; ok: boolean; problem: string }[]; done: number; ms: number; numbers: number; references: number; broken?: BrokenReference[]; undoBrokenAt?: string; numbersMs?: number };
+    result: { results: { id: number; ok: boolean; problem: string }[]; done: number; ms: number; numbers: number; references: number; broken?: BrokenReference[]; undoBrokenAt?: string; numbersMs?: number; insertXmlMs?: number };
   };
   /** The checks of replaceMany alone (before an operation opens its undo record: they read Word's XML, which ends it). */
   verifyMany: { params: DocTarget & { items: { tag: string; flatOpc: string; expect?: string }[]; undoLabel: string }; result: { replaced: number; missing: string[]; refused?: { tag: string; reason: string }[] } };

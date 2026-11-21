@@ -1,0 +1,71 @@
+{
+ "operation": "Toggle LaTeX: an inline equation in a sentence becomes its LaTeX text",
+ "source": "generated (tools/make-guard-fixtures.ts) from the field codes of a 0.1.148 self-test run",
+ "expect": "unchanged",
+ "exclude": [
+  [
+   10,
+   11
+  ]
+ ],
+ "written": [
+  [
+   10,
+   15
+  ]
+ ],
+ "writtenText": [
+  "$x^2$"
+ ],
+ "before": {
+  "end": 22,
+  "fields": [],
+  "equations": [
+   [
+    10,
+    11
+   ]
+  ],
+  "lists": [],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 10,
+    "text": "The value "
+   },
+   {
+    "start": 10,
+    "end": 11,
+    "text": "\u0001"
+   },
+   {
+    "start": 11,
+    "end": 22,
+    "text": " follows.\r\r"
+   }
+  ]
+ },
+ "after": {
+  "end": 26,
+  "fields": [],
+  "equations": [],
+  "lists": [],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 10,
+    "text": "The value "
+   },
+   {
+    "start": 10,
+    "end": 15,
+    "text": "$x^2$"
+   },
+   {
+    "start": 15,
+    "end": 26,
+    "text": " follows.\r\r"
+   }
+  ]
+ }
+}

@@ -24,6 +24,8 @@ export interface InterchangeResult {
   writeMs: number;
   /** Of writeMs: Word updating the numbers and references at the end. */
   numbersMs?: number;
+  /** Of writeMs: Word's InsertXML of the equations (the rest: finding the text, tabs, numbers, checks). */
+  insertXmlMs?: number;
   backup?: string;
   /** Where Word closed the single undo record early (diagnosis); absent when intact. */
   undoBrokenAt?: string;
@@ -134,6 +136,7 @@ export async function convertLatexDocument(o: { document?: string; fromWord?: bo
   let r: { results: { id: number; ok: boolean; problem: string }[]; ms: number; broken?: BrokenReference[] } = { results: [], ms: 0 };
   let undoBrokenAt = "";
   let numbersMs: number | undefined;
+  let insertXmlMs = 0;
   let guard: { failed?: string; restored?: boolean } = {};
   let cancelled = false;
   let rolledBack = false;
@@ -149,6 +152,7 @@ export async function convertLatexDocument(o: { document?: string; fromWord?: bo
       const last = i + BATCH >= order.length;
       const part = await connector.request("convertInterchange", { document: scan.fullName, items: batch, format, undoLabel: "Convert LaTeX", updateNumbers: last, numbersMethod: NUMBER_UPDATE_METHOD }, 1_800_000);
       if (typeof part.numbersMs === "number") numbersMs = part.numbersMs;
+      if (typeof part.insertXmlMs === "number") insertXmlMs += part.insertXmlMs;
       r = { results: [...r.results, ...part.results], ms: performance.now() - t1, ...(part.broken ? { broken: part.broken } : r.broken ? { broken: r.broken } : {}) };
       if (last) break;
       const pr = await connector.request("operationProgress", { done: Math.min(order.length, i + BATCH), text: `${Math.min(order.length, i + BATCH)} / ${order.length} items` });
@@ -169,7 +173,7 @@ export async function convertLatexDocument(o: { document?: string; fromWord?: bo
   const equations = items.filter((i) => (i.kind === "inline" || i.kind === "display") && okIds.has(i.id)).length;
   // In document order (the items' order), not the order Word wrote them in (last first).
   const tags = items.filter((i) => okIds.has(i.id)).map((i) => tagOf.get(i.id)).filter((t): t is NonNullable<typeof t> => !!t);
-  const result: InterchangeResult = { ...(cancelled ? { cancelled: { rolledBack }, stopped: true } : {}), ...(guard.failed ? { guardFailed: guard.failed, guardRestored: !!guard.restored } : {}), plan, written: okIds.size, planned: items.length, failed, equations, buildMs, writeMs: r.ms, ...(numbersMs !== undefined ? { numbersMs } : {}), tags, ...(r.broken?.length ? { broken: r.broken } : {}), ...(backup ? { backup } : {}), ...(undoBrokenAt ? { undoBrokenAt } : {}) };
+  const result: InterchangeResult = { ...(cancelled ? { cancelled: { rolledBack }, stopped: true } : {}), ...(guard.failed ? { guardFailed: guard.failed, guardRestored: !!guard.restored } : {}), plan, written: okIds.size, planned: items.length, failed, equations, buildMs, writeMs: r.ms, ...(numbersMs !== undefined ? { numbersMs } : {}), ...(insertXmlMs ? { insertXmlMs } : {}), tags, ...(r.broken?.length ? { broken: r.broken } : {}), ...(backup ? { backup } : {}), ...(undoBrokenAt ? { undoBrokenAt } : {}) };
   console.info(`[MathBlocks] Convert LaTeX: ${describeResult(result)}`);
   if (!o.yes) ui.show({ name: scan.name, plan, stage: "result", result });
   else if (o.fromWord) await tellUser(describeResult(result), failed.length ? "error" : "info");

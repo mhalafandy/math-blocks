@@ -49,8 +49,14 @@ namespace MathBlocks.WordConnector
             // Page numbers and context make Word lay out the document (visible as flicker):
             // only computed when asked for (lists shown to the user), not for background checks.
             var light = Rpc.GetBool(p, "light");
+            // pages=false: numbers and positions, no page or context (Check document: laying out a thesis for the
+            // page of each of 1500 equations is slow).
+            var pages = !p.ContainsKey("pages") || Rpc.GetBool(p, "pages");
             var docs = new List<object>();
             bool screen = _app.ScreenUpdating;
+            var total = System.Diagnostics.Stopwatch.StartNew();
+            long itemMs = 0, contentMs = 0;
+            int count = 0;
             try
             {
                 _app.ScreenUpdating = false;
@@ -62,14 +68,19 @@ namespace MathBlocks.WordConnector
                     {
                         var tag = eq.Tag;
                         if (blockFilter != null && tag.Split('|')[1] != blockFilter) continue;
+                        var t0 = total.ElapsedMilliseconds;
                         var item = light
                             ? new Dictionary<string, object> { ["tag"] = tag, ["page"] = 0, ["context"] = "" }
-                            : NumberedItem(tag, eq);
+                            : NumberedItem(tag, eq, pages);
+                        itemMs += total.ElapsedMilliseconds - t0;
+                        count++;
                         // Positions are per story: given for the main text; elsewhere the story is named instead.
                         var story = eq.Story;
                         if (story == "main") item["start"] = SafeStart(eq);
                         else item["story"] = story;
+                        var t1 = total.ElapsedMilliseconds;
                         if (includeContent) item["flatOpc"] = PictureXmlForApp(eq);
+                        contentMs += total.ElapsedMilliseconds - t1;
                         items.Add(item);
                     }
                     docs.Add(new Dictionary<string, object> { ["name"] = doc.Name, ["fullName"] = doc.FullName, ["instances"] = items });
@@ -79,14 +90,15 @@ namespace MathBlocks.WordConnector
             {
                 _app.ScreenUpdating = screen;
             }
+            if (count > 50) Log.Info("listInstances: " + count + " equation(s) in " + total.ElapsedMilliseconds + " ms (number, page and context " + itemMs + " ms" + (light ? ", light" : pages ? "" : ", no pages") + "; content " + contentMs + " ms)");
             return new Dictionary<string, object> { ["documents"] = docs };
         }
 
         /// <summary>A listed equation with its page, context, number and the number's bookmark (references link to it).</summary>
-        private static Dictionary<string, object> NumberedItem(string tag, Eq eq)
+        private static Dictionary<string, object> NumberedItem(string tag, Eq eq, bool pages = true)
         {
             var n = NumberInfo(eq);
-            var item = new Dictionary<string, object> { ["tag"] = tag, ["page"] = PageOf(eq), ["context"] = ContextOf(eq), ["number"] = n?["number"] };
+            var item = new Dictionary<string, object> { ["tag"] = tag, ["page"] = pages ? PageOf(eq) : 0, ["context"] = pages ? ContextOf(eq) : "", ["number"] = n?["number"] };
             if (n?["bookmark"] is string bm && bm.Length > 0) item["bookmark"] = bm;
             return item;
         }
@@ -142,12 +154,31 @@ namespace MathBlocks.WordConnector
             // Inside a document-wide operation the operation's undo record covers every batch.
             var ownUndo = !verifyOnly && !undo.IsRecordingCustomRecord;
             // Every equation is looked up once: one index of the pictures by ID instead of a walk per lookup.
-            if (!verifyOnly) BeginWriteIndex();
+            if (!verifyOnly) BeginWriteIndex(doc);
+            // Written from the end of the document backwards: replacing an equation only disturbs what comes after
+            // it, which is then already done (Apply style replaced the wrong pictures in document order, soak 0.1.168
+            // #673 and 0.1.169 #113). Items whose equation is not found keep their place at the end.
+            var ordered = new List<object>();
+            foreach (var o in list) ordered.Add(o);
+            if (!verifyOnly && ordered.Count > 1)
+            {
+                var at = new Dictionary<object, int>();
+                foreach (var o in ordered)
+                {
+                    int start = -1;
+                    if (o is Dictionary<string, object> it)
+                    {
+                        try { var f = FindByTag(doc, Rpc.GetString(it, "tag")); if (f.Count > 0) start = SafeStart(f[0]); } catch (Exception) { }
+                    }
+                    at[o] = start;
+                }
+                ordered = System.Linq.Enumerable.ToList(System.Linq.Enumerable.OrderByDescending(ordered, o => at[o]));
+            }
             if (ownUndo) undo.StartCustomRecord(undoLabel);
             var clock = System.Diagnostics.Stopwatch.StartNew();
             try
             {
-                foreach (var o in list)
+                foreach (var o in ordered)
                 {
                     if (!(o is Dictionary<string, object> item)) continue;
                     var tag = Rpc.GetString(item, "tag");

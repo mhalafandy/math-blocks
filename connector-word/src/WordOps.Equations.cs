@@ -259,7 +259,8 @@ namespace MathBlocks.WordConnector
         {
             try
             {
-                if (doc.Revisions.Count == 0) return list;
+                var facts = FactsOf(doc);
+                if (facts != null ? facts.NoRevisions : doc.Revisions.Count == 0) return list;
             }
             catch (COMException)
             {
@@ -301,7 +302,9 @@ namespace MathBlocks.WordConnector
             if (scoped != null) foreach (var s in scoped) list.Add(new Eq(s));
             else foreach (Word.InlineShape s in doc.InlineShapes)
                 if (TagOf(s) == tag && !InsideMathBlocksControl(s.Range)) list.Add(new Eq(s));
-            foreach (Word.ContentControl cc in doc.SelectContentControlsByTag(tag)) list.Add(new Eq(cc));
+            var facts = FactsOf(doc);
+            if (facts != null) { if (facts.ControlsByTag.TryGetValue(tag, out var ccs)) foreach (var cc in ccs) list.Add(new Eq(cc)); }
+            else foreach (Word.ContentControl cc in doc.SelectContentControlsByTag(tag)) list.Add(new Eq(cc));
             var found = WithoutTrackedDeletions(doc, list).OrderBy(e => SafeStart(e)).ToList();
             if (found.Count > 0) return found;
             // Not in the main text: footnotes, endnotes, text boxes, headers and footers.

@@ -480,7 +480,9 @@ namespace MathBlocks.WordConnector
             // Nothing in the paragraph may be locked for our own write (number, update, repair).
             try
             {
-                foreach (Word.ContentControl other in cc.Range.Paragraphs[1].Range.ContentControls) Unlock(other);
+                var facts = FactsOf(doc);
+                if (facts == null || facts.Controls > 0)
+                    foreach (Word.ContentControl other in cc.Range.Paragraphs[1].Range.ContentControls) Unlock(other);
             }
             catch (COMException)
             {

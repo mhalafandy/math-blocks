@@ -5,13 +5,13 @@
       <tab id="MathBlocksTab" label="MathBlocks" keytip="Q">
         <group id="MathBlocksMain" label="Equations">
           <button id="mbOpenApp" keytip="O" label="Open MathBlocks" size="large" imageMso="EquationInsertGallery"
-                  screentip="Open the MathBlocks editor. In a document: Ctrl+Alt+M edits the equation at the cursor (or starts a new one) in the floating editor." onAction="OnOpenApp" />
+                  screentip="Open the MathBlocks editor. In a document: Ctrl+Alt+K edits the equation at the cursor (or starts a new one) in the floating editor." onAction="OnOpenApp" />
           <button id="mbSample" keytip="T" label="Insert test equation" imageMso="EquationProfessional"
                   screentip="Insert a sample equation without the app (connector self-test)" onAction="OnInsertSample" />
           <toggleButton id="mbHighlight" keytip="K" label="Show linked equations" imageMso="HyperlinkInsert"
                   screentip="Frame equations that are linked to your MathBlocks library"
                   onAction="OnToggleHighlight" getPressed="GetHighlightPressed" />
-          <button id="mbStatus" keytip="S" label="Connection status" imageMso="Info"
+          <button id="mbStatus" keytip="I" label="Connection status" imageMso="Info"
                   screentip="Show whether Word is connected to the MathBlocks app" onAction="OnStatus" />
         </group>
         <group id="MathBlocksNumbering" label="Numbering">
@@ -21,31 +21,31 @@
                   screentip="Insert a reference to a numbered equation at the cursor" onAction="OnInsertReference" />
           <button id="mbUpdateNumbers" keytip="U" label="Update numbers" imageMso="Refresh"
                   screentip="Renumber equations and update references to them; lists references to equations that no longer exist" onAction="OnUpdateNumbers" />
-          <button id="mbSectionMarker" keytip="S" label="Section marker" imageMso="SectionInsert"
+          <button id="mbSectionMarker" keytip="M" label="Section marker" imageMso="SectionInsert"
                   screentip="Insert a numbering marker at the cursor for a new section (or chapter, appendix): equation numbers after it restart" onAction="OnSectionMarker" />
           <button id="mbSymbols" keytip="Y" label="List of symbols" imageMso="TableInsert"
                   screentip="Insert or update the list of symbols made from the symbol definitions (\define, or Define symbol in the editor), with the checks"
                   onAction="OnListOfSymbols" />
         </group>
         <group id="MathBlocksStyle" label="Style">
-          <button id="mbDocumentStyle" label="Document style…" size="large" imageMso="FormatPainter"
+          <button id="mbDocumentStyle" keytip="W" label="Document style…" size="large" imageMso="FormatPainter"
                   screentip="How this document's equations look: index labels, variables, d/e/i/π, function names, transpose, notation kinds, size. Stored in the document; the equations' LaTeX never changes." onAction="OnDocumentStyle" />
-          <button id="mbCheckStyle" label="Check style" imageMso="ReviewSpellingAndGrammar"
+          <button id="mbCheckStyle" keytip="H" label="Check style" imageMso="ReviewSpellingAndGrammar"
                   screentip="Lists equations that deviate from the document style (hand-forced upright/italic/bold, an index written two ways, older drawings): conform them or keep them as exceptions." onAction="OnCheckStyle" />
-          <button id="mbApplyStyle" label="Apply style to document" imageMso="Refresh"
+          <button id="mbApplyStyle" keytip="A" label="Apply style to document" imageMso="Refresh"
                   screentip="Redraws every MathBlocks equation in the document style (one undo step, backup)." onAction="OnApplyStyle" />
         </group>
         <group id="MathBlocksMathType" label="Convert">
-          <button id="mbConvertNumbering" label="Convert numbering" imageMso="NumberingRestart"
+          <button id="mbConvertNumbering" keytip="B" label="Convert numbering" imageMso="NumberingRestart"
                   screentip="Turn MathType's equation numbers and chapter/section breaks into MathBlocks numbers and markers (keep them, or renumber to chapter.section.equation); references keep pointing at their equations" onAction="OnConvertNumbering" />
           <button id="mbConvertMathType" keytip="C" label="Convert MathType equations" size="large" imageMso="EquationProfessional"
                   screentip="Turn this document's MathType equations into native, editable MathBlocks equations (one undo step)"
                   onAction="OnConvertMathType" />
           <button id="mbConvertLatex" keytip="L" label="Convert LaTeX" size="large" imageMso="EquationInsertGallery"
-                  screentip="Turn LaTeX written in the text ($…$, $$…$$, \(…\), \[…\]) into MathBlocks equations: the selection when there is one, otherwise the whole document (one undo step). Toggle LaTeX (Ctrl+Alt+Shift+L) converts just the one at the cursor, and back."
+                  screentip="Turn LaTeX written in the text ($…$, $$…$$, \(…\), \[…\]) into MathBlocks equations: the selection when there is one, otherwise the whole document (one undo step). Toggle LaTeX (Ctrl+Alt+') converts just the one at the cursor, and back."
                   onAction="OnConvertLatex" />
           <button id="mbToggleLatex" keytip="X" label="Toggle LaTeX" imageMso="EquationLinearFormat"
-                  screentip="The equation at the cursor, or every one in the selection, becomes its LaTeX text; LaTeX text at the cursor or selected becomes the equation again (same ID, still numbered). The number, its bookmark and references stay. One undo step. Ctrl+Alt+Shift+L."
+                  screentip="The equation at the cursor, or every one in the selection, becomes its LaTeX text; LaTeX text at the cursor or selected becomes the equation again (same ID, still numbered). The number, its bookmark and references stay. One undo step. Ctrl+Alt+' (Settings → Word shortcuts)."
                   onAction="OnToggleLatex" />
           <button id="mbCheckDocument" keytip="D" label="Check document" imageMso="ReviewSpellingAndGrammar"
                   screentip="One report of what could be wrong: equations whose LaTeX or picture is off, pictures in an older style, numbers out of order, references that point nowhere or show a wrong number, markers that print, MathType leftovers. Go to each one; the safe repairs run together (one undo step)."
@@ -53,10 +53,10 @@
           <button id="mbRepair" keytip="P" label="Repair equations" imageMso="ReviewAcceptChange"
                   screentip="Checks every MathBlocks equation: floating pictures back in line, copies get their own ID, pasted pictures recognised again, older documents converted, IDs and baseline written into each picture (one undo step, backup)."
                   onAction="OnRepairEquations" />
-          <button id="mbSelfTest" label="Run Word self-test" imageMso="ReviewSpellingAndGrammar"
+          <button id="mbSelfTest" keytip="ZT" label="Run Word self-test" imageMso="ReviewSpellingAndGrammar"
                   screentip="Runs the MathBlocks checks in Word: inserts, opens, numbers, pastes, moves and undoes equations in new test documents and writes a report (MathBlocks app must be running). Your documents are not touched."
                   onAction="OnSelfTest" />
-          <button id="mbSelfTestSpike" label="Self-test + object spike" imageMso="EquationInsertGallery"
+          <button id="mbSelfTestSpike" keytip="ZS" label="Self-test + object spike" imageMso="EquationInsertGallery"
                   screentip="The self-test, then the embedded-object spike (MathBlocks equations as embedded objects, like MathType's) in its own test documents. Your documents are not touched."
                   onAction="OnSelfTestSpike" />
         </group>

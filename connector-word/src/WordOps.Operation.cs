@@ -445,12 +445,17 @@ namespace MathBlocks.WordConnector
         /// left out of the comparison afterwards, as the replaced ranges are before.
         /// </summary>
         private List<int[]> _guardWritten;
+        private List<string> _guardWrittenText;
 
-        /// <summary>An operation wrote this text on purpose (positions after the operation).</summary>
-        internal void GuardWritten(int start, int end)
+        /// <summary>
+        /// An operation wrote this text on purpose (positions after the operation). The guard checks that the range
+        /// holds exactly this text before leaving it out.
+        /// </summary>
+        internal void GuardWritten(int start, int end, string text)
         {
             if (_guardDoc == null || end <= start) return;
             (_guardWritten ?? (_guardWritten = new List<int[]>())).Add(new[] { start, end });
+            (_guardWrittenText ?? (_guardWrittenText = new List<string>())).Add(text ?? "");
         }
         private string _guardLabel;
 
@@ -481,6 +486,7 @@ namespace MathBlocks.WordConnector
                 _guardDoc = doc;
                 _guardExclude = exclude ?? new List<int[]>();
                 _guardWritten = null;
+                _guardWrittenText = null;
                 _guardBeforeDoc = RecordGuardDoc(doc, _guardExclude);
                 _guardBefore = GuardText.Canonical(_guardBeforeDoc, _guardExclude);
                 _guardBeforeFull = _guardExclude.Count > 0 ? GuardText.Canonical(_guardBeforeDoc, null) : _guardBefore;
@@ -509,7 +515,7 @@ namespace MathBlocks.WordConnector
                 Log.Error("text guard: reading the document afterwards", ex);
                 return null;
             }
-            var what = GuardText.Difference(_guardBefore, after);
+            var what = GuardText.Difference(_guardBefore, after) ?? GuardText.WrittenMismatch(afterDoc, _guardWritten, _guardWrittenText);
             SaveGuardFixture(afterDoc, what);
             if (what == null) return null;
             Log.Error("text guard: " + what);
@@ -674,6 +680,7 @@ namespace MathBlocks.WordConnector
                     ["operation"] = _guardLabel ?? "",
                     ["exclude"] = _guardExclude,
                     ["written"] = _guardWritten ?? new List<int[]>(),
+                    ["writtenText"] = _guardWrittenText ?? new List<string>(),
                     ["before"] = GuardDocJson(_guardBeforeDoc),
                     ["after"] = GuardDocJson(after),
                     ["verdict"] = verdict ?? "unchanged",

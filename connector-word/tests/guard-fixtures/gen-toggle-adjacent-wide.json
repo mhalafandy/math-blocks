@@ -1,0 +1,99 @@
+{
+ "operation": "Toggle LaTeX on two adjacent equations, the first range taking in the second's first character (must be caught)",
+ "source": "generated (tools/make-guard-fixtures.ts) from the field codes of a 0.1.148 self-test run",
+ "expect": "changed",
+ "exclude": [
+  [
+   14,
+   15
+  ],
+  [
+   15,
+   16
+  ]
+ ],
+ "written": [
+  [
+   14,
+   18
+  ],
+  [
+   17,
+   20
+  ]
+ ],
+ "writtenText": [
+  "$x$",
+  "$y$"
+ ],
+ "before": {
+  "end": 29,
+  "fields": [],
+  "equations": [
+   [
+    14,
+    15
+   ],
+   [
+    15,
+    16
+   ]
+  ],
+  "lists": [],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 14,
+    "text": "Both of these "
+   },
+   {
+    "start": 14,
+    "end": 15,
+    "text": "\u0001"
+   },
+   {
+    "start": 15,
+    "end": 16,
+    "text": "\u0001"
+   },
+   {
+    "start": 16,
+    "end": 29,
+    "text": " hold here.\r\r"
+   }
+  ]
+ },
+ "after": {
+  "end": 33,
+  "fields": [],
+  "equations": [],
+  "lists": [],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 14,
+    "text": "Both of these "
+   },
+   {
+    "start": 14,
+    "end": 17,
+    "text": "$x$"
+   },
+   {
+    "start": 17,
+    "end": 18,
+    "text": "$"
+   },
+   {
+    "start": 18,
+    "end": 20,
+    "text": "y$"
+   },
+   {
+    "start": 20,
+    "end": 33,
+    "text": " hold here.\r\r"
+   }
+  ]
+ }
+}

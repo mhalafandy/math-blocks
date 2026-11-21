@@ -36,7 +36,7 @@ interface GuardDoc {
 }
 
 /** Lays the tokens out at Word character positions and records the document as the add-in does. */
-function record(toks: Tok[]): { doc: GuardDoc; exclude: [number, number][]; written: [number, number][] } {
+function record(toks: Tok[]): { doc: GuardDoc; exclude: [number, number][]; written: [number, number][]; writtenText: string[] } {
   // One entry per position: the text Range.Text gives for it ("" when Word leaves it out).
   const chars: string[] = [];
   const fields: GuardDoc["fields"] = [];
@@ -44,6 +44,7 @@ function record(toks: Tok[]): { doc: GuardDoc; exclude: [number, number][]; writ
   const lists: [number, number][] = [];
   const exclude: [number, number][] = [];
   const written: [number, number][] = [];
+  const writtenText: string[] = [];
   const put = (s: string, visible = true) => {
     for (const c of s) chars.push(visible ? c : "");
   };
@@ -52,7 +53,10 @@ function record(toks: Tok[]): { doc: GuardDoc; exclude: [number, number][]; writ
       if (x.k === "t") {
         const s = chars.length;
         put(x.text, !hidden);
-        if (x.written) written.push([s, chars.length]);
+        if (x.written) {
+          written.push([s, chars.length]);
+          writtenText.push(x.text);
+        }
       }
       else if (x.k === "latex") {
         const s = chars.length;
@@ -102,7 +106,7 @@ function record(toks: Tok[]): { doc: GuardDoc; exclude: [number, number][]; writ
   const sorted = [...cuts].sort((a, b) => a - b);
   const chunks: GuardDoc["chunks"] = [];
   for (let i = 0; i + 1 < sorted.length; i++) chunks.push({ start: sorted[i]!, end: sorted[i + 1]!, text: chars.slice(sorted[i], sorted[i + 1]).join("") });
-  return { doc: { end, fields, equations, lists, chunks }, exclude, written };
+  return { doc: { end, fields, equations, lists, chunks }, exclude, written, writtenText };
 }
 
 // The field codes the add-in writes (copied from a real run).
@@ -120,17 +124,49 @@ interface Fixture {
   source: string;
   expect: "unchanged" | "changed";
   exclude: [number, number][];
-  /** Text the operation writes on purpose (positions after it). */
+  /** Text the operation writes on purpose (positions after it), and that text: the guard checks each range holds exactly it. */
   written?: [number, number][];
+  writtenText?: string[];
   before: GuardDoc;
   after: GuardDoc;
 }
 const fixtures: Record<string, Fixture> = {};
-const make = (name: string, operation: string, before: Tok[], after: Tok[], expect: Fixture["expect"] = "unchanged") => {
+/**
+ * widen: the written range the operation reports, made wider than the text it wrote ([chars on the left, on the
+ * right], for the range at `index`); the record's boundaries follow the reported range, as RecordGuardDoc's do.
+ */
+const make = (name: string, operation: string, before: Tok[], after: Tok[], expect: Fixture["expect"] = "unchanged", widen?: { index?: number; left: number; right: number }) => {
   const b = record(before);
-  const a = record(after);
-  fixtures[name] = { operation, source: "generated (tools/make-guard-fixtures.ts) from the field codes of a 0.1.148 self-test run", expect, exclude: b.exclude, ...(a.written.length ? { written: a.written } : {}), before: b.doc, after: a.doc };
+  let a = record(after);
+  if (widen) {
+    const i = widen.index ?? 0;
+    const w = a.written.map((r, k): [number, number] => (k === i ? [r[0] - widen.left, r[1] + widen.right] : r));
+    a = { ...a, written: w, doc: rechunk(a.doc, w) };
+  }
+  fixtures[name] = { operation, source: "generated (tools/make-guard-fixtures.ts) from the field codes of a 0.1.148 self-test run", expect, exclude: b.exclude, ...(a.written.length ? { written: a.written, writtenText: a.writtenText } : {}), before: b.doc, after: a.doc };
 };
+
+/** The record's chunks cut again at extra boundaries (a reported range that is not where the text was written). */
+function rechunk(doc: GuardDoc, ranges: [number, number][]): GuardDoc {
+  const text = doc.chunks.map((c) => c.text);
+  const chars: string[] = [];
+  // Per position: a chunk's text is spread over its positions (the last position takes any extra characters).
+  for (const c of doc.chunks) {
+    const n = c.end - c.start;
+    const parts = [...c.text];
+    for (let k = 0; k < n; k++) chars.push(k < n - 1 ? (parts[k] ?? "") : parts.slice(k).join(""));
+  }
+  void text;
+  const cuts = new Set<number>(doc.chunks.flatMap((c) => [c.start, c.end]));
+  for (const r of ranges) {
+    cuts.add(r[0]);
+    cuts.add(r[1]);
+  }
+  const sorted = [...cuts].sort((x, y) => x - y);
+  const chunks: GuardDoc["chunks"] = [];
+  for (let i = 0; i + 1 < sorted.length; i++) chunks.push({ start: sorted[i]!, end: sorted[i + 1]!, text: chars.slice(sorted[i], sorted[i + 1]).join("") });
+  return { ...doc, chunks };
+}
 
 // Convert LaTeX: inline and display equations, \eqref/\ref (linked references), a section marker, a number.
 const sentence = (r1: Tok, r2: Tok): Tok[] => [t("The derivation "), r1, t(" gives the value "), r2, t("."), t(P)];
@@ -263,6 +299,19 @@ const latexWritten = (text: string): Tok => ({ k: "t", text, written: true });
 const toggled = (middle: Tok): Tok[] => [t("By "), refLinked("_MBEq_1_1_1", "(1.1.1)"), t(" the sides agree."), t(P), t("\t"), middle, t("\t"), number("(1.1.1)"), t(P), t("Text after."), t(P)];
 make("gen-toggle-equation-to-latex", "Toggle LaTeX: a numbered equation becomes its LaTeX text (number, bookmark, references kept)", toggled(eqReplaced), toggled(latexWritten("\\[a^2+b^2=c^2\\]")));
 make("gen-toggle-latex-to-equation", "Toggle LaTeX: the LaTeX text becomes the equation again (number, bookmark, references kept)", toggled(latex("\\[a^2+b^2=c^2\\]")), toggled(eq));
+// The written range must hold exactly the LaTeX written: a range reported one character too wide (on either side)
+// would leave the neighbouring text out of the comparison, so it fails even when that text is intact.
+const sentenceWith = (middle: Tok): Tok[] => [t("The value "), middle, t(" follows."), t(P)];
+make("gen-toggle-inline", "Toggle LaTeX: an inline equation in a sentence becomes its LaTeX text", sentenceWith(eqReplaced), sentenceWith(latexWritten("$x^2$")));
+make("gen-toggle-written-wide-left", "Toggle LaTeX reporting its written range one character too wide on the left (must be caught)", sentenceWith(eqReplaced), sentenceWith(latexWritten("$x^2$")), "changed", { left: 1, right: 0 });
+make("gen-toggle-written-wide-right", "Toggle LaTeX reporting its written range one character too wide on the right (must be caught)", sentenceWith(eqReplaced), sentenceWith(latexWritten("$x^2$")), "changed", { left: 0, right: 1 });
+const punct = (middle: Tok): Tok[] => [t("It holds (see "), middle, t(")."), t(P)];
+make("gen-toggle-punctuation", "Toggle LaTeX next to punctuation", punct(eqReplaced), punct(latexWritten("$a=b$")));
+make("gen-toggle-punctuation-wide", "Toggle LaTeX next to punctuation, the range taking in the closing bracket (must be caught)", punct(eqReplaced), punct(latexWritten("$a=b$")), "changed", { left: 0, right: 1 });
+const adjacent = (a: Tok, b: Tok): Tok[] => [t("Both of these "), a, b, t(" hold here."), t(P)];
+make("gen-toggle-adjacent", "Toggle LaTeX on two adjacent equations (selection)", adjacent(eqReplaced, eqReplaced), adjacent(latexWritten("$x$"), latexWritten("$y$")));
+make("gen-toggle-adjacent-wide", "Toggle LaTeX on two adjacent equations, the first range taking in the second's first character (must be caught)", adjacent(eqReplaced, eqReplaced), adjacent(latexWritten("$x$"), latexWritten("$y$")), "changed", { index: 0, left: 0, right: 1 });
+make("gen-toggle-numbered-wide", "Toggle LaTeX on a numbered line, the range taking in the tab before the number (must be caught)", toggled(eqReplaced), toggled(latexWritten("\\[a^2+b^2=c^2\\]")), "changed", { left: 0, right: 1 });
 make("gen-toggle-text-edited", "Toggle LaTeX that also changed the text after it (must be caught)", toggled(eqReplaced), toggled(latexWritten("\\[a^2+b^2=c^2\\]")).map((x) => (x.k === "t" && x.text === "Text after." ? t("Text afer.") : x)), "changed");
 make("gen-convert-latex-footnote", "Convert LaTeX with a footnote mark in the main text", withNote(latex("$x$")), withNote(eq));
 

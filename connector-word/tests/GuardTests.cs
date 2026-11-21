@@ -30,7 +30,10 @@ static class GuardTests
             var after = Doc(root.GetProperty("after"));
             // Text the operation wrote on purpose (Toggle LaTeX), left out afterwards as the replaced ranges are before.
             var written = root.TryGetProperty("written", out var wr) ? Ranges(wr) : null;
-            var verdict = GuardText.Difference(GuardText.Canonical(before, exclude), GuardText.Canonical(after, written));
+            var writtenText = new List<string>();
+            if (root.TryGetProperty("writtenText", out var wt)) foreach (var x in wt.EnumerateArray()) writtenText.Add(x.GetString());
+            // Each written range must hold exactly the text written (a range too wide would hide a change next to it).
+            var verdict = GuardText.Difference(GuardText.Canonical(before, exclude), GuardText.Canonical(after, written)) ?? GuardText.WrittenMismatch(after, written, writtenText);
             check((verdict == null) == (expect == "unchanged"), "guard " + name + " (" + op + "): " + expect + (verdict != null ? " — " + verdict : ""));
             if (expect != "unchanged") continue;
             passing++;
@@ -40,8 +43,10 @@ static class GuardTests
             var joined = Mutate(after, null, (s, i) => s.Remove(i, 1));
             if (typed == null && name.StartsWith("rec-")) continue;
             mutated++;
-            check(typed != null && GuardText.Difference(GuardText.Canonical(before, exclude), GuardText.Canonical(typed, null)) != null, "guard " + name + ": a typed word is caught");
-            check(joined != null && GuardText.Difference(GuardText.Canonical(before, exclude), GuardText.Canonical(joined, null)) != null, "guard " + name + ": a deleted space is caught");
+            // As the add-in judges (the written text left out, then checked to be exactly what was written).
+            string Judge(GuardDoc d) => GuardText.Difference(GuardText.Canonical(before, exclude), GuardText.Canonical(d, written)) ?? GuardText.WrittenMismatch(d, written, writtenText);
+            check(typed != null && Judge(typed) != null, "guard " + name + ": a typed word is caught");
+            check(joined != null && Judge(joined) != null, "guard " + name + ": a deleted space is caught");
         }
         check(passing >= 5, "guard: at least five operations that must pass (" + passing + ")");
         check(mutated >= 20, "guard: a typed word and a deleted space checked in at least 20 operations (" + mutated + ")");
