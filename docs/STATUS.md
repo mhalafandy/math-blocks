@@ -4,7 +4,7 @@ Updated at the end of every round. Public repository: generic content only. Earl
 
 ## Latest round — 0.1.169
 
-**Build:** 0.1.169 (test channel), CI: pending. **Stable: 0.1.168 promoted** (self-test 21 Nov 04:44: 441 passed, 0 failed).
+**Build:** 0.1.169 (test channel), CI passed. **Stable: 0.1.168 promoted** (self-test 21 Nov 04:44: 441 passed, 0 failed).
 
 **Reports read:** self-test 04:20 (0.1.168: clean), thesis-size 13:50, soak 04:50 (failed after #675).
 
