@@ -6,6 +6,8 @@ Updated at the end of every round. Public repository: generic content only. Earl
 
 **Build:** 0.1.170 (test channel), CI passed. Stable stays 0.1.168: the 0.1.169 self-test had 2 failures.
 
+**Test-channel update check** ("Could not fetch a valid release JSON"): 0.1.170's `dev-build` release was left a draft, so its manifest was not public. CI now publishes each release explicitly and fails unless `latest.json` downloads; 0.1.171 republishes it.
+
 **Reports read:** self-test 18:32 (0.1.169: 454 passed, 2 failed), thesis-size 19:06, soak 20:56 (failed at #122), connector.log.
 
 **Thesis-size (0.1.169) and the log:** Convert LaTeX 207 ms per equation (writing 204); numbers 72 s (locked). List of symbols 553 s, now passing. The one read of the document's XML takes 8–11 s (37 MB, 1533 pictures), so decision A's read is cheap. The time went into per-equation Word calls: the check before writing took 0.52 s per equation (revision count and content-control search on each lookup), and Apply style's writes 0.66–0.82 s per equation.

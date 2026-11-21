@@ -182,6 +182,18 @@ jobs:
           gh release create dev-build dl/* --prerelease --target "$GITHUB_SHA" \
             --title "Latest test build ($APP_VERSION)" \
             --notes "Automatic build $APP_VERSION of commit ${GITHUB_SHA::7} (test channel). Apps on the stable channel do not install it until it is promoted. First install: docs/DEVELOPMENT.md section 0."
+          # gh creates a release as a draft, uploads, then publishes; that last step can be lost (0.1.170's dev-build
+          # stayed a draft, and a draft's files are not public, so the app's update check found no manifest).
+          # Publish explicitly, and fail the job unless each channel's manifest really downloads.
+          for tag in "v$APP_VERSION" dev-build; do
+            ok=""
+            for i in 1 2 3 4 5; do
+              gh release edit "$tag" --draft=false --prerelease || true
+              if curl -fsSL "https://github.com/$GITHUB_REPOSITORY/releases/download/$tag/latest.json" | jq -e --arg v "$APP_VERSION" '.version == $v' >/dev/null; then ok=1; break; fi
+              sleep $((i * 5))
+            done
+            [ -n "$ok" ] || { echo "::error::$tag/latest.json is not downloadable (release still a draft?)"; exit 1; }
+          done
           # Keep the 30 newest test builds, and always the current and previous stable ones.
           # (No stable release yet, or nothing to prune, is not an error.)
           keep=$(for f in latest.json previous.json; do (gh release download stable -p "$f" -O - 2>/dev/null || true) | jq -r '.version // empty' 2>/dev/null || true; done | sed 's/^/v/' || true)
