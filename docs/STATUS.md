@@ -4,7 +4,7 @@ Updated at the end of every round. Public repository: generic content only. Earl
 
 ## Latest round — 0.1.173
 
-**Build:** 0.1.173 (test channel), CI: pending. Stable stays 0.1.168: the 0.1.172 self-test had 3 failures (copy between documents).
+**Build:** 0.1.173 (test channel), CI passed. Stable stays 0.1.168: the 0.1.172 self-test had 3 failures (copy between documents).
 
 **Reports read:** self-test 03:23 (0.1.172: 474 passed, 3 failed), thesis-size 03:30, soak 05:06 (passed, 1000 operations), connector.log (soak only: the thesis run had been rotated out).
 
