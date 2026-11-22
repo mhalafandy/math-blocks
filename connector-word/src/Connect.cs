@@ -192,7 +192,7 @@ namespace MathBlocks.WordConnector
             "numberEquation", "unnumberEquation", "listNumbered", "insertReference", "updateNumbers",
             "showWordMenu", "selectionInfo", "findLatex", "replaceRanges", "equationToText", "equationsToText",
             "backupDocument", "beginOperation", "operationProgress", "endOperation", "repairEquations",
-            "insertNumberMarker", "markerBefore", "upgradeNumbering", "textWidth", "confirm", "showMessage", "smoke", "setDeveloperTools",
+            "insertNumberMarker", "markerBefore", "upgradeNumbering", "textWidth", "confirm", "showMessage", "smoke", "setDeveloperTools", "removeDuplicateEquations",
         };
 
         // ------------------------------------------------------------ ribbon
@@ -879,6 +879,7 @@ namespace MathBlocks.WordConnector
                         if (!DeveloperTools) throw new RpcException(Rpc.Forbidden, "Developer tools are off (MathBlocks: Settings → Advanced → Developer tools).");
                         result = _ops.Smoke(p);
                         break;
+                    case "removeDuplicateEquations": result = _ops.RemoveDuplicateEquations(p); break;
                     case "setDeveloperTools":
                         DeveloperTools = Rpc.GetBool(p, "on");
                         try { _ribbon?.InvalidateControl("mbSelfTest"); } catch (Exception) { }

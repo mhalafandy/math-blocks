@@ -911,10 +911,24 @@ namespace MathBlocks.WordConnector
         private static Word.Range RangeOf(Word.Document d, string tag, int preferNotAt = -1)
         {
             var eqs = FindByTag(d, tag);
-            var ranges = eqs.Select(e => e.Range).ToList();
+            // Objects by their alt text or own data too (0.1.172 dropped this: copying between documents then
+            // found only an empty range, "no text is selected"); empty ranges are never used.
+            var ranges = eqs.Select(e => e.Range).Concat(ObjectsWithTag(d, tag).Select(s => s.Range)).Where(r => r.End > r.Start).ToList();
             if (ranges.Count == 0) throw new RpcException(Rpc.NotFound, "No equation or object " + tag);
             if (preferNotAt >= 0) foreach (var r in ranges) if (r.Start != preferNotAt) return r;
             return ranges.OrderBy(r => r.Start).First();
+        }
+
+        /// <summary>MathBlocks objects with this ID (alt text, or the ID in their own data), in document order.</summary>
+        private static List<Word.InlineShape> ObjectsWithTag(Word.Document d, string tag)
+        {
+            var list = new List<Word.InlineShape>();
+            foreach (Word.InlineShape s in d.InlineShapes)
+            {
+                if (!IsMathBlocksObject(s)) continue;
+                if (EquationIdentity.AltTag(AltOf(s)) == tag || ObjectDataTag(s) == tag) list.Add(s);
+            }
+            return list;
         }
 
         /// <summary>A MathBlocks object as Word holds it: kind, frame, lowering, data, what follows it.</summary>
@@ -1148,6 +1162,44 @@ namespace MathBlocks.WordConnector
                             catch (Exception) { }
                         }
                     return new Dictionary<string, object> { ["assigned"] = list };
+                }
+                case "mathTypeTexToggle":
+                {
+                    // Self-test (visual comparison): MathType's Toggle TeX on the whole document turns the sheet's
+                    // $$…$$ LaTeX into MathType equations. MathType not installed: { available: false }.
+                    bool has = false;
+                    try { foreach (Word.AddIn a in _app.AddIns) if ((a.Name ?? "").IndexOf("MathType", StringComparison.OrdinalIgnoreCase) >= 0 && a.Installed) has = true; } catch (Exception) { }
+                    try { foreach (Word.Template t in _app.Templates) if ((t.Name ?? "").IndexOf("MathType", StringComparison.OrdinalIgnoreCase) >= 0) has = true; } catch (Exception) { }
+                    if (!has) return new Dictionary<string, object> { ["available"] = false };
+                    int count()
+                    {
+                        int n = 0;
+                        foreach (Word.InlineShape sh in d.InlineShapes) { var pid = ProgIdOf(sh) ?? ""; if (pid.StartsWith("Equation.DSMT", StringComparison.Ordinal)) n++; }
+                        return n;
+                    }
+                    int before = count();
+                    string error = null;
+                    d.Content.Select();
+                    try { _app.Run("MathTypeCommands.UILib.MTCommand_TeXToggle"); }
+                    catch (Exception ex1)
+                    {
+                        try { _app.Run("MTCommand_TeXToggle"); }
+                        catch (Exception ex2) { error = ex1.Message + " / " + ex2.Message; }
+                    }
+                    // MathType converts one equation after another: wait until the count stops growing (60 s at most).
+                    int after = count(), stable = 0;
+                    var clock = System.Diagnostics.Stopwatch.StartNew();
+                    while (clock.ElapsedMilliseconds < 60000 && stable < 4)
+                    {
+                        System.Windows.Forms.Application.DoEvents();
+                        System.Threading.Thread.Sleep(250);
+                        int now = count();
+                        stable = now == after ? stable + 1 : 0;
+                        after = now;
+                    }
+                    var r = new Dictionary<string, object> { ["available"] = true, ["before"] = before, ["after"] = after };
+                    if (error != null) r["error"] = error;
+                    return r;
                 }
                 case "ribbonKeyTips":
                     // Self-test: the key tips after Alt on this PC (tabs, Search box), for the tab key tip's clash check.

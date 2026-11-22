@@ -313,6 +313,11 @@ make("gen-toggle-adjacent", "Toggle LaTeX on two adjacent equations (selection)"
 make("gen-toggle-adjacent-wide", "Toggle LaTeX on two adjacent equations, the first range taking in the second's first character (must be caught)", adjacent(eqReplaced, eqReplaced), adjacent(latexWritten("$x$"), latexWritten("$y$")), "changed", { index: 0, left: 0, right: 1 });
 make("gen-toggle-numbered-wide", "Toggle LaTeX on a numbered line, the range taking in the tab before the number (must be caught)", toggled(eqReplaced), toggled(latexWritten("\\[a^2+b^2=c^2\\]")), "changed", { left: 0, right: 1 });
 make("gen-toggle-text-edited", "Toggle LaTeX that also changed the text after it (must be caught)", toggled(eqReplaced), toggled(latexWritten("\\[a^2+b^2=c^2\\]")).map((x) => (x.k === "t" && x.text === "Text after." ? t("Text afer.") : x)), "changed");
+// Repair (Check document): an equation twice side by side (an earlier version's replace left the old picture next to
+// the new one) is removed; the text around it must stay as it was.
+const twice = (...eqs: Tok[]): Tok[] => [t("The energy "), ...eqs, t(" is conserved."), t(P), t("\t"), eq, t("\t"), number("(1.1.1)"), t(P)];
+make("gen-remove-duplicate", "Repair (Check document): the second of two identical equations side by side removed", twice(eq, eq), twice(eq));
+make("gen-remove-duplicate-text", "Repair (Check document) that also removed a letter after the equation (must be caught)", twice(eq, eq), twice(eq).map((x) => (x.k === "t" && x.text === " is conserved." ? t(" s conserved.") : x)), "changed");
 make("gen-convert-latex-footnote", "Convert LaTeX with a footnote mark in the main text", withNote(latex("$x$")), withNote(eq));
 
 const dir = new URL("../connector-word/tests/guard-fixtures/", import.meta.url);

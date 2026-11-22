@@ -13,14 +13,54 @@ import type { MathTypeSample, Wmf, WmfOp } from "@mathblocks/mathtype";
 export const CATEGORIES: { id: string; label: string; test: RegExp }[] = [
   { id: "matrices", label: "Matrices", test: /\\begin\{[pbvBV]?matrix|\\begin\{array/ },
   { id: "radicals", label: "Radicals", test: /\\sqrt/ },
-  { id: "fractions", label: "Fractions", test: /\\[dt]?frac|\\binom|\\over\b/ },
-  { id: "operators", label: "Large operators", test: /\\(sum|prod|int|iint|iiint|oint|lim|bigcup|bigcap|coprod)\b/ },
-  { id: "accents", label: "Accents and harpoons", test: /\\(hat|bar|dot|ddot|vec|tilde|check|breve|overrightharpoon|overleftharpoon|overrightarrow|overline|underline|widehat|widetilde|pvec|bvec|vectrix|dyadic)\b/ },
+  { id: "fractions", label: "Fractions", test: /\\[dt]?frac|\\binom|\\over(?![A-Za-z])/ },
+  { id: "operators", label: "Large operators", test: /\\(sum|prod|int|iint|iiint|oint|lim|bigcup|bigcap|coprod)(?![A-Za-z])/ },
+  { id: "accents", label: "Accents and harpoons", test: /\\(hat|bar|dot|ddot|vec|tilde|check|breve|overrightharpoon|overleftharpoon|overrightarrow|overline|underline|widehat|widetilde|pvec|bvec|vectrix|dyadic)(?![A-Za-z])/ },
   { id: "delimiters", label: "Delimiters", test: /\\left|\\right|\\big|\\Big|[()[\]]|\\[lr]angle|\\\{|\\\}/ },
   { id: "scripts", label: "Scripts", test: /[_^]/ },
   { id: "spacing", label: "Spacing and plain symbols", test: /./ },
 ];
 export const categoryOf = (latex: string) => CATEGORIES.find((c) => c.test.test(latex))!.id;
+
+/**
+ * The self-test's comparison sheet: generic equations in standard LaTeX (what MathType's Toggle TeX reads), at
+ * least two for every category above, display and inline.
+ */
+export const COMPARISON_SHEET: { latex: string; display: boolean }[] = [
+  ...[
+    "\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}",
+    "R=\\begin{bmatrix} 1 & 0 & 0 \\\\ 0 & \\cos\\theta & -\\sin\\theta \\\\ 0 & \\sin\\theta & \\cos\\theta \\end{bmatrix}",
+    "\\sqrt{x^2+y^2}",
+    "\\sqrt[3]{a+b}",
+    "\\frac{a+b}{c-d}",
+    "\\frac{\\partial f}{\\partial x}+\\frac{1}{1+\\frac{1}{x}}",
+    "\\sum_{k=1}^{n} k^2=\\frac{n(n+1)(2n+1)}{6}",
+    "\\int_0^1 x^2\\,dx",
+    "\\prod_{i=1}^{n} a_i",
+    "\\oint_C \\mathbf{F}\\cdot d\\mathbf{r}",
+    "\\iint_D f(x,y)\\,dx\\,dy",
+    "\\lim_{x\\to 0}\\frac{\\sin x}{x}=1",
+    "\\hat{x}+\\bar{y}+\\tilde{z}",
+    "\\dot{q}+\\ddot{q}",
+    "\\vec{v}=\\vec{\\omega}\\times\\vec{r}",
+    "\\left(\\frac{a}{b}\\right)^2",
+    "\\left[x+y\\right]\\cdot\\left\\{a,b\\right\\}",
+    "\\langle u,v\\rangle",
+    "e^{-x^2/2}",
+    "a_{n+1}=a_n+d",
+    "x_i^2+y_{ij}",
+    "E=mc^2",
+    "a\\le b\\ne c",
+    "\\alpha+\\beta=\\gamma",
+  ].map((latex) => ({ latex, display: true })),
+  ...[
+    "x^2",
+    "\\frac{1}{2}",
+    "\\sum_{k=1}^{n} a_k",
+    "\\int_0^T f(t)\\,dt",
+    "\\alpha_i",
+  ].map((latex) => ({ latex, display: false })),
+];
 
 /** MathType's size: the most common Times/Symbol em in the picture, in points. */
 export function mathTypeSizePt(wmf: Wmf, heightPt: number): number | null {

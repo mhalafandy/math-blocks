@@ -5,6 +5,7 @@
 import type { MathNode, MathVariant, Row } from "@mathblocks/math-core";
 import { expandNotation, styleAst, styleNotation, looksOf, type Looks, type MathStyle, type NotationProfile } from "@mathblocks/math-core";
 import { charGlyph, glyphName, namedGlyph, symbolGlyph, type FontSet, type GlyphInfo } from "./fonts";
+import type { Font } from "opentype.js";
 import type { RenderStyle } from "./style";
 import { boldGreek } from "./embolden";
 
@@ -111,6 +112,8 @@ interface Ctx {
   used?: Set<GlyphSource>;
   /** Document style settings the layout itself applies (function names, text, accents over bold). */
   look?: Pick<Looks, "functions" | "text" | "accentsFollowBold">;
+  /** The large operators' font (document style), when it is not the current one. */
+  bigOp?: Font;
 }
 
 const script = (c: Ctx): Ctx => ({
@@ -568,14 +571,30 @@ function underOver(base: Box, sub: Row | undefined, sup: Row | undefined, c: Ctx
 
 const INTEGRALS = new Set(["∫", "∬", "∭", "∮", "∯", "∰", "⨌"]);
 
+/** A large operator's display-size glyph in a math font (named ".display" in XITS, ".dsp"/".s1" in STIX Two, ".v1" in Latin Modern); never the upright ".up" forms. */
+function displayVariant(font: Font, g: GlyphInfo): GlyphInfo | null {
+  const name = g.glyph.name;
+  if (!name) return null;
+  for (const sfx of ["display", "dsp", "s1", "v1"]) {
+    const v = namedGlyph(font, `${name}.${sfx}`);
+    if (v) return v;
+  }
+  return null;
+}
+
 function nary(op: string, sub: Row | undefined, sup: Row | undefined, limits: "auto" | "limits" | "nolimits", c: Ctx): Box {
   const integral = INTEGRALS.has(op);
   const m = c.fonts.math;
-  const fromSymbol = c.fonts.symbol && c.st.useSymbolFont ? symbolGlyph(c.fonts.symbol, op) : null;
-  let g = fromSymbol ?? charGlyph(m, op) ?? charGlyph(c.fonts.regular, op);
+  // A TeX-style math font chosen in the document style: its own slanted integrals and its display variants
+  // (about 2.2 em, the size TeX uses in display), never scaled.
+  const tex = c.bigOp ? charGlyph(c.bigOp, op) : null;
+  const fromSymbol = !tex && c.fonts.symbol && c.st.useSymbolFont ? symbolGlyph(c.fonts.symbol, op) : null;
+  let g = tex ?? fromSymbol ?? charGlyph(m, op) ?? charGlyph(c.fonts.regular, op);
   if (!g) return textBox(op, "regular", c);
   let size = c.s;
-  if ((c.display || fromSymbol) && c.st.bigOpScale > 0) size = c.s * (c.display ? c.st.bigOpScale : 1);
+  if (tex) {
+    if (c.display) g = displayVariant(c.bigOp!, g) ?? g;
+  } else if ((c.display || fromSymbol) && c.st.bigOpScale > 0) size = c.s * (c.display ? c.st.bigOpScale : 1);
   else if (c.display) {
     const name = g.glyph.name;
     const big = name ? (namedGlyph(m, `${name}.dsp`) ?? namedGlyph(m, `${name}.s1`)) : null;
@@ -1127,7 +1146,9 @@ export interface LayoutOptions {
 export function layout(root: Row, o: LayoutOptions): Box {
   const ms = o.mathStyle;
   root = ms ? expandNotation(styleAst(root, ms), styleNotation(ms)) : expandNotation(root, o.notation);
-  return layoutRow(root, { fonts: o.fonts, st: o.style, s: 1, display: o.display, level: 0, used: o.used, look: ms ? looksOf(ms) : undefined });
+  const which = ms?.global.largeOperators;
+  const bigOp = which && which !== "current" ? o.fonts.bigOps?.[which] : undefined;
+  return layoutRow(root, { fonts: o.fonts, st: o.style, s: 1, display: o.display, level: 0, used: o.used, look: ms ? looksOf(ms) : undefined, ...(bigOp ? { bigOp } : {}) });
 }
 
 // Re-exported for tests.

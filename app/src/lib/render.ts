@@ -2,6 +2,9 @@ import { parseLatex } from "@mathblocks/math-latex";
 import { CLASSIC, loadFont, renderEmf, renderSvg, mathTypePadding, type FontSet, type RenderResult, type RenderStyle } from "@mathblocks/math-render";
 import { useApp } from "./store";
 import stixUrl from "@fontsource/stix-two-math/files/stix-two-math-latin-400-normal.woff?url";
+import latinModernUrl from "../assets/math-fonts/latin-modern-math/latinmodern-math.otf?url";
+import stixTwoUrl from "../assets/math-fonts/stix-two-math/STIXTwoMath-Regular.ttf?url";
+import xitsUrl from "../assets/math-fonts/xits-math/xits-math.otf?url";
 import { isDesktop } from "./connector";
 import { activeNotation, activeStyle } from "./docStyle";
 import { styleHash } from "@mathblocks/math-core";
@@ -45,10 +48,20 @@ export function loadFonts(): Promise<FontSet> {
     const stix = loadFont(await (await fetch(stixUrl)).arrayBuffer());
     const [r, i, b, bi, sym, extra] = await Promise.all(["times.ttf", "timesi.ttf", "timesbd.ttf", "timesbi.ttf", "symbol.ttf", "mtextra.ttf"].map(systemFont));
     const f = (x: ArrayBuffer | null) => (x ? loadFont(x) : stix);
+    // The document style's large-operator fonts (bundled; also installed for the user by the installer).
+    const math = async (url: string) => {
+      try {
+        return loadFont(await (await fetch(url)).arrayBuffer());
+      } catch {
+        return undefined;
+      }
+    };
+    const [lm, st2, xits] = await Promise.all([math(latinModernUrl), math(stixTwoUrl), math(xitsUrl)]);
     return {
       regular: f(r ?? null), italic: f(i ?? null), bold: f(b ?? null), boldItalic: f(bi ?? null), math: stix,
       symbol: sym ? loadFont(sym) : undefined,
       extra: extra ? loadFont(extra) : undefined,
+      bigOps: { ...(lm ? { "latin-modern": lm } : {}), ...(st2 ? { "stix-two": st2 } : {}), ...(xits ? { xits } : {}) },
     };
   })();
   fontsPromise.catch(() => (fontsPromise = null));

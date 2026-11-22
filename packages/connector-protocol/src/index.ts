@@ -360,7 +360,7 @@ export interface AppToConnector {
   /** Opens one undo record and a progress window owned by Word (document blocked). */
   beginOperation: { params: DocTarget & { title: string; total: number; undoLabel: string; exclude?: { start: number; end: number }[]; noGuard?: boolean }; result: { ok: true } };
   operationProgress: { params: { done: number; text?: string }; result: { cancelled: boolean } };
-  endOperation: { params: { done: number; /** Cancelled: undo the whole operation. */ rollback?: boolean }; result: { ms: number; undoBrokenAt?: string; guardFailed?: string; guardRestored?: boolean; rolledBack?: boolean } };
+  endOperation: { params: { done: number; /** Cancelled: undo the whole operation. */ rollback?: boolean; /** The app stopped it because of this error (logged). */ stoppedBy?: string }; result: { ms: number; undoBrokenAt?: string; guardFailed?: string; guardRestored?: boolean; rolledBack?: boolean } };
   retag: { params: DocTarget & { tag: string; newTag: string }; result: { found: number } };
   selectInstance: { params: DocTarget & { tag: string }; result: { found: number } };
   /** The document's MathBlocks registry (Custom XML Part), or null. */
@@ -461,6 +461,8 @@ export interface AppToConnector {
   confirm: { params: { title: string; text: string; ok?: string; offerDontAsk?: boolean }; result: { ok: boolean; dontAsk: boolean } };
   /** A result in Word's status bar, or a problem in a message over Word. */
   showMessage: { params: { text: string; kind?: "info" | "error" }; result: { ok: true } };
+  /** Repair (Check document): removes equations that sit twice side by side (refused unless one is right next to another). */
+  removeDuplicateEquations: { params: DocTarget & { tags: string[] }; result: { removed: number; refused: { tag: string; reason: string }[] } };
   /** Developer tools (Settings → Advanced): the ribbon's self-test button and the test requests (smoke). */
   setDeveloperTools: { params: { on: boolean }; result: { on: boolean } };
   /** Replaces ranges (still holding `expect`) by Flat OPC or text, one undo step. */

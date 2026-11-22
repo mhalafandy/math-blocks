@@ -41,7 +41,14 @@ namespace MathBlocks.WordConnector
                 {
                     Directory.CreateDirectory(Path.GetDirectoryName(FilePath));
                     var info = new FileInfo(FilePath);
-                    if (info.Exists && info.Length > 2_000_000) File.Delete(FilePath);
+                    // Full: kept as connector.previous.log (one run's log is not lost to the next, e.g. the
+                    // thesis-size test's to a soak test after it).
+                    if (info.Exists && info.Length > 6_000_000)
+                    {
+                        var previous = Path.Combine(Path.GetDirectoryName(FilePath), "connector.previous.log");
+                        if (File.Exists(previous)) File.Delete(previous);
+                        File.Move(FilePath, previous);
+                    }
                     File.AppendAllText(FilePath, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " " + level + " " + message + Environment.NewLine);
                 }
             }

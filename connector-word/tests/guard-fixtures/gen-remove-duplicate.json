@@ -1,0 +1,221 @@
+{
+ "operation": "Repair (Check document): the second of two identical equations side by side removed",
+ "source": "generated (tools/make-guard-fixtures.ts) from the field codes of a 0.1.148 self-test run",
+ "expect": "unchanged",
+ "exclude": [],
+ "before": {
+  "end": 180,
+  "fields": [
+   {
+    "start": 73,
+    "end": 92,
+    "code": " STYLEREF 1 \\s "
+   },
+   {
+    "start": 93,
+    "end": 136,
+    "code": " SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 137,
+    "end": 176,
+    "code": " SEQ MBEq \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 31,
+    "end": 178,
+    "code": " MACROBUTTON MBPlaceRef \\* MERGEFORMAT "
+   }
+  ],
+  "equations": [
+   [
+    11,
+    12
+   ],
+   [
+    12,
+    13
+   ],
+   [
+    29,
+    30
+   ]
+  ],
+  "lists": [],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 11,
+    "text": "The energy "
+   },
+   {
+    "start": 11,
+    "end": 12,
+    "text": "\u0001"
+   },
+   {
+    "start": 12,
+    "end": 13,
+    "text": "\u0001"
+   },
+   {
+    "start": 13,
+    "end": 29,
+    "text": " is conserved.\r\t"
+   },
+   {
+    "start": 29,
+    "end": 30,
+    "text": "\u0001"
+   },
+   {
+    "start": 30,
+    "end": 31,
+    "text": "\t"
+   },
+   {
+    "start": 31,
+    "end": 73,
+    "text": "\u0013 MACROBUTTON MBPlaceRef \\* MERGEFORMAT \u0014("
+   },
+   {
+    "start": 73,
+    "end": 92,
+    "text": "\u0013 STYLEREF 1 \\s \u00141\u0015"
+   },
+   {
+    "start": 92,
+    "end": 93,
+    "text": "."
+   },
+   {
+    "start": 93,
+    "end": 136,
+    "text": "\u0013 SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT \u00141\u0015"
+   },
+   {
+    "start": 136,
+    "end": 137,
+    "text": "."
+   },
+   {
+    "start": 137,
+    "end": 176,
+    "text": "\u0013 SEQ MBEq \\* ARABIC \\* MERGEFORMAT \u00141\u0015"
+   },
+   {
+    "start": 176,
+    "end": 178,
+    "text": ")\u0015"
+   },
+   {
+    "start": 178,
+    "end": 180,
+    "text": "\r\r"
+   }
+  ]
+ },
+ "after": {
+  "end": 179,
+  "fields": [
+   {
+    "start": 72,
+    "end": 91,
+    "code": " STYLEREF 1 \\s "
+   },
+   {
+    "start": 92,
+    "end": 135,
+    "code": " SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 136,
+    "end": 175,
+    "code": " SEQ MBEq \\* ARABIC \\* MERGEFORMAT "
+   },
+   {
+    "start": 30,
+    "end": 177,
+    "code": " MACROBUTTON MBPlaceRef \\* MERGEFORMAT "
+   }
+  ],
+  "equations": [
+   [
+    11,
+    12
+   ],
+   [
+    28,
+    29
+   ]
+  ],
+  "lists": [],
+  "chunks": [
+   {
+    "start": 0,
+    "end": 11,
+    "text": "The energy "
+   },
+   {
+    "start": 11,
+    "end": 12,
+    "text": "\u0001"
+   },
+   {
+    "start": 12,
+    "end": 28,
+    "text": " is conserved.\r\t"
+   },
+   {
+    "start": 28,
+    "end": 29,
+    "text": "\u0001"
+   },
+   {
+    "start": 29,
+    "end": 30,
+    "text": "\t"
+   },
+   {
+    "start": 30,
+    "end": 72,
+    "text": "\u0013 MACROBUTTON MBPlaceRef \\* MERGEFORMAT \u0014("
+   },
+   {
+    "start": 72,
+    "end": 91,
+    "text": "\u0013 STYLEREF 1 \\s \u00141\u0015"
+   },
+   {
+    "start": 91,
+    "end": 92,
+    "text": "."
+   },
+   {
+    "start": 92,
+    "end": 135,
+    "text": "\u0013 SEQ MBSec \\c \\* ARABIC \\* MERGEFORMAT \u00141\u0015"
+   },
+   {
+    "start": 135,
+    "end": 136,
+    "text": "."
+   },
+   {
+    "start": 136,
+    "end": 175,
+    "text": "\u0013 SEQ MBEq \\* ARABIC \\* MERGEFORMAT \u00141\u0015"
+   },
+   {
+    "start": 175,
+    "end": 177,
+    "text": ")\u0015"
+   },
+   {
+    "start": 177,
+    "end": 179,
+    "text": "\r\r"
+   }
+  ]
+ }
+}

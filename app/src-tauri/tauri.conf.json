@@ -72,10 +72,22 @@
         "type": "downloadBootstrapper"
       },
       "nsis": {
-        "installMode": "currentUser"
+        "installMode": "currentUser",
+        "installerHooks": "installer-hooks.nsh"
       }
     },
-    "createUpdaterArtifacts": false
+    "createUpdaterArtifacts": false,
+    "resources": {
+      "../src/assets/math-fonts/latin-modern-math/latinmodern-math.otf": "fonts/latinmodern-math.otf",
+      "../src/assets/math-fonts/latin-modern-math/GUST-FONT-LICENSE.txt": "fonts/LatinModernMath-GUST-FONT-LICENSE.txt",
+      "../src/assets/math-fonts/latin-modern-math/README-Latin-Modern-Math.txt": "fonts/README-Latin-Modern-Math.txt",
+      "../src/assets/math-fonts/latin-modern-math/MANIFEST-Latin-Modern-Math.txt": "fonts/MANIFEST-Latin-Modern-Math.txt",
+      "../src/assets/math-fonts/stix-two-math/STIXTwoMath-Regular.ttf": "fonts/STIXTwoMath-Regular.ttf",
+      "../src/assets/math-fonts/stix-two-math/OFL.txt": "fonts/STIXTwoMath-OFL.txt",
+      "../src/assets/math-fonts/xits-math/xits-math.otf": "fonts/xits-math.otf",
+      "../src/assets/math-fonts/xits-math/OFL.txt": "fonts/XITSMath-OFL.txt",
+      "../src/assets/math-fonts/README.md": "fonts/README.md"
+    }
   },
   "mainBinaryName": "MathBlocks",
   "plugins": {

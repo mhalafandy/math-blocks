@@ -118,6 +118,60 @@ namespace MathBlocks.WordConnector
         }
 
         /// <summary>Repair: hides the marker fields at these positions (code and result), in one undo step.</summary>
+        /// <summary>
+        /// Repair (Check document): removes equations that sit twice side by side (before 0.1.172 a replace could
+        /// leave the old picture right next to the new one). Each must be one picture with another MathBlocks
+        /// equation directly before or after it, nothing between; anything else is refused and left alone.
+        /// </summary>
+        public Dictionary<string, object> RemoveDuplicateEquations(Dictionary<string, object> p)
+        {
+            var doc = ResolveDocument(p);
+            var tags = new List<string>();
+            if (p.TryGetValue("tags", out var raw) && raw is IEnumerable list)
+                foreach (var o in list) if (o is string s) tags.Add(s);
+            return InOneUndo("Remove duplicate equations", () =>
+            {
+                int removed = 0;
+                var refused = new List<object>();
+                foreach (var tag in tags)
+                {
+                    var found = FindByTag(doc, tag);
+                    if (found.Count != 1 || !found[0].IsPicture)
+                    {
+                        refused.Add(new Dictionary<string, object> { ["tag"] = tag, ["reason"] = found.Count == 0 ? "not found" : "not one picture" });
+                        continue;
+                    }
+                    var r = found[0].Range;
+                    if (!EquationPictureAt(doc, r.Start - 1) && !EquationPictureAt(doc, r.End))
+                    {
+                        refused.Add(new Dictionary<string, object> { ["tag"] = tag, ["reason"] = "no equation right next to it" });
+                        continue;
+                    }
+                    Log.Info("remove duplicate: " + tag + " at " + r.Start);
+                    ForgetTag(tag);
+                    r.Delete();
+                    removed++;
+                }
+                return new Dictionary<string, object> { ["removed"] = removed, ["refused"] = refused };
+            }, null, doc);
+        }
+
+        /// <summary>A MathBlocks equation picture (or object) is the character at this position.</summary>
+        private static bool EquationPictureAt(Word.Document doc, int pos)
+        {
+            if (pos < 0) return false;
+            try
+            {
+                var r = doc.Range(pos, Math.Min(pos + 1, doc.Content.End));
+                foreach (Word.InlineShape s in r.InlineShapes)
+                    if (s.Range.Start == pos && (IsTag(TagOf(s)) || IsMathBlocksObject(s))) return true;
+            }
+            catch (COMException)
+            {
+            }
+            return false;
+        }
+
         public Dictionary<string, object> HideFields(Dictionary<string, object> p)
         {
             var doc = ResolveDocument(p);

@@ -1179,6 +1179,24 @@ export async function runWordSelfTest(): Promise<string | null> {
       await smoke("redo", { times: 1 });
       const redone = await cd.runCheck();
       check("Ctrl+Y repairs again", redone.problems.length === 0, redone.problems.map((p) => p.message).join(" | "));
+      // The same equation twice side by side (what an earlier version's replace could leave): a copy pasted right
+      // after an equation. Check document finds it; its repair removes the extra one (the numbered one stays).
+      const listed = (await connector.request("listInstances", { pages: false }, SLOW)).documents[0]?.instances ?? [];
+      const target = listed.find((i) => i.start !== undefined && !i.story);
+      if (target) {
+        await named("copy an equation", () => smoke("copy", { tag: target.tag }));
+        await smoke("caretAt", { pos: target.start! + 1 });
+        await named("paste it right after itself", () => smoke("paste", { mode: "ctrlV" }));
+        const dupCheck = await cd.runCheck();
+        const dup = dupCheck.problems.find((p) => p.repair === "removeDuplicate");
+        check("an equation twice side by side is found (repair: remove the extra one)", !!dup, dupCheck.problems.map((p) => p.message).join(" | ") || "nothing found");
+        if (dup) {
+          const rd = await named("remove the duplicate", () => cd.repairChosen(dupCheck, new Set([dup.id])));
+          const after = await cd.runCheck();
+          check("…removed: as many equations as before the paste, and the document checks clean", !rd.cancelled && !rd.guardFailed && after.equations === dupCheck.equations - 1 && after.problems.length === 0, `${dupCheck.equations} → ${after.equations}; ${after.problems.map((p) => p.message).join(" | ") || "clean"}`);
+          check("…the one kept is the original (its ID)", (await connector.request("listInstances", { pages: false }, SLOW)).documents[0]?.instances.some((i) => i.tag === target.tag) ?? false, target.tag);
+        }
+      }
       await smoke("save", { file: "check document test.docx" });
     });
 
@@ -2069,16 +2087,28 @@ export async function runWordSelfTest(): Promise<string | null> {
       check("time to draw the whole palette once (then cached until the style changes)", null, `${Math.round(ms)} ms, ${(ms / ALL_ITEMS.length).toFixed(2)} ms per tile; fonts: ${fonts.regular === fonts.math ? "STIX (Times New Roman not found)" : "Times New Roman"}${fonts.symbol ? " + Symbol" : ""}`);
     });
 
-    section = "Visual comparison with MathType (a document you choose; it stays on this PC)";
-    // Your own document: no guard fixtures recorded while it is used (fixtures come from generic documents only).
-    await smoke("guardFixtures", { on: false }).catch(() => undefined);
+    section = "Visual comparison with MathType (a generic sheet MathType converts from LaTeX)";
     await step("mathtype comparison", async () => {
       if (!(await import("./connector")).isDesktop()) return check("comparison with MathType", null, "desktop only");
-      const { open } = await import("@tauri-apps/plugin-dialog");
-      const picked = await open({ title: "Visual comparison: choose a Word document with MathType equations (Cancel to skip)", multiple: false, filters: [{ name: "Word document", extensions: ["docx", "docm"] }] });
-      if (!picked || Array.isArray(picked)) return check("comparison with MathType", null, "skipped (no document chosen)");
+      // The sheet as LaTeX text ($...$ inline, $$...$$ display) in a test document; MathType's Toggle TeX converts it.
+      const { COMPARISON_SHEET } = await import("./mtCompare");
+      const { interchangeDocx } = await import("./interchangeFixture");
+      const { toBase64 } = await import("./render");
+      const sheetParas = [
+        { style: "Normal", text: "MathBlocks vs MathType: generic comparison sheet." },
+        ...COMPARISON_SHEET.filter((e) => e.display).map((e) => ({ style: "Normal", text: `$$${e.latex}$$` })),
+        { style: "Normal", text: `Inline: ${COMPARISON_SHEET.filter((e) => !e.display).map((e) => `$${e.latex}$`).join(", ")}.` },
+      ];
+      await smoke("openDocx", { file: "mathtype comparison.docx", base64: toBase64(interchangeDocx(sheetParas)) });
+      const tex = (await smoke("mathTypeTexToggle")) as { available: boolean; before?: number; after?: number; error?: string };
+      if (!tex.available) return check("comparison with MathType", null, "skipped: MathType is not installed in Word on this PC");
+      const made = (tex.after ?? 0) - (tex.before ?? 0);
+      check(`MathType's Toggle TeX converted the sheet (${COMPARISON_SHEET.length} equations)`, made >= COMPARISON_SHEET.length * 0.9, `${made} MathType equation(s) made${tex.error ? `; ${tex.error}` : ""}`);
+      if (made <= 0) return;
+      const saved = (await smoke("save", { file: "mathtype comparison.docx" })) as { path?: string };
+      if (!saved.path) return check("comparison with MathType", null, "the sheet could not be saved");
       const { invoke } = await import("@tauri-apps/api/core");
-      const bytes = new Uint8Array(await invoke<ArrayBuffer>("document_read", { path: picked }));
+      const bytes = new Uint8Array(await invoke<ArrayBuffer>("document_read", { path: saved.path }));
       const { mathTypeSamples, readWmf } = await import("@mathblocks/mathtype");
       const { CATEGORIES, categoryOf, compareDrawings, compareReport, mathTypeSizePt, ourDrawing, wmfToSvg } = await import("./mtCompare");
       const { loadFonts, classicStyle } = await import("./render");
@@ -2117,7 +2147,6 @@ export async function runWordSelfTest(): Promise<string | null> {
         if (l.length) check(`category “${c.label}”: mean score`, null, `${mean(l)} (${l.length} equation(s); worst ${Math.max(...l.map((r) => r.result!.score))})`);
       }
     });
-    if (guardFixtures) await smoke("guardFixtures", { on: true }).catch(() => undefined);
 
     section = "Saved test documents";
     const a = await step("save A", () => smoke("save", { file: "self-test A.docx" }));

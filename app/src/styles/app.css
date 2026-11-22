@@ -944,3 +944,12 @@ html.preview-window body { background: var(--bg); }
 .cs-eq-draw { overflow-x: auto; white-space: nowrap; }
 .cs-related { margin: 4px 0 4px 6px; }
 .cs-mention { font-size: 12.5px; }
+
+/* Large operators: font comparison (developer tools) */
+.bigop-sheet { border-collapse: collapse; width: 100%; }
+.bigop-sheet th { text-align: left; vertical-align: top; width: 170px; padding: 10px 8px; font-weight: 600; }
+.bigop-sheet td { padding: 10px 8px; border-top: 1px solid var(--border, #ddd); }
+.bigop-sheet tr:first-child td, .bigop-sheet tr:first-child th { border-top: none; }
+.bigop-sheet tr.on th { color: var(--accent, #2563eb); }
+.bigop-sheet svg { color: currentColor; }
+.bigop-display { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; margin-top: 8px; }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { equationFacts, judgeDocument, numberKey, repairPlan, type CheckInput, type EquationFacts } from "./checkDocument";
+import { equationFacts, judgeDocument, numberKey, repairPlan, sideBySide, type CheckInput, type EquationFacts } from "./checkDocument";
 
 const pic = (latex: string, o: Partial<EquationFacts> = {}): EquationFacts => ({ kind: "picture", source: latex, alt: latex, mode: "display", styleHash: "S1", widthPt: 40, heightPt: 14, ...o });
 const clean: CheckInput = {
@@ -104,10 +104,39 @@ describe("Check document", () => {
   });
   it("turns the chosen problems into one repair", () => {
     const p = judgeDocument({ ...clean, equations: [{ tag: "b", facts: pic("x", { styleHash: "OLD" }) }], fields: { ...clean.fields, markers: [{ start: 1, kind: "MBEquationSection", code: "1.1", hidden: false }] } });
-    expect(repairPlan(p, new Set(p.map((x) => x.id)))).toEqual({ redraw: [{ tag: "b", latex: "x" }], hide: [1], updateNumbers: false, unlockFields: false });
+    expect(repairPlan(p, new Set(p.map((x) => x.id)))).toEqual({ redraw: [{ tag: "b", latex: "x" }], hide: [1], updateNumbers: false, unlockFields: false, removeDuplicates: [] });
   });
   it("reads a picture's facts from its XML", () => {
     const xml = `<w:r><w:pict><v:shape id="x" alt="MathBlocks inline (mb1|-|abc): v_{0}^{2}" style="width:21.50pt;height:15.00pt"/></w:pict></w:r>`;
     expect(equationFacts(xml)).toMatchObject({ kind: "picture", alt: "v_{0}^{2}", source: "v_0^2", mode: "inline", widthPt: 21.5, heightPt: 15 });
+  });
+});
+
+describe("the same equation twice side by side (left by an earlier replace)", () => {
+  const numbered = [{ bookmark: "_MBEq_1", number: "(1.1)", kind: "mathblocks" as const, tag: "new" }];
+  it("finds a restyle's leftover next to it and removes the one without the number", () => {
+    const d = sideBySide({ numbered, equations: [{ tag: "new", start: 20, facts: pic("E=mc^2", { styleHash: "S2" }) }, { tag: "old", start: 21, facts: pic("E=mc^2", { styleHash: "S1" }) }] });
+    expect(d).toEqual([{ keep: "new", remove: "old", start: 21 }]);
+  });
+  it("finds an older form of it (notation kinds) and removes the second when neither is numbered", () => {
+    const d = sideBySide({ numbered: [], equations: [{ tag: "a", start: 5, facts: pic("\\pvec{v}=\\cmat{v}") }, { tag: "b", start: 6, facts: pic("\\overrightharpoon{\\mathbf{v}}=\\mathbf{v}") }] });
+    expect(d.map((x) => x.remove)).toEqual(["b"]);
+  });
+  it("keeps the numbered one even when it comes second", () => {
+    const d = sideBySide({ numbered: [{ ...numbered[0]!, tag: "b" }], equations: [{ tag: "a", start: 5, facts: pic("x") }, { tag: "b", start: 6, facts: pic("x") }] });
+    expect(d).toEqual([{ keep: "b", remove: "a", start: 5 }]);
+  });
+  it("leaves different equations, and equations with text between them, alone", () => {
+    expect(sideBySide({ numbered: [], equations: [{ tag: "a", start: 5, facts: pic("x^2") }, { tag: "b", start: 6, facts: pic("\\frac{p}{q}") }] })).toEqual([]);
+    expect(sideBySide({ numbered: [], equations: [{ tag: "a", start: 5, facts: pic("x") }, { tag: "b", start: 8, facts: pic("x") }] })).toEqual([]);
+  });
+  it("is reported with its repair, and a removed equation is not drawn again", () => {
+    const input: CheckInput = { ...clean, equations: [{ tag: "a", start: 10, facts: pic("x^2+y^2") }, { tag: "dup", start: 11, facts: pic("x^2+y^2", { styleHash: "OLD" }) }, { tag: "b", start: 50, facts: pic("\\frac{a}{b}") }] };
+    const ps = judgeDocument(input);
+    const dup = ps.find((p) => p.repair === "removeDuplicate");
+    expect(dup?.tag).toBe("dup");
+    const plan = repairPlan(ps, new Set(ps.map((p) => p.id)));
+    expect(plan.removeDuplicates).toEqual(["dup"]);
+    expect(plan.redraw.some((r) => r.tag === "dup")).toBe(false);
   });
 });

@@ -230,7 +230,9 @@ namespace MathBlocks.WordConnector
                     var a0 = clock.ElapsedMilliseconds;
                     ForgetTag(tag);
                     CheckOperationUndo("after replacing " + tag);
-                    foreach (var c in FindByTag(doc, tag)) if (!c.IsPicture) Secure(c.Control);
+                    // Wrappers (content controls) are locked again; a picture has none, and looking it up after the
+                    // write walked every picture of the document (its ID was just forgotten).
+                    if (flatOpc.Contains("<w:sdt")) foreach (var c in FindByTag(doc, tag)) if (!c.IsPicture) Secure(c.Control);
                     afterMs += clock.ElapsedMilliseconds - a0;
                     replaced++;
                 }

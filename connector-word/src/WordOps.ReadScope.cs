@@ -104,9 +104,18 @@ namespace MathBlocks.WordConnector
         /// <summary>The index forgets this ID (its picture was replaced or retagged).</summary>
         internal static void ForgetTag(string tag)
         {
-            if (tag == null || TagScope == null) return;
-            foreach (var index in TagScope.Values) index.Remove(tag);
+            if (tag == null) return;
+            if (TagScope != null) foreach (var index in TagScope.Values) index.Remove(tag);
+            OperationIndex?.Remove(tag);
         }
+
+        /// <summary>A document-wide operation is running (between beginOperation and endOperation).</summary>
+        internal static bool InOperation;
+
+        /// <summary>The picture index kept for the batches of the running operation (see ScopedPicturesWithTag).</summary>
+        internal static Dictionary<string, List<Word.InlineShape>> OperationIndex;
+        internal static string OperationIndexDoc;
+
 
         /// <summary>
         /// A write that looks up every equation once (Apply style's replacements): the picture index without the
@@ -177,13 +186,24 @@ namespace MathBlocks.WordConnector
             var key = doc.FullName;
             if (!TagScope.TryGetValue(key, out var index))
             {
-                index = new Dictionary<string, List<Word.InlineShape>>(StringComparer.Ordinal);
-                foreach (Word.InlineShape s in doc.InlineShapes)
+                // Inside a document-wide operation the index is built once and kept for all its batches (it was
+                // built again for every batch of 10: a walk of all 1533 pictures each time on the thesis).
+                if (OperationIndex != null && OperationIndexDoc == key) index = OperationIndex;
+                else
                 {
-                    var t = TagOf(s);
-                    if (t == null || InsideMathBlocksControl(s.Range)) continue;
-                    if (!index.TryGetValue(t, out var list)) index[t] = list = new List<Word.InlineShape>();
-                    list.Add(s);
+                    index = new Dictionary<string, List<Word.InlineShape>>(StringComparer.Ordinal);
+                    foreach (Word.InlineShape s in doc.InlineShapes)
+                    {
+                        var t = TagOf(s);
+                        if (t == null || InsideMathBlocksControl(s.Range)) continue;
+                        if (!index.TryGetValue(t, out var list)) index[t] = list = new List<Word.InlineShape>();
+                        list.Add(s);
+                    }
+                    if (InOperation)
+                    {
+                        OperationIndex = index;
+                        OperationIndexDoc = key;
+                    }
                 }
                 TagScope[key] = index;
             }

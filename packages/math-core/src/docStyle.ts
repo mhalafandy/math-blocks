@@ -60,6 +60,9 @@ export interface SymbolRule {
   note?: string;
 }
 
+/** The font of large operators (∫ ∬ ∮ ∑ ∏): the current one (Symbol, as MathType), or a TeX-style math font. */
+export type LargeOperatorFont = "current" | "latin-modern" | "stix-two" | "xits";
+
 export interface MathStyleGlobal {
   /** A bold base's index letters: drawn regular ("base") or bold too ("scripts"). */
   boldScope: "base" | "scripts";
@@ -71,6 +74,8 @@ export interface MathStyleGlobal {
   font: "times";
   /** Notation check (Convert LaTeX): warn when a frame (\\vectrix) has a subscript. */
   frameSubscriptWarning: boolean;
+  /** Large operators (∫ ∬ ∮ ∑ ∏): their font (default: the current one). Slanted TeX integrals in the others. */
+  largeOperators?: LargeOperatorFont;
 }
 
 /** A document's style (v2: the kinds model). Stored in the document; v1 styles are migrated on reading. */
@@ -397,6 +402,7 @@ export function styleHash(style: MathStyle): string {
   if (lk.romans === "upright") delete lk.romans;
   const parts: unknown[] = [lk, style.global.sizePt, style.global.font, style.notation, Object.entries(letterRoles(style)).sort()];
   if (units !== "upright") parts.push({ units });
+  if (style.global.largeOperators && style.global.largeOperators !== "current") parts.push({ largeOperators: style.global.largeOperators });
   const others = otherRules(style);
   if (others.length) parts.push(others.map((r) => [r.text, r.sub ?? "", r.kind, r.when?.bold ?? null, r.when?.where ?? "anywhere"]));
   const s = JSON.stringify(parts);

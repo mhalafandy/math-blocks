@@ -11,7 +11,7 @@ import { parseDefineTag } from "./symbolList";
  * in an older style. Each problem says where it is (to go to it) and whether a safe repair exists.
  */
 
-export type Repair = "redraw" | "hide" | "updateNumbers" | "unlockFields";
+export type Repair = "redraw" | "hide" | "updateNumbers" | "unlockFields" | "removeDuplicate";
 
 export interface Problem {
   id: string;
@@ -127,11 +127,49 @@ function compareKeys(a: [number, number][], b: [number, number][]): number {
 
 const bare = (s: string) => s.replace(/\s+/g, "");
 
+/** Letters and digits of a LaTeX string (commands, braces and spacing left out), for "nearly the same". */
+const letters = (s: string) => s.replace(/\\[A-Za-z]+/g, "").replace(/[^A-Za-z0-9]/g, "");
+
+/**
+ * Two MathBlocks pictures directly next to each other (nothing between) that are the same equation: same LaTeX,
+ * one drawn in an older style, or nearly the same letters (an older form of it). Before 0.1.172 a replace could
+ * leave the old picture next to the new one; each read then gave the copy its own ID. The one to remove: the one
+ * without a number (bookmark), else the second (the old one: the new one was inserted in front of it).
+ */
+export function sideBySide(input: Pick<CheckInput, "equations" | "numbered">): { keep: string; remove: string; start?: number }[] {
+  const numberedTags = new Set(input.numbered.map((x) => x.tag).filter((t): t is string => !!t));
+  const main = input.equations.filter((e) => !e.story && e.start !== undefined && e.facts.kind !== "native").sort((a, b) => a.start! - b.start!);
+  const out: { keep: string; remove: string; start?: number }[] = [];
+  for (let i = 0; i + 1 < main.length; i++) {
+    const a = main[i]!;
+    const b = main[i + 1]!;
+    if (b.start! !== a.start! + 1) continue;
+    const la = a.facts.source ?? a.facts.alt ?? "";
+    const lb = b.facts.source ?? b.facts.alt ?? "";
+    if (!la || !lb) continue;
+    const same = a.tag === b.tag || norm(la) === norm(lb) || (a.facts.styleHash !== b.facts.styleHash && letters(la) === letters(lb));
+    const near = (() => {
+      const x = letters(la);
+      const y = letters(lb);
+      if (!x || !y) return false;
+      const shorter = x.length <= y.length ? x : y;
+      const longer = shorter === x ? y : x;
+      return longer.includes(shorter) && shorter.length / longer.length >= 0.6;
+    })();
+    if (!same && !near) continue;
+    const removeA = numberedTags.has(b.tag) && !numberedTags.has(a.tag);
+    out.push(removeA ? { keep: b.tag, remove: a.tag, start: a.start } : { keep: a.tag, remove: b.tag, start: b.start });
+    i++;
+  }
+  return out;
+}
+
 /** The report: every problem found, in the order of the groups. */
 export function judgeDocument(input: CheckInput): Problem[] {
   const out: Problem[] = [];
   let n = 0;
   const add = (p: Omit<Problem, "id">) => out.push({ ...p, id: `p${++n}` });
+  for (const d of sideBySide(input)) add({ group: "equations", severity: "warning", message: "The same equation twice side by side (an earlier version left the old picture next to the new one): the extra one is removed", tag: d.remove, ...(d.start !== undefined ? { start: d.start } : {}), repair: "removeDuplicate" });
 
   for (const e of input.equations) {
     const f = e.facts;
@@ -208,8 +246,9 @@ export function judgeDocument(input: CheckInput): Problem[] {
 }
 
 /** The repairs chosen, as the work they need: equations to draw again, markers to hide, whether to update numbers. */
-export function repairPlan(problems: Problem[], chosen: Set<string>): { redraw: { tag: string; latex: string }[]; hide: number[]; updateNumbers: boolean; unlockFields: boolean } {
+export function repairPlan(problems: Problem[], chosen: Set<string>): { redraw: { tag: string; latex: string }[]; hide: number[]; updateNumbers: boolean; unlockFields: boolean; removeDuplicates: string[] } {
   const redraw = new Map<string, string>();
+  const removeDuplicates = new Set<string>();
   const hide = new Set<number>();
   let updateNumbers = false;
   let unlockFields = false;
@@ -219,6 +258,9 @@ export function repairPlan(problems: Problem[], chosen: Set<string>): { redraw: 
     if (p.repair === "hide" && p.start !== undefined) hide.add(p.start);
     if (p.repair === "updateNumbers") updateNumbers = true;
     if (p.repair === "unlockFields") unlockFields = true;
+    if (p.repair === "removeDuplicate" && p.tag) removeDuplicates.add(p.tag);
   }
-  return { redraw: [...redraw].map(([tag, latex]) => ({ tag, latex })), hide: [...hide], updateNumbers, unlockFields };
+  // A removed equation is not drawn again.
+  for (const t of removeDuplicates) redraw.delete(t);
+  return { redraw: [...redraw].map(([tag, latex]) => ({ tag, latex })), hide: [...hide], updateNumbers, unlockFields, removeDuplicates: [...removeDuplicates] };
 }

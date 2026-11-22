@@ -21,9 +21,11 @@ export interface FontSet {
   symbol?: Font;
   /** MathType's MT Extra (installed with MathType): preferred over STIX for what Times lacks. */
   extra?: Font;
+  /** Math fonts for large operators (the document style's choice): Latin Modern Math, STIX Two Math, XITS Math. */
+  bigOps?: Partial<Record<"latin-modern" | "stix-two" | "xits", Font>>;
 }
 
-export type Face = Exclude<keyof FontSet, "symbol" | "extra">;
+export type Face = Exclude<keyof FontSet, "symbol" | "extra" | "bigOps">;
 
 export const loadFont = (bytes: ArrayBuffer | Uint8Array): Font =>
   parse(bytes instanceof Uint8Array ? (bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer) : bytes);

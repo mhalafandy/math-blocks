@@ -160,6 +160,14 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
       run: () => import("./soakTest").then((m) => m.soakTestCommand()),
     },
     {
+      id: "app.largeOperators",
+      developer: true,
+      title: "Large operators: compare the fonts (∫ ∬ ∮ ∑ ∏ in Latin Modern, STIX Two, XITS and the current one)…",
+      group: "View",
+      keywords: "integral sum product large operator font tex slanted latin modern stix xits compare",
+      run: () => import("../components/LargeOperatorsSheet").then((m) => m.openLargeOperatorsSheet()),
+    },
+    {
       id: "word.thesisTest",
       developer: true,
       title: "Thesis-size test (a generated 300-page document through every operation, timed; 20–40 min)…",

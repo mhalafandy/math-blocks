@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { openSettings } from "../lib/settingsStore";
 import { create } from "zustand";
 import { convertLatexToMarkup } from "mathlive/ssr";
-import { applyPreset, expandNotation, letterRoles, looksOf, PRESETS, presetFrom, STYLE_PRESETS, styleAst, styleLabel, styleNotation, withLetterRoles, withLooks, type LetterRole, type Looks, type MathStyle, type MathStyleGlobal, type PresetId, type Shape, type StylePreset, type SymbolRule } from "@mathblocks/math-core";
+import { applyPreset, expandNotation, letterRoles, looksOf, PRESETS, presetFrom, STYLE_PRESETS, styleAst, styleLabel, styleNotation, withLetterRoles, withLooks, type LetterRole, type Looks, type MathStyle, type MathStyleGlobal, type LargeOperatorFont, type PresetId, type Shape, type StylePreset, type SymbolRule } from "@mathblocks/math-core";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { Modal, askConfirm, askText } from "./Dialogs";
 import type { LetterProposal } from "../lib/styleCheck";
@@ -327,6 +327,14 @@ export function DocumentStyleDialog() {
               </Row>
               <Row label="Numbers" sample={<StylePreview latex="a_{2}+3.5" style={d} />}>
                 <ShapeChoice value={L!.numbers} onChange={(v) => up({ numbers: v })} />
+              </Row>
+              <Row label="Large operators (∫ ∬ ∮ ∑ ∏): their font" sample={<StylePreview latex="\\int_0^1 f(x)\\,dx+\\sum_{k=1}^{n}a_k" style={d} />}>
+                <select value={d.global.largeOperators ?? "current"} onChange={(e) => upG({ largeOperators: e.target.value as LargeOperatorFont })}>
+                  <option value="current">Current (Symbol, as MathType)</option>
+                  <option value="latin-modern">Latin Modern Math (TeX: slanted integrals)</option>
+                  <option value="stix-two">STIX Two Math</option>
+                  <option value="xits">XITS Math</option>
+                </select>
               </Row>
               <Row label="Units (\unit{m/s})" sample={<StylePreview latex="9.81\unit{m/s^2}" style={d} />}>
                 <ShapeChoice value={L!.units} onChange={(v) => up({ units: v })} />

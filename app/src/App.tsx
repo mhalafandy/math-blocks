@@ -2,6 +2,7 @@ import { MathPreview } from "./components/MathPreview";
 import { GearIcon, PreviewIcon } from "./components/Icons";
 import { DefineSymbolDialog, SymbolListDialog } from "./components/SymbolList";
 import { ChangeSymbolDialog } from "./components/ChangeSymbolDialog";
+import { LargeOperatorsSheet } from "./components/LargeOperatorsSheet";
 import { CheckDocumentDialog } from "./components/CheckDocumentDialog";
 import { ProblemReportDialog } from "./components/ProblemReportDialog";
 import { useBlocks } from "./lib/blocks/useBlocks";
@@ -402,6 +403,7 @@ export function App() {
       <AccentsDialog />
       <SettingsDialog />
       <ShortcutsDialog />
+      <LargeOperatorsSheet />
       <RecognitionDialog />
       <SnippetsDialog />
       <SaveBlockDialog />

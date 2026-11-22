@@ -160,6 +160,8 @@ namespace MathBlocks.WordConnector
             }
             else _progress.Show();
             _operationClock.Restart();
+            InOperation = true;
+            OperationIndex = null;
             Log.Info("operation \"" + title + "\" on " + doc.Name + ": " + total + " equation(s)");
             return new Dictionary<string, object> { ["ok"] = true };
         }
@@ -180,8 +182,9 @@ namespace MathBlocks.WordConnector
             bool testCancel = CancelNextProgress;
             CancelNextProgress = false;
             bool pressed = _progress != null && _progress.Cancelled;
+            var how = _progress?.CancelledBy ?? "";
             // Who stopped it (0.1.170 thesis-size: Apply style stopped after 840 equations, cause not in the log).
-            if (testCancel || pressed) Log.Info("operation cancel at " + done + ": " + (testCancel ? "test (cancelNextProgress)" : "Cancel pressed in the progress window"));
+            if (testCancel || pressed) Log.Info("operation cancel at " + done + ": " + (testCancel ? "test (cancelNextProgress)" : "Cancel pressed in the progress window (" + how + ")"));
             return new Dictionary<string, object> { ["cancelled"] = testCancel || pressed };
         }
 
@@ -192,6 +195,10 @@ namespace MathBlocks.WordConnector
             var ms = _operationClock.ElapsedMilliseconds;
             CheckOperationUndo("end of the operation");
             var broken = _undoBrokenAt ?? "";
+            // The test flag arms Cancel for one operation only: whatever happened, the next one starts clean.
+            CancelNextProgress = false;
+            var stopped = p.TryGetValue("stoppedBy", out var sb) ? sb as string : null;
+            if (!string.IsNullOrEmpty(stopped)) Log.Info("operation stopped by the app: " + stopped);
             // Cancelled by the user: the whole operation is undone (its single record), the text checked back.
             if (Rpc.GetBool(p, "rollback"))
             {
@@ -218,6 +225,9 @@ namespace MathBlocks.WordConnector
 
         private void EndOperationCore()
         {
+            InOperation = false;
+            OperationIndex = null;
+            OperationIndexDoc = null;
             if (_operationUndo)
             {
                 try
@@ -727,6 +737,9 @@ namespace MathBlocks.WordConnector
             private readonly Button _cancel = new Button { Text = "Cancel", Width = 90, Anchor = AnchorStyles.Right | AnchorStyles.Bottom };
             private int _total => _bar.Maximum;
             public bool Cancelled { get; private set; }
+            /// <summary>"mouse" or "keyboard": how Cancel was pressed (logged).</summary>
+            public string CancelledBy { get; private set; } = "";
+            private bool _mouse;
 
             public ProgressForm(string title, int total)
             {
@@ -741,8 +754,16 @@ namespace MathBlocks.WordConnector
                 _bar.Maximum = Math.Max(1, total);
                 _label.Text = "Starting… Please do not click into the document.";
                 _cancel.Location = new Point(ClientSize.Width - 14 - _cancel.Width, ClientSize.Height - 12 - _cancel.Height);
+                // Cancel was this window's only control, so it had the keyboard focus: an Enter or Space reaching
+                // the window pressed it (a thesis-size Apply style stopped at 940/1533 with nobody pressing it).
+                // Now it takes no focus and only a click counts.
+                _cancel.TabStop = false;
+                _cancel.MouseDown += (s, e) => _mouse = true;
                 _cancel.Click += (s, e) =>
                 {
+                    if (!_mouse) return;
+                    _mouse = false;
+                    CancelledBy = "mouse";
                     Cancelled = true;
                     _cancel.Enabled = false;
                     _label.Text = "Cancelling: restoring the equations already changed…";
@@ -750,6 +771,14 @@ namespace MathBlocks.WordConnector
                 Controls.Add(_bar);
                 Controls.Add(_label);
                 Controls.Add(_cancel);
+                ActiveControl = _label;
+            }
+
+            // Enter and Escape do nothing in this window (no AcceptButton / CancelButton).
+            protected override bool ProcessDialogKey(Keys keyData)
+            {
+                if (keyData == Keys.Enter || keyData == Keys.Escape || keyData == Keys.Space) return true;
+                return base.ProcessDialogKey(keyData);
             }
 
             public void SetTotal(int total)

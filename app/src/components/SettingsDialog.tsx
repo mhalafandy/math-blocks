@@ -141,6 +141,11 @@ function AdvancedPage() {
           <button disabled={!s.connector.connected} onClick={() => run(() => import("../lib/thesisTest").then((m) => m.thesisTestCommand()))}>Thesis-size test…</button>
         </Field>
       )}
+      {s.developerTools && (
+        <Field label="Large operators" hint="∫ ∬ ∮ ∑ ∏ in Latin Modern Math, STIX Two Math, XITS Math and the current font, inline and in display; choose one for the document style.">
+          <button onClick={() => run(() => import("./LargeOperatorsSheet").then((m) => m.openLargeOperatorsSheet()))}>Compare the fonts…</button>
+        </Field>
+      )}
     </section>
   );
 }

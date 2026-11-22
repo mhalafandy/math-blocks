@@ -25,6 +25,8 @@ export interface OperationResult {
   replaced: number;
   missing: string[];
   cancelled: boolean;
+  /** Stopped by an error, not by Cancel (its message). */
+  stoppedBy?: string;
   restored: number;
   ms: number;
   backup?: string;
@@ -98,10 +100,11 @@ export async function replaceInDocument(o: {
     }
   } catch (e) {
     result.cancelled = true;
-    useApp.getState().notify(`Stopped: ${e instanceof Error ? e.message : String(e)}. Restoring the equations already changed…`, "error");
+    result.stoppedBy = e instanceof Error ? e.message : String(e);
+    useApp.getState().notify(`Stopped: ${result.stoppedBy}. Restoring the equations already changed…`, "error");
   }
   if (result.cancelled) result.restored = await restore(o.document, done, o.undoLabel);
-  const end = await connector.request("endOperation", { done: result.replaced }).catch(() => ({ ms: 0, undoBrokenAt: "" }) as { ms: number; undoBrokenAt?: string; guardFailed?: string; guardRestored?: boolean });
+  const end = await connector.request("endOperation", { done: result.replaced, ...(result.stoppedBy ? { stoppedBy: result.stoppedBy } : {}) }).catch(() => ({ ms: 0, undoBrokenAt: "" }) as { ms: number; undoBrokenAt?: string; guardFailed?: string; guardRestored?: boolean });
   result.ms = end.ms || performance.now() - t0;
   if (end.undoBrokenAt) result.undoBrokenAt = end.undoBrokenAt;
   if (end.guardFailed) {
@@ -129,6 +132,7 @@ async function restore(document: string, done: ReplaceItem[], undoLabel: string)
 export function describeOperation(r: OperationResult, what: string): string {
   const each = r.replaced ? ` (${Math.round(r.ms / r.replaced)} ms each)` : "";
   const backup = r.backup ? ` Backup: ${r.backup.split(/[\\/]/).pop()}` : "";
+  if (r.cancelled && r.stoppedBy) return `Stopped by an error (${r.stoppedBy}): ${r.restored} equation(s) restored to their previous version.${backup}`;
   if (r.cancelled) return `Cancelled: ${r.restored} equation(s) restored to their previous version.${backup}`;
   return `${what}: ${r.replaced} equation(s) in ${(r.ms / 1000).toFixed(1)} s${each}.${backup}`;
 }

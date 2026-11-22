@@ -15,7 +15,7 @@ describe.skipIf(!available)("bold Greek (emboldened outlines)", () => {
     boldItalic: loadFont(readFileSync(L + "BoldItalic.ttf")),
     math: loadFont(readFileSync(STIX)),
   };
-  const stemOf = (face: keyof FontSet, ch: string, offset = 0) => {
+  const stemOf = (face: Exclude<keyof FontSet, "bigOps">, ch: string, offset = 0) => {
     const g = charGlyph(fonts[face]!, ch)!;
     let cmds = g.glyph.getPath(0, 0, 1).commands as OutlineCmd[];
     if (offset) cmds = thinOutline(cmds as never, -offset) as OutlineCmd[];

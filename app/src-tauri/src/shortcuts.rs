@@ -110,6 +110,7 @@ fn register_one(app: &AppHandle, name: &str, keys: &str) -> Result<(), String> {
 
 /// At start: the default set (the app sends the one from Settings once it runs).
 pub fn register(app: &AppHandle) {
+    restore_layout_after_stop();
     for (name, keys) in DEFAULTS {
         if let Err(e) = register_one(app, name, keys) {
             eprintln!("[shortcuts] {e}");
@@ -188,8 +189,24 @@ fn probe_blocking(shortcuts: Vec<(String, String)>, layout: String) -> Result<Pr
             return Err("Word's window was not found".into());
         }
         let before_fg = GetForegroundWindow();
-        SetForegroundWindow(word);
-        sleep(Duration::from_millis(400));
+        // Windows lets a background process take the foreground only while attached to the input of the window
+        // in front (0.1.172: "Word could not be brought to the front" with the current layout). Tried 3 times.
+        for _ in 0..3 {
+            if GetForegroundWindow() == word {
+                break;
+            }
+            let fg = GetForegroundWindow();
+            let fg_thread = if fg.is_null() { 0 } else { GetWindowThreadProcessId(fg, std::ptr::null_mut()) };
+            let me = windows_sys::Win32::System::Threading::GetCurrentThreadId();
+            let attached = fg_thread != 0 && fg_thread != me && windows_sys::Win32::System::Threading::AttachThreadInput(me, fg_thread, 1) != 0;
+            ShowWindow(word, SW_SHOW);
+            BringWindowToTop(word);
+            SetForegroundWindow(word);
+            if attached {
+                windows_sys::Win32::System::Threading::AttachThreadInput(me, fg_thread, 0);
+            }
+            sleep(Duration::from_millis(400));
+        }
         if GetForegroundWindow() != word {
             return Err("Word could not be brought to the front".into());
         }
@@ -206,6 +223,9 @@ fn probe_blocking(shortcuts: Vec<(String, String)>, layout: String) -> Result<Pr
                 return Err(format!("keyboard layout {layout} could not be loaded"));
             }
             unload = !list.contains(&loaded);
+            // If the app or Word stops before the layout is put back, the next start restores it (as with the
+            // pagination flag).
+            write_layout_flag(before_hkl as usize, loaded as usize, unload);
             PostMessageW(word, WM_INPUTLANGCHANGEREQUEST, 0, loaded as isize);
             sleep(Duration::from_millis(500));
         }
@@ -253,12 +273,63 @@ fn probe_blocking(shortcuts: Vec<(String, String)>, layout: String) -> Result<Pr
             if unload {
                 UnloadKeyboardLayout(loaded);
             }
+            clear_layout_flag();
         }
         if !before_fg.is_null() {
             SetForegroundWindow(before_fg);
         }
         Ok(ProbeResult { layout: active, hits })
     }
+}
+
+/// The flag file of a layout switch in progress: "before loaded unload" (hex handles).
+fn layout_flag() -> Option<std::path::PathBuf> {
+    std::env::var_os("LOCALAPPDATA").map(|b| std::path::Path::new(&b).join("MathBlocks").join("layout-probe.flag"))
+}
+
+#[cfg(windows)]
+fn write_layout_flag(before: usize, loaded: usize, unload: bool) {
+    if let Some(f) = layout_flag() {
+        let _ = std::fs::create_dir_all(f.parent().unwrap());
+        let _ = std::fs::write(f, format!("{before:x} {loaded:x} {}", unload as u8));
+    }
+}
+
+#[cfg(windows)]
+fn clear_layout_flag() {
+    if let Some(f) = layout_flag() {
+        let _ = std::fs::remove_file(f);
+    }
+}
+
+/// At start: a layout switch the self-test did not finish (the app or Word stopped) is put back: Word's windows
+/// get the layout they had, and a layout the probe loaded is unloaded.
+#[cfg(windows)]
+pub fn restore_layout_after_stop() {
+    use windows_sys::Win32::UI::Input::KeyboardAndMouse::UnloadKeyboardLayout;
+    use windows_sys::Win32::UI::WindowsAndMessaging::*;
+    let Some(f) = layout_flag() else { return };
+    let Ok(text) = std::fs::read_to_string(&f) else { return };
+    let parts: Vec<usize> = text.split_whitespace().filter_map(|x| usize::from_str_radix(x, 16).ok()).collect();
+    if let [before, loaded, unload] = parts[..] {
+        unsafe {
+            let word = FindWindowW("OpusApp\0".encode_utf16().collect::<Vec<u16>>().as_ptr(), std::ptr::null());
+            if !word.is_null() {
+                PostMessageW(word, WM_INPUTLANGCHANGEREQUEST, 0, before as isize);
+            }
+            if unload == 1 {
+                std::thread::sleep(std::time::Duration::from_millis(300));
+                UnloadKeyboardLayout(loaded as _);
+            }
+        }
+        eprintln!("[shortcuts] keyboard layout put back after an interrupted self-test");
+    }
+    let _ = std::fs::remove_file(f);
+}
+
+#[cfg(not(windows))]
+pub fn restore_layout_after_stop() {
+    let _ = layout_flag();
 }
 
 #[cfg(not(windows))]
