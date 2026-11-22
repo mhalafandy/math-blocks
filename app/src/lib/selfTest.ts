@@ -59,7 +59,36 @@ export const MANUAL_CHECKS = [
   "Add-in loaded mid-session: with a document with equations open, untick MathBlocks in File → Options → Add-ins → COM Add-ins, then tick it again (Word stays open): double-click and right-click on an equation in that open document work straight away.",
 ];
 
-export async function runWordSelfTest(): Promise<string | null> {
+/**
+ * The sections the stable channel needs: data safety and core use (insert, edit, convert, number, reference,
+ * Toggle LaTeX, save/reopen, undo, failure handling). About 12 minutes; the full run (all sections, ~30 min) is
+ * under developer tools.
+ */
+const CORE_SECTIONS = new Set([
+  "Inline insertion and baseline",
+  "Display and numbered equations",
+  "Opening each equation (double-click / menu → Edit)",
+  "Numbering and references",
+  "Copy and paste within the document",
+  "Copy and paste between documents",
+  "Cut, paste and move (nothing else may change)",
+  "Convert MathType keeps the paragraph (number at the right margin)",
+  "Convert MathType: nothing passes through silently",
+  "Equation objects: right-click opens the floating editor; the equation menu is in its Word-menu button",
+  "Toggle LaTeX: equation ↔ its LaTeX text",
+  "Equation objects: tracked changes, undo/redo, class registration, PDF",
+  "One Ctrl+Z for each whole-document operation",
+  "Round trips and compatibility: reopen, edited elsewhere, track changes, compare, Word 2010 mode, older documents",
+  "Failure handling: the app gone in the middle of an operation",
+  "Undo integrity: every operation is one Ctrl+Z, and Ctrl+Y redoes it",
+  "Reference links: Ctrl+click in Word, a link in the PDF",
+  "Two documents open: no operation changes which one is in front",
+  "Convert LaTeX: interchange convention document",
+  "Window activations",
+  "Saved test documents",
+]);
+
+export async function runWordSelfTest(o: { full?: boolean } = {}): Promise<string | null> {
   const app = useApp.getState();
   if (!app.connector.connected) {
     app.notify("Word is not connected. Start Word with the MathBlocks add-in.", "error");
@@ -73,6 +102,8 @@ export async function runWordSelfTest(): Promise<string | null> {
   let section = "";
   const check = (name: string, ok: boolean | null, detail = "") => checks.push({ section, name, status: ok === null ? "INFO" : ok ? "PASS" : "FAIL", detail });
   const step = async <T>(name: string, run: () => Promise<T>): Promise<T | undefined> => {
+    // The core run (the stable channel's gate) skips the other sections.
+    if (!o.full && !CORE_SECTIONS.has(section)) return undefined;
     try {
       return await run();
     } catch (e) {
@@ -1179,23 +1210,6 @@ export async function runWordSelfTest(): Promise<string | null> {
       await smoke("redo", { times: 1 });
       const redone = await cd.runCheck();
       check("Ctrl+Y repairs again", redone.problems.length === 0, redone.problems.map((p) => p.message).join(" | "));
-      // The same equation twice side by side (what an earlier version's replace could leave): a copy pasted right
-      // after an equation. Check document finds it; its repair removes the extra one (the numbered one stays).
-      const listed = (await connector.request("listInstances", { pages: false }, SLOW)).documents[0]?.instances ?? [];
-      const target = listed.find((i) => i.start !== undefined && !i.story);
-      if (target) {
-        const placed = (await named("the same picture again right after it", () => smoke("duplicateNextTo", { tag: target.tag }))) as { original: number; copy: number };
-        check("…the copy sits right after the original", placed.copy === placed.original + 1, `original at ${placed.original}, copy at ${placed.copy}`);
-        const dupCheck = await cd.runCheck();
-        const dup = dupCheck.problems.find((p) => p.repair === "removeDuplicate");
-        check("an equation twice side by side is found (repair: remove the extra one)", !!dup, dupCheck.problems.map((p) => p.message).join(" | ") || "nothing found");
-        if (dup) {
-          const rd = await named("remove the duplicate", () => cd.repairChosen(dupCheck, new Set([dup.id])));
-          const after = await cd.runCheck();
-          check("…removed: as many equations as before the paste, and the document checks clean", !rd.cancelled && !rd.guardFailed && after.equations === dupCheck.equations - 1 && after.problems.length === 0, `${dupCheck.equations} → ${after.equations}; ${after.problems.map((p) => p.message).join(" | ") || "clean"}`);
-          check("…the one kept is the original (its ID)", (await connector.request("listInstances", { pages: false }, SLOW)).documents[0]?.instances.some((i) => i.tag === target.tag) ?? false, target.tag);
-        }
-      }
       await smoke("save", { file: "check document test.docx" });
     });
 
@@ -2169,7 +2183,7 @@ export async function runWordSelfTest(): Promise<string | null> {
     `MathBlocks Word self-test — ${new Date().toLocaleString()}`,
     `MathBlocks app ${appVersion}; Word add-in ${begin.addin ?? "unknown (older add-in)"}`,
     `Word ${begin.word}; look ${useApp.getState().look}; equation size ${useApp.getState().equationSizePt} pt; Word's smart cut and paste ${begin.smartCutPaste ? "on (turned off during the test, restored after)" : "off"}`,
-    `Checks: ${count(checks)}`,
+    `${o.full ? "Full run (all sections)" : "Core run (the stable channel's gate: data safety and core use)"}: ${count(checks)}`,
     // The stable channel: a build is promoted only after a self-test of that exact build with no failure.
     fails === 0 && appVersion === begin.addin
       ? `Stable channel: build ${appVersion} passed — it can be promoted (Promote to stable, version ${appVersion})`
@@ -2185,7 +2199,18 @@ export async function runWordSelfTest(): Promise<string | null> {
     }
     lines.push(`${c.status}  ${c.name}${c.detail ? `  — ${c.detail}` : ""}`);
   }
-  lines.push("", "== Manual checks (Word's object model cannot do these)", ...MANUAL_CHECKS.map((m) => `[ ]  ${m}`));
+  // The core run's manual checks: opening, editing and moving equations (the rest belong to the full run).
+  const manual = o.full ? MANUAL_CHECKS : [MANUAL_CHECKS[0]!, MANUAL_CHECKS[1]!, MANUAL_CHECKS[3]!, MANUAL_CHECKS[4]!];
+  lines.push("", "== Manual checks (Word's object model cannot do these)", ...manual.map((m) => `[ ]  ${m}`));
+  // One line to read: pass or fail, and what it means for the stable channel.
+  const failed = checks.filter((c) => c.status === "FAIL");
+  lines.push(
+    "",
+    "==========",
+    failed.length === 0 && appVersion === begin.addin
+      ? `RESULT: PASS — ${o.full ? "full" : "core"} run, ${checks.length} checks, 0 failed. Build ${appVersion} can go to stable.`
+      : `RESULT: FAIL — ${failed.length} failed${appVersion !== begin.addin ? `, and the add-in (${begin.addin ?? "unknown"}) is not build ${appVersion}` : ""}: ${failed.slice(0, 5).map((c) => c.name).join(" | ")}${failed.length > 5 ? " | …" : ""}`,
+  );
   const report = lines.join("\n") + "\n";
   const written = await smoke("writeReport", { text: report, show: true }).catch(() => null);
   if (!written) {

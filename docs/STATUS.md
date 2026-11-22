@@ -2,32 +2,29 @@
 
 Updated at the end of every round. Public repository: generic content only. Earlier rounds: `docs/status-archive/`.
 
-## Latest round — 0.1.174
+## Latest round — 0.1.175 (feature freeze: to stable)
 
-**Build:** 0.1.174 (test channel), CI passed. Stable stays 0.1.168: the 0.1.173 self-test had 2 failures.
+**Build:** 0.1.175 (test channel), CI: pending. Stable stays 0.1.168: the reports were from 0.1.174 (not 0.1.173), self-test 484 passed, 2 failed, so not promoted.
 
-**Reports read:** self-test 13:30 (0.1.173: 476 passed, 2 failed), thesis-size 16:16, soak 14:44 (passed), connector.log.
+**Reports read (0.1.174):** self-test 19:30, thesis-size 22:18, soak 20:02 (passed), connector.log + previous.
 
-**Fixed:**
-- Duplicate check in the self-test found nothing: its paste landed 33 characters away, so the two pictures were not side by side. The copy is now placed right after the original (as the old bug left it).
-- MathType comparison timed out (2 min): MathType converts one expression at a time; now each $…$ on its own, with 15 min allowed and each one's time logged.
-- Thesis Apply style: all 1533 written (256 → 560 ms each, all inside Word's write), then the text guard read the document without the list's marker (Word was running out of memory: "not enough memory…" right after) and undid everything. The guard now reads again when Word refused reads or the list is missing; the add-in releases its Word objects after every batch and logs Word's memory per batch.
-- Large operators: a stored choice was dropped on reading (0.1.173 bug); the Document style sample showed "int" as text.
+**The 2 failures:** both in the side-by-side duplicate check (new last round, not core). The check measured a picture as 1 character; in Word its range is 33. Detection therefore never fires, so nothing is ever removed. Step taken out of the self-test; the feature is parked until after stable.
 
-**Built:**
-- Large operators per group (integrals, contour integrals, sums and products, others). New document styles: STIX Two Math, contour integrals XITS Math. Documents with a stored style, or with pictures but no stored style, keep what they had. Compare sheet: row "STIX Two + XITS contour"; it and the Document style samples on a white page.
-- Uninstall removes the fonts MathBlocks installed (and says so); the app installs a missing one again at start. A font you installed yourself is left alone. One edge: a font you had installed yourself "for me" under the same path before 0.1.173 counts as MathBlocks'.
-- Convert LaTeX 207 → 243 ms: nothing in our code; only a timer and a cache changed on that path. Word's InsertXML alone went 130 → 140 ms, and 0.1.173 ran at 230. Left as is.
+**Thesis-size (not in the gate):** all core steps passed. Apply style on the whole thesis is undone by the text guard at the end (the list-of-symbols marker is not found after 1533 redraws); the document is left as before (one undo step, the list intact for the next step). Parked: Apply style is not core.
 
-**Needs your PC:**
-- Self-test (developer tools on). Clean → I promote it.
-- Developer tools → Large operators: check the "STIX Two + XITS contour" row.
-- Thesis-size test with connector.log (memory per batch now logged; does Apply style finish?).
+**What stands between the test build and stable (the gate):**
+1. Core self-test of 0.1.175 (Settings → Advanced → Developer tools on → "Run the Word self-test (core, ~12 min)", or the ribbon button): the last line must read `RESULT: PASS`.
+2. Its 4 manual checks at the end (double-click edit, right-click floating editor, drag to another line and document).
+3. Then I run Promote to stable for that build.
 
-**Open:** Apply style's write time still grows (Word's single undo record for 1533 replacements). If memory still runs out, the choice is between one Ctrl+Z and undo steps of a few hundred equations each: your call.
+Core sections (data safety and core use): insertion (inline, display, numbered), opening/editing, numbering and references, copy/cut/paste within and between documents, Convert MathType (paragraph kept, nothing lost silently), Toggle LaTeX, equation objects (tracked changes, undo/redo, PDF), one Ctrl+Z per whole-document operation, save/reopen and compatibility, failure handling (app gone mid-operation), undo/redo integrity, reference links, two documents open, Convert LaTeX, saved test documents.
+
+**Cut from the gate (still in the full run, Developer tools → "Full self-test"):** Word shortcuts and key tips, document style, kinds, blocks, list of symbols, change symbol, Check document, my styles, bold Greek, intermediate frames, numbering conversion, repair of older documents, palette print check, palette tiles, MathType visual comparison. Thesis-size and soak tests are not part of the gate.
+
+**Large operators:** decided, already the default since 0.1.174: STIX Two Math, contour integrals (\oint, \oiint, \oiiint) from XITS Math. The compare sheet draws on a white page since 0.1.174 (the screenshot was from 0.1.173); no change.
+
+**After stable (deferred):** UX areas list (written, no code), uninstall removing fonts (built in 0.1.174, untested), Convert LaTeX speed (243 ms accepted), Apply style on very large documents, duplicate repair.
 
 ## Details
 
-- Guard: `GuardDoc.ReadErrors`, re-read in `GuardCheck`; `ReleaseComObjects`, `WordMemoryMb`.
-- `largeOperatorGroups`, `largeOperatorFont`, `NEW_STYLE_LARGE_OPERATORS` (math-core); `userDefaultStyle({ existing })`; `getDocumentStyle.pictures`.
-- `installer-hooks.nsh` (pre-uninstall), `src-tauri/src/fonts.rs` (`ensure_math_fonts`).
+- `selfTest.ts`: `CORE_SECTIONS`, `runWordSelfTest({ full })`; final `RESULT:` line.

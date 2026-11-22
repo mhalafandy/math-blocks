@@ -136,7 +136,8 @@ function AdvancedPage() {
       </Field>
       {s.developerTools && (
         <Field label="Word self-test" hint="Checks every MathBlocks operation in Word on test documents (your documents are not touched).">
-          <button disabled={!s.connector.connected} onClick={() => run(() => import("../lib/selfTest").then((m) => m.runWordSelfTest()))}>Run the Word self-test</button>{" "}
+          <button disabled={!s.connector.connected} onClick={() => run(() => import("../lib/selfTest").then((m) => m.runWordSelfTest()))}>Run the Word self-test (core, ~12 min)</button>{" "}
+          <button disabled={!s.connector.connected} onClick={() => run(() => import("../lib/selfTest").then((m) => m.runWordSelfTest({ full: true })))}>Full self-test (~30 min)</button>{" "}
           <button disabled={!s.connector.connected} onClick={() => run(() => import("../lib/soakTest").then((m) => m.soakTestCommand()))}>Soak test…</button>{" "}
           <button disabled={!s.connector.connected} onClick={() => run(() => import("../lib/thesisTest").then((m) => m.thesisTestCommand()))}>Thesis-size test…</button>
         </Field>
