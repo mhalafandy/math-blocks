@@ -4,7 +4,7 @@ Updated at the end of every round. Public repository: generic content only. Earl
 
 ## Latest round — 0.1.175 (feature freeze: to stable)
 
-**Build:** 0.1.175 (test channel), CI: pending. Stable stays 0.1.168: the reports were from 0.1.174 (not 0.1.173), self-test 484 passed, 2 failed, so not promoted.
+**Build:** 0.1.175 (test channel), CI passed. Stable stays 0.1.168: the reports were from 0.1.174 (not 0.1.173), self-test 484 passed, 2 failed, so not promoted.
 
 **Reports read (0.1.174):** self-test 19:30, thesis-size 22:18, soak 20:02 (passed), connector.log + previous.
 
