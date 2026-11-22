@@ -706,7 +706,6 @@ html.panel-window, html.panel-window body, html.panel-window #root { height: 100
 .normalize-list li .muted { min-width: 56px; font-size: 12px; }
 .snippet-prefix { display: flex; align-items: center; gap: 8px; margin: 4px 0 10px; }
 .snippet-prefix .muted { font-family: var(--font-mono); font-size: 12px; }
-.fontcmp-wrap { max-height: 64vh; overflow: auto; background: #fff; color: #000; border-radius: 6px; padding: 6px; }
 .fontcmp { border-collapse: collapse; }
 .fontcmp th, .fontcmp td { border: 1px solid #ddd; padding: 4px 8px; text-align: left; vertical-align: middle; }
 .fontcmp th small { color: #777; font-weight: 400; }
@@ -953,3 +952,13 @@ html.preview-window body { background: var(--bg); }
 .bigop-sheet tr.on th { color: var(--accent, #2563eb); }
 .bigop-sheet svg { color: currentColor; }
 .bigop-display { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; margin-top: 8px; }
+.op-groups { display: grid; grid-template-columns: max-content minmax(0, 220px); gap: 4px 10px; margin-top: 6px; font-size: 0.92em; align-items: center; }
+.op-groups label { display: contents; font-weight: normal; }
+.op-groups select { min-width: 0; }
+/* Equation previews on a white page, as the equation will look in Word (in both themes). */
+.eq-page { background: #fff; color: #000; border-radius: 4px; }
+span.eq-page { display: inline-block; padding: 2px 6px; }
+.kind-sample { background: #fff; color: #000; border-radius: 4px; padding: 2px 4px; }
+.bigop-sheet.eq-page th { color: #000; }
+.bigop-sheet.eq-page tr.on th { color: #1d4ed8; }
+.bigop-sheet.eq-page td { border-top-color: #ddd; }

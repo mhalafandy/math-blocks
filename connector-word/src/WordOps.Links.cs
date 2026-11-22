@@ -245,7 +245,9 @@ namespace MathBlocks.WordConnector
             {
                 if (ownUndo) undo.EndCustomRecord();
             }
-            Log.Info("replaceMany in " + doc.Name + ": " + replaced + " replaced, " + missing.Count + " missing, " + refused.Count + " refused, " + clock.ElapsedMilliseconds + " ms (" + (clock.ElapsedMilliseconds / Math.Max(1, replaced)) + " ms each; check " + verifyMs + ", write " + writeMs + ", after " + afterMs + ")");
+            // Inside a long operation: the Word objects of this batch released, Word's memory logged.
+            if (InOperation && !verifyOnly) ReleaseComObjects();
+            Log.Info("replaceMany in " + doc.Name + ": " + replaced + " replaced, " + missing.Count + " missing, " + refused.Count + " refused, " + clock.ElapsedMilliseconds + " ms (" + (clock.ElapsedMilliseconds / Math.Max(1, replaced)) + " ms each; check " + verifyMs + ", write " + writeMs + ", after " + afterMs + "; Word " + WordMemoryMb() + " MB)");
             return new Dictionary<string, object> { ["replaced"] = replaced, ["missing"] = missing, ["refused"] = refused };
         }
 

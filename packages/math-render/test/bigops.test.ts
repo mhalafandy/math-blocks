@@ -47,6 +47,13 @@ describe.skipIf(!available)("large operators in a TeX math font (document style)
       for (const l of ["\\sum_{k=1}^{n} k", "\\prod_{i=1}^{n} a_i", "\\oint_C f", "\\iint_D f"]) expect(glyphs(lay(l, true, which)).some((g) => g.font === bigOps[which]), l).toBe(true);
     });
   }
+  it("STIX Two with XITS contour integrals: each group from its own font", () => {
+    const b = layout(parseLatex("\\int_0^1 f\\,dx+\\oint_C g").root, { fonts, style: CLASSIC, display: true, mathStyle: { ...DEFAULT_STYLE, global: { ...DEFAULT_STYLE.global, largeOperators: "stix-two", largeOperatorGroups: { contour: "xits" } } } });
+    const gs = glyphs(b);
+    expect(gs.some((g) => g.font === bigOps["stix-two"] && /^uni222B/.test(g.name ?? ""))).toBe(true);
+    expect(gs.some((g) => g.font === bigOps.xits && /^uni222E/.test(g.name ?? ""))).toBe(true);
+    expect(gs.some((g) => g.font === bigOps["stix-two"] && /^uni222E/.test(g.name ?? ""))).toBe(false);
+  });
   it("the current setting leaves them as they were (no TeX font used)", () => {
     expect(glyphs(lay("\\int_0^1 x\\,dx+\\sum_k k", true, "current")).some((g) => Object.values(bigOps).includes(g.font as never))).toBe(false);
   });

@@ -1,4 +1,4 @@
-import { DEFAULT_STYLE, normalizeStyle, readLooks, styleHash, type MathStyle, type NotationProfile, type StylePreset } from "@mathblocks/math-core";
+import { DEFAULT_STYLE, NEW_STYLE_LARGE_OPERATORS, normalizeStyle, readLooks, styleHash, type MathStyle, type NotationProfile, type StylePreset } from "@mathblocks/math-core";
 import { broadcastNotation, useApp, type DocStyleState } from "./store";
 
 // Loaded when needed: the drawing code imports this module, and the connector imports the drawing code.
@@ -50,17 +50,30 @@ export function parseStyleXml(xml: string | null | undefined, fallback: MathStyl
  * The user's default for documents without a stored style: the saved default, or one made from the
  * settings MathBlocks used before document styles (so such documents look exactly as before).
  */
-export function userDefaultStyle(): MathStyle {
+export function userDefaultStyle(o: { existing?: boolean } = {}): MathStyle {
   const s = useApp.getState();
-  if (s.defaultStyle) return normalizeStyle(s.defaultStyle);
+  // A document that already has pictures but no stored style: its equations were drawn in the default without
+  // the new large-operator choice, which must not make them "older".
+  const fresh = (raw: unknown, style: MathStyle) => (o.existing ? style : withNewStyleDefaults(raw, style));
+  if (s.defaultStyle) return fresh(s.defaultStyle, normalizeStyle(s.defaultStyle));
   // The app's own settings as a v1 (flat) style, read through the migration.
-  return normalizeStyle({
+  return fresh({}, normalizeStyle({
     notation: s.notationProfile,
     sizePt: s.equationSizePt,
     boldScope: s.boldScope === "base" ? "base" : "scripts",
     accentsFollowBold: s.accentsFollowBold,
     transpose: s.transposeForm === "italic" ? "italic" : s.transposeForm === "bold" ? "bold" : "upright",
-  });
+  }));
+}
+
+/**
+ * The default for new documents starts with STIX Two Math for large operators, contour integrals from XITS Math
+ * (0.1.174), unless it has its own choice. Styles stored in documents are not touched (they keep theirs).
+ */
+function withNewStyleDefaults(raw: unknown, style: MathStyle): MathStyle {
+  const g = (raw as { global?: Record<string, unknown> } | null)?.global;
+  if (g && ("largeOperators" in g || "largeOperatorGroups" in g)) return style;
+  return { ...style, global: { ...style.global, ...NEW_STYLE_LARGE_OPERATORS, largeOperatorGroups: { ...NEW_STYLE_LARGE_OPERATORS.largeOperatorGroups } } };
 }
 
 /** The style drawings use now: the current document's, else the user's default. */
@@ -107,7 +120,7 @@ export async function loadDocumentStyle(document?: string): Promise<DocStyleStat
     const r = await (await connection()).request("getDocumentStyle", document ? { document } : {});
     const stored = parseStyleXml(r.xml);
     const extras = parseStyleExtras(r.xml);
-    const next: DocStyleState = { document: r.fullName, name: r.name, style: stored ?? userDefaultStyle(), stored: !!stored, history: extras.history, ...(extras.probe ? { probe: extras.probe } : {}) };
+    const next: DocStyleState = { document: r.fullName, name: r.name, style: stored ?? userDefaultStyle({ existing: (r.pictures ?? 0) > 0 }), stored: !!stored, history: extras.history, ...(extras.probe ? { probe: extras.probe } : {}) };
     if (JSON.stringify(next) !== JSON.stringify(useApp.getState().docStyle)) setDocStyle(next);
     // Word's undo does not cover the stored style: follow the drawings back (or forward) to it.
     if (!document && next.probe && next.history?.length) return (await followUndo(next)) ?? next;

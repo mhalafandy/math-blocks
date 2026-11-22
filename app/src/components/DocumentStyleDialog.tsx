@@ -1,8 +1,8 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { openSettings } from "../lib/settingsStore";
 import { create } from "zustand";
 import { convertLatexToMarkup } from "mathlive/ssr";
-import { applyPreset, expandNotation, letterRoles, looksOf, PRESETS, presetFrom, STYLE_PRESETS, styleAst, styleLabel, styleNotation, withLetterRoles, withLooks, type LetterRole, type Looks, type MathStyle, type MathStyleGlobal, type LargeOperatorFont, type PresetId, type Shape, type StylePreset, type SymbolRule } from "@mathblocks/math-core";
+import { applyPreset, expandNotation, letterRoles, looksOf, PRESETS, presetFrom, STYLE_PRESETS, styleAst, styleLabel, styleNotation, withLetterRoles, withLooks, type LetterRole, type Looks, type MathStyle, type MathStyleGlobal, type LargeOperatorFont, type LargeOperatorGroup, type PresetId, type Shape, type StylePreset, type SymbolRule } from "@mathblocks/math-core";
 import { parseLatex, serializeLatex } from "@mathblocks/math-latex";
 import { Modal, askConfirm, askText } from "./Dialogs";
 import type { LetterProposal } from "../lib/styleCheck";
@@ -78,7 +78,29 @@ function StylePreview({ latex, style }: { latex: string; style: MathStyle }) {
       return "";
     }
   }, [latex, style]);
-  return <span className="math-preview" style={{ fontSize: 15 }} dangerouslySetInnerHTML={{ __html: html }} />;
+  return <span className="math-preview eq-page" style={{ fontSize: 15 }} dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
+/** A sample drawn as it will look in Word (the large operators' fonts show only in the real drawing). */
+function DrawnPreview({ latex, style }: { latex: string; style: MathStyle }) {
+  const [svg, setSvg] = useState("");
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      const [{ renderSvg }, { loadFonts, classicStyle }] = await Promise.all([import("@mathblocks/math-render"), import("../lib/render")]);
+      const fonts = await loadFonts();
+      try {
+        const r = renderSvg(parseLatex(latex).root, { fonts, style: classicStyle(), display: true, sizePt: 15, mathStyle: style });
+        if (live) setSvg(r.svg);
+      } catch {
+        if (live) setSvg("");
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [latex, style]);
+  return <span className="eq-page" dangerouslySetInnerHTML={{ __html: svg }} />;
 }
 
 function ShapeChoice({ value, onChange, disabled }: { value: Shape; onChange: (s: Shape) => void; disabled?: boolean }) {
@@ -91,6 +113,13 @@ function ShapeChoice({ value, onChange, disabled }: { value: Shape; onChange: (s
 }
 
 const ROLE_LABEL: Record<LetterRole, string> = { label: "label (upright if labels are)", counter: "index variable", variable: "variable", constant: "constant" };
+
+const OPERATOR_FONTS: [LargeOperatorFont, string][] = [
+  ["current", "Current (Symbol, as MathType)"],
+  ["latin-modern", "Latin Modern Math (TeX)"],
+  ["stix-two", "STIX Two Math"],
+  ["xits", "XITS Math"],
+];
 
 export function DocumentStyleDialog() {
   const s = useDocumentStyle();
@@ -328,13 +357,33 @@ export function DocumentStyleDialog() {
               <Row label="Numbers" sample={<StylePreview latex="a_{2}+3.5" style={d} />}>
                 <ShapeChoice value={L!.numbers} onChange={(v) => up({ numbers: v })} />
               </Row>
-              <Row label="Large operators (∫ ∬ ∮ ∑ ∏): their font" sample={<StylePreview latex="\\int_0^1 f(x)\\,dx+\\sum_{k=1}^{n}a_k" style={d} />}>
+              <Row label="Large operators (∫ ∬ ∮ ∑ ∏): their font" sample={<DrawnPreview latex="\int_0^1 f(x)\,dx+\oint_C g+\sum_{k=1}^{n}a_k" style={d} />}>
                 <select value={d.global.largeOperators ?? "current"} onChange={(e) => upG({ largeOperators: e.target.value as LargeOperatorFont })}>
-                  <option value="current">Current (Symbol, as MathType)</option>
-                  <option value="latin-modern">Latin Modern Math (TeX: slanted integrals)</option>
-                  <option value="stix-two">STIX Two Math</option>
-                  <option value="xits">XITS Math</option>
+                  {OPERATOR_FONTS.map(([v, label]) => (
+                    <option key={v} value={v}>{label}</option>
+                  ))}
                 </select>
+                <div className="op-groups">
+                  {([["integrals", "Integrals ∫ ∬"], ["contour", "Contour integrals ∮ ∯ ∰"], ["sums", "Sums and products ∑ ∏"], ["others", "Others ⋃ ⋂ ⨁"]] as [LargeOperatorGroup, string][]).map(([grp, label]) => (
+                    <label key={grp}>
+                      {label}{" "}
+                      <select
+                        value={d.global.largeOperatorGroups?.[grp] ?? ""}
+                        onChange={(e) => {
+                          const groups = { ...(d.global.largeOperatorGroups ?? {}) };
+                          if (e.target.value) groups[grp] = e.target.value as LargeOperatorFont;
+                          else delete groups[grp];
+                          upG({ largeOperatorGroups: Object.keys(groups).length ? groups : undefined });
+                        }}
+                      >
+                        <option value="">as above</option>
+                        {OPERATOR_FONTS.map(([v, l]) => (
+                          <option key={v} value={v}>{l}</option>
+                        ))}
+                      </select>
+                    </label>
+                  ))}
+                </div>
               </Row>
               <Row label="Units (\unit{m/s})" sample={<StylePreview latex="9.81\unit{m/s^2}" style={d} />}>
                 <ShapeChoice value={L!.units} onChange={(v) => up({ units: v })} />

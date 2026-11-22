@@ -62,6 +62,31 @@ export interface SymbolRule {
 
 /** The font of large operators (∫ ∬ ∮ ∑ ∏): the current one (Symbol, as MathType), or a TeX-style math font. */
 export type LargeOperatorFont = "current" | "latin-modern" | "stix-two" | "xits";
+const LARGE_OPERATOR_FONTS: readonly string[] = ["current", "latin-modern", "stix-two", "xits"];
+
+/** Groups of large operators that can each have their own font. */
+export type LargeOperatorGroup = "integrals" | "contour" | "sums" | "others";
+export const LARGE_OPERATOR_GROUPS: readonly LargeOperatorGroup[] = ["integrals", "contour", "sums", "others"];
+
+/** The group of a large operator character. */
+export function largeOperatorGroup(op: string): LargeOperatorGroup {
+  if ("∫∬∭⨌".includes(op)) return "integrals";
+  if ("∮∯∰∲∳".includes(op)) return "contour";
+  if ("∑∏∐".includes(op)) return "sums";
+  return "others";
+}
+
+/** The font a large operator is drawn in: its group's choice, else the style's, else the current one. */
+export function largeOperatorFont(style: Pick<MathStyle, "global"> | undefined, op: string): LargeOperatorFont {
+  const g = style?.global;
+  return g?.largeOperatorGroups?.[largeOperatorGroup(op)] ?? g?.largeOperators ?? "current";
+}
+
+/**
+ * What new document styles start with (0.1.174, the owner's choice): STIX Two Math, contour integrals from XITS
+ * Math (STIX Two's circle is too large for its stroke). Styles stored without these keep "current".
+ */
+export const NEW_STYLE_LARGE_OPERATORS: Pick<MathStyleGlobal, "largeOperators" | "largeOperatorGroups"> = { largeOperators: "stix-two", largeOperatorGroups: { contour: "xits" } };
 
 export interface MathStyleGlobal {
   /** A bold base's index letters: drawn regular ("base") or bold too ("scripts"). */
@@ -76,6 +101,8 @@ export interface MathStyleGlobal {
   frameSubscriptWarning: boolean;
   /** Large operators (∫ ∬ ∮ ∑ ∏): their font (default: the current one). Slanted TeX integrals in the others. */
   largeOperators?: LargeOperatorFont;
+  /** Per group (integrals, contour integrals, sums and products, others): a font that replaces largeOperators. */
+  largeOperatorGroups?: Partial<Record<LargeOperatorGroup, LargeOperatorFont>>;
 }
 
 /** A document's style (v2: the kinds model). Stored in the document; v1 styles are migrated on reading. */
@@ -335,6 +362,15 @@ export function normalizeStyle(raw: unknown, fallback: MathStyle = DEFAULT_STYLE
   } else looksIn = readLooks(o);
   let out: MathStyle = withLooks({ ...fallback, global: { ...fallback.global }, symbols: [...fallback.symbols], exceptions: [...fallback.exceptions] }, looksIn);
   if (typeof g.frameSubscriptWarning === "boolean") out.global.frameSubscriptWarning = g.frameSubscriptWarning;
+  // Large operators: only what the stored style says (absent: the current font, never the fallback's choice).
+  delete out.global.largeOperators;
+  delete out.global.largeOperatorGroups;
+  if (typeof g.largeOperators === "string" && LARGE_OPERATOR_FONTS.includes(g.largeOperators)) out.global.largeOperators = g.largeOperators as LargeOperatorFont;
+  if (g.largeOperatorGroups && typeof g.largeOperatorGroups === "object") {
+    const groups: Partial<Record<LargeOperatorGroup, LargeOperatorFont>> = {};
+    for (const [k, v] of Object.entries(g.largeOperatorGroups as Record<string, unknown>)) if ((LARGE_OPERATOR_GROUPS as readonly string[]).includes(k) && typeof v === "string" && LARGE_OPERATOR_FONTS.includes(v)) groups[k as LargeOperatorGroup] = v as LargeOperatorFont;
+    if (Object.keys(groups).length) out.global.largeOperatorGroups = groups;
+  }
   if (typeof g.sizePt === "number" && g.sizePt >= 6 && g.sizePt <= 72) out.global.sizePt = g.sizePt;
   if (typeof o.preset === "string") out.preset = o.preset;
   if (typeof o.presetName === "string") out.presetName = o.presetName;
@@ -402,7 +438,9 @@ export function styleHash(style: MathStyle): string {
   if (lk.romans === "upright") delete lk.romans;
   const parts: unknown[] = [lk, style.global.sizePt, style.global.font, style.notation, Object.entries(letterRoles(style)).sort()];
   if (units !== "upright") parts.push({ units });
-  if (style.global.largeOperators && style.global.largeOperators !== "current") parts.push({ largeOperators: style.global.largeOperators });
+  // Only what differs from the current font (documents drawn before keep their fingerprint).
+  const ops = LARGE_OPERATOR_GROUPS.map((grp) => [grp, largeOperatorFont(style, grp === "integrals" ? "∫" : grp === "contour" ? "∮" : grp === "sums" ? "∑" : "⋃")] as const).filter(([, f]) => f !== "current");
+  if (ops.length) parts.push({ largeOperators: Object.fromEntries(ops) });
   const others = otherRules(style);
   if (others.length) parts.push(others.map((r) => [r.text, r.sub ?? "", r.kind, r.when?.bold ?? null, r.when?.where ?? "anywhere"]));
   const s = JSON.stringify(parts);

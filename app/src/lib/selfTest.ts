@@ -1184,9 +1184,8 @@ export async function runWordSelfTest(): Promise<string | null> {
       const listed = (await connector.request("listInstances", { pages: false }, SLOW)).documents[0]?.instances ?? [];
       const target = listed.find((i) => i.start !== undefined && !i.story);
       if (target) {
-        await named("copy an equation", () => smoke("copy", { tag: target.tag }));
-        await smoke("caretAt", { pos: target.start! + 1 });
-        await named("paste it right after itself", () => smoke("paste", { mode: "ctrlV" }));
+        const placed = (await named("the same picture again right after it", () => smoke("duplicateNextTo", { tag: target.tag }))) as { original: number; copy: number };
+        check("…the copy sits right after the original", placed.copy === placed.original + 1, `original at ${placed.original}, copy at ${placed.copy}`);
         const dupCheck = await cd.runCheck();
         const dup = dupCheck.problems.find((p) => p.repair === "removeDuplicate");
         check("an equation twice side by side is found (repair: remove the extra one)", !!dup, dupCheck.problems.map((p) => p.message).join(" | ") || "nothing found");
@@ -2100,7 +2099,7 @@ export async function runWordSelfTest(): Promise<string | null> {
         { style: "Normal", text: `Inline: ${COMPARISON_SHEET.filter((e) => !e.display).map((e) => `$${e.latex}$`).join(", ")}.` },
       ];
       await smoke("openDocx", { file: "mathtype comparison.docx", base64: toBase64(interchangeDocx(sheetParas)) });
-      const tex = (await smoke("mathTypeTexToggle")) as { available: boolean; before?: number; after?: number; error?: string };
+      const tex = (await connector.request("smoke", { op: "mathTypeTexToggle" }, 900_000)) as { available: boolean; before?: number; after?: number; error?: string };
       if (!tex.available) return check("comparison with MathType", null, "skipped: MathType is not installed in Word on this PC");
       const made = (tex.after ?? 0) - (tex.before ?? 0);
       check(`MathType's Toggle TeX converted the sheet (${COMPARISON_SHEET.length} equations)`, made >= COMPARISON_SHEET.length * 0.9, `${made} MathType equation(s) made${tex.error ? `; ${tex.error}` : ""}`);

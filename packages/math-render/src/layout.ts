@@ -3,7 +3,7 @@
  * width/height/depth in em, glyphs from the text fonts (Times) or the math font (STIX Two Math).
  */
 import type { MathNode, MathVariant, Row } from "@mathblocks/math-core";
-import { expandNotation, styleAst, styleNotation, looksOf, type Looks, type MathStyle, type NotationProfile } from "@mathblocks/math-core";
+import { expandNotation, largeOperatorFont, styleAst, styleNotation, looksOf, type Looks, type MathStyle, type NotationProfile } from "@mathblocks/math-core";
 import { charGlyph, glyphName, namedGlyph, symbolGlyph, type FontSet, type GlyphInfo } from "./fonts";
 import type { Font } from "opentype.js";
 import type { RenderStyle } from "./style";
@@ -112,8 +112,8 @@ interface Ctx {
   used?: Set<GlyphSource>;
   /** Document style settings the layout itself applies (function names, text, accents over bold). */
   look?: Pick<Looks, "functions" | "text" | "accentsFollowBold">;
-  /** The large operators' font (document style), when it is not the current one. */
-  bigOp?: Font;
+  /** The large operator's font (document style, per group), when it is not the current one. */
+  bigOp?: (op: string) => Font | undefined;
 }
 
 const script = (c: Ctx): Ctx => ({
@@ -587,13 +587,14 @@ function nary(op: string, sub: Row | undefined, sup: Row | undefined, limits: "a
   const m = c.fonts.math;
   // A TeX-style math font chosen in the document style: its own slanted integrals and its display variants
   // (about 2.2 em, the size TeX uses in display), never scaled.
-  const tex = c.bigOp ? charGlyph(c.bigOp, op) : null;
+  const texFont = c.bigOp?.(op);
+  const tex = texFont ? charGlyph(texFont, op) : null;
   const fromSymbol = !tex && c.fonts.symbol && c.st.useSymbolFont ? symbolGlyph(c.fonts.symbol, op) : null;
   let g = tex ?? fromSymbol ?? charGlyph(m, op) ?? charGlyph(c.fonts.regular, op);
   if (!g) return textBox(op, "regular", c);
   let size = c.s;
   if (tex) {
-    if (c.display) g = displayVariant(c.bigOp!, g) ?? g;
+    if (c.display) g = displayVariant(texFont!, g) ?? g;
   } else if ((c.display || fromSymbol) && c.st.bigOpScale > 0) size = c.s * (c.display ? c.st.bigOpScale : 1);
   else if (c.display) {
     const name = g.glyph.name;
@@ -1146,9 +1147,11 @@ export interface LayoutOptions {
 export function layout(root: Row, o: LayoutOptions): Box {
   const ms = o.mathStyle;
   root = ms ? expandNotation(styleAst(root, ms), styleNotation(ms)) : expandNotation(root, o.notation);
-  const which = ms?.global.largeOperators;
-  const bigOp = which && which !== "current" ? o.fonts.bigOps?.[which] : undefined;
-  return layoutRow(root, { fonts: o.fonts, st: o.style, s: 1, display: o.display, level: 0, used: o.used, look: ms ? looksOf(ms) : undefined, ...(bigOp ? { bigOp } : {}) });
+  const bigOp = (op: string) => {
+    const which = largeOperatorFont(ms, op);
+    return which !== "current" ? o.fonts.bigOps?.[which] : undefined;
+  };
+  return layoutRow(root, { fonts: o.fonts, st: o.style, s: 1, display: o.display, level: 0, used: o.used, look: ms ? looksOf(ms) : undefined, bigOp });
 }
 
 // Re-exported for tests.

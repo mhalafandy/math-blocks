@@ -2,7 +2,9 @@
 
 Openly licensed math fonts, used for the document style's "large operators" choice (slanted TeX-style
 integrals and display-size sums and products). Bundled with the app, shipped in the installer and installed for
-the current user (no administrator rights). Unmodified, each with its licence:
+the current user (no administrator rights). The uninstaller removes the ones MathBlocks installed (recorded under
+HKCU\Software\MathBlocks\Fonts); the app installs a missing one again when it starts. Equations already in
+documents are pictures and stay as they are. Unmodified, each with its licence:
 
 | Font | File | Version | Licence |
 |---|---|---|---|

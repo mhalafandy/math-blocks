@@ -27,6 +27,8 @@ namespace MathBlocks.WordConnector
         public List<int[]> Equations = new List<int[]>();
         /// <summary>Lists of symbols: from the marker field to the end of the table after it.</summary>
         public List<int[]> Lists = new List<int[]>();
+        /// <summary>Reads Word refused while recording (a field, a picture): the record may be incomplete.</summary>
+        public int ReadErrors;
         /// <summary>The text Word gives for each stretch between consecutive boundaries (every range's start and end).</summary>
         public List<GuardChunk> Chunks = new List<GuardChunk>();
         /// <summary>Each inline picture's alternative text, in order (what an equation holds; for undoing back to before).</summary>

@@ -2,35 +2,32 @@
 
 Updated at the end of every round. Public repository: generic content only. Earlier rounds: `docs/status-archive/`.
 
-## Latest round — 0.1.173
+## Latest round — 0.1.174
 
-**Build:** 0.1.173 (test channel), CI passed. Stable stays 0.1.168: the 0.1.172 self-test had 3 failures (copy between documents).
+**Build:** 0.1.174 (test channel), CI: pending. Stable stays 0.1.168: the 0.1.173 self-test had 2 failures.
 
-**Reports read:** self-test 03:23 (0.1.172: 474 passed, 3 failed), thesis-size 03:30, soak 05:06 (passed, 1000 operations), connector.log (soak only: the thesis run had been rotated out).
+**Reports read:** self-test 13:30 (0.1.173: 476 passed, 2 failed), thesis-size 16:16, soak 14:44 (passed), connector.log.
 
 **Fixed:**
-- Copy between documents ("no text is selected"): 0.1.172's cleanup dropped the test helper's object lookup; restored, empty ranges never used.
-- Shortcut probe with your layout: Word could not be brought to the front; now attaches to the foreground window first (3 tries).
-- Apply style stopped at 840 / 940 of 1533 without a Cancel from you: the progress window's Cancel was its only control, so it had the keyboard focus (an Enter or Space reaching the window pressed it). Now only a mouse click cancels; an error in the middle is reported as "Stopped by an error (…)", not "Cancelled", and logged; the test cancel flag ends with each operation. The self-test's file-dialog Cancel sets no flag (app dialog, nothing kept).
-- Apply style slowing down: after each write the equation was looked up again, which walked all 1533 pictures, and the picture index was built again for every batch of 10. Both gone (index kept for the operation).
-- connector.log keeps the previous file (connector.previous.log) instead of deleting it at 2 MB.
+- Duplicate check in the self-test found nothing: its paste landed 33 characters away, so the two pictures were not side by side. The copy is now placed right after the original (as the old bug left it).
+- MathType comparison timed out (2 min): MathType converts one expression at a time; now each $…$ on its own, with 15 min allowed and each one's time logged.
+- Thesis Apply style: all 1533 written (256 → 560 ms each, all inside Word's write), then the text guard read the document without the list's marker (Word was running out of memory: "not enough memory…" right after) and undid everything. The guard now reads again when Word refused reads or the list is missing; the add-in releases its Word objects after every batch and logs Word's memory per batch.
+- Large operators: a stored choice was dropped on reading (0.1.173 bug); the Document style sample showed "int" as text.
 
 **Built:**
-- Check document: the same equation twice side by side (an earlier version's replace) found; repair removes the extra one (keeps the numbered one). Guard fixtures + CI test; self-test step.
-- Keyboard layout: put back at the next app start if the self-test stopped while Arabic was active (flag file).
-- Visual comparison: no file dialog. A generic LaTeX sheet (every category) is converted by MathType's Toggle TeX, then compared; skipped with a note without MathType.
-- Large operators: Latin Modern Math, STIX Two Math, XITS Math bundled (licences in the repo and installer), installed for the user at install (no admin). Document style "Large operators" font; slanted TeX integrals, display size about the integrand. Developer tools: "Large operators: compare the fonts" (all five operators, inline and display, with "Use this").
+- Large operators per group (integrals, contour integrals, sums and products, others). New document styles: STIX Two Math, contour integrals XITS Math. Documents with a stored style, or with pictures but no stored style, keep what they had. Compare sheet: row "STIX Two + XITS contour"; it and the Document style samples on a white page.
+- Uninstall removes the fonts MathBlocks installed (and says so); the app installs a missing one again at start. A font you installed yourself is left alone. One edge: a font you had installed yourself "for me" under the same path before 0.1.173 counts as MathBlocks'.
+- Convert LaTeX 207 → 243 ms: nothing in our code; only a timer and a cache changed on that path. Word's InsertXML alone went 130 → 140 ms, and 0.1.173 ran at 230. Left as is.
 
 **Needs your PC:**
-- Install 0.1.173 (the installer adds the three fonts for you).
-- Self-test (developer tools on): copy between documents, "fires with the current layout", duplicate repair, the MathType sheet. Clean → I promote it.
-- Developer tools → Large operators → compare the fonts; pick one (or tell me).
-- Thesis-size test; send connector.log and connector.previous.log.
+- Self-test (developer tools on). Clean → I promote it.
+- Developer tools → Large operators: check the "STIX Two + XITS contour" row.
+- Thesis-size test with connector.log (memory per batch now logged; does Apply style finish?).
 
-**Open:** Convert LaTeX 243 ms per equation (InsertXML 140); left as agreed.
+**Open:** Apply style's write time still grows (Word's single undo record for 1533 replacements). If memory still runs out, the choice is between one Ctrl+Z and undo steps of a few hundred equations each: your call.
 
 ## Details
 
-- `WordOps.Check.cs` `RemoveDuplicateEquations`; app `checkDocument.sideBySide`. Fixtures `gen-remove-duplicate(-text)`.
-- Operation index: `InOperation`, `OperationIndex` (ReadScope). Cancel: `ProgressForm` mouse only; `endOperation.stoppedBy`.
-- Fonts: `app/src/assets/math-fonts/`, `installer-hooks.nsh`, `MathStyleGlobal.largeOperators`, `FontSet.bigOps`.
+- Guard: `GuardDoc.ReadErrors`, re-read in `GuardCheck`; `ReleaseComObjects`, `WordMemoryMb`.
+- `largeOperatorGroups`, `largeOperatorFont`, `NEW_STYLE_LARGE_OPERATORS` (math-core); `userDefaultStyle({ existing })`; `getDocumentStyle.pictures`.
+- `installer-hooks.nsh` (pre-uninstall), `src-tauri/src/fonts.rs` (`ensure_math_fonts`).

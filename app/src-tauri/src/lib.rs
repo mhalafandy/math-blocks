@@ -7,6 +7,7 @@
 mod blocks;
 mod connector_install;
 mod documents;
+mod fonts;
 mod library;
 mod pipe;
 mod shortcuts;
@@ -74,6 +75,11 @@ pub fn run() {
             pipe::start(app.handle().clone());
             connector_install::start(app.handle().clone());
             shortcuts::register(app.handle());
+            // The math fonts for large operators: installed again for the user if one is missing.
+            {
+                let handle = app.handle().clone();
+                std::thread::spawn(move || fonts::ensure_math_fonts(&handle));
+            }
             {
                 use tauri::Manager;
                 let opened = app

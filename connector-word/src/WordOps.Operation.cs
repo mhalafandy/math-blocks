@@ -451,6 +451,25 @@ namespace MathBlocks.WordConnector
         private string _guardBefore, _guardBeforeFull, _guardBeforeShapes;
         /// <summary>Tests: the next progress step reports Cancel, as if the user pressed it.</summary>
         internal static bool CancelNextProgress;
+
+        private int _guardBeforeLists;
+
+        /// <summary>
+        /// Lets .NET release the Word objects (ranges, pictures) it still holds: a long operation creates thousands,
+        /// and Word keeps what they point to alive until they are released.
+        /// </summary>
+        internal static void ReleaseComObjects()
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+        }
+
+        /// <summary>Word's memory (the add-in runs inside Word), for the log: private bytes in MB.</summary>
+        internal static long WordMemoryMb()
+        {
+            try { return System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64 / (1024 * 1024); } catch (Exception) { return -1; }
+        }
         private List<int[]> _guardExclude;
 
         /// <summary>
@@ -501,6 +520,7 @@ namespace MathBlocks.WordConnector
                 _guardWritten = null;
                 _guardWrittenText = null;
                 _guardBeforeDoc = RecordGuardDoc(doc, _guardExclude);
+                _guardBeforeLists = _guardBeforeDoc.Lists.Count;
                 _guardBefore = GuardText.Canonical(_guardBeforeDoc, _guardExclude);
                 _guardBeforeFull = _guardExclude.Count > 0 ? GuardText.Canonical(_guardBeforeDoc, null) : _guardBefore;
                 _guardBeforeShapes = _guardBeforeDoc.Shapes;
@@ -521,6 +541,17 @@ namespace MathBlocks.WordConnector
             try
             {
                 afterDoc = RecordGuardDoc(_guardDoc, _guardWritten);
+                // Word refused reads, or the list of symbols is missing: read again after a pause (the thesis-size
+                // Apply style: the record lost the list's marker as Word ran short of memory, and the table read
+                // as changed text).
+                for (int attempt = 1; attempt <= 2 && (afterDoc.ReadErrors > 0 || afterDoc.Lists.Count < _guardBeforeLists); attempt++)
+                {
+                    Log.Info("text guard: read again (" + afterDoc.ReadErrors + " read(s) refused, lists " + afterDoc.Lists.Count + " of " + _guardBeforeLists + ")");
+                    ReleaseComObjects();
+                    System.Windows.Forms.Application.DoEvents();
+                    System.Threading.Thread.Sleep(1000);
+                    afterDoc = RecordGuardDoc(_guardDoc, _guardWritten);
+                }
                 after = GuardText.Canonical(afterDoc, _guardWritten);
             }
             catch (Exception ex)
@@ -596,11 +627,11 @@ namespace MathBlocks.WordConnector
                         int fieldEnd = FieldEndOf(doc, f);
                         d.Fields.Add(new GuardField { Start = fieldStart, End = Math.Min(d.End, fieldEnd), Code = code.Text ?? "" });
                     }
-                    catch (COMException) { }
+                    catch (COMException) { d.ReadErrors++; }
                 }
             }
-            catch (COMException) { }
-            try { foreach (Word.OMath m in doc.OMaths) d.Equations.Add(new[] { m.Range.Start, m.Range.End }); } catch (COMException) { }
+            catch (COMException) { d.ReadErrors++; }
+            try { foreach (Word.OMath m in doc.OMaths) d.Equations.Add(new[] { m.Range.Start, m.Range.End }); } catch (COMException) { d.ReadErrors++; }
             var shapes = new System.Text.StringBuilder();
             try
             {
@@ -612,7 +643,7 @@ namespace MathBlocks.WordConnector
                     shapes.Append(s.Range.Start).Append(':').Append(alt).Append('\u0001');
                 }
             }
-            catch (COMException) { }
+            catch (COMException) { d.ReadErrors++; }
             d.Shapes = shapes.ToString();
             // The list of symbols: its hidden marker and the table after the marker's paragraph.
             foreach (var f in d.Fields)
@@ -625,7 +656,7 @@ namespace MathBlocks.WordConnector
                     int listEnd = next.Tables.Count > 0 ? next.Tables[1].Range.End : after;
                     d.Lists.Add(new[] { f.Start, listEnd });
                 }
-                catch (COMException) { }
+                catch (COMException) { d.ReadErrors++; }
             }
             var all = new List<int[]>();
             foreach (var f in d.Fields) all.Add(new[] { f.Start, f.End });

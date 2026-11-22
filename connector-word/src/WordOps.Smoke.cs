@@ -1163,6 +1163,14 @@ namespace MathBlocks.WordConnector
                         }
                     return new Dictionary<string, object> { ["assigned"] = list };
                 }
+                case "duplicateNextTo":
+                {
+                    // Self-test: what an earlier version's replace left: the same picture again right after it.
+                    var r0 = RangeOf(d, Rpc.GetString(p, "tag"));
+                    int end = r0.End;
+                    d.Range(end, end).FormattedText = r0.FormattedText;
+                    return new Dictionary<string, object> { ["original"] = r0.Start, ["copy"] = end };
+                }
                 case "mathTypeTexToggle":
                 {
                     // Self-test (visual comparison): MathType's Toggle TeX on the whole document turns the sheet's
@@ -1179,24 +1187,34 @@ namespace MathBlocks.WordConnector
                     }
                     int before = count();
                     string error = null;
-                    d.Content.Select();
-                    try { _app.Run("MathTypeCommands.UILib.MTCommand_TeXToggle"); }
-                    catch (Exception ex1)
+                    // One TeX expression at a time ($...$ or $$...$$), from the end of the document backwards (each
+                    // conversion shortens the text after it): the whole sheet in one Toggle took over 2 minutes
+                    // (0.1.173 self-test: the request timed out).
+                    var spans = new List<int[]>();
+                    foreach (Word.Paragraph para in d.Paragraphs)
                     {
-                        try { _app.Run("MTCommand_TeXToggle"); }
-                        catch (Exception ex2) { error = ex1.Message + " / " + ex2.Message; }
+                        var text = para.Range.Text ?? "";
+                        int start = para.Range.Start;
+                        foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(text, @"\$\$[^$]+\$\$|\$[^$]+\$"))
+                            spans.Add(new[] { start + m.Index, start + m.Index + m.Length });
                     }
-                    // MathType converts one equation after another: wait until the count stops growing (60 s at most).
-                    int after = count(), stable = 0;
                     var clock = System.Diagnostics.Stopwatch.StartNew();
-                    while (clock.ElapsedMilliseconds < 60000 && stable < 4)
+                    int converted = 0;
+                    for (int k = spans.Count - 1; k >= 0; k--)
                     {
+                        var t0 = clock.ElapsedMilliseconds;
+                        d.Range(spans[k][0], spans[k][1]).Select();
+                        try { _app.Run("MathTypeCommands.UILib.MTCommand_TeXToggle"); converted++; }
+                        catch (Exception ex1)
+                        {
+                            try { _app.Run("MTCommand_TeXToggle"); converted++; }
+                            catch (Exception ex2) { error = ex1.Message + " / " + ex2.Message; break; }
+                        }
                         System.Windows.Forms.Application.DoEvents();
-                        System.Threading.Thread.Sleep(250);
-                        int now = count();
-                        stable = now == after ? stable + 1 : 0;
-                        after = now;
+                        Log.Info("MathType Toggle TeX " + (spans.Count - k) + "/" + spans.Count + ": " + (clock.ElapsedMilliseconds - t0) + " ms");
+                        if (clock.ElapsedMilliseconds > 600000) { error = "stopped after 10 minutes"; break; }
                     }
+                    int after = count();
                     var r = new Dictionary<string, object> { ["available"] = true, ["before"] = before, ["after"] = after };
                     if (error != null) r["error"] = error;
                     return r;

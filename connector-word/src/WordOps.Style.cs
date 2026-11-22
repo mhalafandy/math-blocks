@@ -26,7 +26,11 @@ namespace MathBlocks.WordConnector
             var doc = ResolveDocument(p);
             foreach (var part in StyleParts(doc))
                 return new Dictionary<string, object> { ["xml"] = (string)part.XML, ["fullName"] = doc.FullName, ["name"] = doc.Name };
-            return new Dictionary<string, object> { ["xml"] = null, ["fullName"] = doc.FullName, ["name"] = doc.Name };
+            // No stored style: whether the document already has pictures (drawn in the user's default as it was then;
+            // a new default must not make them "older").
+            int pictures = 0;
+            try { pictures = doc.InlineShapes.Count; } catch (Exception) { }
+            return new Dictionary<string, object> { ["xml"] = null, ["fullName"] = doc.FullName, ["name"] = doc.Name, ["pictures"] = pictures };
         }
 
         public Dictionary<string, object> SetDocumentStyle(Dictionary<string, object> p)

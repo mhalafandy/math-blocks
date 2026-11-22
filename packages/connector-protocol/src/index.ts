@@ -367,7 +367,7 @@ export interface AppToConnector {
   getRegistry: { params: DocTarget; result: { xml: string | null; fullName: string } };
   setRegistry: { params: DocTarget & { xml: string }; result: { ok: true } };
   /** The document's style (Custom XML Part urn:mathblocks:style:v1), or null when it has none. */
-  getDocumentStyle: { params: DocTarget; result: { xml: string | null; fullName: string; name: string } };
+  getDocumentStyle: { params: DocTarget; result: { xml: string | null; fullName: string; name: string; /** Without a stored style: pictures already in the document. */ pictures?: number } };
   setDocumentStyle: { params: DocTarget & { xml: string }; result: { ok: true; fullName: string } };
   /** The document's own blocks (Custom XML Part urn:mathblocks:blocks:v1), or null when it has none. */
   getDocumentBlocks: { params: DocTarget; result: { xml: string | null; fullName: string; name: string } };
