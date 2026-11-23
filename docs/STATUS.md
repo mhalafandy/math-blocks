@@ -4,7 +4,7 @@ Updated at the end of every round. Public repository: generic content only. Earl
 
 ## Latest round — 0.1.175 (feature freeze: to stable)
 
-**Build:** 0.1.175 (test channel), CI passed. Stable stays 0.1.168: the reports were from 0.1.174 (not 0.1.173), self-test 484 passed, 2 failed, so not promoted.
+**Build:** 0.1.175, CI passed. **Stable: 0.1.175 promoted** on 2026-11-23 after the core self-test (14:00: 313 checks, 297 passed, 0 failed, `RESULT: PASS`) and the 4 manual checks (all OK). The stable manifest downloads (0.1.175; rollback 0.1.168). The promotion first left the stable release a draft; promote.yml now publishes it explicitly and checks the manifest.
 
 **Reports read (0.1.174):** self-test 19:30, thesis-size 22:18, soak 20:02 (passed), connector.log + previous.
 
