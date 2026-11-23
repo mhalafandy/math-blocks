@@ -2,7 +2,7 @@ import { isDesktop } from "./connector";
 import { useApp } from "./store";
 
 /**
- * App self-update on a channel (Settings → Updates), and Word add-in installation status.
+ * App self-update on a channel (Settings → Backups and updates), and Word add-in installation status.
  *
  * Every build of `main` is published as the "Latest test build" (the **test** channel) and kept under its own
  * version. A build reaches the **stable** channel (the default) only when it is promoted (the "Promote to stable"

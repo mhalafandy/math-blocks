@@ -216,6 +216,7 @@ export function BlocksPanel({ manage = true, onInsert }: { manage?: boolean; onI
               <div className="lib-empty">
                 <p>No blocks yet.</p>
                 <p className="hint">A block is an expression you write often, with slots to fill. Select part of an equation (or none for all of it) and choose Save as block; insert it here, from the palette search, or with its trigger and Tab.</p>
+                {manage && <button onClick={() => void saveSelectionAsBlock()}>Save as block</button>}
               </div>
             )}
             {docBlocks.length > 0 && (

@@ -114,7 +114,7 @@ for (const size of SIZES) {
     await page.keyboard.press("Escape");
     await page.waitForTimeout(400);
     check((await page.locator(".settings-window").count()) === 0 && (await oldModal(page)) === 0, "closing the settings leaves no old dialog open");
-    for (const [cmd, heading] of [["Snippets (trigger", "Snippets and shortcuts"], ["Accents: how harpoons", "Accents"], ["Document style: how", "Document style"], ["Notation settings: kinds", "Notation kinds"]] as const) {
+    for (const [cmd, heading] of [["Snippets (trigger", "Snippets"], ["Accents: how harpoons", "Accents"], ["Document style: how", "Document style"], ["Notation settings: kinds", "Notation kinds"]] as const) {
       await page.keyboard.press("Control+k");
       await page.waitForTimeout(300);
       await page.keyboard.type(cmd, { delay: 15 });

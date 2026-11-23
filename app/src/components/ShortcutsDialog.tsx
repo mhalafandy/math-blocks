@@ -194,7 +194,7 @@ export function ShortcutsDialog() {
             void import("../lib/settingsStore").then((m) => m.openSettings("editor"));
           }}
         >
-          Change in Settings → Editor behaviour
+          Change in Settings → Editor
         </button>
       </div>
       <div className="shortcuts">

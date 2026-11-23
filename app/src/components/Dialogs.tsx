@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode, createContext, useContext } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, createContext, useContext } from "react";
 import { useSettings, type SettingsPage } from "../lib/settingsStore";
 import { create } from "zustand";
 import { restoreEditorFocus } from "../lib/editorFocus";
@@ -19,6 +19,26 @@ export function Modal({ title, onClose, children, width = 440, page }: { title: 
   }, [onClose, inline, inSettings]);
   // Closing a dialog returns the keyboard to the equation editor, caret where it was.
   useEffect(() => () => void (!inline && restoreEditorFocus()), [inline]);
+  // Opening: the keyboard goes to the dialog's main field (its first text field, else its main button), unless
+  // the dialog already put it somewhere (autoFocus).
+  const boxRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (inline || inSettings || page) return;
+    const box = boxRef.current;
+    if (!box || box.contains(document.activeElement)) return;
+    const field = box.querySelector<HTMLElement>("input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not(:disabled), textarea:not(:disabled), select:not(:disabled)");
+    (field ?? box.querySelector<HTMLElement>("button.primary:not(:disabled)"))?.focus();
+  }, [inline, inSettings, page]);
+  // Enter in a one-line field confirms: the dialog's main button (not in a text area, a list or a search box).
+  const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.altKey || e.defaultPrevented) return;
+    const t = e.target as HTMLElement;
+    if (!(t instanceof HTMLInputElement) || ["checkbox", "radio", "search", "button", "submit"].includes(t.type)) return;
+    const primary = boxRef.current?.querySelector<HTMLButtonElement>("button.primary:not(:disabled)");
+    if (!primary) return;
+    e.preventDefault();
+    primary.click();
+  };
   if (inline)
     return (
       <section className="settings-embedded" aria-label={title}>
@@ -32,7 +52,7 @@ export function Modal({ title, onClose, children, width = 440, page }: { title: 
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       {/* Never taller than the window: the title and the button row stay visible, the body scrolls. */}
-      <div className="modal" role="dialog" aria-modal="true" aria-label={title} style={{ width }} onMouseDown={(e) => e.stopPropagation()}>
+      <div className="modal" ref={boxRef} role="dialog" aria-modal="true" aria-label={title} style={{ width }} onMouseDown={(e) => e.stopPropagation()} onKeyDown={onKeyDown}>
         <h2>{title}</h2>
         <div className="modal-body">{children}</div>
       </div>

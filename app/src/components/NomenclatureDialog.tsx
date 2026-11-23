@@ -166,7 +166,7 @@ export function NomenclatureDialog() {
                         className="nom-desc"
                         value={edits[e.key] ?? kept.get(e.key)?.text ?? ""}
                         onChange={(ev) => setEdits({ ...edits, [e.key]: ev.target.value })}
-                        placeholder="Description, e.g. position of the spacecraft"
+                        placeholder="Description, e.g. position vector"
                         disabled={excluded.has(e.key)}
                       />
                       <span className="muted nom-where" title={`${e.count} use(s)`}>

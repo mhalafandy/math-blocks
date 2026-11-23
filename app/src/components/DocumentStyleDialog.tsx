@@ -398,7 +398,7 @@ export function DocumentStyleDialog() {
                   <option value="bold">bold</option>
                 </select>
               </Row>
-              <Row label="Wrapper kinds: vectors, matrices, frames… (notation preset)" sample={<StylePreview latex="\pvec[B/N]{r}=\dcm{B}{N}\cmat{v}" style={d} />}>
+              <Row label="Wrapper kinds: vectors, matrices, frames… (notation preset)" sample={<StylePreview latex="\pvec[A/B]{r}=\dcm{A}{B}\cmat{v}" style={d} />}>
                 <select value={d.notation.preset} onChange={(e) => s.set({ draft: { ...d, notation: { ...d.notation, preset: e.target.value as PresetId } } })}>
                   {(Object.keys(PRESETS) as PresetId[]).map((id) => (
                     <option key={id} value={id}>
@@ -582,7 +582,7 @@ function SymbolRules({ style, onChange }: { style: MathStyle; onChange: (r: Symb
         </div>
       ))}
       <div className="symbol-rule-add">
-        <input value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder="symbol: e, \omega, \mathbf{J}, v_0" spellCheck={false} onKeyDown={(e) => e.key === "Enter" && add()} />
+        <input value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder="symbol: e, \omega, \mathbf{J}, v_0" spellCheck={false} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }} />
         <span>is a</span>
         <KindSelect value={kind} onChange={setKind} />
         <select value={bold} onChange={(e) => setBold(e.target.value as typeof bold)}>

@@ -139,6 +139,7 @@ function LibraryPanel() {
               <div className="lib-empty">
                 <p>Your library is empty.</p>
                 <p className="hint">Build an equation, then press <kbd>Ctrl S</kbd> to save it here. Organise with folders and tags; every save keeps a version.</p>
+                <button onClick={() => useLibrary.getState().setDialog({ mode: "new" })}>Save the current equation</button>
               </div>
             )}
             {favorites.length > 0 && (

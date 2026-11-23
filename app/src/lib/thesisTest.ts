@@ -37,14 +37,14 @@ async function state(): Promise<string> {
 /** The report's lines; `running` is the step under way (so a report left by a crash or a hang says where it stopped). */
 export function thesisReport(steps: ThesisStep[], startedAt: Date, totalMs: number, running?: { what: string; since: Date }): string[] {
   return [
-    `MathBlocks thesis-size test — ${startedAt.toLocaleString()}`,
+    `MathBlocks large-document test — ${startedAt.toLocaleString()}`,
     running ? `Not finished: running "${running.what}" since ${running.since.toLocaleTimeString()} (${(totalMs / 1000).toFixed(0)} s so far)` : `Total ${(totalMs / 1000).toFixed(0)} s`,
     "",
     ...steps.map((s) => `${s.ok === null ? "INFO" : s.ok ? "PASS" : "FAIL"}  ${s.what}: ${(s.ms / 1000).toFixed(1)} s${s.detail ? `  — ${s.detail}` : ""}`),
   ];
 }
 
-const writeReport = (lines: string[]) => smoke("writeFile", { file: "thesis-size report.txt", text: lines.join("\r\n") }, 30_000).catch(() => null) as Promise<{ path: string } | null>;
+const writeReport = (lines: string[]) => smoke("writeFile", { file: "large-document report.txt", text: lines.join("\r\n") }, 30_000).catch(() => null) as Promise<{ path: string } | null>;
 
 export async function runThesisTest(scale = 1, progress: (s: string) => void = () => undefined): Promise<ThesisStep[]> {
   const steps: ThesisStep[] = [];
@@ -75,7 +75,7 @@ export async function runThesisTest(scale = 1, progress: (s: string) => void = (
   try {
     const paras = thesisParagraphs(scale);
     const docx = toBase64(interchangeDocx(paras));
-    await time("open the generated document", () => smoke("openDocx", { file: "thesis-size test.docx", base64: docx }), () => [true, `${paras.length} paragraphs`]);
+    await time("open the generated document", () => smoke("openDocx", { file: "large-document test.docx", base64: docx }), () => [true, `${paras.length} paragraphs`]);
     const { convertLatexDocument } = await import("./latexInterchangeRun");
     // Cancel at the first progress step: the document must be exactly as before.
     const before = await state();
@@ -130,7 +130,7 @@ export async function runThesisTest(scale = 1, progress: (s: string) => void = (
       steps.push({ what: "Change symbol: applying", ms: performance.now() - t1, ok: !r.cancelled && !r.guardFailed, detail: `${r.equations} equations, ${r.definitions} definition(s), list ${r.list ? "updated" : "—"}` });
       return pv.plan.counts;
     }, (c) => [c.equations > 0, `${c.equations} equations in the preview`]);
-    await time("Save", () => smoke("save", { file: "thesis-size test.docx" }));
+    await time("Save", () => smoke("save", { file: "large-document test.docx" }));
   } finally {
     await smoke("closeTestDocuments").catch(() => undefined);
     await smoke("end").catch(() => undefined);
@@ -142,10 +142,10 @@ export async function runThesisTest(scale = 1, progress: (s: string) => void = (
 export async function thesisTestCommand() {
   const app = useApp.getState();
   const { askConfirm } = await import("../components/Dialogs");
-  if (!(await askConfirm("Thesis-size test", "Generate a generic document of about 300 pages (1500 equations, 1000 references) and run every whole-document operation on it, timed. It takes a while (about 20–40 minutes) and opens its own document; your documents are not touched.", "Run"))) return;
+  if (!(await askConfirm("Large-document test", "Generate a generic document of about 300 pages (1500 equations, 1000 references) and run every whole-document operation on it, timed. It takes a while (about 20–40 minutes) and opens its own document; your documents are not touched.", "Run"))) return;
   const t0 = performance.now();
   const startedAt = new Date();
-  const steps = await runThesisTest(1, (s) => app.notify(`Thesis-size test: ${s}…`));
+  const steps = await runThesisTest(1, (s) => app.notify(`Large-document test: ${s}…`));
   const r = await writeReport(thesisReport(steps, startedAt, performance.now() - t0));
-  app.notify(`Thesis-size test finished: ${steps.filter((s) => s.ok === false).length} problem(s). Report: ${r?.path ?? "(not saved)"}`);
+  app.notify(`Large-document test finished: ${steps.filter((s) => s.ok === false).length} problem(s). Report: ${r?.path ?? "(not saved)"}`);
 }

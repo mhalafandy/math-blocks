@@ -18,7 +18,7 @@ export function ReferencePicker() {
   return (
     <Modal title="Insert reference to an equation" onClose={close} width={620}>
       <div className="form">
-        <input autoFocus placeholder="Search by number, text or LaTeX…" value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && shown[0] && pick(shown[0])} />
+        <input autoFocus placeholder="Search by number, text or LaTeX…" value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && shown[0]) { e.preventDefault(); pick(shown[0]); } }} />
         <div className="conv-list">
           {loading && <p className="empty">Reading the document…</p>}
           {!loading && items.length === 0 && <p className="empty">This document has no numbered equations yet. Choose “Numbered” in the toolbar before sending an equation, or press “Number equation” in Word.</p>}

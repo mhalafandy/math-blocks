@@ -43,8 +43,8 @@ const OPTIONS: { key: keyof KindStyle; label: string; values: [string, string][]
   { key: "wrap", label: "Brackets", values: [["none", "None"], ["brackets", "[ ]"], ["braces", "{ }"], ["bars", "| |"]] },
   { key: "boldScope", label: "Bold applies to", values: [["base", "The symbol only"], ["scripts", "Symbol and frame label"]] },
 ];
-const FRAME_POS: [string, string][] = [["sub", "Subscript (r_P/O)"], ["sup", "Superscript"], ["pre-sup", "Before, up (ᴾ/ᴼr)"], ["pre-sub", "Before, down"], ["none", "Not shown"]];
-const FRAME_SEP: [string, string][] = [["", "None (BN)"], ["/", "Slash (B/N)"], [",", "Comma (B,N)"]];
+const FRAME_POS: [string, string][] = [["sub", "Subscript (r_A/B)"], ["sup", "Superscript"], ["pre-sup", "Before, up (ᴬ/ᴮr)"], ["pre-sub", "Before, down"], ["none", "Not shown"]];
+const FRAME_SEP: [string, string][] = [["", "None (AB)"], ["/", "Slash (A/B)"], [",", "Comma (A,B)"]];
 
 function useFonts() {
   const [fonts, setFonts] = useState<FontSet | null>(null);
@@ -154,15 +154,15 @@ export function NotationSettings() {
               <h3>New kind</h3>
               <label>
                 Name
-                <input autoFocus value={creating.name} placeholder="e.g. Angular velocity" onChange={(e) => setCreating({ ...creating, name: e.target.value })} />
+                <input autoFocus value={creating.name} placeholder="e.g. Tensor" onChange={(e) => setCreating({ ...creating, name: e.target.value })} />
               </label>
               <label>
                 Macro (without \)
-                <input value={creating.macro} placeholder="e.g. angvel" onChange={(e) => setCreating({ ...creating, macro: e.target.value })} />
+                <input value={creating.macro} placeholder="e.g. tensor" onChange={(e) => setCreating({ ...creating, macro: e.target.value })} />
               </label>
               <label>
                 Snippet trigger
-                <input value={creating.snippet} placeholder="e.g. av" onChange={(e) => setCreating({ ...creating, snippet: e.target.value })} />
+                <input value={creating.snippet} placeholder="e.g. tn" onChange={(e) => setCreating({ ...creating, snippet: e.target.value })} />
               </label>
               <label>
                 Start from the style of
@@ -175,7 +175,7 @@ export function NotationSettings() {
                 </select>
               </label>
               {error && <p className="bad">{error}</p>}
-              <p className="hint">The kind takes one symbol and an optional frame label: \{creating.macro || "macro"}[P/O]{"{r}"}. Its style can be changed after it is created.</p>
+              <p className="hint">The kind takes one symbol and an optional frame label: \{creating.macro || "macro"}[A/B]{"{r}"}. Its style can be changed after it is created.</p>
               <div className="modal-actions">
                 <button onClick={() => setCreating(null)}>Cancel</button>
                 <button className="primary" onClick={create}>

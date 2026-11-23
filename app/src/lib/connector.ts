@@ -148,7 +148,7 @@ class ConnectorClient {
         const params = msg.params as ConnectorToApp["hello"]["params"];
         app.setConnector({ connected: true, hostVersion: `Word ${params.hostBuild}`, methods: params.methods });
         void checkAddinVersion(params);
-        // Developer tools (Settings → Advanced): the add-in shows its self-test button and accepts test requests.
+        // Developer tools (Settings → Self-tests and diagnostics): the add-in shows its self-test button and accepts test requests.
         if (params.methods?.includes("setDeveloperTools")) void this.request("setDeveloperTools", { on: useApp.getState().developerTools }).catch(() => undefined);
         // The style of the document in front (drawings, previews, the editor).
         void import("./docStyle").then((m) => m.loadDocumentStyle()).catch(() => undefined);

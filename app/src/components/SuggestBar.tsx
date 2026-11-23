@@ -8,7 +8,7 @@ import { MathTile } from "./MathTile";
 /**
  * Suggestions from the document while typing: after a letter, the forms of that symbol the open document
  * already uses (\pvec{\omega}, \cmat{\omega}, \omega_1 …), most used first. Tab or a click takes one
- * (the letter is replaced); Esc or any other key leaves them. Settings → Editor behaviour turns it off.
+ * (the letter is replaced); Esc or any other key leaves them. Settings → Editor turns it off.
  */
 
 interface State {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { SymbolListPage } from "./SymbolList";
 import { useApp } from "../lib/store";
 import { useSettings, type SettingsPage } from "../lib/settingsStore";
@@ -29,7 +29,15 @@ interface PageDef {
   dialog?: { isOpen: () => boolean; open: () => void; close: () => void; subscribe: (f: () => void) => () => void };
   /** Shown only with developer tools on (Advanced). */
   developer?: boolean;
+  /** The section of the side list it is under. */
+  group: SettingsGroup;
 }
+
+/** The side list's sections, in order: related settings together. */
+const GROUPS = ["Appearance", "Notation", "Editing", "Word", "Backups and updates", "Developer tools"] as const;
+type SettingsGroup = (typeof GROUPS)[number];
+/** Pages merged into another one: an old link opens the page that holds them now. */
+const ALIASES: Partial<Record<SettingsPage, SettingsPage>> = { updates: "backups" };
 
 function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   return (
@@ -129,7 +137,7 @@ function AdvancedPage() {
   return (
     <section className="settings-embedded">
       <h3>Advanced</h3>
-      <Field label="Developer tools" hint="Tests and measurements for diagnosing a problem: the Word self-test, soak test, thesis-size test and benchmark (also in Ctrl+K and on the ribbon). Off, the add-in refuses their test requests.">
+      <Field label="Developer tools" hint="Tests and measurements for diagnosing a problem: the Word self-test, soak test, large-document test and benchmark (also in Ctrl+K and on the ribbon). Off, the add-in refuses their test requests.">
         <label className="check">
           <input type="checkbox" checked={s.developerTools} onChange={(e) => s.setPrefs({ developerTools: e.target.checked })} /> show developer tools
         </label>
@@ -139,7 +147,7 @@ function AdvancedPage() {
           <button disabled={!s.connector.connected} onClick={() => run(() => import("../lib/selfTest").then((m) => m.runWordSelfTest()))}>Run the Word self-test (core, ~12 min)</button>{" "}
           <button disabled={!s.connector.connected} onClick={() => run(() => import("../lib/selfTest").then((m) => m.runWordSelfTest({ full: true })))}>Full self-test (~30 min)</button>{" "}
           <button disabled={!s.connector.connected} onClick={() => run(() => import("../lib/soakTest").then((m) => m.soakTestCommand()))}>Soak test…</button>{" "}
-          <button disabled={!s.connector.connected} onClick={() => run(() => import("../lib/thesisTest").then((m) => m.thesisTestCommand()))}>Thesis-size test…</button>
+          <button disabled={!s.connector.connected} onClick={() => run(() => import("../lib/thesisTest").then((m) => m.thesisTestCommand()))}>Large-document test…</button>
         </Field>
       )}
       {s.developerTools && (
@@ -229,28 +237,28 @@ function UpdatesPage() {
 }
 
 const PAGES: PageDef[] = [
-  { id: "word", label: "Word style", keys: "classic native look size points font vector spacecraft convention preview profile math font", body: () => <section className="settings-embedded"><h3>Word style</h3><StylePanel /></section> },
+  { id: "word", label: "Equation look", group: "Appearance", keys: "classic native look size points font vector spacecraft convention preview profile math font", body: () => <section className="settings-embedded"><h3>Word style</h3><StylePanel /></section> },
   {
     id: "docstyle",
     label: "Document style",
+    group: "Appearance",
     keys: "document style italic upright labels counters roman numerals greek constants differential transpose bold presets classify check",
     body: () => <DocumentStyleDialog />,
     dialog: { isOpen: () => useDocumentStyle.getState().open, open: () => void openDocumentStyleHere(), close: () => useDocumentStyle.getState().set({ open: false }), subscribe: (f) => useDocumentStyle.subscribe(f) },
   },
-  { id: "kinds", label: "Notation kinds", keys: "kinds vector dyadic frame dcm matrix unit vector my notation new kind style", body: () => <NotationSettings />, dialog: { isOpen: () => useNotationSettings.getState().open, open: () => useNotationSettings.getState().set(true, useNotationSettings.getState().kind), close: () => useNotationSettings.getState().set(false), subscribe: (f) => useNotationSettings.subscribe(f) } },
-  { id: "accents", label: "Accents", keys: "accent harpoon arrow hat bar dot size stroke gap barb", body: () => <AccentsDialog />, dialog: { isOpen: () => useAccents.getState().open, open: () => useAccents.getState().set(true), close: () => useAccents.getState().set(false), subscribe: (f) => useAccents.subscribe(f) } },
-  { id: "numbering", label: "Numbering", keys: "number numbering chapter section brackets parentheses separator restart references markers", body: () => <section className="settings-embedded"><h3>Numbering</h3><NumberingSettings /></section> },
-  { id: "snippets", label: "Snippets and shortcuts", keys: "snippets triggers tab shortcuts keys", body: () => <SnippetsDialog />, dialog: { isOpen: () => useSnippets.getState().open, open: () => useSnippets.getState().set(true), close: () => useSnippets.getState().set(false), subscribe: (f) => useSnippets.subscribe(f) } },
-  { id: "palette", label: "Palette", keys: "palette symbols favourites quick access recent location top right", body: () => <PalettePage /> },
-  { id: "editor", label: "Editor behaviour", keys: "editor space slot backspace double space command palette prefix zoom suggestions document forms autocomplete", body: () => <EditorPage /> },
-  { id: "connection", label: "Word connection and add-in", keys: "word add-in connection confirm self-test", body: () => <ConnectionPage /> },
-  { id: "wordKeys", label: "Word shortcuts", keys: "word shortcuts keyboard keys ctrl alt inline display toggle latex reference number edit", body: () => <WordKeysPage /> },
-  { id: "backups", label: "Backups", keys: "backup copy restore folder", body: () => <BackupsPage /> },
-  { id: "symbollist", label: "List of symbols", keys: "symbols nomenclature list define table sort groups columns", body: () => <SymbolListPage /> },
-  { id: "benchmark", label: "Benchmark", keys: "benchmark speed timing keystrokes mathtype comparison", body: () => <BenchmarkPage />, developer: true },
-  { id: "updates", label: "Updates", keys: "update version", body: () => <UpdatesPage /> },
-  { id: "advanced", label: "Advanced", keys: "advanced developer tools self-test soak thesis-size test benchmark diagnose", body: () => <AdvancedPage /> },
-  { id: "recognition", label: "Screenshot to LaTeX", keys: "screenshot picture recognition api key ocr image", body: () => <RecognitionDialog />, dialog: { isOpen: () => useRecognition.getState().open, open: () => useRecognition.getState().set({ open: true }), close: () => useRecognition.getState().set({ open: false }), subscribe: (f) => useRecognition.subscribe(f) } },
+  { id: "kinds", label: "Notation kinds", group: "Notation", keys: "kinds vector dyadic frame dcm matrix unit vector my notation new kind style", body: () => <NotationSettings />, dialog: { isOpen: () => useNotationSettings.getState().open, open: () => useNotationSettings.getState().set(true, useNotationSettings.getState().kind), close: () => useNotationSettings.getState().set(false), subscribe: (f) => useNotationSettings.subscribe(f) } },
+  { id: "accents", label: "Accents", group: "Appearance", keys: "accent harpoon arrow hat bar dot size stroke gap barb", body: () => <AccentsDialog />, dialog: { isOpen: () => useAccents.getState().open, open: () => useAccents.getState().set(true), close: () => useAccents.getState().set(false), subscribe: (f) => useAccents.subscribe(f) } },
+  { id: "numbering", label: "Numbering", group: "Notation", keys: "number numbering chapter section brackets parentheses separator restart references markers", body: () => <section className="settings-embedded"><h3>Numbering</h3><NumberingSettings /></section> },
+  { id: "snippets", label: "Snippets", group: "Editing", keys: "snippets triggers tab shortcuts keys", body: () => <SnippetsDialog />, dialog: { isOpen: () => useSnippets.getState().open, open: () => useSnippets.getState().set(true), close: () => useSnippets.getState().set(false), subscribe: (f) => useSnippets.subscribe(f) } },
+  { id: "palette", label: "Symbol palette", group: "Editing", keys: "palette symbols favourites quick access recent location top right", body: () => <PalettePage /> },
+  { id: "editor", label: "Editor", group: "Editing", keys: "editor space slot backspace double space command palette prefix zoom suggestions document forms autocomplete", body: () => <EditorPage /> },
+  { id: "connection", label: "Add-in connection", group: "Word", keys: "word add-in connection confirm self-test", body: () => <ConnectionPage /> },
+  { id: "wordKeys", label: "Word shortcuts", group: "Word", keys: "word shortcuts keyboard keys ctrl alt inline display toggle latex reference number edit", body: () => <WordKeysPage /> },
+  { id: "backups", label: "Backups and updates", group: "Backups and updates", keys: "backup copy restore folder update version roll back", body: () => (<><BackupsPage /><UpdatesPage /></>) },
+  { id: "symbollist", label: "List of symbols", group: "Notation", keys: "symbols nomenclature list define table sort groups columns", body: () => <SymbolListPage /> },
+  { id: "benchmark", label: "Benchmark", group: "Developer tools", keys: "benchmark speed timing keystrokes mathtype comparison", body: () => <BenchmarkPage />, developer: true },
+  { id: "advanced", label: "Self-tests and diagnostics", group: "Developer tools", keys: "advanced developer tools self-test soak large document thesis-size test benchmark diagnose", body: () => <AdvancedPage /> },
+  { id: "recognition", label: "Screenshot to LaTeX", group: "Editing", keys: "screenshot picture recognition api key ocr image", body: () => <RecognitionDialog />, dialog: { isOpen: () => useRecognition.getState().open, open: () => useRecognition.getState().set({ open: true }), close: () => useRecognition.getState().set({ open: false }), subscribe: (f) => useRecognition.subscribe(f) } },
 ];
 
 const SIZE_KEY = "mathblocks.settings.size";
@@ -259,8 +267,9 @@ export function SettingsDialog() {
   const { open, page, set } = useSettings();
   const [query, setQuery] = useState("");
   const developer = useApp((s) => s.developerTools);
-  const pages = PAGES.filter((p) => !p.developer || developer);
-  const def = pages.find((p) => p.id === page) ?? pages[0]!;
+  const pages = PAGES.filter((p) => !p.developer || developer).sort((a, b) => GROUPS.indexOf(a.group) - GROUPS.indexOf(b.group));
+  const wanted = ALIASES[page] ?? page;
+  const def = pages.find((p) => p.id === wanted) ?? pages[0]!;
   // Closing the settings closes every page's dialog state too (none is left to show on its own later).
   const close = () => {
     for (const p of PAGES) if (p.dialog?.isOpen()) p.dialog.close();
@@ -326,10 +335,13 @@ export function SettingsDialog() {
       <div className="settings-window" ref={winRef} style={savedSize} role="dialog" aria-modal="true" aria-label="Settings" onMouseDown={(e) => e.stopPropagation()}>
         <nav className="settings-side">
           <input className="settings-search" type="search" placeholder="Search settings…" value={query} autoFocus onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && matches[0] && set({ page: matches[0].id })} />
-          {matches.map((p) => (
-            <button key={p.id} className={p.id === def.id ? "on" : undefined} onClick={() => set({ page: p.id })}>
-              {p.label}
-            </button>
+          {matches.map((p, i) => (
+            <Fragment key={p.id}>
+              {(i === 0 || matches[i - 1]!.group !== p.group) && <h3 className="settings-group">{p.group}</h3>}
+              <button className={p.id === def.id ? "on" : undefined} onClick={() => set({ page: p.id })}>
+                {p.label}
+              </button>
+            </Fragment>
           ))}
           {!matches.length && <p className="hint">No setting matches “{query}”.</p>}
         </nav>

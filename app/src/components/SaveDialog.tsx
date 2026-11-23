@@ -74,7 +74,7 @@ function SaveDialogBody() {
         </div>
         <label>
           Name
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Centre of mass" autoFocus />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Quadratic formula" autoFocus />
         </label>
         <label>
           Folder
@@ -89,7 +89,7 @@ function SaveDialogBody() {
         </label>
         <label>
           Tags <span className="hint-inline">comma-separated</span>
-          <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="mass properties, mechanics" list="mb-tags" />
+          <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="algebra, roots" list="mb-tags" />
           <datalist id="mb-tags">
             {allTags.map((t) => (
               <option key={t} value={t} />

@@ -42,7 +42,7 @@ interface Prefs {
   theme: Theme;
   /** Word keyboard shortcuts by command (see lib/wordKeys.ts); "" switches one off. */
   wordKeys: Record<string, string>;
-  /** Settings → Advanced → Developer tools: the self-test, soak, thesis-size test, benchmark (off by default). */
+  /** Settings → Self-tests and diagnostics → Developer tools: the self-test, soak, thesis-size test, benchmark (off by default). */
   developerTools: boolean;
   leftWidth: number;
   rightWidth: number;

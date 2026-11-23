@@ -288,7 +288,7 @@ namespace MathBlocks.WordConnector
         public void OnCheckDocument(IRibbonControl control) => RunAppCommand("checkDocument");
         public void OnSelfTest(IRibbonControl control) => RunAppCommand("selfTest");
 
-        /// <summary>Developer tools (the app's Settings → Advanced): the self-test button and test requests.</summary>
+        /// <summary>Developer tools (the app's Settings → Self-tests and diagnostics): the self-test button and test requests.</summary>
         internal static bool DeveloperTools;
 
         private IRibbonUI _ribbon;
@@ -876,7 +876,7 @@ namespace MathBlocks.WordConnector
                     case "equationsToText": result = _ops.EquationsToText(p); break;
                     case "smoke":
                         // Test requests (self-test, soak, thesis-size, benchmark) only with developer tools on.
-                        if (!DeveloperTools) throw new RpcException(Rpc.Forbidden, "Developer tools are off (MathBlocks: Settings → Advanced → Developer tools).");
+                        if (!DeveloperTools) throw new RpcException(Rpc.Forbidden, "Developer tools are off (MathBlocks: Settings → Self-tests and diagnostics → Developer tools).");
                         result = _ops.Smoke(p);
                         break;
                     case "removeDuplicateEquations": result = _ops.RemoveDuplicateEquations(p); break;

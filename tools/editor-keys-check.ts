@@ -293,8 +293,8 @@ for (const [a, b] of [[2, 5], [0, 3], [4, 11]] as const) {
     const mf = document.getElementById("mf") as unknown as MF;
     mf.value = "a+b+c+d+e+f";
     mf.focus();
-    mf.selection = { ranges: [[a, b]] };
-  }, [a, b]);
+    mf.selection = { ranges: [[a!, b!]] };
+  }, [a, b] as [number, number]);
   await page.waitForTimeout(100);
   await page.keyboard.press("Backspace");
   const r = await page.evaluate(

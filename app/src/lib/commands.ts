@@ -20,7 +20,7 @@ export interface Command {
   group: "Insert" | "View" | "Word" | "Edit";
   keywords?: string;
   shortcut?: string;
-  /** Only with developer tools on (Settings → Advanced). */
+  /** Only with developer tools on (Settings → Self-tests and diagnostics). */
   developer?: boolean;
   run: () => void | Promise<void>;
 }
@@ -170,7 +170,7 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
     {
       id: "word.thesisTest",
       developer: true,
-      title: "Thesis-size test (a generated 300-page document through every operation, timed; 20–40 min)…",
+      title: "Large-document test (a generated 300-page document through every operation, timed; 20–40 min)…",
       group: "Word",
       keywords: "benchmark thesis large document speed performance test cancel big",
       run: () => import("./thesisTest").then((m) => m.thesisTestCommand()),
@@ -304,7 +304,7 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
     },
     {
       id: "word.checkChapters",
-      title: "Check all chapter files: notation, definitions and linked equations across the files of a thesis, book or report…",
+      title: "Check all chapter files: notation, definitions and linked equations across the files of a multi-file document…",
       group: "Word",
       keywords: "thesis chapters files book consistency nomenclature closed documents project",
       run: () => import("../components/ThesisDialog").then((m) => m.openThesis()),
@@ -351,6 +351,6 @@ export function buildCommands(actions: { insertIntoWord: () => void; copyLatex: 
     { id: "view.theme.system", title: "Theme: follow system", group: "View", run: () => app.setPrefs({ theme: "system" }) },
     { id: "edit.display", title: "Toggle display / inline equation", group: "Edit", run: () => app.setDisplay(!useApp.getState().display) },
   ];
-  // Developer tools (Settings → Advanced): the tests are hidden unless switched on.
+  // Developer tools (Settings → Self-tests and diagnostics): the tests are hidden unless switched on.
   return all.filter((c) => !c.developer || app.developerTools);
 }

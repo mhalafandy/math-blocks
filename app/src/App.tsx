@@ -362,7 +362,7 @@ export function App() {
       <footer className="statusbar">
         <span className={eq.errors > 0 ? "bad" : "good"}>● {status}</span>
         <span>{s.numbered ? "Numbered" : s.display ? "Display" : "Inline"}</span>
-        <button className="status-btn" title="How equations go into Word (Settings → Word style)" onClick={() => openSettings("word")}>
+        <button className="status-btn" title="How equations go into Word (Settings → Equation look)" onClick={() => openSettings("word")}>
           {s.look === "classic" ? `Classic ${s.equationSizePt} pt` : `Native · ${profile.mathFont}`}
         </button>
         <button className="status-btn" title="Keyboard shortcuts (F1)" onClick={() => openShortcuts()}>
@@ -373,7 +373,7 @@ export function App() {
         {s.update.status === "downloading" && <span className="muted">Downloading update {s.update.newVersion}…</span>}
         {s.update.addin === "pendingWordClosed" && <span className="warn">Word add-in update waiting: close Word to finish</span>}
         {s.update.currentVersion && (
-          <button className={s.updateChannel === "test" ? "status-btn warn" : "status-btn muted"} title={s.updateChannel === "test" ? "Test channel: every new build installs, before it has passed the self-test on your PC (Settings → Updates)" : "Stable channel (Settings → Updates)"} onClick={() => openSettings("updates")}>
+          <button className={s.updateChannel === "test" ? "status-btn warn" : "status-btn muted"} title={s.updateChannel === "test" ? "Test channel: every new build installs, before it has passed the self-test on your PC (Settings → Backups and updates)" : "Stable channel (Settings → Backups and updates)"} onClick={() => openSettings("updates")}>
             v{s.update.currentVersion}{s.updateChannel === "test" ? " · test build" : ""}
           </button>
         )}

@@ -3,7 +3,7 @@ import { isDesktop } from "./connector";
 import { useApp } from "./store";
 
 /**
- * Report a problem (Ctrl+K, Settings → Word connection): one zip with what is needed to understand a failure — the
+ * Report a problem (Ctrl+K, Settings → Add-in connection): one zip with what is needed to understand a failure — the
  * versions, the app's recent messages, the Word add-in's log, the settings that change behaviour — and no document
  * content unless asked: document names and LaTeX in the logs are masked; the document itself only when ticked.
  */

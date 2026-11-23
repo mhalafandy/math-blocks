@@ -614,6 +614,8 @@ export function MathEditor() {
     });
     mf.addEventListener("input", () => {
       updateBlockSession(mf, true);
+      // Only schedules (next frame, and once laid out): nothing measured before the key is painted.
+      revealCaret(mf);
       void import("./QuickStyleBar").then(({ useQuickStyle }) => useQuickStyle.getState().set({ at: null }));
       onInputDone(mf);
       // A script typed right after a stretchy accent (\overrightharpoon, \overrightarrow, \widehat…, from the

@@ -55,7 +55,7 @@ export function BottomPanel({ eq }: { eq: CompiledEquation }) {
           {tab === "style" && (
             <div className="scroll pad">
               <p className="hint">The Word style settings are in Settings now.</p>
-              <button onClick={() => void import("../lib/settingsStore").then((m) => m.openSettings("word"))}>Open Settings → Word style</button>
+              <button onClick={() => void import("../lib/settingsStore").then((m) => m.openSettings("word"))}>Open Settings → Equation look</button>
             </div>
           )}
           {tab === "omml" && <pre className="code scroll pad">{eq.omml}</pre>}

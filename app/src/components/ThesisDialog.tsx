@@ -69,7 +69,7 @@ export function ThesisDialog() {
   return (
     <Modal title="Check all chapter files" onClose={close} width={860}>
       <div className="form thesis">
-        <p className="hint">Add the chapter files of your thesis (one Word file per chapter). They are read as last saved, whether open in Word or not; nothing is changed.</p>
+        <p className="hint">Add the chapter files of the document (one Word file per chapter). They are read as last saved, whether open in Word or not; nothing is changed.</p>
         <ul className="thesis-chapters">
           {chapters.map((c, i) => {
             const r = report?.reads.find((x) => x.chapter.path === c.path);
@@ -169,7 +169,7 @@ export function ThesisDialog() {
                 disabled={!report.symbols.length}
                 onClick={() =>
                   void import("./NomenclatureDialog").then((m) =>
-                    m.openNomenclature({ name: "Thesis", symbols: report.symbols, where: (e) => placeOf(e as ChapterEquation) }),
+                    m.openNomenclature({ name: "All chapters", symbols: report.symbols, where: (e) => placeOf(e as ChapterEquation) }),
                   )
                 }
               >
