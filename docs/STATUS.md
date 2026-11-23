@@ -5,7 +5,7 @@ Updated at the end of every round. Public repository: generic content only. Earl
 ## Latest round — 0.1.176
 
 **Stable: 0.1.175** (promoted 2026-11-23 after the core self-test, 313 checks, 0 failed, `RESULT: PASS`, and the 4 manual checks). The stable manifest downloads (rollback 0.1.168).
-**Test channel:** 0.1.176, CI: pending. Editor-only fix; stable stays 0.1.175.
+**Test channel:** 0.1.176, CI passed. Editor-only fix; stable stays 0.1.175.
 
 **Editor (visual math field only; nothing written to Word changes):**
 - A subscript typed right after an arrow or harpoon (palette, kinds) sat under the letter like a limit, and the space before "=" went with it: the accent is now grouped as soon as a script follows it, as the editor's loaded form already was. Reproduced and checked in the real editor (headless): the index now sits right of the letter.
