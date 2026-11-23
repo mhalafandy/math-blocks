@@ -68,7 +68,8 @@ export function ungroupScriptedAccents(latex: string): string {
  * root: MathLive draws a stretchy harpoon at least 0.888 em wide and pads the letter with two null delimiters, so
  * the accent box is wider than the letter and the index starts after the harpoon's end. These rules size the
  * harpoon to the letter and bring it a little closer above it, so the index starts right after the letter (as in
- * Word). Display only: the LaTeX is unchanged. The harpoon is recognised by its SVG path (MathLive's
+ * Word). MathLive draws the harpoon 400 em wide and shows its left part: narrowed, that was a plain stroke with no
+ * barb (a "tick"); the drawing is anchored at the right instead, so the barb end shows. Display only: the LaTeX is unchanged. The harpoon is recognised by its SVG path (MathLive's
  * rightharpoon); tools/accent-index-check.ts measures the result in headless MathLive.
  */
 const HARPOON = '.ML__vlist:has(> .ML__center path[d^="M0 241v40h399993"])';
@@ -76,4 +77,6 @@ export const EDITOR_ACCENT_CSS = `
 ${HARPOON} > .ML__center > span > .ML__nulldelimiter { width: 0 !important; }
 ${HARPOON} > .ML__center > span:has(> span[style*="min-width"]) { width: 100%; }
 ${HARPOON} > .ML__center > span > span[style*="min-width"] { min-width: 0 !important; width: 100%; transform: translateY(0.1em); }
+${HARPOON} .slice-1-of-1 { position: relative; overflow: hidden; display: block; width: 100%; }
+${HARPOON} .slice-1-of-1 > svg { position: absolute; right: 0; top: 0; }
 `;

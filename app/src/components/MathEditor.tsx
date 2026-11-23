@@ -1,4 +1,4 @@
-import { EDITOR_ACCENT_CSS } from "../lib/editorAccents";
+import { EDITOR_ACCENT_CSS, groupScriptedAccents } from "../lib/editorAccents";
 import { isAllBold, KIND_BY_ID, KINDS, setBold, type BoldScope } from "@mathblocks/math-core";
 import { explainSymbol, kindDisplayName } from "@mathblocks/math-core";
 import { symbolContextAt } from "../lib/kindHover";
@@ -591,6 +591,21 @@ export function MathEditor() {
       revealCaret(mf);
       void import("./QuickStyleBar").then(({ useQuickStyle }) => useQuickStyle.getState().set({ at: null }));
       onInputDone(mf);
+      // A script typed right after a stretchy accent (\overrightharpoon, \overrightarrow, \widehat…, from the
+      // palette or a kind) would sit under the letter like a limit: the accent is grouped at once, as the loaded
+      // form is (lib/editorAccents.ts). Display only: the LaTeX taken from the field is the same.
+      {
+        const grouped = groupScriptedAccents(mf.value);
+        if (grouped !== mf.value) {
+          const back = mf.lastOffset - mf.position;
+          mf.setValue(grouped, { silenceNotifications: true });
+          try {
+            mf.position = Math.max(0, mf.lastOffset - back);
+          } catch {
+            // Caret placement is cosmetic.
+          }
+        }
+      }
       // A kind macro that arrived raw (pasted, dropped, inserted as LaTeX: \pvec{r}_2, {\pvec{r}_2})
       // is shown as its kind at once, never as an unknown red command.
       if (kindMacroRe().test(mf.value)) {
