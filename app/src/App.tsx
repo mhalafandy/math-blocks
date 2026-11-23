@@ -16,22 +16,22 @@ import { acceptSuggestion, fitZoom } from "./components/MathEditor";
 import { openSettings, type SettingsPage } from "./lib/settingsStore";
 import { dockPreview, initPreviewSync, previewShown, togglePreview, usePreviewPane } from "./lib/previewWindow";
 import { NotationSettings } from "./components/NotationSettings";
-import { QuickStyleBar } from "./components/QuickStyleBar";
+import { QuickStyleBar as QuickStyleBarRaw } from "./components/QuickStyleBar";
 import { WidthBar } from "./components/WidthBar";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { fitColumns, useWindowWidth, useWorkspaceFit } from "./lib/workspaceFit";
 import { BottomPanel } from "./components/BottomPanel";
 import { CommandPalette } from "./components/CommandPalette";
 import { focusLatexEditor } from "./components/LatexEditor";
-import { focusVisualEditor, MathEditor, toggleBold } from "./components/MathEditor";
+import { focusVisualEditor, MathEditor as MathEditorRaw, toggleBold } from "./components/MathEditor";
 import { newEquation, setWordUpdater } from "./lib/actions";
-import { handleEditorKey } from "./lib/editorKeys";
+import { handleEditorKey, handleModeKey } from "./lib/editorKeys";
 import { openShortcuts, ShortcutsDialog } from "./components/ShortcutsDialog";
 import { onPasteImage, RecognitionDialog } from "./components/RecognitionDialog";
 import { SnippetsDialog } from "./components/SnippetsDialog";
-import { Sidebar } from "./components/Sidebar";
+import { Sidebar as SidebarRaw } from "./components/Sidebar";
 import { HSplitter, Splitter } from "./components/Splitter";
-import { PaletteTop, SymbolPanel } from "./components/SymbolPalette";
+import { PaletteTop as PaletteTopRaw, SymbolPanel as SymbolPanelRaw } from "./components/SymbolPalette";
 import { buildCommands } from "./lib/commands";
 import { connector } from "./lib/connector";
 import { useCompiledEquation, useProfile } from "./lib/equation";
@@ -63,6 +63,16 @@ import { zoomStep } from "./lib/zoom";
 /** Adds or removes the number of an equation that is in Word (keeps its tag). */
 
 
+
+/**
+ * The panels without props render on their own store slices only: App reads the whole store, so without memo
+ * every keystroke re-rendered the symbol palette (hundreds of buttons) and the sidebar before the key showed.
+ */
+const Sidebar = memo(SidebarRaw);
+const PaletteTop = memo(PaletteTopRaw);
+const SymbolPanel = memo(SymbolPanelRaw);
+const MathEditor = memo(MathEditorRaw);
+const QuickStyleBar = memo(QuickStyleBarRaw);
 
 export function App() {
   const s = useApp();
@@ -120,7 +130,7 @@ export function App() {
         return openShortcuts();
       }
       // MathType-style shortcuts while the equation editor has the focus.
-      if (handleEditorKey(e)) return;
+      if (handleModeKey(e) || handleEditorKey(e)) return;
       const st = useApp.getState();
       const mod = e.ctrlKey || e.metaKey;
       if (!mod) return;

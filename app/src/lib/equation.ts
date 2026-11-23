@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useDeferredValue, useMemo } from "react";
 import { countNodes } from "@mathblocks/math-core";
 import { parseLatex, type Diagnostic } from "@mathblocks/math-latex";
 import { toOmml, TUNED_PROFILE, WORD_DEFAULT_PROFILE, type StyleProfile } from "@mathblocks/math-omml";
@@ -31,23 +31,23 @@ export interface CompiledEquation {
   omml: string;
 }
 
-/** Parses the current LaTeX and produces OMML; recomputed only when inputs change. */
+/**
+ * Parses the current LaTeX and produces OMML; recomputed only when inputs change. The errors follow every
+ * keystroke (they gate inserting); the tree and the OMML follow a deferred copy, so React draws the key first.
+ */
 export function useCompiledEquation(): CompiledEquation {
   const latex = useApp((s) => s.latex);
+  const later = useDeferredValue(latex);
   const display = useApp((s) => s.display);
   const profile = useProfile();
   const docStyle = useApp((s) => s.docStyle);
   const notation = useApp((s) => s.notationProfile);
-  return useMemo(() => {
-    const { root, diagnostics } = parseLatex(latex);
-    return {
-      root,
-      diagnostics,
-      errors: diagnostics.filter((d) => d.severity === "error").length,
-      nodeCount: countNodes(root) - 1,
-      omml: toOmml(root, { display, profile, standalone: true, mathStyle: activeStyle() }),
-    };
-  }, [latex, display, profile, docStyle, notation]);
+  const now = useMemo(() => parseLatex(latex).diagnostics, [latex]);
+  const built = useMemo(() => {
+    const { root } = parseLatex(later);
+    return { root, nodeCount: countNodes(root) - 1, omml: toOmml(root, { display, profile, standalone: true, mathStyle: activeStyle() }) };
+  }, [later, display, profile, docStyle, notation]);
+  return useMemo(() => ({ ...built, diagnostics: now, errors: now.filter((d) => d.severity === "error").length }), [built, now]);
 }
 
 /** Native Word equation (OMML) as a Flat OPC package for Range.InsertXML. */

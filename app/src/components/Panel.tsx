@@ -21,7 +21,9 @@ import { buildCommands, type Command } from "../lib/commands";
 import { useCompiledEquation } from "../lib/equation";
 import type { PanelOpen, PanelResult } from "../lib/panel";
 import { useApp } from "../lib/store";
-import { handleEditorKey } from "../lib/editorKeys";
+import { parseLatex } from "@mathblocks/math-latex";
+import { flushVisualLatex } from "../lib/visualLatex";
+import { handleEditorKey, handleModeKey } from "../lib/editorKeys";
 
 /**
  * The floating editor window (opened by right-clicking an equation in Word). Commands first
@@ -65,7 +67,8 @@ export function PanelApp() {
     return (await import("@tauri-apps/api/window")).getCurrentWindow().hide();
   };
   const apply = async () => {
-    if (eq.errors > 0) return useApp.getState().notify("Fix the LaTeX errors first.", "error");
+    flushVisualLatex();
+    if (parseLatex(useApp.getState().latex).diagnostics.some((d) => d.severity === "error")) return useApp.getState().notify("Fix the LaTeX errors first.", "error");
     const st = useApp.getState();
     const result: PanelResult = { latex: st.latex, display: st.display, numbered: st.numbered, notationProfile: st.notationProfile, customKinds: st.customKinds, accentRules: st.accentRules };
     const { emitTo } = await import("@tauri-apps/api/event");
@@ -105,7 +108,7 @@ export function PanelApp() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.closest?.(".panel-command")) return;
-      if (handleEditorKey(e)) return;
+      if (handleModeKey(e) || handleEditorKey(e)) return;
       if ((e.ctrlKey || e.metaKey) && e.key === ",") {
         e.preventDefault();
         void import("../lib/settingsStore").then((m) => m.openSettings());

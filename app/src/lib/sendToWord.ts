@@ -5,6 +5,8 @@ import { isDirty, useLibrary } from "./library/useLibrary";
 import { insertLinked } from "./linking";
 import { numberInWord, unnumberInWord } from "./numbering";
 import { useApp } from "./store";
+import { flushVisualLatex } from "./visualLatex";
+import { parseLatex } from "@mathblocks/math-latex";
 
 /**
  * "Insert into Word" / "Update in Word" (Ctrl+Enter, and Apply in the floating editor). With an
@@ -26,6 +28,9 @@ export async function setNumberOf(tag: string, latex: string, numbered: boolean,
 
 export async function sendToWord(o: { errors: number; profile: StyleProfile }) {
   const profile = o.profile;
+  // The last keystroke's LaTeX first (lib/visualLatex.ts); the errors are counted on it.
+  flushVisualLatex();
+  o = { ...o, errors: parseLatex(useApp.getState().latex).diagnostics.filter((d) => d.severity === "error").length };
     const { connector: c, latex, display, notify, editing, setEditing } = useApp.getState();
     if (!c.available) return notify("Sending to Word works in the desktop app.", "error");
     if (!c.connected) return notify("Word is not connected. Start Word with the MathBlocks add-in installed.", "error");

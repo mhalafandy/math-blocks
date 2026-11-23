@@ -8,7 +8,7 @@ import { sessionMove, type SessionField } from "./blocks/session";
 import { KIND_BY_MACRO } from "@mathblocks/math-core";
 import { applySnippet, type SnippetField } from "./snippetApply";
 import { exitKind, kindAt, type KindField } from "./kindExit";
-import { deleteStep, moveSlot, type SlotField } from "./editorSlots";
+import { deleteStep, moveSlot, redrawField, type SlotField } from "./editorSlots";
 import { SHORTCUT_TABLE } from "./editorShortcuts";
 import { addDerivationLine } from "./derivation";
 import { useApp } from "./store";
@@ -121,6 +121,25 @@ function openCommands() {
 }
 
 /** Handles an editor shortcut; true when the key was used. */
+/**
+ * Ctrl+Alt+U / I / N: the equation becomes display / inline / numbered (as the bar's buttons). By key position
+ * (e.code), so they work on any keyboard layout; Ctrl+Alt+J stays Word's "new inline equation".
+ */
+export const MODE_KEYS = { display: "Ctrl+Alt+U", inline: "Ctrl+Alt+I", numbered: "Ctrl+Alt+N" } as const;
+export function handleModeKey(e: KeyboardEvent): boolean {
+  if (!e.ctrlKey || !e.altKey || e.shiftKey || e.metaKey) return false;
+  const app = useApp.getState();
+  if (e.code === "KeyU") {
+    app.setDisplay(true);
+    app.setNumbered(false);
+  } else if (e.code === "KeyI") app.setDisplay(false);
+  else if (e.code === "KeyN") app.setNumbered(true);
+  else return false;
+  e.preventDefault();
+  e.stopPropagation();
+  return true;
+}
+
 export function handleEditorKey(e: KeyboardEvent): boolean {
   const mf = focusedMathField();
   if (!mf) {
@@ -222,6 +241,7 @@ export function handleEditorKey(e: KeyboardEvent): boolean {
   if ((e.key === "Backspace" || e.key === "Delete") && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && mode === "math") {
     const done = deleteStep(mf as unknown as SlotField, e.key === "Backspace" ? -1 : 1);
     if (done) {
+      redrawField(mf);
       e.preventDefault();
       e.stopPropagation();
       return true;
@@ -233,6 +253,7 @@ export function handleEditorKey(e: KeyboardEvent): boolean {
   if (e.key === " " && mode === "math" && !e.ctrlKey && !e.metaKey && !e.altKey) {
     const moved = moveSlot(mf as unknown as SlotField, e.shiftKey ? -1 : 1);
     if (moved) {
+      redrawField(mf);
       lastSpace = 0;
       e.preventDefault();
       e.stopPropagation();
@@ -243,6 +264,7 @@ export function handleEditorKey(e: KeyboardEvent): boolean {
     if (bs) {
       const r = sessionMove(mf as unknown as SessionField, bs.id, bs.order, e.shiftKey ? -1 : 1);
       if (r) {
+        redrawField(mf);
         lastSpace = 0;
         e.preventDefault();
         e.stopPropagation();

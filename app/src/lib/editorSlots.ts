@@ -103,6 +103,18 @@ export function moveSlot(field: SlotField, dir: 1 | -1): SlotAction {
   return "out";
 }
 
+/**
+ * Draws a change made on the editor's model directly (selection, caret, removed atoms): the editor only draws
+ * after its own commands, so such a change stayed off screen until the next one (dirty, then scrollIntoView
+ * renders, as the editor's commands do).
+ */
+export function redrawField(field: unknown) {
+  const mf = (field as { _mathfield?: { dirty?: boolean; scrollIntoView?: () => void } })._mathfield;
+  if (!mf?.scrollIntoView) return;
+  mf.dirty = true;
+  mf.scrollIntoView();
+}
+
 /** Backspace (dir −1) or Delete (dir 1) with the new rule. Null: an ordinary one-character deletion (left to the editor). */
 export function deleteStep(field: SlotField, dir: -1 | 1): SlotAction {
   type Branch = string | [number, number];
@@ -130,6 +142,13 @@ export function deleteStep(field: SlotField, dir: -1 | 1): SlotAction {
   const mathfield = (field as unknown as { _mathfield?: { model?: Model; snapshot?: (op: string) => void } })._mathfield;
   const model = mathfield?.model;
   if (!model) return null;
+  // Self-contained (tools/editor-keys-check.ts runs this function on its own): the same as redrawField.
+  const redraw = () => {
+    const m = mathfield as { dirty?: boolean; scrollIntoView?: () => void } | undefined;
+    if (!m?.scrollIntoView) return;
+    m.dirty = true;
+    m.scrollIntoView();
+  };
   if (!field.selectionIsCollapsed) {
     // A selection inside one slot (a structure selected by the first Backspace, or the user's own): exactly
     // those atoms go and the slot stays, empty. (The editor's own delete widens a selection that fills a
@@ -145,6 +164,7 @@ export function deleteStep(field: SlotField, dir: -1 | 1): SlotAction {
       if (left) model.position = model.offsetOf(left);
     });
     mathfield?.snapshot?.("delete");
+    redraw();
     return "deleted";
   }
   const isKind = (a: Atom) => a.command === "\\class" && String(a.args?.[0] ?? "").startsWith("nk-");
@@ -154,6 +174,7 @@ export function deleteStep(field: SlotField, dir: -1 | 1): SlotAction {
   const select = (a: Atom) => {
     const start = a.leftSibling ? model.offsetOf(a.leftSibling) : model.offsetOf(a) - 1;
     model.setSelection(start, model.offsetOf(a));
+    redraw();
     return "selected" as const;
   };
   /** The innermost kind around an atom (a kind is deleted whole, never letter by letter from inside its frame). */
@@ -180,6 +201,7 @@ export function deleteStep(field: SlotField, dir: -1 | 1): SlotAction {
         const b = slots[i - 1]!;
         const atoms = typeof b === "string" ? s.branch(b) ?? [] : s.rows?.[b[0]]?.[b[1]] ?? [];
         model.position = model.offsetOf(atoms[atoms.length - 1]!);
+        redraw();
         return "moved";
       }
       return select(s);
@@ -201,6 +223,7 @@ export function deleteStep(field: SlotField, dir: -1 | 1): SlotAction {
       const b = here.branches.includes("superscript") ? "superscript" : "subscript";
       const atoms = here.branch(b) ?? [];
       model.position = model.offsetOf(atoms[atoms.length - 1]!);
+      redraw();
       return "moved";
     }
     return null;

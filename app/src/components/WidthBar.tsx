@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import { measureWidth, refreshTextWidth, type WidthMeasure } from "../lib/lineWidth";
 import { suggestBreak, type BreakSuggestion } from "../lib/pageWidth";
 import { useApp } from "../lib/store";
@@ -10,7 +10,7 @@ import { MathPreview } from "./MathPreview";
  */
 /** The current equation's width against its line (null for inline or empty equations). */
 export function useWidthMeasure(): WidthMeasure | null {
-  const latex = useApp((s) => s.latex);
+  const latex = useDeferredValue(useApp((s) => s.latex));
   const display = useApp((s) => s.display);
   const numbered = useApp((s) => s.numbered);
   const sizePt = useApp((s) => s.equationSizePt);
@@ -40,7 +40,7 @@ export function useWidthMeasure(): WidthMeasure | null {
 }
 
 export function WidthBar() {
-  const latex = useApp((s) => s.latex);
+  const latex = useDeferredValue(useApp((s) => s.latex));
   const display = useApp((s) => s.display);
   const numbered = useApp((s) => s.numbered);
   const m = useWidthMeasure();

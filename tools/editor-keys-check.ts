@@ -285,6 +285,33 @@ for (const eq of EQUATIONS) {
   }
 }
 
+// ------------------------------------------------------------------ the deleted selection is drawn at once
+// Backspace on a selection removes it on the model directly (deleteStep); the field must draw the result in
+// the next frame, not keep showing the old equation with the selection until another key.
+for (const [a, b] of [[2, 5], [0, 3], [4, 11]] as const) {
+  await page.evaluate(([a, b]) => {
+    const mf = document.getElementById("mf") as unknown as MF;
+    mf.value = "a+b+c+d+e+f";
+    mf.focus();
+    mf.selection = { ranges: [[a, b]] };
+  }, [a, b]);
+  await page.waitForTimeout(100);
+  await page.keyboard.press("Backspace");
+  const r = await page.evaluate(
+    () =>
+      new Promise<{ model: string; shown: string; selected: number }>((res) =>
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            const mf = document.getElementById("mf") as unknown as MF & { shadowRoot: ShadowRoot };
+            const shown = ((mf.shadowRoot.querySelector(".ML__content, [part=content]") as HTMLElement | null)?.innerText ?? "").replace(/\s+/g, "");
+            res({ model: mf.value, shown, selected: mf.shadowRoot.querySelectorAll(".ML__selected").length });
+          }),
+        ),
+      ),
+  );
+  check(r.shown === r.model.replace(/\s+/g, "") && r.selected === 0, `Backspace on the selection [${a}, ${b}]: drawn “${r.shown}” (${r.selected} selected) but the equation is “${r.model}”`);
+}
+
 await browser.close();
 console.log(`Space: ${SPACE_CASES.length + 4} cases; Backspace: ${positions} caret positions in ${EQUATIONS.length} equations.`);
 console.log(`The old whole-kind rule erased most of the equation at ${oldErasedAll} position(s)${oldExamples.length ? `, e.g. ${oldExamples.join("; ")}` : ""}.`);

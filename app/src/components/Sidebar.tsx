@@ -9,11 +9,18 @@ import { insertLinked } from "../lib/linking";
 import { useApp } from "../lib/store";
 import { openMenu, type MenuItem } from "./ContextMenu";
 import { askConfirm, askText } from "./Dialogs";
-import { MathPreview } from "./MathPreview";
-import { BlocksPanel } from "./BlocksPanel";
+import { MathTile } from "./MathTile";
+import { LARGE_CELL } from "../lib/tiles";
+import { blockMoreMenu, BlocksPanel, newBlockGroup, saveSelectionAsBlock } from "./BlocksPanel";
+import { FolderIcon } from "./FolderIcon";
+import { DRAG_EQ, DRAG_FOLDER } from "../lib/dragTypes";
+import { insertEquationAtCaret } from "./MathEditor";
 
-const DRAG_EQ = "application/x-mathblocks-equation";
-const DRAG_FOLDER = "application/x-mathblocks-folder";
+/** A click on a library equation or an example: into an empty editor it opens (Save then updates it); otherwise it goes in at the cursor, replacing only the selection. */
+function useOrOpen(latex: string, open: () => void) {
+  if (!useApp.getState().latex.trim() || !insertEquationAtCaret(latex)) open();
+}
+
 
 /** Left panel: the personal equation library. */
 export function Sidebar() {
@@ -48,24 +55,37 @@ export function Sidebar() {
           </button>
         </div>
         <div className="spacer" />
-        {tab === "library" && (
+        {/* The same actions in both tabs: add (the current equation or selection), a new folder or group. */}
+        {tab === "library" ? (
           <>
-        <button className="icon-btn" title="Save the current equation to the library (Ctrl+S)" onClick={() => setDialog({ mode: "new" })}>
-          ＋
-        </button>
-        <button
-          className="icon-btn"
-          title="New folder"
-          onClick={async () => {
-            const name = await askText("New folder", "", "Folder name", "Create");
-            if (name) await createFolder(name, null);
-          }}
-        >
-          <FolderIcon />
-        </button>
+            <button className="icon-btn" title="Save the current equation to the library (Ctrl+S)" onClick={() => setDialog({ mode: "new" })}>
+              ＋
+            </button>
+            <button
+              className="icon-btn"
+              title="New folder"
+              onClick={async () => {
+                const name = await askText("New folder", "", "Folder name", "Create");
+                if (name) await createFolder(name, null);
+              }}
+            >
+              <FolderIcon />
+            </button>
+          </>
+        ) : (
+          <>
+            <button className="icon-btn" title="Save the selection (or the whole equation) as a block" onClick={() => void saveSelectionAsBlock()}>
+              ＋
+            </button>
+            <button className="icon-btn" title="New group" onClick={() => void newBlockGroup()}>
+              <FolderIcon />
+            </button>
+            <button className="icon-btn" title="More: new block, export, import" aria-label="More block actions" onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); openMenu({ clientX: r.left, clientY: r.bottom + 2, preventDefault: () => undefined }, blockMoreMenu()); }}>
+              ⋯
+            </button>
           </>
         )}
-        <button className="icon-btn" title="Hide library (Ctrl+B)" onClick={() => setPrefs({ leftOpen: false })}>
+        <button className="icon-btn" title="Hide the panel (Ctrl+B)" aria-label="Hide the panel" onClick={() => setPrefs({ leftOpen: false })}>
           ⇤
         </button>
       </div>
@@ -288,7 +308,8 @@ function EquationRow({ q, showFolder = false }: { q: Equation; showFolder?: bool
   const dirty = active && isDirty(lib.open, latex, display);
   const folder = showFolder && q.folderId ? lib.folders.find((f) => f.id === q.folderId)?.name : undefined;
   const menu: MenuItem[] = [
-    { label: "Open in editor", onSelect: () => lib.openEquation(q) },
+    { label: "Insert at the cursor", onSelect: () => useOrOpen(q.latex, () => lib.openEquation(q)) },
+    { label: "Open in editor (replaces the equation)", onSelect: () => lib.openEquation(q) },
     {
       label: "Insert linked copy into Word",
       disabled: !useApp.getState().connector.connected,
@@ -336,18 +357,16 @@ function EquationRow({ q, showFolder = false }: { q: Equation; showFolder?: bool
     <li>
       <button
         className={active ? "eq-row active" : "eq-row"}
-        title={`${q.name}${q.tags.length ? `\n#${q.tags.join(" #")}` : ""}${q.description ? `\n${q.description}` : ""}\nClick to open · drag to a folder · right-click for more`}
-        onClick={() => lib.openEquation(q)}
+        title={`${q.name}${q.tags.length ? `\n#${q.tags.join(" #")}` : ""}${q.description ? `\n${q.description}` : ""}\nClick: insert at the cursor (opens it when the editor is empty) · drag to a folder · right-click to open it in place`}
+        onClick={() => useOrOpen(q.latex, () => lib.openEquation(q))}
         onContextMenu={(e) => openMenu(e, menu)}
         draggable
         onDragStart={(e) => {
           e.dataTransfer.setData(DRAG_EQ, q.id);
-          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.effectAllowed = "copyMove";
         }}
       >
-        <span className="eq-thumb">
-          <MathPreview latex={q.latex} />
-        </span>
+        <MathTile latex={q.latex} cell={LARGE_CELL} />
         <span className="eq-meta">
           <span className="eq-name">
             {q.favorite && <span className="star" aria-label="favourite">★</span>}
@@ -389,12 +408,14 @@ function Examples() {
                 <button
                   className="item"
                   title={eq.latex}
-                  onClick={() => {
-                    closeEquation();
-                    useApp.getState().setEditing(null);
-                    setLatex(eq.latex, "external");
-                    setDisplay(eq.display);
-                  }}
+                  onClick={() =>
+                    useOrOpen(eq.latex, () => {
+                      closeEquation();
+                      useApp.getState().setEditing(null);
+                      setLatex(eq.latex, "external");
+                      setDisplay(eq.display);
+                    })
+                  }
                 >
                   {eq.title}
                 </button>
@@ -407,10 +428,3 @@ function Examples() {
   );
 }
 
-function FolderIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" className="folder-icon">
-      <path d="M1.5 4.5a1 1 0 0 1 1-1h3.6l1.4 1.5h6a1 1 0 0 1 1 1v6.5a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" />
-    </svg>
-  );
-}

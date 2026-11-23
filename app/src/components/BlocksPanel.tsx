@@ -8,9 +8,10 @@ import { openMenu, type MenuItem } from "./ContextMenu";
 import { askConfirm, askText } from "./Dialogs";
 import { MathTile } from "./MathTile";
 import { insertBlock } from "./MathEditor";
+import { FolderIcon } from "./FolderIcon";
+import { DRAG_BLOCK } from "../lib/dragTypes";
 import { openEditBlock, openNewBlock } from "./SaveBlockDialog";
 
-const DRAG_BLOCK = "application/x-mathblocks-block";
 
 /** Blocks matching a search, best first: name start, name, trigger, tags and description; then the most used. */
 export function searchBlocks(blocks: Block[], query: string): Block[] {
@@ -73,15 +74,21 @@ export function BlockTile({ b, manage, onInsert }: { b: Block; manage: boolean; 
       type="button"
       className="block-tile"
       title={tip}
-      onMouseDown={(e) => e.preventDefault()}
       onClick={() => (onInsert ?? insertBlock)(b)}
       onContextMenu={(e) => openMenu(e, menu)}
-      draggable={manage && b.scope === "global"}
+      // Drag into the editor (inserted where it is dropped) or onto a group (moved there). The editor keeps its
+      // selection while the tile is clicked (insertBlock focuses it again), so the tile's mousedown is not
+      // cancelled: cancelling it stopped every drag.
+      draggable
       onDragStart={(e) => {
         e.dataTransfer.setData(DRAG_BLOCK, b.id);
-        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.effectAllowed = manage && b.scope === "global" ? "copyMove" : "copy";
       }}
-      onDragOver={(e) => manage && e.dataTransfer.types.includes(DRAG_BLOCK) && e.preventDefault()}
+      onDragOver={(e) => {
+        if (!manage || !e.dataTransfer.types.includes(DRAG_BLOCK)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+      }}
       onDrop={(e) => manage && dropOn(e, b.groupId, b.id)}
     >
       <MathTile latex={latex} cell={LARGE_CELL} />
@@ -101,7 +108,8 @@ async function run(f: () => Promise<unknown>) {
 /** A dragged block dropped on a tile (placed before it) or on a group heading (placed last). */
 function dropOn(e: DragEvent, groupId: string | null, beforeId?: string) {
   const id = e.dataTransfer.getData(DRAG_BLOCK);
-  if (!id) return;
+  // Only the global blocks move between groups (a document's blocks live in the document).
+  if (!id || !useBlocks.getState().blocks.some((b) => b.id === id)) return;
   e.preventDefault();
   e.stopPropagation();
   const list = useBlocks
@@ -160,6 +168,7 @@ function Section({ id, title, count, children, groupId, manage, group }: { id: s
         onDragOver={(e) => {
           if (droppable && e.dataTransfer.types.includes(DRAG_BLOCK)) {
             e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
             setOver(true);
           }
         }}
@@ -170,6 +179,7 @@ function Section({ id, title, count, children, groupId, manage, group }: { id: s
         }}
       >
         <span className={open ? "chev open" : "chev"}>›</span>
+        <FolderIcon />
         {title}
         <span className="count">{count}</span>
       </button>
@@ -235,35 +245,22 @@ export function BlocksPanel({ manage = true, onInsert }: { manage?: boolean; onI
           </>
         )}
       </div>
-      {manage && (
-        <div className="panel-foot block-foot">
-          <button className="ghost" title="Save the selection (or the whole equation) as a block" onClick={() => void saveSelectionAsBlock()}>
-            ＋ Save as block
-          </button>
-          <button className="ghost" title="A new block from scratch" onClick={() => openNewBlock()}>
-            New
-          </button>
-          <button
-            className="ghost"
-            title="New group"
-            onClick={async () => {
-              const name = await askText("New group", "", "Group name", "Create");
-              if (name?.trim()) await run(() => saveBlockGroup({ name: name.trim(), parentId: null, position: groups.length }));
-            }}
-          >
-            Group
-          </button>
-          <button className="ghost" title="Export blocks to a file to share or back up" onClick={() => void import("../lib/blocks/blockFiles").then((m) => m.exportBlocksFile())}>
-            Export…
-          </button>
-          <button className="ghost" title="Import blocks from a file" onClick={() => void import("../lib/blocks/blockFiles").then((m) => m.importBlocksFile())}>
-            Import…
-          </button>
-        </div>
-      )}
     </>
   );
 }
+
+/** A new block group (the folder button in the Blocks header). */
+export async function newBlockGroup() {
+  const name = await askText("New group", "", "Group name", "Create");
+  if (name?.trim()) await run(() => saveBlockGroup({ name: name.trim(), parentId: null, position: useBlocks.getState().groups.length }));
+}
+
+/** The Blocks header's ⋯ menu: the actions that are not a button of their own. */
+export const blockMoreMenu = (): MenuItem[] => [
+  { label: "New block from scratch…", onSelect: () => openNewBlock() },
+  { label: "Export blocks to a file…", onSelect: () => void import("../lib/blocks/blockFiles").then((m) => m.exportBlocksFile()) },
+  { label: "Import blocks from a file…", onSelect: () => void import("../lib/blocks/blockFiles").then((m) => m.importBlocksFile()) },
+];
 
 /** Save as block from the editor: its selection, or the whole equation when nothing is selected. */
 export async function saveSelectionAsBlock() {

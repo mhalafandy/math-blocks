@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { serializeLatex } from "@mathblocks/math-latex";
-import { documentForms, suggestFor, type DocForm } from "../lib/docSuggest";
+import { formsOf, suggestFor, type DocForm } from "../lib/docSuggest";
 import { useApp } from "../lib/store";
 import { STRUCTURE_CELL, SYMBOL_CELL } from "../lib/tiles";
 import { MathTile } from "./MathTile";
@@ -24,10 +24,40 @@ export const useSuggest = create<State>((set) => ({ at: null, items: [], forms: 
 
 let refreshing: Promise<void> | null = null;
 let refreshedAt = 0;
+/** While typing, the document is read again at most this often (Settings and opening an equation force it). */
+const REFRESH_MS = 5 * 60_000;
+/** Each equation's LaTeX by its Word XML, so an unchanged equation is not parsed again. */
+const parsed = new Map<string, string | null>();
+/** Lets the editor paint between slices of work (a large document has thousands of equations). */
+const yieldToUi = () => new Promise<void>((r) => setTimeout(r, 0));
+
+/** Each equation's forms by its LaTeX (cached), counted over the document, in slices like the reading. */
+const formsByLatex = new Map<string, ReturnType<typeof formsOf>>();
+async function formsSliced(latexes: string[]): Promise<DocForm[]> {
+  const map = new Map<string, DocForm>();
+  const seen = new Set<string>();
+  let slice = performance.now();
+  for (const l of latexes) {
+    seen.add(l);
+    let fs = formsByLatex.get(l);
+    if (!fs) formsByLatex.set(l, (fs = formsOf(l)));
+    for (const f of fs) {
+      const e = map.get(f.latex);
+      if (e) e.count++;
+      else map.set(f.latex, { ...f, count: 1 });
+    }
+    if (performance.now() - slice > 8) {
+      await yieldToUi();
+      slice = performance.now();
+    }
+  }
+  for (const k of formsByLatex.keys()) if (!seen.has(k)) formsByLatex.delete(k);
+  return [...map.values()];
+}
 
 /** Reads the forms of the open Word document (every equation's LaTeX); the library's equations without Word. */
 export async function refreshDocForms(force = false) {
-  if (refreshing || (!force && Date.now() - refreshedAt < 60_000)) return refreshing ?? undefined;
+  if (refreshing || (!force && Date.now() - refreshedAt < REFRESH_MS)) return refreshing ?? undefined;
   refreshing = (async () => {
     const latexes: string[] = [];
     let source = "library";
@@ -37,10 +67,25 @@ export async function refreshDocForms(force = false) {
       if (app.connector.connected && addinSupports("listInstances")) {
         const r = await connector.request("listInstances", { includeContent: true }, 60_000);
         const { readEquationXml } = await import("../lib/readEquation");
+        // Parsed in slices of ~8 ms with a pause between them, so typing never waits for the document.
+        const seen = new Set<string>();
+        let slice = performance.now();
         for (const i of r.documents[0]?.instances ?? []) {
-          const read = i.flatOpc ? readEquationXml(i.flatOpc) : null;
-          if (read?.root.children.length) latexes.push(serializeLatex(read.root));
+          if (!i.flatOpc) continue;
+          seen.add(i.flatOpc);
+          let latex = parsed.get(i.flatOpc);
+          if (latex === undefined) {
+            const read = readEquationXml(i.flatOpc);
+            latex = read?.root.children.length ? serializeLatex(read.root) : null;
+            parsed.set(i.flatOpc, latex);
+          }
+          if (latex) latexes.push(latex);
+          if (performance.now() - slice > 8) {
+            await yieldToUi();
+            slice = performance.now();
+          }
         }
+        for (const k of parsed.keys()) if (!seen.has(k)) parsed.delete(k);
         source = r.documents[0]?.name ?? "document";
       }
       if (!latexes.length) {
@@ -51,7 +96,7 @@ export async function refreshDocForms(force = false) {
     } catch {
       // Keep the last forms.
     }
-    if (latexes.length) useSuggest.getState().set({ forms: documentForms(latexes), source });
+    if (latexes.length) useSuggest.getState().set({ forms: await formsSliced(latexes), source });
     refreshedAt = Date.now();
   })().finally(() => (refreshing = null));
   return refreshing;

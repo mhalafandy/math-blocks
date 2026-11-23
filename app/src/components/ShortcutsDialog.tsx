@@ -5,7 +5,8 @@ import { Modal } from "./Dialogs";
 import { MathTile } from "./MathTile";
 import { STRUCTURE_CELL, SYMBOL_CELL } from "../lib/tiles";
 import { AUTOCORRECT, insertBlock, insertIntoVisual } from "./MathEditor";
-import { EDITOR_SHORTCUTS } from "../lib/editorKeys";
+import { EDITOR_SHORTCUTS, MODE_KEYS } from "../lib/editorKeys";
+import { DEFAULT_WORD_KEYS, type WordKeyName } from "../lib/wordKeys";
 import { CATEGORIES, ENTRIES, STRUCTURES, type PaletteEntry } from "../lib/palette";
 import { kindSnippetPrefix, kindSnippets } from "../lib/snippets";
 import { allBlocks, blockByName, useBlocks } from "../lib/blocks/useBlocks";
@@ -102,32 +103,65 @@ function LatexSheet({ onInsert }: { onInsert: () => void }) {
   );
 }
 
+/** One short line each; the key column holds only keys (details go in the description). */
 const APP: [string, string][] = [
-  ["Ctrl+Enter", "Send to Word / Update in Word"],
-  ["Ctrl+K (or Space Space outside every structure)", "Search commands and symbols"],
-  ["Space / Shift+Space (in the editor)", "Next / previous slot: numerator → denominator → out; lower limit → upper limit → body; index → radicand; cell by cell. In \\text{} Space types a space"],
-  ["Backspace", "One character; a structure or kind is selected first, the second Backspace deletes it (Ctrl+Z restores)"],
+  ["Ctrl+Enter", "Send to Word / update in Word"],
+  ["Ctrl+K", "Search commands and symbols (also Space Space outside every structure)"],
   ["Ctrl+N", "New equation"],
-  ["Ctrl+S", "Save to library (new version)"],
-  ["Ctrl+Shift+S", "Save as new library equation"],
-  ["Ctrl+L", "LaTeX editor (when the equation editor is not focused)"],
-  ["Ctrl+B / Ctrl+Alt+B / Ctrl+J", "Library / symbols / bottom panel"],
-  ["Ctrl+ + / − / 0", "Zoom"],
+  ["Ctrl+S", "Save to the library (a new version)"],
+  ["Ctrl+Shift+S", "Save as a new library equation"],
+  ["Ctrl+L", "LaTeX editor"],
+  ["Ctrl+B", "Show / hide the Library and Blocks panel"],
+  ["Ctrl+Alt+B", "Show / hide the symbols"],
+  ["Ctrl+J", "Show / hide the bottom panel"],
+  ["Ctrl+Alt+P", "Word preview window"],
+  ["Ctrl+= / Ctrl+− / Ctrl+0", "Zoom in / out / 100 %"],
   ["F1", "This sheet"],
 ];
 
-const WORD: [string, string][] = [
-  ["Right-click an equation", "Floating editor next to it (Word's menu: the ☰ button in the floating editor)"],
-  ["Double-click an equation", "Edit in the MathBlocks window"],
-  ["Ctrl+Alt+J", "New inline equation at the cursor (changeable in Settings → Word shortcuts)"],
-  ["Ctrl+Alt+;", "New display equation at the cursor"],
-  ["Ctrl+Alt+'", "Toggle LaTeX: equation(s) at the cursor or selected ↔ LaTeX text"],
-  ["Ctrl+Alt+[", "Edit the equation at the cursor (or start a new one there)"],
-  ["Ctrl+Alt+,", "Insert a reference to an equation"],
-  ["Ctrl+Alt+/", "Number / un-number the equation at the cursor"],
-  ["Alt, K, then a letter", "Every other command: the MathBlocks tab's key tips"],
-  ["Enter / Esc (floating editor)", "Apply / cancel (Ctrl+Enter applies a display equation)"],
+const TYPE: [string, string][] = [
+  [MODE_KEYS.display, "Display equation (on its own line)"],
+  [MODE_KEYS.inline, "Inline equation (in a line of text)"],
+  [MODE_KEYS.numbered, "Numbered display equation"],
 ];
+
+const EDITING: [string, string][] = [
+  ["Space / Shift+Space", "Next / previous slot (in text, Space types a space)"],
+  ["Backspace", "One character; a structure is selected first, deleted by the second press"],
+];
+
+const WORD_LABELS: Record<WordKeyName, string> = {
+  inline: "New inline equation at the cursor",
+  display: "New display equation at the cursor",
+  latex: "Toggle LaTeX: equations at the cursor or selection ↔ LaTeX text",
+  edit: "Edit the equation at the cursor (or start one there)",
+  reference: "Insert a reference to an equation",
+  number: "Number / un-number the equation at the cursor",
+};
+
+const WORD_MORE: [string, string][] = [
+  ["Right-click an equation", "Floating editor next to it"],
+  ["Double-click an equation", "Edit it in the MathBlocks window"],
+  ["Enter / Esc", "Floating editor: apply / cancel (Ctrl+Enter for a display equation)"],
+  ["Alt, K, then a letter", "Every other command (the MathBlocks tab's key tips)"],
+];
+
+function Rows({ rows }: { rows: [string, string][] }) {
+  return (
+    <table>
+      <tbody>
+        {rows.map(([k, v]) => (
+          <tr key={k}>
+            <td>
+              <kbd>{k}</kbd>
+            </td>
+            <td>{v}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
 
 export function ShortcutsDialog() {
   const open = useShortcuts((s) => s.open);
@@ -135,9 +169,10 @@ export function ShortcutsDialog() {
   const set = useShortcuts((s) => s.set);
   const doubleSpace = useApp((s) => s.doubleSpace);
   const doubleSpaceMs = useApp((s) => s.doubleSpaceMs);
+  const wordKeys = useApp((s) => s.wordKeys) as Partial<Record<WordKeyName, string>>;
   if (!open) return null;
   return (
-    <Modal title={tab === "keys" ? "Keyboard shortcuts" : "LaTeX commands"} onClose={() => set(false)} width={880}>
+    <Modal title={tab === "keys" ? "Keyboard shortcuts" : "LaTeX commands"} onClose={() => set(false)} width={1000}>
       <div className="sheet-tabs" role="tablist">
         <button role="tab" aria-selected={tab === "keys"} className={tab === "keys" ? "on" : undefined} onClick={() => set(true, "keys")}>
           Keyboard shortcuts
@@ -164,21 +199,14 @@ export function ShortcutsDialog() {
       </div>
       <div className="shortcuts">
         <section>
-          <h4>In the equation editor (like MathType)</h4>
-          <table>
-            <tbody>
-              {EDITOR_SHORTCUTS.map((s) => (
-                <tr key={s.keys}>
-                  <td>
-                    <kbd>{s.keys}</kbd>
-                  </td>
-                  <td>{s.label}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-        <section>
+          <h4>Equation type</h4>
+          <Rows rows={TYPE} />
+          <h4>Editing</h4>
+          <Rows rows={[...EDITING, ...EDITOR_SHORTCUTS.map((x) => [x.keys, x.label] as [string, string])]} />
+          <h4>App</h4>
+          <Rows rows={APP} />
+          <h4>In Word (change them in Settings → Word shortcuts)</h4>
+          <Rows rows={[...(Object.keys(WORD_LABELS) as WordKeyName[]).map((k) => [wordKeys[k] ?? DEFAULT_WORD_KEYS[k], WORD_LABELS[k]] as [string, string]), ...WORD_MORE]} />
           <h4>Typing turns into symbols</h4>
           <div className="autocorrect">
             {Object.entries(AUTOCORRECT).map(([k, v]) => (
@@ -188,32 +216,6 @@ export function ShortcutsDialog() {
             ))}
             <span className="muted">and: alpha, beta… → α, β…; sqrt, sum, int, lim; ^ and _ for scripts; / for a fraction</span>
           </div>
-          <h4>In Word</h4>
-          <table>
-            <tbody>
-              {WORD.map(([k, v]) => (
-                <tr key={k}>
-                  <td>
-                    <kbd>{k}</kbd>
-                  </td>
-                  <td>{v}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <h4>In the app</h4>
-          <table>
-            <tbody>
-              {APP.map(([k, v]) => (
-                <tr key={k}>
-                  <td>
-                    <kbd>{k}</kbd>
-                  </td>
-                  <td>{v}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </section>
       </div>
       </>

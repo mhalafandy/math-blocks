@@ -430,15 +430,23 @@ kbd {
 .chev.open { transform: rotate(90deg); }
 .folder-icon { flex: 0 0 auto; color: var(--text-3); }
 .drop { background: var(--accent-soft) !important; outline: 1px dashed var(--accent); }
-.folder-list, .eq-list { list-style: none; margin: 0; padding: 0; }
+.folder-list { list-style: none; margin: 0; padding: 0; }
+/* Library equations as cards, the same as Blocks (.block-grid / .block-tile). */
+.eq-list { list-style: none; margin: 0; padding: 4px 6px 8px; display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; }
+.eq-list > li { min-width: 0; }
 .eq-row {
-  width: 100%; display: grid; grid-template-columns: 74px 1fr; align-items: center; gap: 8px;
-  text-align: left; padding: 4px 6px; border-radius: 6px; min-height: 40px;
+  width: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 2px; text-align: center;
+  padding: 4px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); cursor: pointer;
 }
-.eq-row.active { background: var(--accent-soft); }
+.eq-row:hover { border-color: var(--accent); }
+.eq-row.active { background: var(--accent-soft); border-color: var(--accent); }
+.eq-row { align-items: center; overflow: hidden; }
+.eq-row .eq-meta { max-width: 100%; }
+.eq-row .eq-name { justify-content: center; font-size: 11px; color: var(--text-2); }
+.eq-row .eq-sub { justify-content: center; }
 .eq-thumb {
-  height: 34px; display: flex; align-items: center; justify-content: center; overflow: hidden;
-  background: var(--surface-2); border-radius: 5px; font-size: 10px; color: var(--text);
+  height: 48px; min-width: 96px; display: flex; align-items: center; justify-content: center; overflow: hidden;
+  background: var(--surface-2); border-radius: 5px; font-size: 11px; color: var(--text);
 }
 .eq-thumb .math-preview { transform-origin: center; white-space: nowrap; pointer-events: none; }
 .eq-meta { display: flex; flex-direction: column; min-width: 0; }
@@ -640,12 +648,12 @@ html.panel-window, html.panel-window body, html.panel-window #root { height: 100
 .notation-example { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 10px; background: var(--surface-2); border-radius: 8px; font-size: 16px; overflow-x: auto; }
 
 /* Keyboard shortcuts sheet */
-.shortcuts { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-height: 70vh; overflow: auto; }
+.shortcuts { max-height: 70vh; overflow: auto; }
 .shortcuts h4 { margin: 0 0 6px; font-size: 12px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; }
 .shortcuts section > h4:not(:first-child) { margin-top: 14px; }
 .shortcuts table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
 .shortcuts td { padding: 3px 6px; vertical-align: top; }
-.shortcuts td:first-child { white-space: nowrap; width: 1%; }
+.shortcuts td:first-child { white-space: nowrap; width: 230px; }
 .autocorrect { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; align-items: center; }
 /* Empty editor hint */
 .canvas-hint { margin-top: 18px; text-align: center; color: var(--text-3); font: 13px/1.7 var(--font-ui); pointer-events: none; white-space: normal; max-width: 100%; }
@@ -883,15 +891,19 @@ html.preview-window body { background: var(--bg); }
 .slot-hint { position: fixed; transform: translateX(-50%); font-size: 10px; line-height: 1.2; padding: 0 4px; border-radius: 3px; background: var(--accent-soft); color: var(--accent); border: 1px solid var(--border); white-space: nowrap; }
 
 /* Left panel: Library / Blocks tabs. */
-.side-tabs { display: flex; gap: 2px; }
-.side-tab { background: none; border: 0; padding: 3px 8px; border-radius: 6px; color: var(--text-2); font-weight: 600; cursor: pointer; }
+.side-tabs { display: flex; gap: 2px; min-width: 0; overflow: hidden; }
+/* The header always fits the panel: tabs shrink first, the buttons (and Hide) stay inside it. */
+.sidebar .panel-head { overflow: hidden; padding-left: 8px; }
+.sidebar .panel-head .icon-btn { flex: 0 0 auto; }
+.sidebar .panel-head .spacer { flex: 1 1 0; min-width: 0; }
+.side-tab { background: none; border: 0; padding: 3px 6px; white-space: nowrap; border-radius: 6px; color: var(--text-2); font-weight: 600; cursor: pointer; }
 .side-tab.on { background: var(--accent-soft); color: var(--accent); }
 
 /* Blocks: tiles (math-render, document style) with the name under them. */
-.block-grid { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 6px 8px; }
-.block-tile { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); cursor: pointer; max-width: 140px; }
+.block-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; padding: 4px 6px 8px; }
+.block-tile { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); cursor: pointer; min-width: 0; overflow: hidden; }
 .block-tile:hover { border-color: var(--accent); }
-.block-name { font-size: 11px; color: var(--text-2); max-width: 128px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.block-name { font-size: 11px; color: var(--text-2); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .block-subgroup { padding-left: 12px; }
 .block-foot { display: flex; flex-wrap: wrap; gap: 4px; }
 .panel-blocks { display: flex; flex-direction: column; gap: 6px; min-height: 0; }
@@ -962,3 +974,6 @@ span.eq-page { display: inline-block; padding: 2px 6px; }
 .bigop-sheet.eq-page th { color: #000; }
 .bigop-sheet.eq-page tr.on th { color: #1d4ed8; }
 .bigop-sheet.eq-page td { border-top-color: #ddd; }
+/* Cards narrower than the tile's cell (two per row): the drawing shrinks to fit instead of being cut. */
+.eq-row .math-tile, .block-tile .math-tile { max-width: 100%; display: flex; align-items: center; justify-content: center; }
+.eq-row .math-tile > svg, .block-tile .math-tile > svg { max-width: 100%; height: auto; }

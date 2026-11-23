@@ -1,10 +1,13 @@
-import { EDITOR_ACCENT_CSS, groupScriptedAccents } from "../lib/editorAccents";
+import { EDITOR_ACCENT_CSS, groupScriptedAccents, ungroupScriptedAccents } from "../lib/editorAccents";
+import { afterPaint, flushVisualLatex, queueVisualLatex } from "../lib/visualLatex";
+import { DRAG_BLOCK, DRAG_EQ } from "../lib/dragTypes";
 import { isAllBold, KIND_BY_ID, KINDS, setBold, type BoldScope } from "@mathblocks/math-core";
 import { explainSymbol, kindDisplayName } from "@mathblocks/math-core";
 import { symbolContextAt } from "../lib/kindHover";
 import { activeStyle as currentDocStyle } from "../lib/docStyle";
 import { editorForm, stripSlotWrappers, type Block } from "../lib/blocks/model";
-import { blockByName, markBlockUsed } from "../lib/blocks/useBlocks";
+import { allBlocks, blockByName, markBlockUsed } from "../lib/blocks/useBlocks";
+import { useLibrary } from "../lib/library/useLibrary";
 import { useBlockSession } from "../lib/blocks/sessionStore";
 import { currentSlot, enterFirstSlot, syncRepeats, type SessionField } from "../lib/blocks/session";
 import { CLASS_PREFIX, fromEditorLatex, kindMacroRe, toEditorLatex } from "../lib/kinds";
@@ -25,6 +28,21 @@ MathfieldElement.fontsDirectory = "/mathlive/fonts";
 MathfieldElement.soundsDirectory = null;
 
 let activeField: MathfieldElement | null = null;
+
+/** The selection's side work (quick-style bar, suggestions, block session, caret in view), once per frame after the paint. */
+let selectionWorkQueued = false;
+function queueSelectionWork(mf: MathfieldElement) {
+  if (selectionWorkQueued) return;
+  selectionWorkQueued = true;
+  afterPaint(() => {
+    selectionWorkQueued = false;
+    if (!mf.isConnected) return;
+    showQuickStyle(mf);
+    suggestAtCaret(mf);
+    updateBlockSession(mf);
+    revealCaret(mf);
+  });
+}
 registerEditor(() => activeField);
 
 /** The equation editor, when it has the keyboard focus. */
@@ -46,14 +64,15 @@ const SLOT_MARK = { "#?": "\u24C5", "#0": "\u24EA" } as const;
 
 /** Notation kinds are held expanded and wrapped in the editor (\class{nk-pvec}{…}). */
 function toEditorKinds(latex: string): string {
-  if (!kindMacroRe().test(latex)) return latex;
+  // Without kinds, the stretchy accents are still grouped (a script after one sits beside the letter).
+  if (!kindMacroRe().test(latex)) return groupScriptedAccents(latex);
   const marked = latex.replace(/#\?/g, SLOT_MARK["#?"]).replace(/#0/g, SLOT_MARK["#0"]);
   // Adjacent slots inside a kind get a thin space (MathLive empties both when the first is typed into).
   return toEditorLatex(marked, activeNotation()).replaceAll(`${SLOT_MARK["#?"]}${SLOT_MARK["#?"]}`, `${SLOT_MARK["#?"]}\\,${SLOT_MARK["#?"]}`).replaceAll(SLOT_MARK["#?"], "#?").replaceAll(SLOT_MARK["#0"], "#0");
 }
 
 function fromEditorKinds(latex: string): string {
-  if (!latex.includes(`\\class{${CLASS_PREFIX}`)) return latex;
+  if (!latex.includes(`\\class{${CLASS_PREFIX}`)) return ungroupScriptedAccents(latex);
   const r = fromEditorLatex(latex, activeNotation());
   if (r.handStyled.length) noteHandStyled(r.handStyled.map((h) => h.kind));
   return r.latex;
@@ -509,6 +528,17 @@ export function acceptSuggestion(latex: string) {
   void import("./SuggestBar").then((m) => m.hideSuggestions());
 }
 
+/**
+ * A whole equation (library, examples) put in at the caret: it replaces only the selection, so small pieces
+ * build a larger equation. Undo removes it in one step.
+ */
+export function insertEquationAtCaret(latex: string): boolean {
+  const mf = activeField;
+  if (!mf) return false;
+  mf.focus();
+  return mf.executeCommand(["insert", toMathLive(latex), { insertionMode: "replaceSelection", selectionMode: "after", format: "latex" }] as never);
+}
+
 export function insertIntoVisual(template: string) {
   const mf = activeField;
   if (!mf) return false;
@@ -574,13 +604,9 @@ export function MathEditor() {
     mf.setAttribute("aria-label", "Equation editor");
     mf.value = toMathLive(useApp.getState().latex);
     // The quick-style bar follows the selection; typing hides it until a pause.
-    mf.addEventListener("selection-change", () => {
-      showQuickStyle(mf);
-      suggestAtCaret(mf);
-      updateBlockSession(mf);
-      revealCaret(mf);
-    });
+    mf.addEventListener("selection-change", () => queueSelectionWork(mf));
     mf.addEventListener("focusout", () => {
+      flushVisualLatex();
       clearTimeout(quickTimer);
       quickTimer = setTimeout(() => {
         if (!document.querySelector(".quick-style:hover, .quick-style:focus-within")) void import("./QuickStyleBar").then(({ useQuickStyle }) => useQuickStyle.getState().set({ at: null }));
@@ -588,7 +614,6 @@ export function MathEditor() {
     });
     mf.addEventListener("input", () => {
       updateBlockSession(mf, true);
-      revealCaret(mf);
       void import("./QuickStyleBar").then(({ useQuickStyle }) => useQuickStyle.getState().set({ at: null }));
       onInputDone(mf);
       // A script typed right after a stretchy accent (\overrightharpoon, \overrightarrow, \widehat…, from the
@@ -618,7 +643,7 @@ export function MathEditor() {
           // Caret placement is cosmetic.
         }
       }
-      setLatex(fromMathLive(mf.value), "visual");
+      queueVisualLatex(fromMathLive(mf.value));
     });
     mf.addEventListener("pointerdown", () => setLastEditor("visual"));
     mf.addEventListener("focusout", () => saveEditorCaret(mf));
@@ -639,6 +664,33 @@ export function MathEditor() {
       void import("./EditorMenu").then((m) => m.openEditorMenu(mf, e));
     };
     host.current?.addEventListener("contextmenu", onMenu, true);
+    // A block or a library equation dragged from the side panel goes in where it is dropped.
+    const panelDrag = (e: DragEvent) => !!e.dataTransfer && (e.dataTransfer.types.includes(DRAG_BLOCK) || e.dataTransfer.types.includes(DRAG_EQ));
+    const onDragOver = (e: DragEvent) => {
+      if (!panelDrag(e)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer!.dropEffect = "copy";
+    };
+    const onDrop = (e: DragEvent) => {
+      if (!panelDrag(e)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      mf.focus();
+      try {
+        mf.position = mf.getOffsetFromPoint(e.clientX, e.clientY);
+      } catch {
+        // Outside the formula: at the caret.
+      }
+      const blockId = e.dataTransfer!.getData(DRAG_BLOCK);
+      const block = blockId ? allBlocks().find((b) => b.id === blockId) : undefined;
+      if (block) return void insertBlock(block);
+      const eqId = e.dataTransfer!.getData(DRAG_EQ);
+      const q = eqId ? useLibrary.getState().equations.find((x) => x.id === eqId) : undefined;
+      if (q) insertEquationAtCaret(q.latex);
+    };
+    host.current?.addEventListener("dragover", onDragOver, true);
+    host.current?.addEventListener("drop", onDrop, true);
     try {
       const style = document.createElement("style");
       style.textContent = kindHintCss() + EDITOR_ACCENT_CSS;
@@ -660,7 +712,11 @@ export function MathEditor() {
     requestAnimationFrame(() => {
       if (!document.querySelector(".modal-backdrop") && (document.activeElement === document.body || !document.activeElement)) mf.focus();
     });
+    const hostEl = host.current;
     return () => {
+      hostEl?.removeEventListener("contextmenu", onMenu, true);
+      hostEl?.removeEventListener("dragover", onDragOver, true);
+      hostEl?.removeEventListener("drop", onDrop, true);
       mf.remove();
       if (activeField === mf) activeField = null;
     };
