@@ -4,7 +4,7 @@ Updated at the end of every round. Public repository: generic content only. Earl
 
 ## Latest round — 0.1.177 (UX round)
 
-**Stable: 0.1.175** (unchanged). **Test channel:** 0.1.177 — CI result below once checked.
+**Stable: 0.1.175** (unchanged). **Test channel:** 0.1.177, CI passed.
 
 **Built (your list):**
 - 2.9 Key lag: the symbol palette and sidebar re-rendered on every key; now only the editor does, and the app's update runs after the key is painted. Backspace on a selection: the deletion was not drawn until the next key (your screenshot) — drawn at once now (CI check added). Document suggestions re-read every equation of the Word document each minute on the UI thread: now in small slices, cached, every 5 min.
