@@ -50,5 +50,14 @@ jobs:
           gh release create stable "${files[@]}" --latest \
             --title "Stable ($VERSION)" \
             --notes "Stable channel: build $VERSION, promoted after a clean self-test ($REPORT). Previous stable: $( [ -f m/previous.json ] && jq -r .version m/previous.json || echo none )."
+          # gh creates the release as a draft and publishes it last; that step can be lost (0.1.175's stable stayed a
+          # draft: its manifest was not public, so no app saw the update). Publish explicitly and check it downloads.
+          ok=""
+          for i in 1 2 3 4 5; do
+            gh release edit stable --draft=false --latest || true
+            if curl -fsSL "https://github.com/$GH_REPO/releases/download/stable/latest.json" | jq -e --arg v "$VERSION" '.version == $v' >/dev/null; then ok=1; break; fi
+            sleep $((i * 5))
+          done
+          [ -n "$ok" ] || { echo "::error::stable/latest.json is not downloadable (release still a draft?)"; exit 1; }
           gh release edit "v$VERSION" --title "Stable build $VERSION"
           echo "Stable is now $VERSION"
