@@ -4,7 +4,7 @@ Updated at the end of every round. Public repository: generic content only. Earl
 
 ## Latest round — 0.1.178 (UX follow-up, candidate for stable)
 
-**Stable: 0.1.175.** **Test channel:** 0.1.178 — CI result below once checked. 0.1.177 checks on your PC: all OK.
+**Stable: 0.1.175.** **Test channel:** 0.1.178, CI passed: ready for the core self-test. 0.1.177 checks on your PC: all OK.
 
 **Built:**
 - Settings: six real pages (Appearance, Notation, Editing, Word, Backups and updates, Developer tools), each with its sections one under the other and links to them at the top. 0.1.177 only grouped the 15 old pages under small headings in the side list, which still looked like the old layout; there is one Settings window (no add-in settings), so this is what every entry point opens. Search and old links open the page scrolled to the section.
