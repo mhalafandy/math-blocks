@@ -81,9 +81,9 @@ export function AccentsDialog() {
   return (
     <Modal title="Accents" onClose={() => set(false)} width={900} page="accents">
       <div className="form">
-        <p className="hint">How harpoons, arrows and the other accents sit over letters in Classic equations. Sizes are relative to MathType's (measured on its pictures).</p>
-        {slider("Harpoon / arrow size (× MathType)", "size", 0.7, 1.5, 0.05, "×")}
-        {slider("Stroke weight (× MathType)", "stroke", 0.8, 2.5, 0.1, "×")}
+        <p className="hint">How harpoons, arrows and the other accents sit over letters in Classic equations. Sizes are relative: 1 is the standard size.</p>
+        {slider("Harpoon / arrow length (1 = standard length)", "size", 0.7, 1.5, 0.05, "×")}
+        {slider("Stroke weight (1 = standard weight)", "stroke", 0.8, 2.5, 0.1, "×")}
         {slider("Gap above the letter", "gap", 0.05, 0.25, 0.005, " em")}
         {slider("Barb angle", "barbAngle", 20, 45, 1, "°")}
         {slider("Smallest gap for any accent", "minGap", 0, 0.15, 0.005, " em")}
@@ -91,7 +91,7 @@ export function AccentsDialog() {
           Harpoon / arrow length over one letter{" "}
           <select value={rules.length ?? "fixed"} onChange={(e) => up({ length: e.target.value as AccentRules["length"] })}>
             <option value="adaptive">adaptive (the letter's width)</option>
-            <option value="fixed">fixed (MathType's 0.41 em)</option>
+            <option value="fixed">fixed (0.41 em)</option>
           </select>
         </label>
         <div style={{ display: "grid", gap: 6, background: "#fff", padding: 8, borderRadius: 6 }}>
@@ -102,11 +102,11 @@ export function AccentsDialog() {
         </div>
         {note && <p>{note}</p>}
         <div className="modal-actions">
-          <button onClick={() => setRules(DEFAULT_ACCENTS)} disabled={busy}>
-            MathBlocks default
+          <button onClick={() => setRules(DEFAULT_ACCENTS)} disabled={busy} title="Stroke 1.5 × standard; the harpoon's length fits the letter">
+            Default: heavier, fits the letter
           </button>
-          <button onClick={() => setRules(MATHTYPE_ACCENTS)} disabled={busy}>
-            MathType-like
+          <button onClick={() => setRules(MATHTYPE_ACCENTS)} disabled={busy} title="Standard stroke; the harpoon has one fixed length">
+            Thin, fixed length
           </button>
           <div className="spacer" />
           <button onClick={() => set(false)} disabled={busy}>

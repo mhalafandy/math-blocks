@@ -115,7 +115,7 @@ function ShapeChoice({ value, onChange, disabled }: { value: Shape; onChange: (s
 const ROLE_LABEL: Record<LetterRole, string> = { label: "label (upright if labels are)", counter: "index variable", variable: "variable", constant: "constant" };
 
 const OPERATOR_FONTS: [LargeOperatorFont, string][] = [
-  ["current", "Current (Symbol, as MathType)"],
+  ["current", "Symbol"],
   ["latin-modern", "Latin Modern Math (TeX)"],
   ["stix-two", "STIX Two Math"],
   ["xits", "XITS Math"],

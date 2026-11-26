@@ -74,6 +74,8 @@ interface Prefs {
   paletteHints: string[];
   /** While typing, offer the forms of the symbol already used in the document. */
   docSuggestions: boolean;
+  /** The floating bar over a selection or a kind (bold, accents, Make → kind, Plain, Style…); off, the same actions are in the right-click menu. */
+  quickStyleBar: boolean;
   /** Topic tab shown under the top palette; null = collapsed. */
   paletteTab: string | null;
   numberStyle: NumberStyle;
@@ -203,6 +205,7 @@ const DEFAULT_PREFS: Prefs = {
   paletteUse: {},
   paletteHints: [],
   docSuggestions: true,
+  quickStyleBar: true,
   paletteTab: "tab-spacecraft",
   numberStyle: { open: "(", close: ")", chapter: false },
   look: "classic",

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { SymbolListPage } from "./SymbolList";
 import { useApp } from "../lib/store";
 import { useSettings, type SettingsPage } from "../lib/settingsStore";
@@ -57,7 +57,7 @@ function PalettePage() {
       <Field label="Where the symbols are">
         <select value={s.paletteLocation} onChange={(e) => s.setPrefs({ paletteLocation: e.target.value as "right" | "top", rightOpen: true })}>
           <option value="right">Right-hand panel</option>
-          <option value="top">Above the editor (MathType style)</option>
+          <option value="top">Above the editor</option>
         </select>
       </Field>
       <Field label="Quick access" hint="Right-click a symbol to pin or unpin it; drag pinned symbols to reorder them.">
@@ -76,7 +76,7 @@ function EditorPage() {
   const [prefix, setPrefix] = useState(kindSnippetPrefix());
   return (
     <section className="settings-embedded">
-      <h3>Editor behaviour</h3>
+      <h3>Editor</h3>
       <p className="hint">Space moves to the next slot (numerator → denominator → out, lower limit → upper limit → body, cell by cell); Shift+Space goes back. Backspace deletes one character; a structure or kind is selected first and deleted by a second Backspace.</p>
       <Field label="Space Space opens the command palette" hint="Only when the caret is outside every structure. Ctrl+K always opens it.">
         <label className="check">
@@ -84,6 +84,11 @@ function EditorPage() {
         </label>{" "}
         within{" "}
         <input type="number" min={150} max={800} step={25} value={s.doubleSpaceMs} disabled={!s.doubleSpace} onChange={(e) => s.setPrefs({ doubleSpaceMs: Math.max(150, Math.min(800, Number(e.target.value) || 300)) })} /> ms
+      </Field>
+      <Field label="Style bar over a selection" hint="The small floating bar over a selection or a notation kind (bold, italic/upright, accents, Make → kind, Plain, Style…). Off, the same actions are in the right-click menu.">
+        <label className="check">
+          <input type="checkbox" checked={s.quickStyleBar} onChange={(e) => s.setPrefs({ quickStyleBar: e.target.checked })} /> on
+        </label>
       </Field>
       <Field label="Suggestions from the document" hint="After a letter, the forms of that symbol the open document already uses (w → the ω forms), most used first; Tab takes the first.">
         <label className="check">
@@ -237,7 +242,7 @@ function UpdatesPage() {
 }
 
 const PAGES: PageDef[] = [
-  { id: "word", label: "Equation look", group: "Appearance", keys: "classic native look size points font vector spacecraft convention preview profile math font", body: () => <section className="settings-embedded"><h3>Word style</h3><StylePanel /></section> },
+  { id: "word", label: "Equation look", group: "Appearance", keys: "classic native look picture size points font vector rotation notation convention preview profile math font", body: () => <section className="settings-embedded"><h3>Equation look</h3><StylePanel /></section> },
   {
     id: "docstyle",
     label: "Document style",
@@ -251,7 +256,7 @@ const PAGES: PageDef[] = [
   { id: "numbering", label: "Numbering", group: "Notation", keys: "number numbering chapter section brackets parentheses separator restart references markers", body: () => <section className="settings-embedded"><h3>Numbering</h3><NumberingSettings /></section> },
   { id: "snippets", label: "Snippets", group: "Editing", keys: "snippets triggers tab shortcuts keys", body: () => <SnippetsDialog />, dialog: { isOpen: () => useSnippets.getState().open, open: () => useSnippets.getState().set(true), close: () => useSnippets.getState().set(false), subscribe: (f) => useSnippets.subscribe(f) } },
   { id: "palette", label: "Symbol palette", group: "Editing", keys: "palette symbols favourites quick access recent location top right", body: () => <PalettePage /> },
-  { id: "editor", label: "Editor", group: "Editing", keys: "editor space slot backspace double space command palette prefix zoom suggestions document forms autocomplete", body: () => <EditorPage /> },
+  { id: "editor", label: "Editor", group: "Editing", keys: "editor space slot backspace double space command palette prefix zoom suggestions document forms autocomplete style bar floating toolbar context menu quick style", body: () => <EditorPage /> },
   { id: "connection", label: "Add-in connection", group: "Word", keys: "word add-in connection confirm self-test", body: () => <ConnectionPage /> },
   { id: "wordKeys", label: "Word shortcuts", group: "Word", keys: "word shortcuts keyboard keys ctrl alt inline display toggle latex reference number edit", body: () => <WordKeysPage /> },
   { id: "backups", label: "Backups and updates", group: "Backups and updates", keys: "backup copy restore folder update version roll back", body: () => (<><BackupsPage /><UpdatesPage /></>) },
@@ -267,26 +272,51 @@ export function SettingsDialog() {
   const { open, page, set } = useSettings();
   const [query, setQuery] = useState("");
   const developer = useApp((s) => s.developerTools);
-  const pages = PAGES.filter((p) => !p.developer || developer).sort((a, b) => GROUPS.indexOf(a.group) - GROUPS.indexOf(b.group));
+  // Each page is one of the six groups; its sections are the settings that belong together.
+  const sections = PAGES.filter((p) => !p.developer || developer).sort((a, b) => GROUPS.indexOf(a.group) - GROUPS.indexOf(b.group));
   const wanted = ALIASES[page] ?? page;
-  const def = pages.find((p) => p.id === wanted) ?? pages[0]!;
-  // Closing the settings closes every page's dialog state too (none is left to show on its own later).
+  const def = sections.find((p) => p.id === wanted) ?? sections[0]!;
+  const group = def.group;
+  const inGroup = sections.filter((p) => p.group === group);
+  // Closing the settings closes every section's dialog state too (none is left to show on its own later).
   const close = () => {
     for (const p of PAGES) if (p.dialog?.isOpen()) p.dialog.close();
     set({ open: false });
   };
-  // A dialog page: open it when it shows; when its own Close is pressed, the settings close.
-  const shown = useRef(false);
+  // The page's dialog sections: opened when the page shows; when one's own Close is pressed, the settings close.
   useEffect(() => {
-    if (!open || !def.dialog) return;
-    shown.current = false;
-    if (!def.dialog.isOpen()) def.dialog.open();
-    const off = def.dialog.subscribe(() => {
-      if (def.dialog!.isOpen()) shown.current = true;
-      else if (shown.current) close();
-    });
-    if (def.dialog.isOpen()) shown.current = true;
-    return off;
+    if (!open) return;
+    const offs: (() => void)[] = [];
+    for (const p of inGroup) {
+      const d = p.dialog;
+      if (!d) continue;
+      let shown = false;
+      if (!d.isOpen()) d.open();
+      if (d.isOpen()) shown = true;
+      offs.push(
+        d.subscribe(() => {
+          if (d.isOpen()) shown = true;
+          else if (shown) close();
+        }),
+      );
+    }
+    return () => offs.forEach((f) => f());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, group, developer]);
+  // A link to one section (search, an old page name): its page opens scrolled to it.
+  const bodyRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    // Next frame, and again once the sections above it have filled in (a dialog section draws after it opens).
+    const go = () => {
+      const el = bodyRef.current?.querySelector(`#settings-sec-${def.id}`) as HTMLElement | null;
+      if (!el) return;
+      if (def.id === inGroup[0]?.id) bodyRef.current!.scrollTop = 0;
+      else el.scrollIntoView({ block: "start" });
+    };
+    requestAnimationFrame(go);
+    const t = setTimeout(go, 250);
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, page]);
   useEffect(() => {
@@ -325,25 +355,30 @@ export function SettingsDialog() {
   }, [open]);
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return pages;
-    return pages.filter((p) => q.split(/\s+/).every((w) => `${p.label} ${p.keys}`.toLowerCase().includes(w)));
+    if (!q) return [];
+    return sections.filter((p) => q.split(/\s+/).every((w) => `${p.group} ${p.label} ${p.keys}`.toLowerCase().includes(w)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, developer]);
+  const groups = GROUPS.filter((g) => sections.some((p) => p.group === g));
   if (!open) return null;
   return (
     <div className="modal-backdrop settings-backdrop" onMouseDown={close}>
       <div className="settings-window" ref={winRef} style={savedSize} role="dialog" aria-modal="true" aria-label="Settings" onMouseDown={(e) => e.stopPropagation()}>
         <nav className="settings-side">
-          <input className="settings-search" type="search" placeholder="Search settings…" value={query} autoFocus onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && matches[0] && set({ page: matches[0].id })} />
-          {matches.map((p, i) => (
-            <Fragment key={p.id}>
-              {(i === 0 || matches[i - 1]!.group !== p.group) && <h3 className="settings-group">{p.group}</h3>}
-              <button className={p.id === def.id ? "on" : undefined} onClick={() => set({ page: p.id })}>
-                {p.label}
-              </button>
-            </Fragment>
-          ))}
-          {!matches.length && <p className="hint">No setting matches “{query}”.</p>}
+          <input className="settings-search" type="search" placeholder="Search settings…" value={query} autoFocus onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && matches[0] && (set({ page: matches[0].id }), setQuery(""))} />
+          {query.trim()
+            ? matches.map((p) => (
+                <button key={p.id} className="settings-result" onClick={() => (set({ page: p.id }), setQuery(""))}>
+                  <span className="muted">{p.group} › </span>
+                  {p.label}
+                </button>
+              ))
+            : groups.map((g) => (
+                <button key={g} className={g === group ? "on" : undefined} onClick={() => set({ page: sections.find((p) => p.group === g)!.id })}>
+                  {g}
+                </button>
+              ))}
+          {query.trim() && !matches.length && <p className="hint">No setting matches “{query}”.</p>}
         </nav>
         <div className="settings-main">
           <div className="settings-head">
@@ -353,8 +388,24 @@ export function SettingsDialog() {
               ✕
             </button>
           </div>
-          <div className="settings-body">
-            <ModalInline.Provider value={true}>{def.body()}</ModalInline.Provider>
+          <div className="settings-body" ref={bodyRef}>
+            <h2 className="settings-page-title">{group}</h2>
+            {inGroup.length > 1 && (
+              <div className="settings-toc" role="navigation" aria-label={`${group}: sections`}>
+                {inGroup.map((p) => (
+                  <button key={p.id} className="chip" onClick={() => set({ page: p.id })}>
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            <ModalInline.Provider value={true}>
+              {inGroup.map((p) => (
+                <div key={p.id} id={`settings-sec-${p.id}`} className="settings-section">
+                  {p.body()}
+                </div>
+              ))}
+            </ModalInline.Provider>
           </div>
         </div>
       </div>

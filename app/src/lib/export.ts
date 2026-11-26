@@ -1,3 +1,4 @@
+import { beginProgress } from "./progress";
 import { expandNotation, KINDS, macroClashes } from "@mathblocks/math-core";
 import { activeNotation } from "./docStyle";
 import { documentToLatex, standardDialect } from "./texExport";
@@ -193,20 +194,28 @@ export async function exportDocumentLatex() {
   try {
     const { buildDocumentIndex } = await import("./symbolIndex");
     const { connector } = await import("./connector");
-    const index = await buildDocumentIndex();
+    const progress = beginProgress("Exporting the document's equations as LaTeX");
     const numbers = new Map<string, string>();
+    let index: Awaited<ReturnType<typeof buildDocumentIndex>>;
     try {
-      const r = await connector.request("listNumbered", { document: index.document }, 120_000);
-      for (const e of r.equations) if (e.tag) numbers.set(e.tag, e.number);
-    } catch {
-      // Old add-in: export without numbers.
+      progress.step("Reading the document's equations");
+      index = await buildDocumentIndex();
+      progress.update(index.equations.length, null, "Reading the equation numbers");
+      try {
+        const r = await connector.request("listNumbered", { document: index.document }, 120_000);
+        for (const e of r.equations) if (e.tag) numbers.set(e.tag, e.number);
+      } catch {
+        // Old add-in: export without numbers.
+      }
+    } finally {
+      progress.end();
     }
     const { askConfirm } = await import("../components/Dialogs");
     const clashing = KINDS.filter((k) => macroClashes().has(k.macro) && index.equations.some((e) => e.latex.includes(`\\${k.macro}`)));
     const renameOnClash = clashing.length
       ? await askConfirm(
           "Macro names that clash with packages",
-          `${clashing.map((k) => `\\${k.macro} (${macroClashes().get(k.macro)!.join(", ")})`).join(", ")} also exist in common packages. Rename them in the export (\\mb…)? If you keep them and your thesis loads such a package, LaTeX stops with an error.`,
+          `${clashing.map((k) => `\\${k.macro} (${macroClashes().get(k.macro)!.join(", ")})`).join(", ")} also exist in common packages. Rename them in the export (\\mb…)? If you keep them and your document loads such a package, LaTeX stops with an error.`,
           "Rename",
           false,
         )

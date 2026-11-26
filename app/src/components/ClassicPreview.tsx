@@ -54,7 +54,7 @@ export function ClassicPreview({ latex, display, sizePt, guidePt }: { latex: str
       ) : (
         <span className="muted">Preparing preview…</span>
       )}
-      {!real && <p className="hint">Times New Roman or Symbol was not found, so this preview uses a stand-in font. In the desktop app on Windows, MathType's own fonts are used.</p>}
+      {!real && <p className="hint">Times New Roman or Symbol was not found, so this preview uses a stand-in font. In the desktop app on Windows, Times New Roman and Symbol are used.</p>}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { describeRule, ruleFromLatex, TOKEN_KIND_CHOICES, wrapperKindChoices } f
 import { activeStyle, userDefaultStyle } from "../lib/docStyle";
 import { useApp } from "../lib/store";
 import { kindAt, type KindField } from "../lib/kindExit";
+import { QUICK_ACCENTS, toggledAccent, toggledUpright } from "../lib/quickStyle";
 
 /** Kinds a selection can be made into (one symbol argument). */
 const makeable = () => KINDS.filter((k) => k.args === 1 && k.id !== "diff" && k.id !== "frm");
@@ -59,6 +60,16 @@ export function openEditorMenu(mf: MathfieldElement, e: MouseEvent) {
     const letter = latexOfLetter(sym.text);
     const from = sym.inKind ? `\\${sym.inKind}{${letter}}` : sym.sub ? `${letter}_{${sym.sub}}` : sym.bold ? `\\boldsymbol{${letter}}` : letter;
     items.push({ label: `Change ${sym.label} everywhere in the document…`, onSelect: () => void import("./ChangeSymbolDialog").then((m) => m.openChangeSymbol({ from })) }, { separator: true, label: "" });
+  }
+  // The style bar's own actions, here too (the bar can be switched off in Settings → Editing).
+  if (!def) {
+    const run = (f: (m: typeof import("./MathEditor")) => void) => void import("./MathEditor").then((m) => f(m));
+    items.push(
+      { label: "Bold (Ctrl+Shift+B)", onSelect: () => run((m) => m.toggleBold()) },
+      { label: "Italic ↔ upright", onSelect: () => run((m) => m.applyToSelection(toggledUpright)) },
+      { label: "Accent ▸", onSelect: () => openMenu(at, QUICK_ACCENTS.map((a) => ({ label: a.title, onSelect: () => run((m) => m.applyToSelection((src) => toggledAccent(src, a.id))) }))) },
+      { separator: true, label: "" },
+    );
   }
   items.push(
     {

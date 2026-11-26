@@ -14,7 +14,7 @@ describe("My styles", () => {
     const b = createStyle("ISO copy", "", "iso");
     expect(b.values.labels).toBe("upright");
     expect(nameProblem("report STYLE")).toMatch(/already exists/);
-    expect(() => createStyle("ISO 80000-2", "", "blank")).toThrow(/already exists/);
+    expect(() => createStyle("Upright constants and differentials", "", "blank")).toThrow(/already exists/);
     const r = renameStyle(a.id, "Report style 2", "renamed");
     expect(r.name).toBe("Report style 2");
     const c = duplicateStyle(r.id);
@@ -30,7 +30,7 @@ describe("My styles", () => {
     expect(() => updateStyle("iso", DEFAULT_STYLE)).toThrow(/read-only/);
     expect(() => renameStyle("iso", "Mine")).toThrow();
     expect(() => deleteStyle("iso")).toThrow();
-    expect(duplicateStyle("iso").name).toBe("ISO 80000-2 (copy)");
+    expect(duplicateStyle("iso").name).toBe("Upright constants and differentials (copy)");
     expect(JSON.stringify(STYLE_PRESETS)).toBe(builtIn);
   });
 

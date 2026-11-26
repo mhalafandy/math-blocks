@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { beginProgress, useProgress } from "../lib/progress";
 import { MathPreview } from "./MathPreview";
 import { Modal } from "./Dialogs";
 import { isDesktop } from "../lib/connector";
@@ -13,15 +14,20 @@ export function ConversionReport() {
   const progress = useConversion((s) => s.progress);
   const set = useConversion((s) => s.set);
   const [filter, setFilter] = useState<"attention" | "display" | "all">("attention");
-  if (busy)
-    return (
-      <div className="modal-backdrop">
-        <div className="modal" role="status" style={{ width: 320 }}>
-          <p className="modal-text">{progress ?? "Converting MathType equations…"}</p>
-        </div>
-      </div>
-    );
-  if (!report) return null;
+  // While converting: the app's one progress window ("Reading equations… 3 / 10" gives the bar its count).
+  useEffect(() => {
+    if (!busy) return;
+    const p = beginProgress("Converting MathType equations");
+    return () => p.end();
+  }, [busy]);
+  useEffect(() => {
+    if (!busy) return;
+    const m = /^(.*?)\s*(\d+)\s*\/\s*(\d+)\s*$/.exec(progress ?? "");
+    const op = useProgress.getState().op;
+    if (!op) return;
+    useProgress.getState().set(m ? { ...op, text: m[1]!, done: +m[2]!, total: +m[3]! } : { ...op, text: progress ?? "" });
+  }, [busy, progress]);
+  if (busy || !report) return null;
   const { result } = report;
   const close = () => set({ report: null });
   const attention = result.equations.filter((e) => e.status === "skipped" || e.messages.length);

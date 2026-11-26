@@ -278,7 +278,18 @@ export async function soakTestCommand() {
   const answer = await askText("Soak test (about 30 minutes, on its own two documents)", fresh, "Seed: the same seed repeats the same run exactly", "Run");
   if (answer === null) return;
   const seed = Number(answer) || Number(fresh);
-  const r = await runSoak({ seed, operations: 1000, progress: (s) => app.notify(`Soak test: ${s}`) });
+  const { withProgress } = await import("./progress");
+  const r = await withProgress("Soak test (1000 operations)", { total: 1000 }, (p) =>
+    runSoak({
+      seed,
+      operations: 1000,
+      progress: (s) => {
+        const n = /(\d+)\s*\/\s*1000/.exec(s);
+        if (n) p.update(+n[1]!, 1000, s);
+        else p.step(s);
+      },
+    }),
+  );
   const saved = (await smoke("writeFile", { file: "soak report.txt", text: r.lines.join("\r\n") }).catch(() => null)) as { path: string } | null;
   app.notify(`Soak test ${r.ok ? "passed" : "FAILED"} (${r.done} operations, seed ${seed}). Report: ${saved?.path ?? "(not saved)"}`, r.ok ? "info" : "error");
 }

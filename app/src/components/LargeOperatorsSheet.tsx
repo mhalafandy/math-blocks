@@ -18,7 +18,7 @@ export const openLargeOperatorsSheet = () => useLargeOperatorsSheet.getState().s
 /** Each choice as the document style's settings (the last one mixes: STIX Two, contour integrals from XITS). */
 type Choice = Pick<MathStyleGlobal, "largeOperators" | "largeOperatorGroups">;
 const FONTS: { id: string; label: string; set: Choice }[] = [
-  { id: "current", label: "Current (Symbol, as MathType)", set: { largeOperators: "current" } },
+  { id: "current", label: "Symbol", set: { largeOperators: "current" } },
   { id: "latin-modern", label: "Latin Modern Math", set: { largeOperators: "latin-modern" } },
   { id: "stix-two", label: "STIX Two Math", set: { largeOperators: "stix-two" } },
   { id: "xits", label: "XITS Math", set: { largeOperators: "xits" } },

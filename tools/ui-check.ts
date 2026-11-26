@@ -80,12 +80,16 @@ for (const size of SIZES) {
         const br = b.getBoundingClientRect();
         return br.right > win.right + 1 || br.left < win.left - 1;
       }).map((b) => b.textContent?.trim());
-      const actions = body.querySelector(".modal-actions");
+      // Each section's action row (sticky at the bottom of its section) is in view once the section is scrolled to.
       let actionsVisible = true;
-      if (actions) {
+      const all = Array.from(body.querySelectorAll(".modal-actions")) as HTMLElement[];
+      for (const actions of all) {
+        (actions.closest(".settings-section") as HTMLElement | null)?.scrollIntoView({ block: "start" });
         const ar = actions.getBoundingClientRect();
-        actionsVisible = ar.bottom <= bodyRect.bottom + 1 && ar.top >= bodyRect.top - 1;
+        if (!(ar.bottom <= body.getBoundingClientRect().bottom + 1 && ar.top >= body.getBoundingClientRect().top - 1)) actionsVisible = false;
       }
+      (body as HTMLElement).scrollTop = 0;
+      const actions = all[0];
       return { inViewport: win.right <= vw && win.bottom <= vh && win.left >= 0 && win.top >= 0, outside, actionsVisible, hasActions: !!actions };
     });
     const label = `${size.name}: Settings → ${pages[i]}`;
@@ -97,31 +101,35 @@ for (const size of SIZES) {
   }
   // Old entry points: links inside pages and Ctrl+K commands go to the right page, never an old pop-up.
   if (size.name === "1366x768") {
-    const goTo = async (label: string) => page.locator(".settings-side button", { hasText: label }).first().click();
+    // A section: through the search (its page opens scrolled to it).
+    const goTo = async (label: string) => {
+      await page.fill(".settings-search", label);
+      await page.locator(".settings-side .settings-result", { hasText: label }).first().click();
+    };
     await goTo("Document style");
     await page.waitForTimeout(400);
-    for (const [link, heading] of [["Accents…", "Accents"], ["Each kind's look…", "Notation kinds"]] as const) {
+    for (const [link, heading] of [["Accents…", "accents"], ["Each kind's look…", "kinds"]] as const) {
       await goTo("Document style");
       await page.waitForTimeout(300);
       const l = page.locator(".settings-body button", { hasText: link }).first();
       if (await l.count()) {
         await l.click();
         await page.waitForTimeout(500);
-        const on = await page.locator(".settings-side button.on").textContent();
-        check(on?.trim() === heading && (await oldModal(page)) === 0, `link “${link}” opens Settings → ${heading}, no old dialog (now: ${on})`);
+        const on = await shownSection(page);
+        check(on === heading && (await oldModal(page)) === 0, `link “${link}” opens Settings → ${heading}, no old dialog (now: ${on})`);
       } else check(false, `link “${link}” found on the Document style page`);
     }
     await page.keyboard.press("Escape");
     await page.waitForTimeout(400);
     check((await page.locator(".settings-window").count()) === 0 && (await oldModal(page)) === 0, "closing the settings leaves no old dialog open");
-    for (const [cmd, heading] of [["Snippets (trigger", "Snippets"], ["Accents: how harpoons", "Accents"], ["Document style: how", "Document style"], ["Notation settings: kinds", "Notation kinds"]] as const) {
+    for (const [cmd, heading] of [["Snippets (trigger", "snippets"], ["Accents: how harpoons", "accents"], ["Document style: how", "docstyle"], ["Notation settings: kinds", "kinds"]] as const) {
       await page.keyboard.press("Control+k");
       await page.waitForTimeout(300);
       await page.keyboard.type(cmd, { delay: 15 });
       await page.waitForTimeout(300);
       await page.keyboard.press("Enter");
       await page.waitForTimeout(600);
-      const on = (await page.locator(".settings-side button.on").textContent().catch(() => null))?.trim();
+      const on = await shownSection(page).catch(() => null);
       check(on === heading && (await oldModal(page)) === 0, `Ctrl+K “${cmd}” opens Settings → ${heading}, no old dialog (now: ${on ?? "no settings"})`);
       await page.keyboard.press("Escape");
       await page.waitForTimeout(300);
@@ -129,6 +137,21 @@ for (const size of SIZES) {
     check((await oldModal(page)) === 0, "after every entry point: no old dialog anywhere");
   }
   await ctx.close();
+}
+
+/** The settings section scrolled into view at the top of its page (its id), or null without settings. */
+async function shownSection(page: Page): Promise<string | null> {
+  return page.evaluate(() => {
+    const body = document.querySelector(".settings-body");
+    if (!body) return null;
+    const top = body.getBoundingClientRect().top;
+    let best: HTMLElement | null = null;
+    for (const sec of Array.from(body.querySelectorAll(".settings-section")) as HTMLElement[]) {
+      const d = sec.getBoundingClientRect().top - top;
+      if (d <= 150 && (!best || d > best.getBoundingClientRect().top - top)) best = sec;
+    }
+    return best ? best.id.replace("settings-sec-", "") : null;
+  });
 }
 
 /** The docked preview's white page is inside its canvas (with a margin) and nothing has to be scrolled. */
@@ -467,6 +490,128 @@ const BIG = {
   const refit = await previewFits(page);
   check(refit.noScroll && refit.inside, `docked preview: Fit follows the panel when it is made lower (canvas ${refit.canvas}, page ${refit.page})`);
   await page.screenshot({ path: `${out}/preview-docked-derivation-lower-fit.png` });
+  await ctx.close();
+}
+// ------------------------------------------------------------------ the progress window; the style bar setting
+{
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 } });
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.log("page error:", e.message));
+  await open(page);
+  await page.evaluate("window.__name = (f) => f");
+  await page.evaluate(async () => {
+    const m = await import("/src/lib/progress.ts" as string);
+    const p = m.beginProgress("Checking the chapter files", { total: 4, cancel: true });
+    p.update(1, 4, "Chapter 2");
+    (window as unknown as { __p: unknown }).__p = p;
+  });
+  await page.waitForTimeout(200);
+  const shown = await page.evaluate(() => {
+    const w = document.querySelector(".progress-window") as HTMLElement | null;
+    return { visible: !!w && w.offsetParent !== null, text: w?.textContent ?? "" };
+  });
+  check(shown.visible && /Checking the chapter files/.test(shown.text) && /1 \/ 4/.test(shown.text) && /Chapter 2/.test(shown.text), `progress window: title, count and step shown (${shown.text.slice(0, 80)})`);
+  await page.locator(".progress-window button", { hasText: "Cancel" }).click();
+  const cancelled = await page.evaluate(() => (window as unknown as { __p: { cancelled: boolean } }).__p.cancelled);
+  check(cancelled, "progress window: Cancel reaches the operation");
+  // Another dialog comes first: the progress window steps aside while it is open.
+  await page.evaluate(async () => void (await import("/src/components/Dialogs.tsx" as string)).askConfirm("A question", "Shown above the progress window?", "OK"));
+  await page.waitForTimeout(200);
+  const hidden = await page.evaluate(() => (document.querySelector(".progress-window") as HTMLElement | null)?.offsetParent === null);
+  check(hidden, "progress window: steps aside while another dialog is open");
+  await page.keyboard.press("Escape");
+  await page.evaluate(() => (window as unknown as { __p: { end: () => void } }).__p.end());
+  await page.waitForTimeout(150);
+  check((await page.locator(".progress-window").count()) === 0, "progress window: closes when the operation ends");
+  // Settings → Editing → Style bar over a selection: off, a selection shows no bar.
+  const barAfterSelect = async () => {
+    await page.evaluate(async () => {
+      (await import("/src/lib/store.ts" as string)).useApp.getState().setLatex("a+b+c", "external");
+      await new Promise((r) => setTimeout(r, 150));
+      const mf = document.querySelector("math-field") as unknown as { focus: () => void; selection: unknown };
+      mf.focus();
+      mf.selection = { ranges: [[0, 3]] };
+    });
+    await page.waitForTimeout(600);
+    return page.locator(".quick-style").count();
+  };
+  check((await barAfterSelect()) === 1, "style bar: shown over a selection (default on)");
+  await page.evaluate(async () => (await import("/src/lib/store.ts" as string)).useApp.getState().setPrefs({ quickStyleBar: false }));
+  check((await barAfterSelect()) === 0, "style bar: off in Settings, a selection shows none");
+  await ctx.close();
+}
+
+// ------------------------------------------------------------------ nested notation kinds (two and three levels)
+// A kind inside another kind: it loads unchanged; making a kind of any one-atom selection keeps every kind there
+// (a selection on an inner kind's drawing nests the new kind around it, never takes the inner one apart); typing
+// and Backspace at every caret position give the equation back.
+{
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 } });
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.log("page error:", e.message));
+  await open(page);
+  await page.evaluate("window.__name = (f) => f");
+  const KIND_RE = /\\(pvec|uvec|bvec|vectrix|cmat|mat|dcm|crossmat|dyadic|tens|quat|frm|body|diff)(?![A-Za-z])/g;
+  const kindsIn = (l: string) => (l.match(KIND_RE) ?? []).length;
+  const load = (l: string) =>
+    page.evaluate(async (l) => {
+      const m = await import("/src/lib/store.ts" as string);
+      m.useApp.getState().setLatex(l, "external");
+      await new Promise((r) => setTimeout(r, 200));
+      const mf = document.querySelector("math-field") as unknown as { lastOffset: number; shadowRoot: ShadowRoot };
+      return { last: mf.lastOffset, errs: mf.shadowRoot.querySelectorAll(".ML__error").length };
+    }, l);
+  const stored = () => page.evaluate(async () => (await import("/src/lib/store.ts" as string)).useApp.getState().latex as string);
+  // The caret's colour says which kind it is in: none in plain maths, one for the outer kind, another inside the inner one.
+  {
+    const { last } = await load("x+\\tens{a+\\pvec{b}}");
+    const kinds: string[] = [];
+    for (let p = 0; p <= last; p++) {
+      await page.evaluate((p) => {
+        const mf = document.querySelector("math-field") as unknown as { focus: () => void; position: number };
+        mf.focus();
+        mf.position = p;
+      }, p);
+      await page.waitForTimeout(80);
+      kinds.push(await page.evaluate(() => (document.querySelector("math-field") as HTMLElement).dataset.caretKind ?? "-"));
+    }
+    const distinct = new Set(kinds.filter((k) => k !== "-"));
+    check(kinds[0] === "-" && distinct.size >= 2, `nested kinds: the caret's colour follows the kind it is in (plain, outer, inner: ${kinds.join(" ")})`);
+  }
+  for (const src of ["\\tens{a+\\pvec{b}}", "\\crossmat{\\cmat{\\pvec{h}}}+c"]) {
+    const { last, errs } = await load(src);
+    check(errs === 0 && (await stored()) === src, `nested kinds ${src}: loads unchanged, drawn without errors`);
+    const broken: string[] = [];
+    for (let a = 0; a < last; a++) {
+      await load(src);
+      await page.evaluate(async (a) => {
+        const mf = document.querySelector("math-field") as unknown as { focus: () => void; selection: unknown };
+        mf.focus();
+        mf.selection = { ranges: [[a, a + 1]] };
+        (await import("/src/components/MathEditor.tsx" as string)).makeKindFromSelection("cmat");
+        await new Promise((r) => setTimeout(r, 150));
+      }, a);
+      const out = await stored();
+      if (kindsIn(out) < kindsIn(src) + (out === src ? 0 : 1)) broken.push(`${a}: ${out}`);
+    }
+    check(broken.length === 0, `nested kinds ${src}: making a kind of any one-atom selection keeps every kind${broken.length ? ` (${broken.slice(0, 3).join("; ")})` : ""}`);
+    const changed: string[] = [];
+    for (let p = 0; p <= last; p++) {
+      await load(src);
+      await page.evaluate((p) => {
+        const mf = document.querySelector("math-field") as unknown as { focus: () => void; position: number };
+        mf.focus();
+        mf.position = p;
+      }, p);
+      await page.keyboard.type("x");
+      await page.waitForTimeout(80);
+      await page.keyboard.press("Backspace");
+      await page.waitForTimeout(120);
+      const out = await stored();
+      if (out !== src) changed.push(`${p}: ${out}`);
+    }
+    check(changed.length === 0, `nested kinds ${src}: typing and Backspace at every caret position give it back${changed.length ? ` (${changed.slice(0, 3).join("; ")})` : ""}`);
+  }
   await ctx.close();
 }
 // ------------------------------------------------------------------ Change symbol… (the dialog, on a generic document)

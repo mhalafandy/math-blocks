@@ -193,6 +193,9 @@ const EQUATIONS = [
   "\\left(x\\right)",
   "\\sqrt{\\class{nk-pvec}{\\overrightharpoon{\\mathbf{r}}}}",
   "\\begin{bmatrix}\\class{nk-cmat}{\\mathbf{v}}\\end{bmatrix}",
+  // Nested kinds: two and three levels (a kind inside a kind's contents).
+  "\\class{nk-tens}{a+\\class{nk-pvec}{\\overrightharpoon{\\mathbf{b}}}}",
+  "\\class{nk-crossmat}{\\class{nk-cmat}{\\class{nk-pvec}{\\overrightharpoon{\\mathbf{h}}}}^{\\times}}+c",
 ];
 
 let positions = 0;

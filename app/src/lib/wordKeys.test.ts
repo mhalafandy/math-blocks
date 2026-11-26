@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkWordKeys, DEFAULT_WORD_KEYS, migrateWordKeys, wordKeyCode } from "./wordKeys";
+import { checkWordKeys, DEFAULT_WORD_KEYS, migrateWordKeys, MODE_KEYS, wordKeyCode } from "./wordKeys";
 
 describe("Word shortcuts", () => {
   it("the defaults follow the convention: Ctrl+Alt and a key under the right hand, all different", () => {
@@ -7,6 +7,14 @@ describe("Word shortcuts", () => {
     for (const k of values) expect(checkWordKeys(k)).toBeNull();
     expect(new Set(values.map((v) => v.toLowerCase())).size).toBe(values.length);
     for (const k of values) expect(k.startsWith("Ctrl+Alt+")).toBe(true);
+  });
+  it("the editor's own keys (equation type) are never Word shortcuts: not a default, refused as one", () => {
+    const defaults = Object.values(DEFAULT_WORD_KEYS).map((v) => v.toLowerCase());
+    for (const k of Object.values(MODE_KEYS)) {
+      expect(defaults).not.toContain(k.toLowerCase());
+      expect(checkWordKeys(k)).toMatch(/MathBlocks editor/);
+      expect(checkWordKeys(k.replace("Ctrl", "Control").toLowerCase())).toMatch(/MathBlocks editor/);
+    }
   });
   it("refuses Shift bases, function keys and three modifiers", () => {
     expect(checkWordKeys("Ctrl+Shift+J")).toMatch(/input language/);

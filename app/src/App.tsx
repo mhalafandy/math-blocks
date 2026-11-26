@@ -58,6 +58,7 @@ import { AccentsDialog } from "./components/AccentsDialog";
 import { sendToWord } from "./lib/sendToWord";
 import { ConversionReport } from "./components/ConversionReport";
 import { SaveDialog } from "./components/SaveDialog";
+import { ProgressWindow } from "./components/ProgressWindow";
 import { zoomStep } from "./lib/zoom";
 
 /** Adds or removes the number of an equation that is in Word (keeps its tag). */
@@ -412,6 +413,7 @@ export function App() {
       <CheckStyleDialog />
       <AccentsDialog />
       <SettingsDialog />
+      <ProgressWindow />
       <ShortcutsDialog />
       <LargeOperatorsSheet />
       <RecognitionDialog />

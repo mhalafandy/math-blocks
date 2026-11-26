@@ -145,7 +145,8 @@ export async function thesisTestCommand() {
   if (!(await askConfirm("Large-document test", "Generate a generic document of about 300 pages (1500 equations, 1000 references) and run every whole-document operation on it, timed. It takes a while (about 20–40 minutes) and opens its own document; your documents are not touched.", "Run"))) return;
   const t0 = performance.now();
   const startedAt = new Date();
-  const steps = await runThesisTest(1, (s) => app.notify(`Large-document test: ${s}…`));
+  const { withProgress } = await import("./progress");
+  const steps = await withProgress("Large-document test", {}, (p) => runThesisTest(1, (s) => p.step(`${s}…`)));
   const r = await writeReport(thesisReport(steps, startedAt, performance.now() - t0));
   app.notify(`Large-document test finished: ${steps.filter((s) => s.ok === false).length} problem(s). Report: ${r?.path ?? "(not saved)"}`);
 }

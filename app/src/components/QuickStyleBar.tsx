@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { KIND_BY_ID, KINDS } from "@mathblocks/math-core";
 import { QUICK_ACCENTS, toggledAccent, toggledUpright } from "../lib/quickStyle";
 import { MathTile } from "./MathTile";
+import { useApp } from "../lib/store";
 import { ICON_CELL } from "../lib/tiles";
 
 /**
@@ -23,7 +24,9 @@ const keep = (e: React.MouseEvent) => e.preventDefault();
 
 export function QuickStyleBar() {
   const { at, kind, set } = useQuickStyle();
-  if (!at) return null;
+  // Settings → Editing → Style bar over a selection.
+  const enabled = useApp((s) => s.quickStyleBar);
+  if (!at || !enabled) return null;
   const run = (f: (m: typeof import("./MathEditor")) => void) => void import("./MathEditor").then((m) => f(m));
   const left = Math.max(8, Math.min(at.left - 40, window.innerWidth - 420));
   const top = at.top - 40 > 8 ? at.top - 40 : at.bottom + 8;

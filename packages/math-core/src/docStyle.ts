@@ -273,14 +273,14 @@ export const STYLE_PRESETS: StylePreset[] = [
   },
   {
     id: "mathtype",
-    name: "MathType Classic",
-    description: "MathType's default styles: italic Latin letters, upright Greek, upright functions, numbers and text.",
+    name: "Upright Times, Symbol operators",
+    description: "Italic Latin letters, upright Greek, upright functions, numbers and text; Times New Roman letters and Symbol operators.",
     values: { ...looks(BASE), greekLower: "upright", greekUpper: "upright", transpose: "italic" },
   },
   {
     id: "iso",
-    name: "ISO 80000-2",
-    description: "Upright d, e, i, π, upright descriptive labels and transpose; italic variables and index variables.",
+    name: "Upright constants and differentials",
+    description: "Upright d, e, i, π, upright descriptive labels and transpose; italic variables and index variables (as ISO 80000-2 recommends).",
     values: { ...looks(BASE), labels: "upright", differential: "upright", constants: "upright", transpose: "upright" },
   },
   {
@@ -401,10 +401,12 @@ export function differsFrom(style: MathStyle, preset: StylePreset): boolean {
   return LOOK_KEYS.some((k) => k in preset.values && JSON.stringify(l[k]) !== JSON.stringify(preset.values[k]));
 }
 
-/** What a document says about its style: "Thesis style", or "Thesis style, modified" after changes. */
+/** What a document says about its style: "My style", or "My style, modified" after changes. */
 export function styleLabel(style: MathStyle, presets: StylePreset[]): string {
   const p = presets.find((x) => x.id === style.preset);
-  const name = style.presetName ?? p?.name ?? "Custom style";
+  // A built-in preset shows its current name (a document stores the name it had when applied).
+  const builtIn = STYLE_PRESETS.some((x) => x.id === style.preset);
+  const name = (builtIn ? p?.name : undefined) ?? style.presetName ?? p?.name ?? "Custom style";
   return p && differsFrom(style, p) ? `${name}, modified` : name;
 }
 

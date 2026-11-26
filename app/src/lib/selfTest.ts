@@ -75,6 +75,7 @@ const CORE_SECTIONS = new Set([
   "Convert MathType keeps the paragraph (number at the right margin)",
   "Convert MathType: nothing passes through silently",
   "Equation objects: right-click opens the floating editor; the equation menu is in its Word-menu button",
+  "Word shortcuts: Word's own keys on this PC",
   "Toggle LaTeX: equation ↔ its LaTeX text",
   "Equation objects: tracked changes, undo/redo, class registration, PDF",
   "One Ctrl+Z for each whole-document operation",
@@ -88,7 +89,20 @@ const CORE_SECTIONS = new Set([
   "Saved test documents",
 ]);
 
+/** The run in the app's one progress window: the section in progress and how many of the run's sections are done. */
+let runProgress: import("./progress").Progress | null = null;
 export async function runWordSelfTest(o: { full?: boolean } = {}): Promise<string | null> {
+  const { beginProgress } = await import("./progress");
+  runProgress = beginProgress(o.full ? "Word self-test (full run)" : "Word self-test (core run)", { total: o.full ? undefined : CORE_SECTIONS.size });
+  try {
+    return await runWordSelfTestSections(o);
+  } finally {
+    runProgress?.end();
+    runProgress = null;
+  }
+}
+
+async function runWordSelfTestSections(o: { full?: boolean }): Promise<string | null> {
   const app = useApp.getState();
   if (!app.connector.connected) {
     app.notify("Word is not connected. Start Word with the MathBlocks add-in.", "error");
@@ -99,11 +113,14 @@ export async function runWordSelfTest(o: { full?: boolean } = {}): Promise<strin
     return null;
   }
   const checks: Check[] = [];
+  const sectionsSeen = new Set<string>();
   let section = "";
   const check = (name: string, ok: boolean | null, detail = "") => checks.push({ section, name, status: ok === null ? "INFO" : ok ? "PASS" : "FAIL", detail });
   const step = async <T>(name: string, run: () => Promise<T>): Promise<T | undefined> => {
     // The core run (the stable channel's gate) skips the other sections.
     if (!o.full && !CORE_SECTIONS.has(section)) return undefined;
+    sectionsSeen.add(section);
+    runProgress?.update(sectionsSeen.size - 1, undefined, section);
     try {
       return await run();
     } catch (e) {
@@ -556,6 +573,27 @@ export async function runWordSelfTest(o: { full?: boolean } = {}): Promise<strin
       check("Word's Ctrl+Alt keys on this PC", null, assigned.filter((x) => /^Ctrl\+Alt\+[^+]+$/.test(x.keys)).map((x) => `${x.keys} ${x.command}`).join("; "));
       check("keys of macros and add-ins (MathType and others)", null, assigned.filter((x) => x.category !== "wdKeyCategoryCommand").map((x) => `${x.keys} ${x.command}`).join("; ") || "none");
       await smoke("writeFile", { file: "word keys.txt", text: assigned.map((x) => `${x.keys}\t${x.command}\t${x.category.replace("wdKeyCategory", "")}`).join("\r\n") });
+      // The editor's own keys (equation type): only in the MathBlocks windows, never registered system-wide, so in
+      // Word they keep Word's meaning. By physical key: the same with the Arabic (101) layout. Not pressed in Word
+      // (Ctrl+Alt+I and N would run Word's own commands).
+      {
+        const { MODE_KEYS, handleModeKey } = await import("./modeKeys");
+        const modeKeys = Object.values(MODE_KEYS);
+        const registered = Object.values(mine).filter((k) => !!k).map((k) => k.toLowerCase());
+        const stolen = modeKeys.filter((k) => registered.includes(k.toLowerCase()));
+        check("Ctrl+Alt+U / I / N are MathBlocks-window keys, not system-wide (Word never gets them from MathBlocks)", !stolen.length, stolen.length ? `registered as Word shortcuts: ${stolen.join(", ")}` : "not registered");
+        check("…Word keeps its own meaning for them on this PC", null, modeKeys.map((k) => `${k}: ${assigned.find((x) => x.keys === k)?.command ?? "free in Word"}`).join("; "));
+        const st = useApp.getState();
+        const was = { display: st.display, numbered: st.numbered };
+        const typeNow = () => (useApp.getState().numbered ? "numbered" : useApp.getState().display ? "display" : "inline");
+        const send = (key: string, code: string) => handleModeKey(new KeyboardEvent("keydown", { key, code, ctrlKey: true, altKey: true }));
+        const latin = [send("i", "KeyI") && typeNow(), send("n", "KeyN") && typeNow(), send("u", "KeyU") && typeNow()].join(" ");
+        const arabic = [send("ه", "KeyI") && typeNow(), send("ى", "KeyN") && typeNow(), send("ع", "KeyU") && typeNow()].join(" ");
+        check("in the editor, Ctrl+Alt+I / N / U → inline, numbered, display", latin === "inline numbered display", latin);
+        check("…the same with the Arabic (101) layout (same physical keys)", arabic === "inline numbered display", arabic);
+        useApp.getState().setDisplay(was.display);
+        useApp.getState().setNumbered(was.numbered);
+      }
       // The MathBlocks tab's key tip against the ones Word's ribbon shows after Alt on this PC (tabs, Search box,
       // other add-ins): equal, or one the start of the other, makes Alt, letter ambiguous.
       const { TAB_KEYTIP } = await import("./wordKeys");

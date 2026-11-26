@@ -48,7 +48,7 @@ import { DEFAULT_SNIPPETS } from "./snippets";
 export type TransposeForm = "upright" | "bold" | "italic" | "top";
 export const TRANSPOSE_FORMS: Record<TransposeForm, string> = {
   upright: "Upright T (Aᵀ, regular weight)",
-  bold: "Bold T (MathType thesis form)",
+  bold: "Bold T",
   italic: "Italic T",
   top: "⊤",
 };
@@ -443,9 +443,9 @@ export type Convention = "hughes" | "schaub" | "markley";
 export type VectorStyle = "harpoon" | "arrow" | "plainArrow" | "bold";
 
 export const CONVENTIONS: Record<Convention, string> = {
-  hughes: "Hughes (vectrix, C_ba, a^×, ε/η)",
-  schaub: "Schaub & Junkins ([BN], [ω̃], β₀…β₃, ᴺd/dt)",
-  markley: "Markley & Crassidis (A, [ω×], q₄ last, ⊗)",
+  hughes: "Rotation matrix C_ba, cross matrix a^×, quaternion ε/η",
+  schaub: "Direction cosine matrix [BN], tilde matrix [ω̃], Euler parameters β₀…β₃",
+  markley: "Attitude matrix A, cross matrix [ω×], quaternion q₄ last",
 };
 export const VECTOR_STYLES: Record<VectorStyle, string> = {
   harpoon: "Bold with harpoon",
@@ -507,12 +507,12 @@ const spacecraftConventional: PaletteItem[] = [
   sc("angvelframe", "Angular velocity of B relative to N", "angular velocity omega frame", { hughes: "\\pvec[ba]{\\omega}", schaub: "\\pvec[B/N]{\\omega}", markley: "\\pvec{\\omega}^{B/N}" }, CHECK),
   sc("angaccframe", "Angular acceleration", "angular acceleration alpha omega dot", { hughes: "\\dot{V{\\omega}}_{ba}", schaub: "\\dot{V{\\omega}}_{B/N}", markley: "\\dot{V{\\omega}}^{B/N}" }, CHECK),
   sc("angmomc", "Angular momentum about the centre of mass", "angular momentum h", { hughes: "V{h}_{c}", schaub: "V{H}_{c}", markley: "V{H}_{c}" }),
-  sc("torque", "External torque", "torque moment", { hughes: "V{g}", schaub: "V{L}", markley: "V{L}" }, "Hughes writes torques as g; Schaub and Markley as L."),
+  sc("torque", "External torque", "torque moment", { hughes: "V{g}", schaub: "V{L}", markley: "V{L}" }, "The rotation-matrix notation writes torques as g; the other two as L."),
   sc("force", "External force", "force", { hughes: "V{f}", schaub: "V{F}", markley: "V{F}" }),
   sc("basisvec", "Basis unit vector", "unit vector basis axis b1 b2 b3", { hughes: "\\bvec{b}_{#?}", schaub: "\\hat{b}_{#?}", markley: "\\hat{b}_{#?}" }),
   sc("basistriad", "Basis triad / vectrix", "vectrix frame triad basis", { hughes: "\\vectrix{F}_{#?}", schaub: "\\left\\{\\hat{b}\\right\\}", markley: "\\left\\{\\hat{b}\\right\\}" }),
   sc("framecomp", "Components of a vector in a frame", "components frame column", { hughes: "\\cmat{#0}_{#?}", schaub: "{}^{#?}\\mathbf{#0}", markley: "\\mathbf{#0}_{#?}" }),
-  sc("framederiv", "Time derivative in a frame", "frame derivative rotating inertial", { hughes: "\\overset{\\circ}{V{#0}}", schaub: "\\frac{{}^{#?}\\mathrm{d}}{\\mathrm{d}t}\\left(V{#0}\\right)", markley: "\\frac{{}^{#?}\\mathrm{d}}{\\mathrm{d}t}\\left(V{#0}\\right)" }, "Hughes: ∘ = derivative relative to the rotating frame."),
+  sc("framederiv", "Time derivative in a frame", "frame derivative rotating inertial", { hughes: "\\overset{\\circ}{V{#0}}", schaub: "\\frac{{}^{#?}\\mathrm{d}}{\\mathrm{d}t}\\left(V{#0}\\right)", markley: "\\frac{{}^{#?}\\mathrm{d}}{\\mathrm{d}t}\\left(V{#0}\\right)" }, "In the rotation-matrix notation, ∘ = derivative relative to the rotating frame."),
   sc("dcm", "Direction cosine (rotation) matrix", "dcm direction cosine matrix attitude rotation", { hughes: "\\dcm{#?}{#?}", schaub: "\\left[#?#?\\right]", markley: "\\mathbf{A}" }),
   sc("rot1", "Rotation about axis 1", "principal rotation matrix x axis dcm", { hughes: "\\mathbf{C}_{1}(#0)=\\begin{bmatrix}1&0&0\\\\ 0&\\cos #0&\\sin #0\\\\ 0&-\\sin #0&\\cos #0\\end{bmatrix}", schaub: "\\left[M_{1}(#0)\\right]=\\begin{bmatrix}1&0&0\\\\ 0&\\cos #0&\\sin #0\\\\ 0&-\\sin #0&\\cos #0\\end{bmatrix}", markley: "\\mathbf{R}_{1}(#0)=\\begin{bmatrix}1&0&0\\\\ 0&\\cos #0&\\sin #0\\\\ 0&-\\sin #0&\\cos #0\\end{bmatrix}" }, "Passive (frame) rotation."),
   sc("rot2", "Rotation about axis 2", "principal rotation matrix y axis dcm", { hughes: "\\mathbf{C}_{2}(#0)=\\begin{bmatrix}\\cos #0&0&-\\sin #0\\\\ 0&1&0\\\\ \\sin #0&0&\\cos #0\\end{bmatrix}", schaub: "\\left[M_{2}(#0)\\right]=\\begin{bmatrix}\\cos #0&0&-\\sin #0\\\\ 0&1&0\\\\ \\sin #0&0&\\cos #0\\end{bmatrix}", markley: "\\mathbf{R}_{2}(#0)=\\begin{bmatrix}\\cos #0&0&-\\sin #0\\\\ 0&1&0\\\\ \\sin #0&0&\\cos #0\\end{bmatrix}" }, "Passive (frame) rotation."),
@@ -521,13 +521,13 @@ const spacecraftConventional: PaletteItem[] = [
   sc("skewfilled", "Skew-symmetric matrix of ω, filled", "skew symmetric cross product matrix omega components", { hughes: "\\boldsymbol{\\omega}^{\\times}=\\begin{bmatrix}0&-\\omega_{3}&\\omega_{2}\\\\ \\omega_{3}&0&-\\omega_{1}\\\\ -\\omega_{2}&\\omega_{1}&0\\end{bmatrix}", schaub: "\\left[\\tilde{\\omega}\\right]=\\begin{bmatrix}0&-\\omega_{3}&\\omega_{2}\\\\ \\omega_{3}&0&-\\omega_{1}\\\\ -\\omega_{2}&\\omega_{1}&0\\end{bmatrix}", markley: "\\left[\\boldsymbol{\\omega}\\times\\right]=\\begin{bmatrix}0&-\\omega_{3}&\\omega_{2}\\\\ \\omega_{3}&0&-\\omega_{1}\\\\ -\\omega_{2}&\\omega_{1}&0\\end{bmatrix}" }),
   sc("inertiadyadic", "Inertia dyadic", "inertia dyadic tensor", { hughes: "\\dyadic{I}", schaub: "\\bar{\\bar{I}}", markley: "\\bar{\\bar{J}}" }, CHECK),
   sc("inertiamatrix", "Inertia matrix", "inertia matrix moment", { hughes: "\\mat{I}", schaub: "\\left[I\\right]", markley: "\\mathbf{J}" }),
-  sc("quatconv", "Quaternion (convention form)", "quaternion euler parameters attitude", { hughes: "\\begin{bmatrix}\\boldsymbol{\\epsilon}\\\\ \\eta\\end{bmatrix}", schaub: "\\boldsymbol{\\beta}=\\begin{bmatrix}\\beta_{0}&\\beta_{1}&\\beta_{2}&\\beta_{3}\\end{bmatrix}^{T}", markley: "\\mathbf{q}=\\begin{bmatrix}\\mathbf{q}_{1:3}\\\\ q_{4}\\end{bmatrix}" }, "Hughes and Markley: scalar last; Schaub: scalar first."),
+  sc("quatconv", "Quaternion (convention form)", "quaternion euler parameters attitude", { hughes: "\\begin{bmatrix}\\boldsymbol{\\epsilon}\\\\ \\eta\\end{bmatrix}", schaub: "\\boldsymbol{\\beta}=\\begin{bmatrix}\\beta_{0}&\\beta_{1}&\\beta_{2}&\\beta_{3}\\end{bmatrix}^{T}", markley: "\\mathbf{q}=\\begin{bmatrix}\\mathbf{q}_{1:3}\\\\ q_{4}\\end{bmatrix}" }, "Scalar last in the rotation-matrix and attitude-matrix notations; scalar first with Euler parameters."),
   sc("quatprod", "Quaternion product", "quaternion product multiplication composition", { hughes: "\\mathbf{q}_{1}\\otimes\\mathbf{q}_{2}", schaub: "\\boldsymbol{\\beta}^{\\prime\\prime}\\otimes\\boldsymbol{\\beta}^{\\prime}", markley: "\\mathbf{p}\\otimes\\mathbf{q}" }, CHECK),
   sc("mrp", "Modified Rodrigues parameters", "mrp rodrigues attitude sigma", { hughes: "\\boldsymbol{\\sigma}", schaub: "\\boldsymbol{\\sigma}", markley: "\\mathbf{p}" }),
   sc("com", "Centre-of-mass position", "centre center of mass cm", { hughes: "\\pvec{r}_{c}" }),
   sc("cop", "Centre-of-pressure position", "centre center of pressure cp", { hughes: "\\pvec{r}_{cp}" }),
   sc("srp", "Solar radiation pressure force", "srp solar radiation pressure force", { hughes: "V{f}_{SRP}", schaub: "V{F}_{SRP}", markley: "V{F}_{SRP}" }),
-  sc("orbelems", "Classical orbital elements", "orbital elements keplerian a e i raan argument perigee true anomaly", { hughes: "\\left(a,\\,e,\\,i,\\,\\Omega,\\,\\omega,\\,\\nu\\right)", schaub: "\\left(a,\\,e,\\,i,\\,\\Omega,\\,\\omega,\\,f\\right)", markley: "\\left(a,\\,e,\\,i,\\,\\Omega,\\,\\omega,\\,\\nu\\right)" }, "Schaub writes the true anomaly as f."),
+  sc("orbelems", "Classical orbital elements", "orbital elements keplerian a e i raan argument perigee true anomaly", { hughes: "\\left(a,\\,e,\\,i,\\,\\Omega,\\,\\omega,\\,\\nu\\right)", schaub: "\\left(a,\\,e,\\,i,\\,\\Omega,\\,\\omega,\\,f\\right)", markley: "\\left(a,\\,e,\\,i,\\,\\Omega,\\,\\omega,\\,\\nu\\right)" }, "The direction-cosine notation writes the true anomaly as f."),
   sc("gravparam", "Gravitational parameter", "mu gravitational parameter gm", { hughes: "\\mu=GM" }),
 ];
 
@@ -664,7 +664,7 @@ export const GROUPS: PaletteGroup[] = [
   { id: "functions", label: "Functions", icon: "\\sin\\,\\log", iconTex: true, kind: "templates", row: "templates", items: functions },
   { id: "styles", label: "Letter styles", icon: "\\mathbf{A}\\,\\mathcal{F}\\,\\mathbb{R}", iconTex: true, kind: "templates", row: "templates", items: styles },
 
-  { id: "tab-spacecraft", label: "Spacecraft dynamics", icon: "", kind: "templates", row: "tabs", items: spacecraft },
+  { id: "tab-spacecraft", label: "Rotational dynamics", icon: "", kind: "templates", row: "tabs", items: spacecraft },
   { id: "tab-linalg", label: "Linear algebra", icon: "", kind: "templates", row: "tabs", items: linalg },
   { id: "tab-algebra", label: "Algebra", icon: "", kind: "templates", row: "tabs", items: algebra },
   { id: "tab-derivs", label: "Derivatives", icon: "", kind: "templates", row: "tabs", items: derivs },
@@ -793,7 +793,7 @@ export const plainLatex = (latex: string) => latex.replace(/\{(#0|#\?)\}/g, "{}"
 /** Browsing categories, in the order of the thesis (Phase 1 plan). */
 export const CATEGORIES = [
   { id: "my-notation", label: "My notation" },
-  { id: "spacecraft", label: "Spacecraft dynamics" },
+  { id: "spacecraft", label: "Rotational dynamics" },
   { id: "greek", label: "Greek" },
   { id: "linalg", label: "Vectors, matrices & linear algebra" },
   { id: "calculus", label: "Calculus & analysis" },

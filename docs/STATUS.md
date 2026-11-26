@@ -2,36 +2,25 @@
 
 Updated at the end of every round. Public repository: generic content only. Earlier rounds: `docs/status-archive/`.
 
-## Latest round — 0.1.177 (UX round)
+## Latest round — 0.1.178 (UX follow-up, candidate for stable)
 
-**Stable: 0.1.175** (unchanged). **Test channel:** 0.1.177, CI passed.
+**Stable: 0.1.175.** **Test channel:** 0.1.178 — CI result below once checked. 0.1.177 checks on your PC: all OK.
 
-**Built (your list):**
-- 2.9 Key lag: the symbol palette and sidebar re-rendered on every key; now only the editor does, and the app's update runs after the key is painted. Backspace on a selection: the deletion was not drawn until the next key (your screenshot) — drawn at once now (CI check added). Document suggestions re-read every equation of the Word document each minute on the UI thread: now in small slices, cached, every 5 min.
-- 2.7 Library and Examples insert at the cursor (replacing only a selection); into an empty editor they open as before. Library and Blocks share one design: cards plus folder icons.
-- 2.6 Blocks drag into the editor (dropped where you drop them) and onto a group; library equations drag into the editor too.
-- 2.2 / 2.3 The panel header always fits (the Hide button was outside it); Blocks has the same header actions (＋, new group) plus ⋯ for New / Export / Import.
-- 2.5 Ctrl+Alt+U display, Ctrl+Alt+I inline, Ctrl+Alt+N numbered (Ctrl+Alt+J stays Word's new inline equation). 2.4 Shortcuts sheet: one line per shortcut, grouped.
-- 2.1 / 2.8 Editor: a harpoon with an index that came from Word, the library or the LaTeX tab still drew the index underneath (only typing was fixed in 0.1.176); fixed, with the normal space before "=", and the harpoon drawn with its barb (⇀). Display only: the stored LaTeX is unchanged.
+**Built:**
+- Settings: six real pages (Appearance, Notation, Editing, Word, Backups and updates, Developer tools), each with its sections one under the other and links to them at the top. 0.1.177 only grouped the 15 old pages under small headings in the side list, which still looked like the old layout; there is one Settings window (no add-in settings), so this is what every entry point opens. Search and old links open the page scrolled to the section.
+- Editing → "Style bar over a selection" (default on); off, the bar never shows. Its actions are in the right-click menu too (Bold, Italic ↔ upright, Accent ▸, the kind's Plain and Style…).
+- Nested kinds: making a kind of a selection on another kind's drawing (its harpoon or bold, not its letter) took the inner kind apart (raw `\overrightharpoon{b}` + an empty kind); now the new kind goes around it (`\tens{a+\cmat{\pvec{b}}}`). Typing and Backspace in nested kinds were already fine. CI: two- and three-level cases in the UI check and in editor-keys-check.
+- Caret colour per kind (the innermost kind it is in; plain maths keeps the accent colour); 8 colours, each with a light-theme and a dark-theme value (≥ 4.5:1 on the light page).
+- Renames applied (labels only; stored settings and documents unchanged; built-in style presets show their current name in older documents too). "Classic picture: Times New Roman and Symbol, drawn by MathBlocks, the same on every PC"; Accents: "length (1 = standard length)", "stroke weight (1 = standard weight)", buttons "Default: heavier, fits the letter" / "Thin, fixed length". Kind presets and palette tips no longer name authors. Remaining "MathType" text is all import/convert (or the benchmark's comparison column).
+- Ctrl+Alt+U / I / N: handled inside the MathBlocks windows only, never registered system-wide, so Word keeps Ctrl+Alt+I / N. A Word shortcut can no longer be set to them. Self-test (now in the core run): not registered system-wide; Word's own use reported; in the editor I / N / U → inline / numbered / display with the Latin and the Arabic (101) layout. Not pressed in Word (it would run Word's commands).
+- B4: one progress window for the app's own long operations (MathType document file conversion, chapter files check with Cancel, LaTeX export, self-test / soak / large-document runs). It steps aside while another dialog is open. Word's whole-document operations keep the add-in's window.
 
-**Built (my areas):**
-- B1 Settings: six sections (Appearance, Notation, Editing, Word, Backups and updates, Developer tools); clearer page names; Backups and Updates on one page; old links still open the right page.
-- B2 Wording: case-specific hints, placeholders and examples made generic; "Thesis-size test" is now "Large-document test" (its report file: `large-document report.txt`).
-- B6 Dialogs: focus on the main field when opened; Enter in a one-line field confirms. B5: empty Library / Blocks offer their first action.
-
-**Not done (next round):** B3 renames (list below, for your OK), B4 one progress window for the app's own long operations (the add-in's whole-document operations already share one).
-
-**On your PC (test channel):** typing and Backspace on a selection in a long equation; drag a block and a library equation into the editor; Ctrl+Alt+U/I/N; open an equation with a harpoon and an index from Word.
-
-**B3 — renames for your OK (labels only; stored settings and documents unchanged):**
-1. Spacecraft notation: "Hughes / Schaub & Junkins / Markley & Crassidis" → "Rotation matrix C_ba, a^×, quaternion ε/η" / "Direction cosine matrix [BN], [ω̃], β₀…β₃" / "Attitude matrix A, [ω×], q₄ last"; the setting → "Rotation notation".
-2. Palette collection "Spacecraft dynamics" → "Rotational dynamics"; floating editor tab "Spacecraft, my notation and collections" → "My notation and collections".
-3. Document style presets: "MathType Classic" → "Upright Times, Symbol operators"; "ISO 80000-2" → "Upright constants and differentials".
-4. MathType wording: "Classic: MathType look" → "Classic: picture"; "12 pt (MathType default)" → "12 pt (default)"; "Above the editor (MathType style)" → "Above the editor"; "(hidden, like MathType)" → "(hidden)"; "Current (Symbol, as MathType)" → "Symbol"; Accents "× MathType" → "× default", "MathType-like" → "Compact accents". Convert MathType keeps its name.
+**The gate (unchanged except the shortcuts section):** core self-test of 0.1.178 → `RESULT: PASS`; the 4 manual checks; then Promote to stable. The core run now has 22 sections (+ "Word shortcuts").
 
 ## Details
 
-- Key path: `App.tsx` memo panels; `lib/visualLatex.ts` (store update after paint, flushed by clicks, Ctrl/Alt/Enter/Tab/Esc, focus out, Send to Word); `useDeferredValue` for OMML and width. `editorSlots.deleteStep` redraws (MathLive draws only after its own commands).
-- Accents: `\mathord{…}` wrapper (normal spacing), grouped on load and ungrouped on save; harpoon drawn as a CSS mask. `accent-index-check`: 17 cases pass.
-- Checks: 704 unit tests, typecheck, editor-keys-check (+3 selection cases), accent-index-check, UI check: all passed.
+- `SettingsDialog.tsx`: pages = groups; each section's dialog opened when its page shows (its own Close still closes the settings). `ui-check.ts`: page/section checks by section id; action rows checked per section.
+- `MathEditor.makeKindFromSelection`: checks the kinds in the saved form; if one was lost, puts the equation back and wraps the inner kind's atom. `updateKindCaret` (model ancestry) + `--kc-*` tokens.
+- `lib/progress.ts` + `ProgressWindow.tsx`; `lib/modeKeys.ts` (+ unit tests, Latin and Arabic).
+- Checks: 708 unit tests, typecheck, editor-keys-check, accent-index-check, UI check (incl. nested kinds, caret colour, progress window, style bar): all passed.
 - **Rule:** anything new written into Word gets a guard fixture first (`docs/DEVELOPMENT.md` §4); working style: `CLAUDE.md`.

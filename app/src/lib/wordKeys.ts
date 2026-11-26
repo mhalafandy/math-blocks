@@ -28,10 +28,19 @@ export const DEFAULT_WORD_KEYS: Record<WordKeyName, string> = {
 
 const KEYS = new Set([..."ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", ";", "'", ",", ".", "/", "[", "]", "\\", "-", "="]);
 
+/**
+ * The MathBlocks editor's own keys (equation type): handled inside its windows only, never registered system-wide,
+ * so in Word they keep Word's meaning (Ctrl+Alt+I print preview, Ctrl+Alt+N draft view). A Word shortcut may not
+ * use them (it would be registered system-wide and take them from Word and from the editor).
+ */
+export const MODE_KEYS = { display: "Ctrl+Alt+U", inline: "Ctrl+Alt+I", numbered: "Ctrl+Alt+N" } as const;
+
 /** Null when the shortcut follows the convention (or is empty: switched off); else why not. */
 export function checkWordKeys(keys: string): string | null {
   const k = keys.trim();
   if (!k) return null;
+  const norm = (x: string) => x.replace(/\s+/g, "").toLowerCase().replace("control", "ctrl");
+  if (Object.values(MODE_KEYS).some((m) => norm(m) === norm(k))) return "Used in the MathBlocks editor for the equation type (display, inline, numbered), and kept for Word's own command there.";
   const parts = k.split("+").map((p) => p.trim());
   // "Ctrl+Alt+," / "Ctrl+Alt++" : the last part is the key.
   const key = parts.pop() ?? "";

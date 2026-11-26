@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { beginProgress } from "../lib/progress";
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { open as pickFiles } from "@tauri-apps/plugin-dialog";
@@ -46,9 +47,12 @@ export function ThesisDialog() {
 
   const check = async () => {
     setBusy(true);
+    const progress = beginProgress("Checking the chapter files", { total: chapters.length, cancel: true });
     try {
       const reads = [];
-      for (const c of chapters) {
+      for (const [i, c] of chapters.entries()) {
+        if (progress.cancelled) return;
+        progress.update(i, chapters.length, c.name);
         try {
           const bytes = new Uint8Array(await invoke<ArrayBuffer>("document_read", { path: c.path }));
           reads.push(docxEquations(bytes, c));
@@ -56,9 +60,11 @@ export function ThesisDialog() {
           reads.push({ chapter: c, equations: [], mathType: 0, error: e instanceof Error ? e.message : String(e) });
         }
       }
+      progress.update(chapters.length, chapters.length, "Comparing notation and definitions");
       const lib = useLibrary.getState();
       setReport(analyseThesis(reads, (id) => lib.equations.find((q) => q.id === id)?.latex ?? null));
     } finally {
+      progress.end();
       setBusy(false);
     }
   };

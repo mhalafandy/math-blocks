@@ -41,7 +41,23 @@ function queueSelectionWork(mf: MathfieldElement) {
     suggestAtCaret(mf);
     updateBlockSession(mf);
     revealCaret(mf);
+    updateKindCaret(mf);
   });
+}
+
+/** Built-in kinds keep their caret colour; a kind of the user's own gets one by its name. */
+const KIND_CARET = new Map(KINDS.map((k, i) => [k.id, i % 8]));
+/** The caret's colour says which kind it is in (the innermost one); plain maths keeps the default colour. */
+function updateKindCaret(mf: MathfieldElement) {
+  type Atom = { command?: string; args?: unknown[]; parent?: Atom };
+  const model = (mf as unknown as { _mathfield?: { model?: { at: (o: number) => Atom | undefined } } })._mathfield?.model;
+  // The atom left of the caret is inside the kinds around the caret (a kind right before the caret is not).
+  let a = mf.selectionIsCollapsed ? model?.at(mf.position)?.parent : undefined;
+  while (a && !(a.command === "\\class" && String(a.args?.[0] ?? "").startsWith("nk-"))) a = a.parent;
+  if (!a) return void delete mf.dataset.caretKind;
+  const id = String(a.args![0]).slice(3);
+  const n = KIND_CARET.get(id) ?? [...id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 8, 0);
+  mf.dataset.caretKind = String(n);
 }
 registerEditor(() => activeField);
 
@@ -229,6 +245,8 @@ export function convertKindToPlain(): boolean {
  * Make → kind: the selection (or the symbol before the cursor) becomes that kind; its letters stay,
  * styles and accents come from the kind, a subscript becomes the frame label.
  */
+const KIND_MACRO_RE = new RegExp(`\\\\(?:${KINDS.map((k) => k.macro).join("|")})(?![A-Za-z])`, "g");
+
 export function makeKindFromSelection(kindId: string): boolean {
   const mf = activeField;
   if (!mf) return false;
@@ -240,11 +258,34 @@ export function makeKindFromSelection(kindId: string): boolean {
     }
     mf.executeCommand("extendSelectionBackward");
   }
-  const src = fromMathLive(mf.getValue(mf.selection, "latex"));
-  const out = makeKindLatex(src, kindId);
-  if (!out) return false;
-  mf.executeCommand(["insert", toMathLive(out.replace(/\{\}$/, "{#?}")), { insertionMode: "replaceSelection", selectionMode: "placeholder" }]);
-  return true;
+  const apply = () => {
+    const src = fromMathLive(mf.getValue(mf.selection, "latex"));
+    const out = makeKindLatex(src, kindId);
+    if (!out) return false;
+    mf.executeCommand(["insert", toMathLive(out.replace(/\{\}$/, "{#?}")), { insertionMode: "replaceSelection", selectionMode: "placeholder" }]);
+    return true;
+  };
+  // A selection inside another kind's drawing (its harpoon, its bold, not its letter) would take that kind
+  // apart: then the new kind goes around the whole inner kind instead (nested: \cmat{\pvec{b}}).
+  // Counted in the saved form (a wrapper whose drawing was cut no longer reads as its kind).
+  const kinds = (v: string) => (fromMathLive(v).match(KIND_MACRO_RE) ?? []).length;
+  const before = mf.value;
+  const [s0, s1] = mf.selection.ranges[0] ?? [mf.position, mf.position];
+  if (!apply()) return false;
+  if (kinds(mf.value) > kinds(before)) return true;
+  mf.setValue(before, { silenceNotifications: true });
+  mf.selection = { ranges: [[s0, s1]], direction: "forward" };
+  // The innermost kind wrapper around the selection, selected as one atom.
+  type Atom = { command?: string; args?: unknown[]; parent?: Atom; leftSibling?: Atom; type?: string };
+  const model = (mf as unknown as { _mathfield?: { model?: { getAtoms: (s: unknown) => Atom[]; selection: unknown; offsetOf: (a: Atom) => number; at: (o: number) => Atom | undefined } } })._mathfield?.model;
+  const isKind = (a: Atom) => a.command === "\\class" && String(a.args?.[0] ?? "").startsWith("nk-");
+  // Any atom of the selection (even a branch's placeholder start), else the one at its end.
+  let k: Atom | undefined = model?.getAtoms(model.selection)[0] ?? model?.at(Math.max(s0, s1));
+  while (k && !isKind(k)) k = k.parent;
+  if (!model || !k) return apply();
+  const start = k.leftSibling ? model.offsetOf(k.leftSibling) : model.offsetOf(k) - 1;
+  mf.selection = { ranges: [[start, model.offsetOf(k)]], direction: "forward" };
+  return apply();
 }
 
 /** Focuses the visual editor, caret at the end (used when clicking empty canvas space). */
@@ -309,6 +350,8 @@ function showQuickStyle(mf: MathfieldElement, now = false) {
   clearTimeout(quickTimer);
   const update = () => {
     void import("./QuickStyleBar").then(({ useQuickStyle }) => {
+      // Settings → Editing → Style bar off: never shown (the right-click menu has the same actions).
+      if (!useApp.getState().quickStyleBar) return useQuickStyle.getState().at && useQuickStyle.getState().set({ at: null, kind: null });
       const focused = mf.matches(":focus-within") || document.activeElement === mf;
       if (!focused || (mf.selectionIsCollapsed && mf.position === 0)) return useQuickStyle.getState().set({ at: null, kind: null });
       const k = kindAt(mf as unknown as KindField);

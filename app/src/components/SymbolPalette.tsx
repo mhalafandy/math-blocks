@@ -288,7 +288,7 @@ function LocationToggle() {
     <button
       type="button"
       className="pal-toggle"
-      title={loc === "top" ? "Move the symbols to the right-hand panel" : "Move the symbols above the editor (MathType style)"}
+      title={loc === "top" ? "Move the symbols to the right-hand panel" : "Move the symbols above the editor"}
       onClick={() => setPrefs({ paletteLocation: loc === "top" ? "right" : "top", rightOpen: true })}
     >
       {loc === "top" ? "⇥ Right" : "⇡ Top"}

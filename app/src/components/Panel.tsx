@@ -356,7 +356,7 @@ const FLYOUTS: { id: FlyoutId; icon: string; label: string; keys?: string }[] = 
   { id: "blocks", icon: "▦", label: "Blocks (Save as block here too)" },
   { id: "symbols", icon: "≤", label: "Symbols" },
   { id: "structures", icon: "∑", label: "Structures (fractions, scripts, matrices…)" },
-  { id: "collections", icon: "⇀", label: "Spacecraft, my notation and collections" },
+  { id: "collections", icon: "⇀", label: "My notation and collections" },
   { id: "style", icon: "Aa", label: "Style" },
   { id: "preview", icon: "◫", label: "Preview (as in Word)" },
 ];

@@ -148,8 +148,8 @@ export function StylePanel() {
   return (
     <div className="form narrow">
       <label>
-        Spacecraft notation
-        <select value={convention} onChange={(e) => setPrefs({ spacecraftConvention: e.target.value as Convention })} title="Which textbook's notation the Spacecraft palette uses">
+        Rotation notation
+        <select value={convention} onChange={(e) => setPrefs({ spacecraftConvention: e.target.value as Convention })} title="Which rotation notation the Rotational dynamics collection uses">
           {Object.entries(CONVENTIONS).map(([k, v]) => (
             <option key={k} value={k}>
               {v}
@@ -159,7 +159,7 @@ export function StylePanel() {
       </label>
       <label>
         Physical vectors
-        <select value={scVector} onChange={(e) => setPrefs({ spacecraftVector: e.target.value as VectorStyle })} title="How the Spacecraft palette writes vectors (r, ω, h…)">
+        <select value={scVector} onChange={(e) => setPrefs({ spacecraftVector: e.target.value as VectorStyle })} title="How the Rotational dynamics collection writes vectors (r, ω, h…)">
           {Object.entries(VECTOR_STYLES).map(([k, v]) => (
             <option key={k} value={k}>
               {v}
@@ -186,7 +186,7 @@ export function StylePanel() {
       <label>
         Equations in Word
         <select value={look} onChange={(e) => setPrefs({ look: e.target.value as "classic" | "native" })}>
-          <option value="classic">Classic: MathType look (drawn by MathBlocks)</option>
+          <option value="classic">Classic picture: Times New Roman and Symbol, drawn by MathBlocks, the same on every PC</option>
           <option value="native">Native Word equation (editable with Word's tools)</option>
         </select>
       </label>
@@ -205,7 +205,7 @@ export function StylePanel() {
             >
               {[10, 10.5, 11, 12, 14, 16].map((n) => (
                 <option key={n} value={n}>
-                  {n} pt{n === 12 ? " (MathType default)" : ""}
+                  {n} pt{n === 12 ? " (default)" : ""}
                 </option>
               ))}
             </select>
@@ -214,7 +214,7 @@ export function StylePanel() {
             <button onClick={() => void import("../lib/previewWindow").then((m) => m.togglePreview())}>Open the Word preview</button>{" "}
             <span className="hint">its own window: the equation exactly as Word gets it, at true size and zoomable, with the line width (Ctrl+Alt+P)</span>
           </p>
-          <p className="hint">Classic equations use MathType's fonts and spacing (Times New Roman, Symbol) and look the same on every PC. Double-click one in Word to edit it in MathBlocks.</p>
+          <p className="hint">Classic equations are pictures drawn with Times New Roman and Symbol and fixed spacing, so they look the same on every PC. Double-click one in Word to edit it in MathBlocks.</p>
         </>
       ) : (
         <p className="hint">Settings for native Word equations:</p>
@@ -304,7 +304,7 @@ export function NumberingSettings() {
             Chapter numbers from
             <select value={ns.source ?? "headings"} onChange={(e) => set({ source: e.target.value as "headings" | "markers" })}>
               <option value="headings">Word's heading numbering (Heading 1/2; appendix headings numbered A, B…)</option>
-              <option value="markers">MathBlocks chapter markers (hidden, like MathType)</option>
+              <option value="markers">MathBlocks chapter markers (hidden)</option>
             </select>
           </label>
         </>

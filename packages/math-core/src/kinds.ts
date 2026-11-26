@@ -180,7 +180,7 @@ export type PresetId = "hughes" | "schaub" | "markley";
 /** Built-in styles. Hughes defaults: bold with harpoon for physical vectors. */
 export const PRESETS: Record<PresetId, { name: string; kinds: Record<string, KindStyle> }> = {
   hughes: {
-    name: "Hughes (vectrix)",
+    name: "Rotation matrix C_ba, vectrix, harpoon vectors",
     kinds: {
       pvec: S({ ...BOLD_UP, accent: "harpoon" }),
       uvec: S({ accent: "hat" }),
@@ -201,7 +201,7 @@ export const PRESETS: Record<PresetId, { name: string; kinds: Record<string, Kin
     },
   },
   schaub: {
-    name: "Schaub & Junkins",
+    name: "Direction cosine matrix [BN], Euler parameters",
     kinds: {
       pvec: S({ ...BOLD, frames: { position: "pre-sup", separator: "" } }),
       uvec: S({ accent: "hat" }),
@@ -221,7 +221,7 @@ export const PRESETS: Record<PresetId, { name: string; kinds: Record<string, Kin
     },
   },
   markley: {
-    name: "Markley & Crassidis",
+    name: "Attitude matrix A, quaternion scalar last",
     kinds: {
       pvec: S(BOLD),
       uvec: S({ ...BOLD, accent: "hat" }),
